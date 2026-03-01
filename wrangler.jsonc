@@ -1,0 +1,12 @@
+﻿{
+"$schema": "node_modules/wrangler/config-schema.json",
+"name": "webapp",
+"compatibility_date": "2026-02-21",
+"pages_build_output_dir": "./dist",
+"compatibility_flags": ["nodejs_compat"],
+"d1_databases": [{
+"binding": "DB",
+"database_name": "maasga_db",
+"database_id": "2317adea-fdbe-4597-b64d-11d68d03b63b"
+}]
+}

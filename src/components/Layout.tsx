@@ -1,0 +1,596 @@
+import { CGUModal, initCGUModal } from './CGUModal'
+
+export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisation Burkina Faso", activePage = "", description = "MAASGA - Spécialiste vente, installation et maintenance de climatiseurs à Ouagadougou, Burkina Faso. Devis gratuit, techniciens certifiés.", canonicalPath = "", jsonLd }: {
+  children: any
+  title?: string
+  activePage?: string
+  description?: string
+  canonicalPath?: string
+  jsonLd?: string
+}) => {
+  const siteUrl = 'https://maasga-website.pages.dev'
+  const canonical = canonicalPath ? `${siteUrl}${canonicalPath}` : ''
+  return (
+    <html lang="fr">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content={description} />
+        <meta name="keywords" content="climatisation Ouagadougou, installation climatiseur Burkina Faso, technicien clim Ouaga, MAASGA, vente climatiseur Ouaga" />
+        {canonical && <link rel="canonical" href={canonical} />}
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content={`${siteUrl}/og-image.png`} />
+        {canonical && <meta property="og:url" content={canonical} />}
+        <meta property="og:locale" content="fr_BF" />
+        <meta property="og:site_name" content="MAASGA Climatisation" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={title} />
+        <meta name="twitter:description" content={description} />
+        <meta name="twitter:image" content={`${siteUrl}/og-image.png`} />
+        <meta name="theme-color" content="#e8f4ff" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js" defer></script>
+        <link rel="stylesheet" href="/static/tailwind.css" />
+        <link rel="stylesheet" href="/static/style.css" />
+        <title>{title}</title>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" />
+        {/* Google Analytics — remplacer G-XXXXXXXXXX par votre vrai ID Google Analytics */}
+        {/*
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+        <script dangerouslySetInnerHTML={{ __html: `
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-XXXXXXXXXX', { page_path: window.location.pathname, anonymize_ip: true });
+        `}} />
+        */}
+        {/* JSON-LD Structured Data injection point */}
+        {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />}
+      </head>
+      <body class="min-h-screen pb-16 md:pb-0" style="background-color:#f8fbff; color:#03045e;" onload="window.initCGUModal?.()">
+
+        {/* PAGE LOADER */}
+        <div id="page-loader" style="position:fixed;inset:0;z-index:999999;background:linear-gradient(160deg,#ffffff 0%,#e0f7ff 30%,#7dd3fc 65%,#0077b6 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.6s ease,visibility 0.6s ease;">
+          <div style="position:relative;margin-bottom:1.5rem;">
+            <div style="width:72px;height:72px;border-radius:20px;overflow:hidden;box-shadow:0 0 40px rgba(0,180,216,0.6);animation:loader-pulse 1.5s ease-in-out infinite;">
+              <img src="/one.jpeg" alt="MAASGA" style="width:100%;height:100%;object-fit:cover;" />
+            </div>
+            <div style="position:absolute;-top:6px;-right:6px;top:-8px;right:-8px;font-size:1.4rem;animation:loader-spin 2s linear infinite;filter:drop-shadow(0 0 8px rgba(56,189,248,0.8));">❄</div>
+          </div>
+          <div style="color:#03045e;font-size:1.6rem;font-weight:800;letter-spacing:0.1em;margin-bottom:0.5rem;">MAASGA</div>
+          <div style="color:#0077b6;font-size:0.75rem;letter-spacing:0.2em;margin-bottom:2rem;font-weight:600;">FROID &amp; CLIMATISATION</div>
+          <div style="display:flex;gap:6px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#0077b6;animation:loader-bounce 0.8s ease-in-out infinite;"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:#0077b6;animation:loader-bounce 0.8s ease-in-out 0.15s infinite;"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:#0077b6;animation:loader-bounce 0.8s ease-in-out 0.3s infinite;"></span>
+          </div>
+        </div>
+        <style>{`
+          @keyframes loader-spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+          @keyframes loader-pulse { 0%,100%{transform:scale(1);box-shadow:0 0 30px rgba(0,180,216,0.5)} 50%{transform:scale(1.08);box-shadow:0 0 60px rgba(0,180,216,0.9)} }
+          @keyframes loader-bounce { 0%,100%{transform:translateY(0);opacity:0.5} 50%{transform:translateY(-10px);opacity:1} }
+          @keyframes float-up { 0%{transform:translateY(20px);opacity:0} 100%{transform:translateY(0);opacity:1} }
+          @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+          @keyframes glow-pulse { 0%,100%{box-shadow:0 0 10px rgba(0,119,182,0.2)} 50%{box-shadow:0 0 30px rgba(0,119,182,0.5)} }
+          @keyframes slide-in-left { from{transform:translateX(-30px);opacity:0} to{transform:translateX(0);opacity:1} }
+          @keyframes slide-in-right { from{transform:translateX(30px);opacity:0} to{transform:translateX(0);opacity:1} }
+          .reveal { opacity:0; transform:translateY(28px); transition:opacity 0.7s cubic-bezier(.4,0,.2,1), transform 0.7s cubic-bezier(.4,0,.2,1); }
+          .reveal.visible { opacity:1; transform:none; }
+          .reveal-left { opacity:0; transform:translateX(-30px); transition:opacity 0.7s ease, transform 0.7s ease; }
+          .reveal-left.visible { opacity:1; transform:none; }
+          .reveal-right { opacity:0; transform:translateX(30px); transition:opacity 0.7s ease, transform 0.7s ease; }
+          .reveal-right.visible { opacity:1; transform:none; }
+          .card-hover { transition:transform 0.3s ease, box-shadow 0.3s ease; }
+          .card-hover:hover { transform:translateY(-6px); box-shadow:0 20px 40px rgba(0,119,182,0.18); }
+          .btn-glow:hover { animation:glow-pulse 1s ease-in-out infinite; }
+          .stagger-1{transition-delay:0.05s} .stagger-2{transition-delay:0.12s} .stagger-3{transition-delay:0.19s} .stagger-4{transition-delay:0.26s} .stagger-5{transition-delay:0.33s} .stagger-6{transition-delay:0.40s}
+        `}</style>
+
+        {/* Skip to content — accessibility */}
+        <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[99999] focus:px-4 focus:py-2 focus:rounded-lg focus:text-white" style="background:#0ea5e9;">Aller au contenu principal</a>
+
+        {/* SCROLL PROGRESS BAR */}
+        <div id="scroll-progress" style="position:fixed; top:0; left:0; height:3px; width:0%; background:linear-gradient(90deg,#0ea5e9,#38bdf8,#7dd3fc); z-index:9999; transition:width 0.1s linear; box-shadow:0 0 8px rgba(56,189,248,0.5);"></div>
+
+        {/* PAGE TRANSITION OVERLAY */}
+        <div id="page-transition" style="position:fixed; inset:0; z-index:99999; background:#f8fbff; display:flex; align-items:center; justify-content:center; transition:opacity 0.3s ease; pointer-events:none; opacity:0;">
+          <i class="fas fa-snowflake text-3xl" style="color:#38bdf8; animation:spin 1s linear infinite;"></i>
+        </div>
+
+        {/* BACK TO TOP */}
+        <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Retour en haut" style="position:fixed; bottom:6rem; right:1.5rem; z-index:9998; width:44px; height:44px; border-radius:50%; background:rgba(14,165,233,0.9); color:white; border:none; cursor:pointer; display:none; align-items:center; justify-content:center; font-size:1rem; box-shadow:0 4px 20px rgba(14,165,233,0.35); transition:all 0.3s ease; backdrop-filter:blur(10px);">
+          <i class="fas fa-chevron-up"></i>
+        </button>
+
+        {/* HEADER — floating pill */}
+        <header class="fixed w-full z-50 px-4 sm:px-6 pt-4">
+          <div class="max-w-7xl mx-auto flex justify-between items-center glass rounded-full px-6 py-3 shadow-lg">
+
+            {/* Logo */}
+            <a href="/" class="text-xl font-extrabold tracking-tight flex items-center shrink-0">
+              <img src="/one.jpeg" alt="MAASGA Logo" class="h-10 w-auto rounded-lg mr-2" />
+              <i class="fas fa-snowflake ml-2 animate-pulse" style="color:#00b4d8; font-size:0.9rem;"></i>
+            </a>
+
+            {/* Nav Desktop */}
+            <nav class="hidden lg:flex items-center space-x-1">
+              {[
+                { href: "/", label: "Accueil", key: "home" },
+                { href: "/a-propos", label: "À propos", key: "apropos" },
+                { href: "/catalogue", label: "Catalogue", key: "catalogue" },
+                { href: "/simulateur", label: "Simulateur BTU", key: "simulateur" },
+                { href: "/rendez-vous", label: "Rendez-vous", key: "rdv" },
+                { href: "/realisations", label: "Réalisations", key: "realisations" },
+                { href: "/avis", label: "Avis clients", key: "avis" },
+              ].map(n => (
+                <a href={n.href} class={`nav-link text-sm font-bold px-3 py-2 rounded-lg transition-all uppercase tracking-wide text-xs ${activePage===n.key ? 'active' : ''}`}>
+                  {n.label}
+                </a>
+              ))}
+            </nav>
+
+            {/* Actions */}
+            <div class="flex items-center space-x-2">
+              <a href="tel:+22655996418" class="hidden lg:flex items-center space-x-1 text-xs font-semibold px-3 py-2 rounded-full transition-all hover:bg-blue-50" style="color:#0077b6;">
+                <i class="fas fa-phone text-xs"></i>
+                <span>55 99 64 18</span>
+              </a>
+              <a href="/espace-client" class="hidden lg:flex items-center justify-center w-9 h-9 rounded-full transition-all hover:bg-blue-50" style="color:#0077b6;" title="Espace client">
+                <i class="fas fa-user text-sm"></i>
+              </a>
+              <a href="/rendez-vous" class="hidden sm:block btn-primary text-white text-sm font-bold px-5 py-2 rounded-full shadow-md">
+                Contactez-nous
+              </a>
+              <button onclick="document.getElementById('mobile-menu').classList.toggle('open')" class="lg:hidden p-2 rounded-full hover:bg-blue-50 transition-colors" style="color:#475569;">
+                <i class="fas fa-bars text-lg"></i>
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile menu dropdown */}
+          <div id="mobile-menu" class="mobile-menu lg:hidden max-w-7xl mx-auto mt-2 rounded-2xl shadow-xl px-4 py-4 space-y-1" style="background:rgba(248,251,255,0.97); backdrop-filter:blur(20px); border:1px solid rgba(0,119,182,0.12);">
+            {[
+              { href: "/", icon: "fa-home", label: "Accueil" },
+              { href: "/catalogue", icon: "fa-th-large", label: "Catalogue" },
+              { href: "/simulateur", icon: "fa-calculator", label: "Simulateur BTU" },
+              { href: "/rendez-vous", icon: "fa-calendar", label: "Rendez-vous" },
+              { href: "/realisations", icon: "fa-images", label: "Réalisations" },
+              { href: "/avis", icon: "fa-star", label: "Avis clients" },
+              { href: "/a-propos", icon: "fa-info-circle", label: "À propos" },
+              { href: "/espace-client", icon: "fa-user", label: "Espace client" },
+            ].map(n => (
+              <a href={n.href} class="flex items-center space-x-3 py-2.5 px-3 rounded-xl text-sm font-semibold nav-link hover:bg-blue-50 transition-all">
+                <i class={`fas ${n.icon} w-4 text-center`} style="color:#0077b6;"></i>
+                <span>{n.label}</span>
+              </a>
+            ))}
+            <a href="/rendez-vous" class="flex items-center justify-center btn-primary text-white text-sm font-bold px-4 py-3 rounded-xl mt-2">
+              <i class="fas fa-calendar-plus mr-2"></i>Prendre RDV
+            </a>
+          </div>
+        </header>
+
+        {/* CONTENT */}
+        <main id="main-content" role="main" class="pt-20">
+          {children}
+        </main>
+
+        {/* CGU MODAL */}
+        <CGUModal />
+
+        {/* FOOTER */}
+        <footer style="background:linear-gradient(160deg,#f0f9ff 0%,#dbeafe 30%,#93c5fd 65%,#3b82f6 100%); margin-top:5rem; position:relative; overflow:hidden;">
+          <div style="position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.08);pointer-events:none;"></div>
+          <div style="position:absolute;bottom:-40px;left:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.06);pointer-events:none;"></div>
+          <div class="cyan-line"></div>
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
+
+              <div class="md:col-span-2">
+                <div class="flex items-center space-x-3 mb-5">
+                  <div class="w-14 h-14 rounded-xl overflow-hidden shadow-lg border border-white/20">
+                    <img src="/one.jpeg" alt="MAASGA Logo" class="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <div class="font-bold text-white text-xl tracking-wide">MAASGA</div>
+                    <div class="text-xs font-medium" style="color:#1e3a5f;">Froid &amp; Climatisation</div>
+                  </div>
+                </div>
+                <p class="text-sm leading-relaxed max-w-sm" style="color:#1e3a5f;">
+                  Spécialiste en vente, installation et maintenance de systèmes de climatisation à Ouagadougou et dans tout le Burkina Faso.
+                </p>
+                <div class="mt-5 space-y-3">
+                  <div class="text-sm" style="color:#1e3a5f;">
+                    <div class="font-semibold mb-3" style="color:#03045e;">Directeurs</div>
+                    <div class="flex items-center space-x-2 mb-2">
+                      <div style="width:22px;height:22px;border-radius:50%;background:rgba(0,119,182,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="fas fa-user text-xs" style="color:#0077b6;"></i>
+                      </div>
+                      <span>Malick KOMPAORE - Directeur Commercial</span>
+                    </div>
+                    <div class="flex items-center space-x-2 mb-3">
+                      <div style="width:22px;height:22px;border-radius:50%;background:rgba(0,119,182,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="fas fa-phone text-xs" style="color:#0077b6;"></i>
+                      </div>
+                      <a href="tel:+22607494444" class="hover:text-white transition">+226 07 49 44 44</a>
+                    </div>
+                    <div class="flex items-center space-x-2 mb-2">
+                      <div style="width:22px;height:22px;border-radius:50%;background:rgba(124,58,237,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="fas fa-user-cog text-xs" style="color:#7c3aed;"></i>
+                      </div>
+                      <span>Sherif SAWADOGO - Directeur Technique</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                      <div style="width:22px;height:22px;border-radius:50%;background:rgba(124,58,237,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="fas fa-phone text-xs" style="color:#7c3aed;"></i>
+                      </div>
+                      <a href="tel:+22655996418" class="hover:text-white transition">+226 55 99 64 18</a>
+                    </div>
+                  </div>
+                  <div class="pt-3 border-t flex items-center gap-4" style="border-color:rgba(0,0,0,0.1);">
+                    <a href="https://wa.me/22655996418" target="_blank" rel="noopener" class="flex items-center space-x-2 text-sm font-semibold transition-all hover:scale-105" style="color:#16a34a;">
+                      <i class="fab fa-whatsapp text-xl" style="color:#25d366;"></i><span>WhatsApp</span>
+                    </a>
+                    <a href="mailto:maasgabf@gmail.com" class="flex items-center space-x-2 text-sm font-semibold transition-all hover:scale-105" style="color:#0077b6;">
+                      <div style="width:22px;height:22px;border-radius:50%;background:rgba(0,119,182,0.15);display:flex;align-items:center;justify-content:center;">
+                        <i class="fas fa-envelope text-xs" style="color:#0077b6;"></i>
+                      </div><span>maasgabf@gmail.com</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 class="font-semibold text-white mb-5 text-sm uppercase tracking-widest" style="color:#38bdf8;">Navigation</h4>
+                <ul class="space-y-3 text-sm" style="color:#64748b;">
+                  {["/", "/catalogue", "/simulateur", "/rendez-vous", "/avis", "/a-propos", "/contact"].map((href, i) => (
+                    <li><a href={href} class="hover:text-white hover:pl-1 transition-all block">
+                      {["Accueil","Catalogue","Simulateur BTU","Prendre RDV","Avis clients","À propos","Contact"][i]}
+                    </a></li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <h4 class="font-semibold mb-5 text-sm uppercase tracking-widest" style="color:#38bdf8;">Services</h4>
+                <ul class="space-y-3 text-sm" style="color:#64748b;">
+                  {["Vente climatiseurs","Installation pro","Maintenance tri.","Devis gratuit","SAV réactif","Techniciens certifiés"].map(s => (
+                    <li class="flex items-center space-x-2">
+                      <i class="fas fa-check-circle text-xs" style="color:#0ea5e9;"></i>
+                      <span>{s}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div class="mt-5 p-3 rounded-xl text-xs" style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.12); color:#64748b;">
+                  <i class="fas fa-map-marker-alt mr-2" style="color:#0ea5e9;"></i>
+                  Ouagadougou, Secteurs 35
+                  <div class="mt-1 ml-5" style="color:#475569;">Burkina Faso</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="cyan-line mt-10 mb-6"></div>
+            <div class="flex flex-col md:flex-row justify-between items-center text-xs gap-4" style="color:#475569;">
+              <span>© 2026 MAASGA - Tous droits réservés</span>
+              <div class="flex items-center space-x-3 text-xs">
+                <button onclick="document.getElementById('cgu-modal').classList.remove('hidden')" class="hover:text-white transition">
+                  <i class="fas fa-file-contract mr-1"></i>Conditions & Politique
+                </button>
+              </div>
+              <span class="mt-2 md:mt-0">Spécialiste Froid & Climatisation · Ouagadougou · Burkina Faso</span>
+            </div>
+          </div>
+        </footer>
+
+        {/* Loader hide + Scroll Reveal + Scroll Progress + Back-to-top + Counter animation + Page transitions */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          // Hide loader
+          (function() {
+            function hideLoader() {
+              var l = document.getElementById('page-loader');
+              if (!l) return;
+              l.style.opacity = '0';
+              l.style.visibility = 'hidden';
+              setTimeout(function() { l.style.display = 'none'; }, 650);
+            }
+            if (document.readyState === 'complete') { setTimeout(hideLoader, 400); }
+            else { window.addEventListener('load', function() { setTimeout(hideLoader, 400); }); }
+          })();
+
+          document.addEventListener('DOMContentLoaded', function() {
+            // Scroll reveal (+ left/right variants)
+            var observer = new IntersectionObserver(function(entries) {
+              entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                  entry.target.classList.add('visible');
+                  observer.unobserve(entry.target);
+                }
+              });
+            }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+            document.querySelectorAll('.reveal,.reveal-left,.reveal-right').forEach(function(el) { observer.observe(el); });
+
+            // Scroll progress bar
+            var progressBar = document.getElementById('scroll-progress');
+            var backToTop = document.getElementById('back-to-top');
+            window.addEventListener('scroll', function() {
+              var scrollTop = window.scrollY;
+              var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+              if (docHeight > 0) progressBar.style.width = (scrollTop / docHeight * 100) + '%';
+              if (backToTop) backToTop.style.display = scrollTop > 400 ? 'flex' : 'none';
+            }, { passive: true });
+
+            // Animated number counters
+            var counterObserver = new IntersectionObserver(function(entries) {
+              entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                  var el = entry.target;
+                  var target = el.getAttribute('data-count');
+                  var isNum = /^\\d+$/.test(target);
+                  if (isNum) {
+                    var end = parseInt(target);
+                    var duration = 1800;
+                    var start = 0;
+                    var startTime = null;
+                    function animate(timestamp) {
+                      if (!startTime) startTime = timestamp;
+                      var progress = Math.min((timestamp - startTime) / duration, 1);
+                      var eased = 1 - Math.pow(1 - progress, 3);
+                      el.textContent = Math.floor(eased * end) + (el.getAttribute('data-suffix') || '');
+                      if (progress < 1) requestAnimationFrame(animate);
+                    }
+                    requestAnimationFrame(animate);
+                  }
+                  counterObserver.unobserve(el);
+                }
+              });
+            }, { threshold: 0.3 });
+            document.querySelectorAll('[data-count]').forEach(function(el) { counterObserver.observe(el); });
+          });
+
+          // Page transitions for internal links
+          document.addEventListener('click', function(e) {
+            var link = e.target.closest('a[href]');
+            if (!link) return;
+            var href = link.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('tel:') || href.startsWith('mailto:') || link.target === '_blank') return;
+            e.preventDefault();
+            var overlay = document.getElementById('page-transition');
+            overlay.style.opacity = '1';
+            overlay.style.pointerEvents = 'all';
+            setTimeout(function() { window.location.href = href; }, 250);
+          });
+        `}} />
+
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            const hasAccepted = localStorage.getItem('maasga_cgu_accepted')
+            if (!hasAccepted) {
+              setTimeout(() => {
+                const modal = document.getElementById('cgu-modal')
+                if (modal) modal.classList.remove('hidden')
+              }, 500)
+            }
+            const checkbox = document.getElementById('accept-cgu')
+            const acceptBtn = document.getElementById('accept-btn')
+            if (checkbox && acceptBtn) {
+              checkbox.addEventListener('change', () => {
+                acceptBtn.disabled = !checkbox.checked
+              })
+            }
+            window.acceptCGU = () => {
+              const checkbox = document.getElementById('accept-cgu')
+              if (checkbox?.checked) {
+                localStorage.setItem('maasga_cgu_accepted', JSON.stringify({
+                  accepted: true,
+                  timestamp: new Date().toISOString(),
+                  version: '1.0'
+                }))
+                const modal = document.getElementById('cgu-modal')
+                if (modal) modal.classList.add('hidden')
+              }
+            }
+          })()
+        `}} />
+
+        {/* Barre mobile fixe Call/WhatsApp/RDV — visible uniquement sur mobile */}
+        <div class="md:hidden fixed bottom-0 left-0 right-0 z-50 flex" style="background:rgba(11,17,32,0.97); border-top:1px solid rgba(56,189,248,0.18); padding-bottom:env(safe-area-inset-bottom);">
+          <a href="tel:+22655996418" class="flex-1 flex flex-col items-center justify-center py-3 gap-1 active:opacity-70" style="color:#38bdf8;">
+            <i class="fas fa-phone text-base"></i>
+            <span class="text-xs font-semibold">Appeler</span>
+          </a>
+          <div style="width:1px; background:rgba(56,189,248,0.15);"></div>
+          <a href="https://wa.me/22655996418?text=Bonjour%20MAASGA" target="_blank" rel="noopener" class="flex-1 flex flex-col items-center justify-center py-3 gap-1 active:opacity-70" style="color:#25D366;">
+            <i class="fab fa-whatsapp text-base"></i>
+            <span class="text-xs font-semibold">WhatsApp</span>
+          </a>
+          <div style="width:1px; background:rgba(56,189,248,0.15);"></div>
+          <a href="/rendez-vous" class="flex-1 flex flex-col items-center justify-center py-3 gap-1 active:opacity-70" style="color:#a78bfa;">
+            <i class="fas fa-calendar-check text-base"></i>
+            <span class="text-xs font-semibold">RDV</span>
+          </a>
+          <div style="width:1px; background:rgba(56,189,248,0.15);"></div>
+          <a href="/catalogue" class="flex-1 flex flex-col items-center justify-center py-3 gap-1 active:opacity-70" style="color:#f59e0b;">
+            <i class="fas fa-th-large text-base"></i>
+            <span class="text-xs font-semibold">Catalogue</span>
+          </a>
+        </div>
+
+        {/* WhatsApp Pre-Chat Widget */}
+        <div id="wa-widget" style="position:fixed; bottom:1.5rem; left:1.5rem; z-index:9999;">
+
+          {/* Panel */}
+          <div id="wa-panel" style="display:none; position:absolute; bottom:72px; left:0; width:300px; border-radius:18px; overflow:hidden; box-shadow:0 24px 64px rgba(0,0,0,0.45); transform-origin:bottom left; animation:waPop 0.22s cubic-bezier(.34,1.56,.64,1) both;">
+            {/* Header WhatsApp */}
+            <div style="background:#075E54; padding:14px 14px 20px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:44px; height:44px; border-radius:50%; background:#128C7E; display:flex; align-items:center; justify-content:center; flex-shrink:0; border:2px solid rgba(255,255,255,0.2);">
+                  <i class="fab fa-whatsapp" style="color:white; font-size:1.5rem;"></i>
+                </div>
+                <div style="flex:1;">
+                  <div style="color:white; font-weight:700; font-size:0.9rem; line-height:1.2;">MAASGA Support</div>
+                  <div style="color:rgba(255,255,255,0.75); font-size:0.72rem; margin-top:2px;">🟢 En ligne · Répond rapidement</div>
+                </div>
+                <button onclick="closeWaPanel()" style="color:rgba(255,255,255,0.65); background:none; border:none; cursor:pointer; font-size:1.15rem; padding:4px; line-height:1; border-radius:50%; transition:all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='none'">✕</button>
+              </div>
+            </div>
+
+            {/* Chat area */}
+            <div style="background:#e5ddd5; padding:14px 12px 16px;">
+              {/* Message bubble */}
+              <div style="display:flex; gap:6px; margin-bottom:14px;">
+                <div style="background:white; border-radius:0 10px 10px 10px; padding:10px 12px; box-shadow:0 1px 2px rgba(0,0,0,0.12); max-width:85%;">
+                  <p style="color:#111; font-size:0.83rem; line-height:1.5; margin:0 0 4px;">Bonjour 👋 Comment puis-je vous aider ?</p>
+                  <span style="color:#888; font-size:0.68rem; display:block; text-align:right;">MAASGA Climatisation</span>
+                </div>
+              </div>
+
+              {/* Quick replies */}
+              <div style="display:flex; flex-direction:column; gap:7px;">
+                {[
+                  { icon: "🔧", label: "Demander un devis", msg: "Bonjour MAASGA, je souhaite un devis pour l'installation ou la maintenance d'un climatiseur." },
+                  { icon: "📅", label: "Prendre un rendez-vous", href: "/rendez-vous" },
+                  { icon: "💰", label: "Connaître les tarifs", msg: "Bonjour MAASGA, quels sont vos tarifs pour l'installation et la maintenance de climatiseurs ?" },
+                  { icon: "🌡️", label: "Urgence — panne clim", msg: "Bonjour MAASGA, j'ai une urgence : mon climatiseur est en panne, pouvez-vous intervenir rapidement ?" },
+                  { icon: "📦", label: "Infos sur les produits", msg: "Bonjour MAASGA, je voudrais des informations sur vos modèles de climatiseurs disponibles." },
+                ].map(opt => (
+                  opt.href
+                    ? <a href={opt.href}
+                        style="display:flex; align-items:center; gap:8px; background:white; border-radius:20px; padding:8px 14px; font-size:0.8rem; font-weight:600; color:#075E54; text-decoration:none; box-shadow:0 1px 3px rgba(0,0,0,0.1); transition:all 0.18s; border:none; cursor:pointer;"
+                        onmouseover="this.style.background='#128C7E'; this.style.color='white';" onmouseout="this.style.background='white'; this.style.color='#075E54';">
+                        <span>{opt.icon}</span><span>{opt.label}</span>
+                        <i class="fas fa-arrow-right" style="margin-left:auto; font-size:0.65rem; opacity:0.6;"></i>
+                      </a>
+                    : <button
+                        onclick={`openWa(${JSON.stringify(opt.msg)})`}
+                        style="display:flex; align-items:center; gap:8px; background:white; border-radius:20px; padding:8px 14px; font-size:0.8rem; font-weight:600; color:#075E54; text-align:left; box-shadow:0 1px 3px rgba(0,0,0,0.1); transition:all 0.18s; border:none; cursor:pointer; width:100%;"
+                        onmouseover="this.style.background='#128C7E'; this.style.color='white';" onmouseout="this.style.background='white'; this.style.color='#075E54';">
+                        <span>{opt.icon}</span><span>{opt.label}</span>
+                        <i class="fab fa-whatsapp" style="margin-left:auto; font-size:0.85rem; opacity:0.7;"></i>
+                      </button>
+                ))}
+              </div>
+
+              <p style="text-align:center; font-size:0.65rem; color:#666; margin-top:12px; margin-bottom:0;">Propulsé par WhatsApp · Réponse en &lt; 30 min</p>
+            </div>
+          </div>
+
+          {/* Main button */}
+          <button onclick="toggleWaPanel()" id="wa-btn" class="whatsapp-float" aria-label="Discuter sur WhatsApp" style="border:none; cursor:pointer; position:relative;">
+            <i id="wa-icon-open" class="fab fa-whatsapp" style="transition:all 0.2s;"></i>
+            <i id="wa-icon-close" class="fas fa-times" style="display:none; transition:all 0.2s;"></i>
+            <span id="wa-notif-dot" style="position:absolute; top:3px; right:3px; width:11px; height:11px; background:#ff3b30; border-radius:50%; border:2px solid white; animation:waDot 1.8s ease-in-out infinite;"></span>
+          </button>
+        </div>
+
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes waPop { from { opacity:0; transform:scale(0.85) translateY(12px); } to { opacity:1; transform:scale(1) translateY(0); } }
+          @keyframes waDot { 0%,100% { transform:scale(1); opacity:1; } 50% { transform:scale(1.4); opacity:0.6; } }
+          @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+          #back-to-top:hover { transform:scale(1.1) translateY(-2px); box-shadow:0 8px 30px rgba(14,165,233,0.5); }
+        ` }} />
+
+        <script dangerouslySetInnerHTML={{ __html: `
+          function toggleWaPanel() {
+            const panel = document.getElementById('wa-panel');
+            const iconOpen = document.getElementById('wa-icon-open');
+            const iconClose = document.getElementById('wa-icon-close');
+            const dot = document.getElementById('wa-notif-dot');
+            const isOpen = panel.style.display !== 'none';
+            if (isOpen) {
+              panel.style.display = 'none';
+              iconOpen.style.display = '';
+              iconClose.style.display = 'none';
+            } else {
+              panel.style.display = '';
+              panel.style.animation = 'none';
+              void panel.offsetWidth;
+              panel.style.animation = 'waPop 0.22s cubic-bezier(.34,1.56,.64,1) both';
+              iconOpen.style.display = 'none';
+              iconClose.style.display = '';
+              dot.style.display = 'none';
+            }
+          }
+          function closeWaPanel() {
+            document.getElementById('wa-panel').style.display = 'none';
+            document.getElementById('wa-icon-open').style.display = '';
+            document.getElementById('wa-icon-close').style.display = 'none';
+          }
+          function openWa(msg) {
+            window.open('https://wa.me/22655996418?text=' + encodeURIComponent(msg), '_blank');
+          }
+          // Auto-open after 8s on first visit
+          if (!sessionStorage.getItem('wa_shown')) {
+            setTimeout(function() {
+              if (document.getElementById('wa-panel').style.display === 'none') {
+                toggleWaPanel();
+                sessionStorage.setItem('wa_shown', '1');
+              }
+            }, 8000);
+          }
+        ` }} />
+
+        {/* Toast Notification System */}
+        <div id="toast-container" class="fixed top-4 right-4 z-[99999] flex flex-col gap-3 pointer-events-none" style="max-width:380px;"></div>
+        <script dangerouslySetInnerHTML={{ __html: `
+          window.showToast = function(msg, type) {
+            type = type || 'info';
+            var colors = {
+              success: 'linear-gradient(135deg,#059669,#10b981)',
+              error: 'linear-gradient(135deg,#dc2626,#ef4444)',
+              warning: 'linear-gradient(135deg,#d97706,#f59e0b)',
+              info: 'linear-gradient(135deg,#0ea5e9,#3b82f6)'
+            };
+            var icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
+            var container = document.getElementById('toast-container');
+            var el = document.createElement('div');
+            el.className = 'pointer-events-auto flex items-center space-x-3 px-5 py-3.5 rounded-2xl shadow-2xl text-white text-sm font-medium';
+            el.style.cssText = 'background:' + (colors[type]||colors.info) + ';animation:slideInRight .35s ease-out;border:1px solid rgba(255,255,255,0.15);';
+            el.innerHTML = '<i class="fas ' + (icons[type]||icons.info) + ' text-lg opacity-90"></i><span>' + msg + '</span>';
+            container.appendChild(el);
+            setTimeout(function() {
+              el.style.animation = 'fadeOutRight .35s ease-in forwards';
+              setTimeout(function() { el.remove(); }, 350);
+            }, 4000);
+          };
+
+          // Focus trap utility for modals
+          window.__focusTrapStack = [];
+          window.trapFocus = function(modalEl) {
+            var focusable = modalEl.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])');
+            if (focusable.length === 0) return;
+            var first = focusable[0];
+            var last = focusable[focusable.length - 1];
+            function handler(e) {
+              if (e.key !== 'Tab') return;
+              if (e.shiftKey) {
+                if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+              } else {
+                if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+              }
+            }
+            modalEl.__focusTrapHandler = handler;
+            modalEl.addEventListener('keydown', handler);
+            window.__focusTrapStack.push(modalEl);
+            first.focus();
+          };
+          window.releaseFocus = function(modalEl) {
+            if (modalEl && modalEl.__focusTrapHandler) {
+              modalEl.removeEventListener('keydown', modalEl.__focusTrapHandler);
+              delete modalEl.__focusTrapHandler;
+            }
+            window.__focusTrapStack = window.__focusTrapStack.filter(function(m) { return m !== modalEl; });
+          };
+        ` }} />
+      </body>
+    </html>
+  )
+}
+

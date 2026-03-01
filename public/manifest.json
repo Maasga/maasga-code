@@ -1,0 +1,36 @@
+{
+  "name": "MAASGA Climatisation",
+  "short_name": "MAASGA",
+  "description": "Expert en vente, installation et maintenance de climatiseurs à Ouagadougou, Burkina Faso.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0b1120",
+  "theme_color": "#0b1120",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Prendre RDV",
+      "short_name": "RDV",
+      "description": "Demander une visite technique gratuite",
+      "url": "/rendez-vous",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Catalogue",
+      "short_name": "Catalogue",
+      "description": "Voir nos climatiseurs",
+      "url": "/catalogue",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ]
+}

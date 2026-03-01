@@ -1,0 +1,122 @@
+/* MAASGA - Froid & Climatisation */
+/* Styles complémentaires — corrections thème clair */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PROBLÈME : beaucoup de pages utilisent text-white (ancien thème sombre)
+   SOLUTION : les sections sombres forcent color:white, le reste hérite le fond clair
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* 1. Sections sombres → tout blanc */
+.gradient-hero { color: #ffffff !important; }
+footer          { color: #334155; }
+
+/* 2. Dans les glass-cards (fond blanc), text-white → sombre */
+.glass-card .text-white,
+.glass-card h2,
+.glass-card h3,
+.glass-card p { color: #03045e; }
+
+/* 3. Sections light : text-white hors contexte sombre → sombre */
+section:not(.gradient-hero) .text-white {
+  color: #03045e !important;
+}
+
+/* Exception : cards avec gradient coloré → texte blanc */
+.bg-gradient-to-br .text-white,
+[class*="from-blue-"] .text-white,
+[class*="from-yellow-"] .text-white,
+[class*="from-green-"] .text-white,
+[class*="from-purple-"] .text-white { color: #ffffff !important; }
+
+/* 4. EXCEPTIONS — éléments qui doivent rester blancs dans une section light */
+
+/* Sections ET divs avec bg sombre inline → forcer blanc */
+[style*="background:linear-gradient(135deg,#03045e"],
+[style*="background:linear-gradient(135deg, #03045e"],
+[style*="background:linear-gradient(135deg,#0077b6,#00b4d8"],
+[style*="background:#0f2557"],
+[style*="background:#075E54"],
+[style*="background:#128C7E"] { color: #ffffff !important; }
+
+[style*="background:linear-gradient(135deg,#03045e"] .text-white,
+[style*="background:linear-gradient(135deg, #03045e"] .text-white,
+[style*="background:linear-gradient(135deg,#0077b6,#00b4d8"] .text-white,
+[style*="background:#0f2557"] .text-white,
+[style*="background:#075E54"] .text-white,
+[style*="background:#128C7E"] .text-white { color: #ffffff !important; }
+
+/* Boutons primaires → toujours blanc */
+.btn-primary,
+a.btn-primary,
+button.btn-primary { color: #ffffff !important; }
+
+.btn-primary .text-white,
+a.btn-primary .text-white,
+.btn-primary i,
+a.btn-primary i { color: #ffffff !important; }
+
+/* Hero button avec dégradé blanc→bleu */
+a[style*="background:linear-gradient(135deg,#ffffff"] { color: #03045e !important; }
+a[style*="background:linear-gradient(135deg,#ffffff"] i { color: #0077b6 !important; }
+
+/* Footer → fond clair : textes noirs */
+footer, footer * { color: #0a0a0a !important; }
+footer h4 { color: #03045e !important; }
+footer a { color: #0a0a0a !important; }
+footer a:hover { color: #0077b6 !important; }
+footer .btn-primary i,
+footer .btn-primary { color: #ffffff !important; }
+
+/* ─── GLASS-CARD : labels et textes clairs → noir gras ─── */
+.glass-card label,
+.glass-card .text-gray-200,
+.glass-card .text-gray-300,
+.glass-card .text-gray-400 { color: #03045e !important; font-weight: 700 !important; }
+.glass-card .text-gray-400.font-normal,
+.glass-card .text-gray-400.leading-relaxed { font-weight: 600 !important; }
+/* Textes neutres optionnels (parenthèses, hints) → sombre mais pas trop lourd */
+.glass-card .font-normal { color: #475569 !important; font-weight: 600 !important; }
+
+/* ─── SIMULATEUR : labels & textes en noir gras ─── */
+#btu-form label,
+#btu-form .block.text-sm { color: #03045e !important; font-weight: 700 !important; }
+#btu-form [style*="color:#94a3b8"],
+.glass-card [style*="color:#94a3b8"],
+.glass-card [style*="color:#8ba3c0"] { color: #03045e !important; font-weight: 600 !important; }
+
+/* Résultat BTU → toujours blanc (box dégradé bleu) */
+#result-zone .bg-gradient-to-br,
+#result-zone .bg-gradient-to-br * { color: #ffffff !important; }
+
+/* ─── Corrections couleurs ─── */
+.text-green-300 { color: #15803d !important; }
+.text-green-400 { color: #16a34a !important; }
+.text-blue-100\/90 { color: #caf0f8 !important; }
+.text-blue-200    { color: #93c5fd !important; }
+
+/* ─── TAILWIND UTILITIES manquantes ─── */
+.hover\:bg-blue-50:hover { background-color: #eff6ff; }
+.bg-blue-50  { background-color: #eff6ff; }
+.bg-gray-50  { background-color: #f9fafb; }
+
+/* ─── SCROLL ─── */
+html { scroll-behavior: smooth; }
+
+/* ─── FOCUS ─── */
+*:focus-visible { outline: 2px solid #0077b6; outline-offset: 2px; }
+
+/* ─── LINE CLAMP ─── */
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* ─── FAQ ─── */
+details summary::-webkit-details-marker { display: none; }
+details[open] summary { border-bottom: 1px solid rgba(0,119,182,0.08); }
+
+/* ─── TOAST ANIMATIONS ─── */
+@keyframes slideInRight { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes fadeOutRight { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(30px); } }
+
+/* ─── CAROUSEL ─── */
+#testimonial-carousel::-webkit-scrollbar { display: none; }
+#testimonial-carousel { -ms-overflow-style: none; scrollbar-width: none; }
