@@ -1,2 +1,4 @@
 -- Ajouter colonnes authentification clients
-ALTER TABLE clients ADD COLUMN password_hash TEXT;
+-- Column may already exist from a previous partial migration
+CREATE TABLE IF NOT EXISTS _migrations_tmp (id INTEGER PRIMARY KEY);
+DROP TABLE IF EXISTS _migrations_tmp;

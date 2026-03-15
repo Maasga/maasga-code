@@ -31,7 +31,7 @@ CREATE TABLE orders_new (
 );
 
 -- Migrate existing data (normalise type/status values that may violate new CHECK constraints)
-INSERT INTO orders_new (
+INSERT OR IGNORE INTO orders_new (
   id, client_id, appointment_id, product_id,
   client_name, client_phone, quartier,
   type, status, notes, created_at, updated_at

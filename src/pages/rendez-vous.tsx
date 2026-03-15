@@ -42,7 +42,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                   <div style="font-size:0.85rem; font-weight:700; color:#03045e; margin-bottom:8px;">
                     <i class="fas fa-user-circle" style="color:#38bdf8; margin-right:6px;"></i>Créer votre compte MAASGA
                   </div>
-                  <p style="font-size:0.95rem; color:#03045e; font-weight:700; margin-bottom:14px; line-height:1.5;">Suivez vos commandes et RDV. Nous vous contacterons bientot</p>
+                  <p style="font-size:0.95rem; color:#03045e; font-weight:700; margin-bottom:14px; line-height:1.5;">Suivez vos commandes et RDV. Nous vous contacterons bientôt</p>
                   <a href="/espace-client" style="display:block; width:100%; padding:11px; border-radius:10px; background:rgba(56,189,248,0.15); color:#38bdf8; font-weight:700; font-size:0.85rem; border:1px solid rgba(56,189,248,0.25); text-align:center; text-decoration:none;">
                     <i class="fas fa-user-plus" style="margin-right:6px;"></i>Créer mon compte
                   </a>
@@ -63,8 +63,12 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                 }
                 async function createAccountAfterRdv() {
                   const password = document.getElementById('rdv-register-password').value.trim();
-                  if (!password || password.length < 6) {
-                    showToast('Mot de passe trop court (minimum 6 caractères).', 'warning');
+                  if (!password || password.length < 8) {
+                    showToast('Mot de passe trop court (minimum 8 caractères).', 'warning');
+                    return;
+                  }
+                  if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+                    showToast('Le mot de passe doit contenir des lettres et des chiffres.', 'warning');
                     return;
                   }
                   const btn = event.target.closest('button');
@@ -135,7 +139,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
               </div>
             </div>
             <div class="flex items-center gap-3">
-              <a href="https://wa.me/22655996418?text=Bonjour%20MAASGA%2C%20je%20souhaite%20prendre%20rendez-vous%20pour%20une%20visite%20technique." target="_blank" rel="noopener" class="flex items-center space-x-2 px-5 py-2.5 rounded-xl font-semibold text-sm text-white transition-all hover:scale-105" style="background:#25D366;">
+              <a href="https://wa.me/22655996418?text=Bonjour%20MAASGA%2C%20je%20souhaite%20prendre%20rendez-vous%20pour%20une%20visite%20technique." target="_blank" rel="noopener noreferrer" class="flex items-center space-x-2 px-5 py-2.5 rounded-xl font-semibold text-sm text-white transition-all hover:scale-105" style="background:#25D366;">
                 <i class="fab fa-whatsapp"></i>
                 <span>WhatsApp</span>
               </a>
@@ -172,6 +176,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
               )}
 
               <form method="post" action="/api/rdv" class="space-y-5">
+                <div class="hidden" aria-hidden="true"><input type="text" name="website" tabindex={-1} autocomplete="off" /></div>
                 {selectedProduct && <input type="hidden" name="product_id" value={String(selectedProduct.id)} />}
                 {surface && <input type="hidden" name="surface_hint" value={surface} />}
                 {btu && <input type="hidden" name="btu_hint" value={btu} />}
@@ -190,73 +195,67 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                   </div>
                 )}
 
-                {/* Type de RDV - Affiché SEULEMENT si type=devis (i.e. depuis 'Commander') */}
-                {type === 'devis' && (
-                  <div>
-                    <label class="block text-sm font-semibold text-cyan-300 mb-3">
-                      Type de rendez-vous <span class="text-red-500">*</span>
-                    </label>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      {[
-                        { val: "devis", label: "Devis", desc: "Visite + devis PDF", icon: "fa-clipboard-check", color: "text-blue-600", bg: "bg-cyan-900/20" },
-                        { val: "installation", label: "Installation", desc: "Pose seule", icon: "fa-tools", color: "text-green-600", bg: "bg-green-900/20" },
-                        { val: "entretien", label: "Entretien", desc: "Maintenance", icon: "fa-wrench", color: "text-purple-600", bg: "bg-purple-900/20" },
-                        { val: "depannage", label: "Dépannage", desc: "Réparation urgente", icon: "fa-bolt", color: "text-red-600", bg: "bg-red-900/20" }
-                      ].map(t => (
-                        <label class="cursor-pointer block">
-                          <input type="radio" name="type" value={t.val} class="sr-only peer" checked={type === t.val || (t.val === 'devis' && !type)} />
-                          <div class={`peer-checked:border-cyan-500/60 peer-checked:bg-cyan-900/20 border-2 border-gray-700/50 rounded-xl p-3 hover:border-cyan-500/30 transition-all`}>
-                            <div class={`w-8 h-8 ${t.bg} rounded-lg flex items-center justify-center mb-2`}>
-                              <i class={`fas ${t.icon} ${t.color}`}></i>
-                            </div>
-                            <div class="font-semibold text-white text-xs leading-tight">{t.label}</div>
-                            <div class="text-xs text-gray-400 mt-0.5">{t.desc}</div>
+                {/* Type de RDV - Toujours visible */}
+                <div>
+                  <label class="block text-sm font-semibold text-cyan-300 mb-3">
+                    Type de rendez-vous <span class="text-red-500">*</span>
+                  </label>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {[
+                      { val: "devis", label: "Devis", desc: "Visite + devis PDF", icon: "fa-clipboard-check", color: "text-blue-400", bg: "bg-cyan-900/20" },
+                      { val: "installation", label: "Installation", desc: "Pose seule", icon: "fa-tools", color: "text-green-400", bg: "bg-green-900/20" },
+                      { val: "entretien", label: "Entretien", desc: "Maintenance", icon: "fa-wrench", color: "text-purple-400", bg: "bg-purple-900/20" },
+                      { val: "depannage", label: "Dépannage", desc: "Réparation urgente", icon: "fa-bolt", color: "text-red-400", bg: "bg-red-900/20" }
+                    ].map(t => (
+                      <label class="cursor-pointer block">
+                        <input type="radio" name="type" value={t.val} class="sr-only peer" checked={type === t.val || (t.val === 'devis' && !type)} />
+                        <div class={`peer-checked:border-cyan-500/60 peer-checked:bg-cyan-900/20 border-2 border-gray-700/50 rounded-xl p-3 hover:border-cyan-500/30 transition-all`}>
+                          <div class={`w-8 h-8 ${t.bg} rounded-lg flex items-center justify-center mb-2`}>
+                            <i class={`fas ${t.icon} ${t.color}`}></i>
                           </div>
-                        </label>
-                      ))}
-                    </div>
+                          <div class="font-semibold text-white text-xs leading-tight">{t.label}</div>
+                          <div class="text-xs text-gray-400 mt-0.5">{t.desc}</div>
+                        </div>
+                      </label>
+                    ))}
                   </div>
-                )}
-                {/* Si pas type=devis, Type caché par défaut à 'devis' */}
-                {type !== 'devis' && (
-                  <input type="hidden" name="type" value="devis" />
-                )}
+                </div>
 
                 {/* Informations personnelles */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label class="block text-sm font-semibold text-gray-200 mb-2">
+                    <label for="rdv-name" class="block text-sm font-semibold text-gray-200 mb-2">
                       Nom complet <span class="text-red-400">*</span>
                     </label>
-                    <input type="text" name="name" required placeholder="Votre nom et prénom"
-                      class="input-field w-full rounded-xl px-4 py-3 text-white" />
+                    <input type="text" id="rdv-name" name="name" required placeholder="Votre nom et prénom"
+                      autocomplete="name" class="input-field w-full rounded-xl px-4 py-3 text-white" />
                   </div>
                   <div>
-                    <label class="block text-sm font-semibold text-gray-200 mb-2">
-                      Téléphone <span class="text-red-400">*</span>
+                    <label for="rdv-phone" class="block text-sm font-semibold text-gray-200 mb-2">
+                      Téléphone (Whatsapp)<span class="text-red-400">*</span>
                     </label>
                     <div class="relative">
                       <span class="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400 text-sm font-medium">🇧🇫 +226</span>
-                      <input type="tel" name="phone" required placeholder="70 00 00 00"
-                        class="input-field w-full rounded-xl pl-20 pr-4 py-3 text-white" />
+                      <input type="tel" id="rdv-phone" name="phone" required placeholder="55 99 64 18"
+                        autocomplete="tel" class="input-field w-full rounded-xl pl-20 pr-4 py-3 text-white" />
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <label class="block text-sm font-semibold text-gray-200 mb-2">
+                  <label for="rdv-email" class="block text-sm font-semibold text-gray-200 mb-2">
                     Email <span class="text-gray-400 font-normal">(optionnel)</span>
                   </label>
-                  <input type="email" name="email" placeholder="votre@email.com"
-                    class="input-field w-full rounded-xl px-4 py-3 text-white" />
+                  <input type="email" id="rdv-email" name="email" placeholder="votre@email.com"
+                    autocomplete="email" class="input-field w-full rounded-xl px-4 py-3 text-white" />
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label class="block text-sm font-semibold text-gray-200 mb-2">
+                    <label for="rdv-quartier" class="block text-sm font-semibold text-gray-200 mb-2">
                       Quartier / Secteur <span class="text-red-400">*</span>
                     </label>
-                    <select name="quartier" required class="input-field w-full rounded-xl px-4 py-3 text-white" onchange="updateLocationPreview(this.value)">
+                    <select id="rdv-quartier" name="quartier" required class="input-field w-full rounded-xl px-4 py-3 text-white" onchange="updateLocationPreview(this.value)">
                       <option value="">Sélectionner votre quartier</option>
                       {(() => {
                         const grouped = quartiersByArrondissement()
@@ -285,10 +284,10 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                 <input type="hidden" name="adresse_precise" id="adresse_precise" value="" />
 
                 <div>
-                  <label class="block text-sm font-semibold text-gray-200 mb-2">
+                  <label for="rdv-date" class="block text-sm font-semibold text-gray-200 mb-2">
                     Date souhaitée <span class="text-red-400">*</span>
                   </label>
-                  <input type="date" name="date" required
+                  <input type="date" id="rdv-date" name="date" required
                     min={new Date().toISOString().split('T')[0]}
                     class="input-field w-full rounded-xl px-4 py-3 text-white" />
                 </div>
@@ -302,13 +301,13 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                     </p>
                     <div class="grid grid-cols-2 gap-4">
                       <div>
-                        <label class="block text-xs font-semibold text-gray-300 mb-2">Heure de début</label>
-                        <input type="time" name="heure_debut" required value="08:00" 
+                        <label for="rdv-heure-debut" class="block text-xs font-semibold text-gray-300 mb-2">Heure de début</label>
+                        <input type="time" id="rdv-heure-debut" name="heure_debut" required value="08:00" 
                           class="input-field w-full rounded-lg px-3 py-2.5 text-white" />
                       </div>
                       <div>
-                        <label class="block text-xs font-semibold text-gray-300 mb-2">Heure de fin</label>
-                        <input type="time" name="heure_fin" required value="18:00"
+                        <label for="rdv-heure-fin" class="block text-xs font-semibold text-gray-300 mb-2">Heure de fin</label>
+                        <input type="time" id="rdv-heure-fin" name="heure_fin" required value="18:00"
                           class="input-field w-full rounded-lg px-3 py-2.5 text-white" />
                       </div>
                     </div>
@@ -317,11 +316,11 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
 
                 {/* Notes */}
                 <div>
-                  <label class="block text-sm font-semibold text-gray-200 mb-2">
+                  <label for="rdv-notes" class="block text-sm font-semibold text-gray-200 mb-2">
                     Informations complémentaires
                     <span class="text-gray-400 font-normal ml-1">(optionnel)</span>
                   </label>
-                  <textarea name="notes" rows={3} placeholder="Ex: Surface à climatiser, nombre de pièces, contraintes particulières..."
+                  <textarea id="rdv-notes" name="notes" rows={3} placeholder="Ex: Surface à climatiser, nombre de pièces, contraintes particulières..."
                     class="input-field w-full rounded-xl px-4 py-3 text-white resize-none"></textarea>
                 </div>
 
@@ -335,7 +334,8 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                   </label>
                 </div>
 
-                <button type="submit" class="w-full btn-primary text-white font-bold py-4 rounded-2xl flex items-center justify-center space-x-3 shadow-lg text-base">
+                <button type="submit" class="w-full btn-primary text-white font-bold py-4 rounded-2xl flex items-center justify-center space-x-3 shadow-lg text-base"
+                  onclick="this.disabled=true;this.querySelector('span').textContent='Envoi en cours...';this.closest('form').submit();">
                   <i class="fas fa-calendar-check"></i>
                   <span>Confirmer ma demande de RDV</span>
                 </button>
@@ -389,7 +389,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                     <div class="font-semibold text-sm">+226 55 99 64 18</div>
                   </div>
                 </a>
-                <a href="https://wa.me/22655996418" target="_blank" class="flex items-center space-x-3 bg-white/15 rounded-xl px-4 py-3 hover:bg-white/20 transition-all">
+                <a href="https://wa.me/22655996418" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-3 bg-white/15 rounded-xl px-4 py-3 hover:bg-white/20 transition-all">
                   <i class="fab fa-whatsapp text-green-300 text-lg"></i>
                   <div>
                     <div class="text-xs opacity-70">WhatsApp</div>
@@ -398,7 +398,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                 </a>
               </div>
               <div class="mt-4 text-xs opacity-70 text-center">
-                7j/7 · 8h - 18h
+                Lundi–Dimanche · 8h00–18h00
               </div>
             </div>
 
@@ -643,6 +643,43 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
               label = 'Demain matin dès 8h';
             }
             el.textContent = label;
+          })();
+        `}} />
+
+        {/* Auto-fill form from session data */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            fetch('/api/session-check', { credentials: 'same-origin' })
+              .then(function(r) { return r.json(); })
+              .then(function(data) {
+                if (data && data.loggedIn) {
+                  if (data.name) {
+                    var el = document.querySelector('form[action="/api/rdv"] input[name="name"]');
+                    if (el && !el.value) el.value = data.name;
+                  }
+                  if (data.phone) {
+                    var el = document.querySelector('form[action="/api/rdv"] input[name="phone"]');
+                    if (el && !el.value) el.value = data.phone.replace(/^\\+?226\\s*/, '');
+                  }
+                  if (data.email) {
+                    var el = document.querySelector('form[action="/api/rdv"] input[name="email"]');
+                    if (el && !el.value) el.value = data.email;
+                  }
+                  if (data.quartier) {
+                    var el = document.querySelector('form[action="/api/rdv"] select[name="quartier"]');
+                    if (el && !el.value) {
+                      // Try exact match first
+                      for (var i = 0; i < el.options.length; i++) {
+                        if (el.options[i].value.toLowerCase() === data.quartier.toLowerCase()) {
+                          el.value = el.options[i].value;
+                          break;
+                        }
+                      }
+                    }
+                  }
+                }
+              })
+              .catch(function() {});
           })();
         `}} />
       </div>

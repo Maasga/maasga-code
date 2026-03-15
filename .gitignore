@@ -37,6 +37,22 @@ logs/
 
 # media lourds
 *.mp4
+
+# fichiers temporaires / tests locaux
+secrets_tmp.json
+response.html
+response_headers.txt
+verify.html
+verify2.html
+body.txt
+body_*.txt
+headers.txt
+headers_*.txt
+espace_headers.txt
+espace_test.html
+*.jpeg
+*.jpg
+Downloads/
 *.mov
 *.avi
 public/*.mp4

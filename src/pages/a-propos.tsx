@@ -39,16 +39,16 @@ export const AProposPage = () => {
         <section class="mb-16 reveal">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 class="text-3xl font-bold text-white mb-6">Notre histoire</h2>
-              <div class="space-y-4 leading-relaxed" style="color:#8ba3c0;">
+              <h2 class="text-3xl font-bold mb-6" style="color:#03045e;">Notre histoire</h2>
+              <div class="space-y-4 leading-relaxed" style="color:#111827;">
                 <p>
-                  Fondée à Ouagadougou, MAASGA est née d'une conviction : le marché burkinabé méritait un prestataire de climatisation <strong class="text-white">vraiment professionnel</strong>, transparent et orienté client.
+                  Fondée à Ouagadougou, MAASGA est née d'une conviction : le marché burkinabé méritait un prestataire de climatisation <strong>vraiment professionnel</strong>, transparent et orienté client.
                 </p>
                 <p>
-                  Face à un marché informel et des installations souvent mal dimensionnées, nous avons imposé une méthode rigoureuse : <strong class="text-white">Visite technique gratuite obligatoire avant toute installation</strong>, devis PDF détaillé, et suivi post-installation régulier.
+                  Face à un marché informel et des installations souvent mal dimensionnées, nous avons imposé une méthode rigoureuse : <strong>Visite technique gratuite obligatoire avant toute installation</strong>, devis PDF détaillé, et suivi post-installation régulier.
                 </p>
                 <p>
-                  Aujourd'hui, MAASGA compte plus de <strong class="text-white">500 clients satisfaits</strong> à Ouagadougou et ambitionne de devenir la référence nationale en froid et climatisation au Burkina Faso.
+                  Aujourd'hui, MAASGA compte plus de <strong>500 clients satisfaits</strong> à Ouagadougou et ambitionne de devenir la référence nationale en froid et climatisation au Burkina Faso.
                 </p>
               </div>
             </div>
@@ -61,8 +61,8 @@ export const AProposPage = () => {
               ].map(s => (
                 <div class={`bg-gradient-to-br ${s.color} text-white rounded-2xl p-5 text-center hover-lift`}>
                   <i class={`fas ${s.icon} text-2xl mb-2`} style="color:#ffffff;"></i>
-                  <div class="text-2xl font-bold">{s.val}</div>
-                  <div class="text-xs opacity-80 mt-1">{s.label}</div>
+                  <div class="text-2xl font-bold" style="color:#ffffff;">{s.val}</div>
+                  <div class="text-xs mt-1" style="color:#ffffff; opacity:0.9;">{s.label}</div>
                 </div>
               ))}
             </div>
@@ -99,26 +99,26 @@ export const AProposPage = () => {
             <h2 class="text-3xl font-bold mb-3" style="color:#03045e;">Notre équipe</h2>
             <p style="color:#475569;">Des professionnels passionnés par leur métier.</p>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
 
             {/* Directeur Technique */}
             <div class="glass-card rounded-2xl p-6 text-center hover-lift">
               <div class="w-28 h-28 rounded-full mx-auto mb-4 overflow-hidden" style="border:3px solid rgba(0,119,182,0.25); box-shadow:0 4px 20px rgba(0,119,182,0.15);">
-                <img src="/cherif.jpeg" alt="Sawogo Sherif" class="w-full h-full object-cover" />
+                <img src="/cherif.jpeg" alt="Sherif SAWADOGO" loading="lazy" width={112} height={112} class="w-full h-full object-cover" />
               </div>
-              <h3 class="font-extrabold text-lg mb-1" style="color:#03045e;">Sawogo Sherif</h3>
+              <h3 class="font-extrabold text-lg mb-1" style="color:#03045e;">Sherif SAWADOGO</h3>
               <p class="text-sm font-semibold mb-1" style="color:#0077b6;">Directeur Technique</p>
               <p class="text-xs mb-3" style="color:#64748b;">Chef d'équipe installation · 8 ans d'expérience</p>
               <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#0077b6; border:1px solid rgba(0,119,182,0.2);">
                 <i class="fas fa-hard-hat text-xs" style="color:#ffffff; background:#0077b6; padding:3px 4px; border-radius:4px;"></i>
-                <span>Technicien certifié</span>
+                <span>Directeur technique</span>
               </div>
             </div>
 
             {/* Directeur Commercial */}
             <div class="glass-card rounded-2xl p-6 text-center hover-lift">
               <div class="w-28 h-28 rounded-full mx-auto mb-4 overflow-hidden" style="border:3px solid rgba(0,119,182,0.25); box-shadow:0 4px 20px rgba(0,119,182,0.15);">
-                <img src="/malick.jpg" alt="Kompaore Abdoul Malick" class="w-full h-full object-cover" />
+                <img src="/malick.jpg" alt="Kompaore Abdoul Malick" loading="lazy" width={112} height={112} class="w-full h-full object-cover" />
               </div>
               <h3 class="font-extrabold text-lg mb-1" style="color:#03045e;">Kompaore Abdoul Malick</h3>
               <p class="text-sm font-semibold mb-1" style="color:#0077b6;">Directeur Commercial</p>
@@ -126,6 +126,20 @@ export const AProposPage = () => {
               <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#0077b6; border:1px solid rgba(0,119,182,0.2);">
                 <i class="fas fa-handshake text-xs" style="color:#ffffff; background:#0077b6; padding:3px 4px; border-radius:4px;"></i>
                 <span>Expert commercial</span>
+              </div>
+            </div>
+
+            {/* Directrice Marketing */}
+            <div class="glass-card rounded-2xl p-6 text-center hover-lift">
+              <div class="w-28 h-28 rounded-full mx-auto mb-4 overflow-hidden" style="border:3px solid rgba(0,119,182,0.25); box-shadow:0 4px 20px rgba(0,119,182,0.15);">
+                <img src="/ines.jpeg" alt="Inès" loading="lazy" width={112} height={112} class="w-full h-full object-cover" />
+              </div>
+              <h3 class="font-extrabold text-lg mb-1" style="color:#03045e;">Inès</h3>
+              <p class="text-sm font-semibold mb-1" style="color:#0077b6;">Directrice Marketing</p>
+              <p class="text-xs mb-3" style="color:#64748b;">Stratégie & communication</p>
+              <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#0077b6; border:1px solid rgba(0,119,182,0.2);">
+                <i class="fas fa-bullhorn text-xs" style="color:#ffffff; background:#0077b6; padding:3px 4px; border-radius:4px;"></i>
+                <span>Directrice marketing</span>
               </div>
             </div>
 

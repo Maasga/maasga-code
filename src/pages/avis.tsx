@@ -1,11 +1,10 @@
 ﻿import { Layout } from '../components/Layout'
-import { reviews, Review } from '../data/store'
 
-export const AvisPage = ({ success }: { success?: boolean }) => {
-  const approvedReviews = reviews.filter(r => r.approved)
+export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: boolean; error?: string; approvedReviews?: any[] }) => {
   const avgNote = approvedReviews.length > 0
     ? (approvedReviews.reduce((s, r) => s + r.note, 0) / approvedReviews.length).toFixed(1)
-    : '5.0'
+    : '0'
+  const hasReviews = approvedReviews.length > 0
 
   const noteCount = [5, 4, 3, 2, 1].map(n => ({
     note: n,
@@ -13,21 +12,21 @@ export const AvisPage = ({ success }: { success?: boolean }) => {
     pct: approvedReviews.length > 0 ? Math.round(approvedReviews.filter(r => r.note === n).length / approvedReviews.length * 100) : 0
   }))
 
-  const jsonLdAvis = JSON.stringify({
+  const jsonLdAvis = approvedReviews.length > 0 ? JSON.stringify({
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     "name": "MAASGA Climatisation",
     "aggregateRating": {
       "@type": "AggregateRating",
       "ratingValue": avgNote,
-      "reviewCount": String(approvedReviews.length || 500),
+      "reviewCount": String(approvedReviews.length),
       "bestRating": "5",
       "worstRating": "1"
     }
-  })
+  }) : undefined
 
   return (
-    <Layout title="Avis Clients MAASGA - Climatisation Ouagadougou" activePage="avis" canonicalPath="/avis" description={`Avis clients MAASGA — Témoignages vérifiés sur nos installations climatisation à Ouagadougou. Note moyenne ${avgNote}/5.`} jsonLd={jsonLdAvis}>
+    <Layout title="Avis Clients MAASGA - Climatisation Ouagadougou" activePage="avis" canonicalPath="/avis" description={approvedReviews.length > 0 ? `Avis clients MAASGA — Témoignages vérifiés sur nos installations climatisation à Ouagadougou. Note moyenne ${avgNote}/5.` : 'Avis clients MAASGA — Découvrez les témoignages de nos clients en climatisation à Ouagadougou.'} jsonLd={jsonLdAvis}>
 
       {/* Hero */}
       <section class="gradient-hero py-16 text-white text-center relative overflow-hidden">
@@ -41,6 +40,7 @@ export const AvisPage = ({ success }: { success?: boolean }) => {
             La satisfaction de nos clients est notre priorité. Découvrez leurs témoignages sur nos services.
           </p>
           {/* Note globale */}
+          {hasReviews ? (
           <div class="mt-8 inline-flex items-center space-x-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-4">
             <div class="text-5xl font-bold text-yellow-400">{avgNote}</div>
             <div>
@@ -52,10 +52,24 @@ export const AvisPage = ({ success }: { success?: boolean }) => {
               <div class="text-sm text-blue-200">{approvedReviews.length} avis vérifiés</div>
             </div>
           </div>
+          ) : (
+          <div class="mt-8 inline-flex items-center space-x-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-4">
+            <i class="fas fa-comments text-2xl text-blue-200/60"></i>
+            <span class="text-blue-200 text-sm">Aucun avis pour le moment — soyez le premier !</span>
+          </div>
+          )}
         </div>
       </section>
 
       <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Erreur soumission */}
+        {error && (
+          <div class="mb-8 rounded-2xl p-5 flex items-center space-x-4" style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.3);">
+            <i class="fas fa-exclamation-circle text-red-400 text-2xl flex-shrink-0"></i>
+            <p class="text-red-300 text-sm">{error}</p>
+          </div>
+        )}
+
         {/* Succès soumission */}
         {success && (
           <div class="mb-8 rounded-2xl rounded-2xl p-5 flex items-center space-x-4">
@@ -96,7 +110,7 @@ export const AvisPage = ({ success }: { success?: boolean }) => {
                   </div>
                   <p class="text-sm text-gray-300 leading-relaxed italic">"{r.comment}"</p>
                   <div class="mt-3 flex items-center space-x-2">
-                    <i class="fas fa-verified text-blue-500 text-xs"></i>
+                    <i class="fas fa-check-circle text-blue-500 text-xs"></i>
                     <span class="text-xs text-blue-500 font-medium">Avis vérifié</span>
                   </div>
                 </div>
@@ -150,7 +164,7 @@ export const AvisPage = ({ success }: { success?: boolean }) => {
                 <div>
                   <label class="block text-xs font-semibold mb-2" style="color:#8ba3c0;">Votre nom</label>
                   <input type="text" name="name" required placeholder="Prénom ou nom"
-                    class="input-field w-full rounded-xl px-3 py-2.5 text-sm text-white" />
+                    autocomplete="name" class="input-field w-full rounded-xl px-3 py-2.5 text-sm text-white" />
                 </div>
 
                 <div>

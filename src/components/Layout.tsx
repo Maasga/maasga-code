@@ -31,41 +31,46 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         <meta name="twitter:image" content={`${siteUrl}/og-image.png`} />
         <meta name="theme-color" content="#e8f4ff" />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/favicon.svg" />
+        <link rel="apple-touch-icon" href="/favicon.png" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" type="image/png" href="/favicon.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" defer></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js" defer></script>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+        <noscript><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" /></noscript>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" defer crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js" defer crossorigin="anonymous"></script>
         <link rel="stylesheet" href="/static/tailwind.css" />
         <link rel="stylesheet" href="/static/style.css" />
         <title>{title}</title>
-        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" />
-        {/* Google Analytics — remplacer G-XXXXXXXXXX par votre vrai ID Google Analytics */}
-        {/*
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" media="print" onload="this.media='all'" />
+        <noscript><link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" /></noscript>
+        {/* Google Analytics GA4 — consent-aware (load async FIRST, then configure) */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-LCQJE6963G"></script>
         <script dangerouslySetInnerHTML={{ __html: `
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
+          gtag('consent', 'default', { analytics_storage: 'denied' });
+          if (localStorage.getItem('maasga_cookies_accepted') === 'true') {
+            gtag('consent', 'update', { analytics_storage: 'granted' });
+          }
           gtag('js', new Date());
-          gtag('config', 'G-XXXXXXXXXX', { page_path: window.location.pathname, anonymize_ip: true });
+          gtag('config', 'G-LCQJE6963G', { page_path: window.location.pathname, anonymize_ip: true });
         `}} />
-        */}
         {/* JSON-LD Structured Data injection point */}
         {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />}
       </head>
       <body class="min-h-screen pb-16 md:pb-0" style="background-color:#f8fbff; color:#03045e;" onload="window.initCGUModal?.()">
 
-        {/* PAGE LOADER */}
-        <div id="page-loader" style="position:fixed;inset:0;z-index:999999;background:linear-gradient(160deg,#ffffff 0%,#e0f7ff 30%,#7dd3fc 65%,#0077b6 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.6s ease,visibility 0.6s ease;">
+        {/* PAGE LOADER — affiché uniquement au premier chargement de la session */}
+        <div id="page-loader" style="position:fixed;inset:0;z-index:999999;background:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.3s ease,visibility 0.3s ease;">
           <div style="position:relative;margin-bottom:1.5rem;">
-            <div style="width:72px;height:72px;border-radius:20px;overflow:hidden;box-shadow:0 0 40px rgba(0,180,216,0.6);animation:loader-pulse 1.5s ease-in-out infinite;">
-              <img src="/one.jpeg" alt="MAASGA" style="width:100%;height:100%;object-fit:cover;" />
+            <div style="width:72px;height:72px;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,119,182,0.2);animation:loader-pulse 1.5s ease-in-out infinite;">
+              <img src="/logo-site.png" alt="MAASGA" style="width:100%;height:100%;object-fit:cover;" />
             </div>
-            <div style="position:absolute;-top:6px;-right:6px;top:-8px;right:-8px;font-size:1.4rem;animation:loader-spin 2s linear infinite;filter:drop-shadow(0 0 8px rgba(56,189,248,0.8));">❄</div>
+            <div style="position:absolute;top:-8px;right:-8px;font-size:1.4rem;animation:loader-spin 2s linear infinite;color:#0077b6;">❄</div>
           </div>
-          <div style="color:#03045e;font-size:1.6rem;font-weight:800;letter-spacing:0.1em;margin-bottom:0.5rem;">MAASGA</div>
+          <div style="color:#03045e;font-size:1.6rem;font-weight:800;letter-spacing:0.1em;margin-bottom:0.4rem;">MAASGA</div>
           <div style="color:#0077b6;font-size:0.75rem;letter-spacing:0.2em;margin-bottom:2rem;font-weight:600;">FROID &amp; CLIMATISATION</div>
           <div style="display:flex;gap:6px;">
             <span style="width:8px;height:8px;border-radius:50%;background:#0077b6;animation:loader-bounce 0.8s ease-in-out infinite;"></span>
@@ -73,6 +78,18 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             <span style="width:8px;height:8px;border-radius:50%;background:#0077b6;animation:loader-bounce 0.8s ease-in-out 0.3s infinite;"></span>
           </div>
         </div>
+        <script dangerouslySetInnerHTML={{ __html: `
+          // Cacher immédiatement le loader si déjà visité dans la session
+          (function(){
+            var l=document.getElementById('page-loader');
+            if(!l)return;
+            if(sessionStorage.getItem('maasga_loaded')){
+              l.style.display='none';
+            } else {
+              sessionStorage.setItem('maasga_loaded','1');
+            }
+          })();
+        `}} />
         <style>{`
           @keyframes loader-spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
           @keyframes loader-pulse { 0%,100%{transform:scale(1);box-shadow:0 0 30px rgba(0,180,216,0.5)} 50%{transform:scale(1.08);box-shadow:0 0 60px rgba(0,180,216,0.9)} }
@@ -92,6 +109,11 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
           .card-hover:hover { transform:translateY(-6px); box-shadow:0 20px 40px rgba(0,119,182,0.18); }
           .btn-glow:hover { animation:glow-pulse 1s ease-in-out infinite; }
           .stagger-1{transition-delay:0.05s} .stagger-2{transition-delay:0.12s} .stagger-3{transition-delay:0.19s} .stagger-4{transition-delay:0.26s} .stagger-5{transition-delay:0.33s} .stagger-6{transition-delay:0.40s}
+          /* Mobile menu animation */
+          .mobile-menu { display:none; opacity:0; transform:translateY(-8px); transition:opacity 0.25s ease, transform 0.25s ease; }
+          .mobile-menu.open { display:block; opacity:1; transform:translateY(0); animation:menuSlideIn 0.25s ease forwards; }
+          @keyframes menuSlideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+          .mobile-nav-active { background:rgba(0,119,182,0.08); color:#0077b6; font-weight:700; }
         `}</style>
 
         {/* Skip to content — accessibility */}
@@ -111,70 +133,118 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         </button>
 
         {/* HEADER — floating pill */}
-        <header class="fixed w-full z-50 px-4 sm:px-6 pt-4">
-          <div class="max-w-7xl mx-auto flex justify-between items-center glass rounded-full px-6 py-3 shadow-lg">
+        <header class="fixed w-full z-50 px-3 sm:px-4 lg:px-6 pt-3 sm:pt-4">
+          <div class="max-w-7xl mx-auto flex justify-between items-center glass rounded-full px-4 sm:px-6 py-2.5 sm:py-3 shadow-lg">
 
             {/* Logo */}
-            <a href="/" class="text-xl font-extrabold tracking-tight flex items-center shrink-0">
-              <img src="/one.jpeg" alt="MAASGA Logo" class="h-10 w-auto rounded-lg mr-2" />
-              <i class="fas fa-snowflake ml-2 animate-pulse" style="color:#00b4d8; font-size:0.9rem;"></i>
+            <a href="/" class="font-extrabold tracking-tight flex items-center shrink-0 gap-2">
+              <img src="/logo-site.png" alt="MAASGA Logo" class="h-9 sm:h-10 w-auto rounded-lg" />
+              <span class="hidden sm:inline text-sm font-bold uppercase tracking-widest" style="color:#03045e;">MAASGA</span>
             </a>
 
-            {/* Nav Desktop */}
-            <nav class="hidden lg:flex items-center space-x-1">
+            {/* Nav Desktop — visible xl+ */}
+            <nav class="hidden xl:flex items-center gap-0.5 whitespace-nowrap" aria-label="Navigation principale">
               {[
-                { href: "/", label: "Accueil", key: "home" },
-                { href: "/a-propos", label: "À propos", key: "apropos" },
-                { href: "/catalogue", label: "Catalogue", key: "catalogue" },
-                { href: "/simulateur", label: "Simulateur BTU", key: "simulateur" },
-                { href: "/rendez-vous", label: "Rendez-vous", key: "rdv" },
-                { href: "/realisations", label: "Réalisations", key: "realisations" },
-                { href: "/avis", label: "Avis clients", key: "avis" },
+                { href: "/", icon: "fa-home", label: "Accueil", key: "home" },
+                { href: "/simulateur", icon: "fa-calculator", label: "Simulateur", key: "simulateur" },
+                { href: "/catalogue", icon: "fa-th-large", label: "Catalogue", key: "catalogue" },
+                { href: "/contrat-maintenance", icon: "fa-shield-alt", label: "Maintenance", key: "maintenance" },
+                { href: "/rendez-vous", icon: "fa-calendar", label: "Rendez-vous", key: "rdv" },
+                { href: "/avis", icon: "fa-star", label: "Avis", key: "avis" },
+                { href: "/a-propos", icon: "fa-info-circle", label: "À propos", key: "apropos" },
+                { href: "/contact", icon: "fa-envelope", label: "Contact", key: "contact" },
               ].map(n => (
-                <a href={n.href} class={`nav-link text-sm font-bold px-3 py-2 rounded-lg transition-all uppercase tracking-wide text-xs ${activePage===n.key ? 'active' : ''}`}>
+                <a href={n.href} class={`nav-link flex items-center gap-1.5 font-semibold px-2.5 py-2 rounded-lg transition-all text-xs uppercase tracking-wide ${activePage===n.key ? 'active' : ''}`} {...(activePage===n.key ? {'aria-current': 'page'} : {})}>
+                  <i class={`fas ${n.icon} text-[10px]`} style={activePage===n.key ? 'color:#0077b6' : 'color:#94a3b8'}></i>
                   {n.label}
                 </a>
               ))}
             </nav>
 
+            {/* Nav Tablet — visible lg only (condensed) */}
+            <nav class="hidden lg:flex xl:hidden items-center gap-0.5 whitespace-nowrap" aria-label="Navigation principale">
+              {[
+                { href: "/", icon: "fa-home", label: "Accueil", key: "home" },
+                { href: "/catalogue", icon: "fa-th-large", label: "Catalogue", key: "catalogue" },
+                { href: "/contrat-maintenance", icon: "fa-shield-alt", label: "Maintenance", key: "maintenance" },
+                { href: "/rendez-vous", icon: "fa-calendar", label: "Rendez-vous", key: "rdv" },
+                { href: "/avis", icon: "fa-star", label: "Avis", key: "avis" },
+                { href: "/contact", icon: "fa-envelope", label: "Contact", key: "contact" },
+              ].map(n => (
+                <a href={n.href} class={`nav-link flex items-center gap-1.5 font-semibold px-2.5 py-2 rounded-lg transition-all text-xs uppercase tracking-wide ${activePage===n.key ? 'active' : ''}`} {...(activePage===n.key ? {'aria-current': 'page'} : {})}>
+                  <i class={`fas ${n.icon} text-[10px]`} style={activePage===n.key ? 'color:#0077b6' : 'color:#94a3b8'}></i>
+                  {n.label}
+                </a>
+              ))}
+              {/* Plus dropdown */}
+              <div class="relative" id="nav-more-wrapper">
+                <button onclick="document.getElementById('nav-more-dropdown').classList.toggle('hidden')" class="nav-link flex items-center gap-1.5 font-semibold px-2.5 py-2 rounded-lg transition-all text-xs uppercase tracking-wide" aria-label="Plus de pages" aria-expanded="false" aria-controls="nav-more-dropdown">
+                  <i class="fas fa-ellipsis-h text-[10px]" style="color:#94a3b8;"></i>
+                  Plus
+                </button>
+                <div id="nav-more-dropdown" class="hidden absolute right-0 top-full mt-2 w-48 rounded-xl shadow-xl py-2" style="background:rgba(255,255,255,0.98); backdrop-filter:blur(20px); border:1px solid rgba(0,119,182,0.12); z-index:60;">
+                  {[
+                    { href: "/a-propos", icon: "fa-info-circle", label: "À propos", key: "apropos" },
+                    { href: "/espace-client", icon: "fa-user", label: "Espace client", key: "client" },
+                  ].map(n => (
+                    <a href={n.href} class={`flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium transition-all hover:bg-blue-50 ${activePage===n.key ? 'font-bold' : ''}`} style={activePage===n.key ? 'color:#0077b6' : 'color:#334155'}>
+                      <i class={`fas ${n.icon} w-4 text-center text-xs`} style="color:#0077b6;"></i>
+                      {n.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </nav>
+
             {/* Actions */}
-            <div class="flex items-center space-x-2">
-              <a href="tel:+22655996418" class="hidden lg:flex items-center space-x-1 text-xs font-semibold px-3 py-2 rounded-full transition-all hover:bg-blue-50" style="color:#0077b6;">
-                <i class="fas fa-phone text-xs"></i>
-                <span>55 99 64 18</span>
-              </a>
-              <a href="/espace-client" class="hidden lg:flex items-center justify-center w-9 h-9 rounded-full transition-all hover:bg-blue-50" style="color:#0077b6;" title="Espace client">
+            <div class="flex items-center gap-1.5 sm:gap-2">
+              <a href="/espace-client" id="user-nav-btn" class="hidden lg:flex items-center justify-center w-9 h-9 rounded-full transition-all hover:bg-blue-50" style="color:#0077b6;" title="Espace client" aria-label="Espace client">
                 <i class="fas fa-user text-sm"></i>
               </a>
-              <a href="/rendez-vous" class="hidden sm:block btn-primary text-white text-sm font-bold px-5 py-2 rounded-full shadow-md">
-                Contactez-nous
+              <a href="/rendez-vous" class="hidden sm:flex items-center gap-1.5 btn-primary text-white text-xs sm:text-sm font-bold px-4 sm:px-5 py-2 rounded-full shadow-md">
+                <i class="fas fa-calendar-plus text-xs"></i>
+                <span class="hidden md:inline">Rendez-vous</span>
+                <span class="md:hidden">RDV</span>
               </a>
-              <button onclick="document.getElementById('mobile-menu').classList.toggle('open')" class="lg:hidden p-2 rounded-full hover:bg-blue-50 transition-colors" style="color:#475569;">
+              <button onclick="var m=document.getElementById('mobile-menu');var b=this.querySelector('i');if(m.classList.contains('open')){m.classList.remove('open');b.className='fas fa-bars text-lg';}else{m.classList.add('open');b.className='fas fa-times text-lg';}this.setAttribute('aria-expanded',m.classList.contains('open'))" class="lg:hidden flex items-center justify-center w-10 h-10 rounded-full hover:bg-blue-50 transition-colors" style="color:#475569;" aria-label="Menu de navigation" aria-expanded="false" aria-controls="mobile-menu">
                 <i class="fas fa-bars text-lg"></i>
               </button>
             </div>
           </div>
 
           {/* Mobile menu dropdown */}
-          <div id="mobile-menu" class="mobile-menu lg:hidden max-w-7xl mx-auto mt-2 rounded-2xl shadow-xl px-4 py-4 space-y-1" style="background:rgba(248,251,255,0.97); backdrop-filter:blur(20px); border:1px solid rgba(0,119,182,0.12);">
-            {[
-              { href: "/", icon: "fa-home", label: "Accueil" },
-              { href: "/catalogue", icon: "fa-th-large", label: "Catalogue" },
-              { href: "/simulateur", icon: "fa-calculator", label: "Simulateur BTU" },
-              { href: "/rendez-vous", icon: "fa-calendar", label: "Rendez-vous" },
-              { href: "/realisations", icon: "fa-images", label: "Réalisations" },
-              { href: "/avis", icon: "fa-star", label: "Avis clients" },
-              { href: "/a-propos", icon: "fa-info-circle", label: "À propos" },
-              { href: "/espace-client", icon: "fa-user", label: "Espace client" },
-            ].map(n => (
-              <a href={n.href} class="flex items-center space-x-3 py-2.5 px-3 rounded-xl text-sm font-semibold nav-link hover:bg-blue-50 transition-all">
-                <i class={`fas ${n.icon} w-4 text-center`} style="color:#0077b6;"></i>
-                <span>{n.label}</span>
+          <div id="mobile-menu" class="mobile-menu lg:hidden max-w-7xl mx-auto mt-2 rounded-2xl shadow-xl overflow-hidden" style="background:rgba(248,251,255,0.98); backdrop-filter:blur(20px); border:1px solid rgba(0,119,182,0.12);">
+            {/* Quick contact bar */}
+            <div class="flex items-center justify-end px-5 py-3" style="background:rgba(0,119,182,0.04); border-bottom:1px solid rgba(0,119,182,0.08);">
+              <a href="/espace-client" class="flex items-center gap-2 text-xs font-semibold" style="color:#0077b6;">
+                <i class="fas fa-user"></i>
+                <span>Espace client</span>
               </a>
-            ))}
-            <a href="/rendez-vous" class="flex items-center justify-center btn-primary text-white text-sm font-bold px-4 py-3 rounded-xl mt-2">
-              <i class="fas fa-calendar-plus mr-2"></i>Prendre RDV
-            </a>
+            </div>
+            {/* Navigation grid */}
+            <div class="grid grid-cols-2 gap-1 p-3">
+              {[
+                { href: "/", icon: "fa-home", label: "Accueil", key: "home" },
+                { href: "/simulateur", icon: "fa-calculator", label: "Simulateur BTU", key: "simulateur" },
+                { href: "/catalogue", icon: "fa-th-large", label: "Catalogue", key: "catalogue" },
+                { href: "/contrat-maintenance", icon: "fa-shield-alt", label: "Maintenance", key: "maintenance" },
+                { href: "/rendez-vous", icon: "fa-calendar", label: "Rendez-vous", key: "rdv" },
+                { href: "/avis", icon: "fa-star", label: "Avis clients", key: "avis" },
+                { href: "/contact", icon: "fa-envelope", label: "Contact", key: "contact" },
+                { href: "/a-propos", icon: "fa-info-circle", label: "À propos", key: "apropos" },
+              ].map(n => (
+                <a href={n.href} class={`flex items-center gap-2.5 py-3 px-3.5 rounded-xl text-sm font-semibold transition-all ${activePage===n.key ? 'mobile-nav-active' : 'hover:bg-blue-50'}`} style={activePage===n.key ? 'background:rgba(0,119,182,0.08); color:#0077b6;' : ''} {...(activePage===n.key ? {'aria-current': 'page'} : {})}>
+                  <i class={`fas ${n.icon} w-4 text-center text-sm`} style={activePage===n.key ? 'color:#0077b6;' : 'color:#94a3b8;'}></i>
+                  <span>{n.label}</span>
+                </a>
+              ))}
+            </div>
+            {/* CTA */}
+            <div class="px-3 pb-3">
+              <a href="/rendez-vous" class="flex items-center justify-center gap-2 btn-primary text-white text-sm font-bold px-4 py-3 rounded-xl w-full">
+                <i class="fas fa-calendar-plus"></i>Prendre rendez-vous
+              </a>
+            </div>
           </div>
         </header>
 
@@ -187,7 +257,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         <CGUModal />
 
         {/* FOOTER */}
-        <footer style="background:linear-gradient(160deg,#f0f9ff 0%,#dbeafe 30%,#93c5fd 65%,#3b82f6 100%); margin-top:5rem; position:relative; overflow:hidden;">
+        <footer style="background:linear-gradient(135deg,#ffffff 0%,#e0f2fe 50%,#bae6fd 100%); margin-top:5rem; position:relative; overflow:hidden;">
           <div style="position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.08);pointer-events:none;"></div>
           <div style="position:absolute;bottom:-40px;left:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.06);pointer-events:none;"></div>
           <div class="cyan-line"></div>
@@ -197,7 +267,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               <div class="md:col-span-2">
                 <div class="flex items-center space-x-3 mb-5">
                   <div class="w-14 h-14 rounded-xl overflow-hidden shadow-lg border border-white/20">
-                    <img src="/one.jpeg" alt="MAASGA Logo" class="w-full h-full object-cover" />
+                    <img src="/logo-site.png" alt="MAASGA Logo" class="w-full h-full object-cover" loading="lazy" />
                   </div>
                   <div>
                     <div class="font-bold text-white text-xl tracking-wide">MAASGA</div>
@@ -236,7 +306,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                     </div>
                   </div>
                   <div class="pt-3 border-t flex items-center gap-4" style="border-color:rgba(0,0,0,0.1);">
-                    <a href="https://wa.me/22655996418" target="_blank" rel="noopener" class="flex items-center space-x-2 text-sm font-semibold transition-all hover:scale-105" style="color:#16a34a;">
+                    <a href="https://wa.me/22655996418" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-2 text-sm font-semibold transition-all hover:scale-105" style="color:#16a34a;">
                       <i class="fab fa-whatsapp text-xl" style="color:#25d366;"></i><span>WhatsApp</span>
                     </a>
                     <a href="mailto:maasgabf@gmail.com" class="flex items-center space-x-2 text-sm font-semibold transition-all hover:scale-105" style="color:#0077b6;">
@@ -251,9 +321,9 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               <div>
                 <h4 class="font-semibold text-white mb-5 text-sm uppercase tracking-widest" style="color:#38bdf8;">Navigation</h4>
                 <ul class="space-y-3 text-sm" style="color:#64748b;">
-                  {["/", "/catalogue", "/simulateur", "/rendez-vous", "/avis", "/a-propos", "/contact"].map((href, i) => (
+                  {["/", "/catalogue", "/contrat-maintenance", "/simulateur", "/rendez-vous", "/avis", "/a-propos", "/contact"].map((href, i) => (
                     <li><a href={href} class="hover:text-white hover:pl-1 transition-all block">
-                      {["Accueil","Catalogue","Simulateur BTU","Prendre RDV","Avis clients","À propos","Contact"][i]}
+                      {["Accueil","Catalogue","Maintenance","Simulateur BTU","Prendre RDV","Avis clients","À propos","Contact"][i]}
                     </a></li>
                   ))}
                 </ul>
@@ -292,20 +362,52 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
 
         {/* Loader hide + Scroll Reveal + Scroll Progress + Back-to-top + Counter animation + Page transitions */}
         <script dangerouslySetInnerHTML={{ __html: `
-          // Hide loader
+          // Hide loader (rapide si déjà visité)
           (function() {
             function hideLoader() {
               var l = document.getElementById('page-loader');
-              if (!l) return;
+              if (!l || l.style.display === 'none') return;
               l.style.opacity = '0';
               l.style.visibility = 'hidden';
-              setTimeout(function() { l.style.display = 'none'; }, 650);
+              setTimeout(function() { l.style.display = 'none'; }, 350);
             }
-            if (document.readyState === 'complete') { setTimeout(hideLoader, 400); }
-            else { window.addEventListener('load', function() { setTimeout(hideLoader, 400); }); }
+            // Use DOMContentLoaded instead of load — don't wait for external fonts/images
+            if (document.readyState !== 'loading') { setTimeout(hideLoader, 50); }
+            else { document.addEventListener('DOMContentLoaded', function() { setTimeout(hideLoader, 50); }); }
           })();
 
           document.addEventListener('DOMContentLoaded', function() {
+            // Close "Plus" dropdown on outside click
+            document.addEventListener('click', function(e) {
+              var dd = document.getElementById('nav-more-dropdown');
+              var wr = document.getElementById('nav-more-wrapper');
+              if (dd && wr && !wr.contains(e.target)) dd.classList.add('hidden');
+            });
+            // Close mobile menu on link click
+            document.querySelectorAll('#mobile-menu a').forEach(function(a) {
+              a.addEventListener('click', function() {
+                var m = document.getElementById('mobile-menu');
+                if (m) m.classList.remove('open');
+              });
+            });
+
+            // Profile avatar: show first letter of name when logged in
+            (function() {
+              fetch('/api/session-check', { credentials: 'same-origin' })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                  if (data && data.loggedIn && data.name) {
+                    var btn = document.getElementById('user-nav-btn');
+                    if (!btn) return;
+                    var letter = data.name.trim().charAt(0).toUpperCase();
+                    btn.innerHTML = '<span style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#0077b6,#0ea5e9);color:#fff;font-weight:800;font-size:0.85rem;display:flex;align-items:center;justify-content:center;pointer-events:none;">' + letter + '</span>';
+                    btn.style.padding = '0';
+                    btn.title = data.name;
+                  }
+                })
+                .catch(function() {});
+            })();
+
             // Scroll reveal (+ left/right variants)
             var observer = new IntersectionObserver(function(entries) {
               entries.forEach(function(entry) {
@@ -355,7 +457,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             document.querySelectorAll('[data-count]').forEach(function(el) { counterObserver.observe(el); });
           });
 
-          // Page transitions for internal links
+          // Page transitions for internal links (rapide)
           document.addEventListener('click', function(e) {
             var link = e.target.closest('a[href]');
             if (!link) return;
@@ -365,7 +467,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             var overlay = document.getElementById('page-transition');
             overlay.style.opacity = '1';
             overlay.style.pointerEvents = 'all';
-            setTimeout(function() { window.location.href = href; }, 250);
+            setTimeout(function() { window.location.href = href; }, 150);
           });
         `}} />
 
@@ -407,7 +509,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             <span class="text-xs font-semibold">Appeler</span>
           </a>
           <div style="width:1px; background:rgba(56,189,248,0.15);"></div>
-          <a href="https://wa.me/22655996418?text=Bonjour%20MAASGA" target="_blank" rel="noopener" class="flex-1 flex flex-col items-center justify-center py-3 gap-1 active:opacity-70" style="color:#25D366;">
+          <a href="https://wa.me/22655996418?text=Bonjour%20MAASGA" target="_blank" rel="noopener noreferrer" class="flex-1 flex flex-col items-center justify-center py-3 gap-1 active:opacity-70" style="color:#25D366;">
             <i class="fab fa-whatsapp text-base"></i>
             <span class="text-xs font-semibold">WhatsApp</span>
           </a>
@@ -537,6 +639,45 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
           }
         ` }} />
 
+        {/* Cookie Consent Banner */}
+        <div id="cookie-banner" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:99998; background:rgba(11,17,32,0.97); backdrop-filter:blur(12px); border-top:1px solid rgba(56,189,248,0.2); padding:16px 24px; animation:slideUp 0.3s ease-out;">
+          <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+            <div class="flex items-center gap-2 text-sm" style="color:#e2e8f0; flex:1;">
+              <i class="fas fa-cookie-bite" style="color:#f59e0b; font-size:1.1rem;"></i>
+              <span>Ce site utilise des cookies pour améliorer votre expérience et analyser le trafic via Google Analytics.
+                <button onclick="document.getElementById('cgu-modal').classList.remove('hidden')" class="underline hover:no-underline" style="color:#38bdf8;">En savoir plus</button>
+              </span>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <button onclick="handleCookieConsent(false)" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all hover:bg-gray-700" style="background:rgba(255,255,255,0.1); color:#94a3b8; border:1px solid rgba(255,255,255,0.15);">
+                Refuser
+              </button>
+              <button onclick="handleCookieConsent(true)" class="px-4 py-2 rounded-lg text-xs font-bold transition-all hover:opacity-90" style="background:linear-gradient(135deg,#0ea5e9,#3b82f6); color:white; border:none; box-shadow:0 2px 8px rgba(14,165,233,0.3);">
+                Accepter
+              </button>
+            </div>
+          </div>
+        </div>
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            var consent = localStorage.getItem('maasga_cookies_accepted');
+            if (consent === null) {
+              setTimeout(function() {
+                var b = document.getElementById('cookie-banner');
+                if (b) b.style.display = 'block';
+              }, 2000);
+            }
+          })();
+          function handleCookieConsent(accepted) {
+            localStorage.setItem('maasga_cookies_accepted', accepted ? 'true' : 'false');
+            document.getElementById('cookie-banner').style.display = 'none';
+            if (accepted && typeof gtag === 'function') {
+              gtag('consent', 'update', { analytics_storage: 'granted' });
+            }
+          }
+        `}} />
+        <style dangerouslySetInnerHTML={{ __html: '@keyframes slideUp { from { transform:translateY(100%); opacity:0; } to { transform:translateY(0); opacity:1; } }' }} />
+
         {/* Toast Notification System */}
         <div id="toast-container" class="fixed top-4 right-4 z-[99999] flex flex-col gap-3 pointer-events-none" style="max-width:380px;"></div>
         <script dangerouslySetInnerHTML={{ __html: `
@@ -553,7 +694,12 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             var el = document.createElement('div');
             el.className = 'pointer-events-auto flex items-center space-x-3 px-5 py-3.5 rounded-2xl shadow-2xl text-white text-sm font-medium';
             el.style.cssText = 'background:' + (colors[type]||colors.info) + ';animation:slideInRight .35s ease-out;border:1px solid rgba(255,255,255,0.15);';
-            el.innerHTML = '<i class="fas ' + (icons[type]||icons.info) + ' text-lg opacity-90"></i><span>' + msg + '</span>';
+            var ico = document.createElement('i');
+            ico.className = 'fas ' + (icons[type]||icons.info) + ' text-lg opacity-90';
+            var sp = document.createElement('span');
+            sp.textContent = msg;
+            el.appendChild(ico);
+            el.appendChild(sp);
             container.appendChild(el);
             setTimeout(function() {
               el.style.animation = 'fadeOutRight .35s ease-in forwards';

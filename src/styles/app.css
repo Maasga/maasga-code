@@ -202,8 +202,10 @@
 .hover-glow:hover { box-shadow: 0 0 20px rgba(0,119,182,0.2); }
 
 /* ─── MOBILE MENU ─── */
-.mobile-menu { display: none; }
-.mobile-menu.open { display: block; }
+.mobile-menu { display: none; opacity: 0; transform: translateY(-8px); transition: opacity 0.25s ease, transform 0.25s ease; }
+.mobile-menu.open { display: block; opacity: 1; transform: translateY(0); animation: menuSlideIn 0.25s ease forwards; }
+@keyframes menuSlideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+.mobile-nav-active { background: rgba(0,119,182,0.08); color: #0077b6; font-weight: 700; }
 
 /* ─── SCROLLBAR ─── */
 ::-webkit-scrollbar { width: 8px; }

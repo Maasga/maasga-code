@@ -235,23 +235,25 @@ export async function getReviews(db: D1Database, approvedOnly = true) {
     ? 'SELECT * FROM reviews WHERE approved = 1 ORDER BY date DESC'
     : 'SELECT * FROM reviews ORDER BY date DESC'
   const result = await db.prepare(query).all()
-  return result.results || []
+  return (result.results || []).map((r: any) => ({
+    ...r,
+    note: typeof r.note === 'string' ? parseInt(r.note, 10) : Number(r.note),
+    approved: r.approved === 1 || r.approved === true
+  }))
 }
 
 export async function createReview(db: D1Database, data: any) {
   const result = await db.prepare(`
-    INSERT INTO reviews (name, note, comment, date, service, approved, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO reviews (name, note, comment, date, service, approved)
+    VALUES (?, ?, ?, ?, ?, 0)
   `).bind(
     data.name,
     data.note,
     data.comment,
     data.date,
-    data.service,
-    0, // default: not approved
-    new Date().toISOString()
+    data.service
   ).run()
-  
+
   return result
 }
 

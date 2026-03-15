@@ -23,6 +23,20 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
       </section>
 
       <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+        {/* Message de succès */}
+        {success && (
+          <div class="mb-8 rounded-2xl p-5 flex items-center space-x-4 reveal" style="background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.25);">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(52,211,153,0.15);">
+              <i class="fas fa-check-circle text-xl" style="color:#34d399;"></i>
+            </div>
+            <div>
+              <div class="font-bold text-white">Message envoyé avec succès !</div>
+              <div class="text-sm" style="color:#94a3b8;">Nous avons bien reçu votre message et vous répondrons dans les meilleurs délais.</div>
+            </div>
+          </div>
+        )}
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
 
           {/* Infos de contact */}
@@ -39,7 +53,7 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
                     <i class="fas fa-phone" style="color:#34d399;"></i>
                   </div>
                   <div>
-                    <div class="text-xs font-medium mb-1" style="color:#64748b;">Téléphone</div>
+                    <div class="text-xs font-medium mb-1" style="color:#64748b;">Téléphone (Whatsapp)</div>
                     <a href="tel:+22655996418" class="font-semibold text-white hover:text-cyan-400 transition-colors">+226 55 99 64 18</a>
                     <div class="text-xs mt-0.5" style="color:#64748b;">WhatsApp disponible</div>
                   </div>
@@ -51,7 +65,7 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
                   </div>
                   <div>
                     <div class="text-xs font-medium mb-1" style="color:#64748b;">Email</div>
-                    <a href="mailto:contact@maasga.bf" class="font-semibold text-white hover:text-cyan-400 transition-colors text-sm">contact@maasga.bf</a>
+                    <a href="mailto:maasgabf@gmail.com" class="font-semibold text-white hover:text-cyan-400 transition-colors text-sm">maasgabf@gmail.com</a>
                     <div class="text-xs mt-0.5" style="color:#64748b;">Réponse sous 2h</div>
                   </div>
                 </div>
@@ -74,7 +88,7 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
                   <div>
                     <div class="text-xs font-medium mb-1" style="color:#64748b;">Horaires</div>
                     <div class="text-sm" style="color:#7a9cc4;">
-                      <div>Lun – Sam : 7h30 – 18h30</div>
+                      <div>Lundi–Dimanche · 8h00–18h00</div>
                       <div class="text-xs mt-0.5" style="color:#64748b;">Urgences 7j/7</div>
                     </div>
                   </div>
@@ -83,7 +97,7 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
             </div>
 
             {/* Action rapide WhatsApp */}
-            <a href="https://wa.me/22655996418?text=Bonjour%20MAASGA%2C%20je%20souhaite%20avoir%20un%20renseignement%20sur%20la%20climatisation." target="_blank"
+            <a href="https://wa.me/22655996418?text=Bonjour%20MAASGA%2C%20je%20souhaite%20avoir%20un%20renseignement%20sur%20la%20climatisation." target="_blank" rel="noopener noreferrer"
               class="block glass-card rounded-2xl p-5 hover:-translate-y-1 transition-all duration-300 hover-lift">
               <div class="flex items-center space-x-4">
                 <div class="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center flex-shrink-0">
@@ -162,27 +176,28 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
                 )}
 
                 <form method="post" action="/api/contact" class="space-y-5">
+                  <div class="hidden" aria-hidden="true"><input type="text" name="website" tabindex={-1} autocomplete="off" /></div>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                       <label class="block text-sm font-semibold mb-2" style="color:#7a9cc4;">
                         Nom complet <span style="color:#f87171;">*</span>
                       </label>
                       <input type="text" name="name" required placeholder="Ex: Moussa Ouédraogo"
-                        class="input-field w-full rounded-xl px-4 py-3" />
+                        autocomplete="name" class="input-field w-full rounded-xl px-4 py-3" />
                     </div>
                     <div>
                       <label class="block text-sm font-semibold mb-2" style="color:#7a9cc4;">
-                        Téléphone
+                        Téléphone (Whatsapp)
                       </label>
                       <input type="tel" name="phone" placeholder="+226 55 99 64 18"
-                        class="input-field w-full rounded-xl px-4 py-3" />
+                        autocomplete="tel" class="input-field w-full rounded-xl px-4 py-3" />
                     </div>
                   </div>
 
                   <div>
                     <label class="block text-sm font-semibold mb-2" style="color:#7a9cc4;">Email</label>
                     <input type="email" name="email" placeholder="votre@email.com"
-                      class="input-field w-full rounded-xl px-4 py-3" />
+                      autocomplete="email" class="input-field w-full rounded-xl px-4 py-3" />
                   </div>
 
                   <div>
@@ -220,7 +235,8 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
                   </div>
 
                   <button type="submit"
-                    class="w-full btn-primary text-white font-bold py-4 rounded-2xl flex items-center justify-center space-x-3 shadow-lg text-base">
+                    class="w-full btn-primary text-white font-bold py-4 rounded-2xl flex items-center justify-center space-x-3 shadow-lg text-base"
+                    onclick="this.disabled=true;this.querySelector('span').textContent='Envoi en cours...';this.closest('form').submit();">
                     <i class="fas fa-paper-plane"></i>
                     <span>Envoyer le message</span>
                     <i class="fas fa-arrow-right text-sm"></i>
@@ -292,6 +308,31 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
             if (btn) btn.setAttribute('aria-expanded', 'false');
           }
         }
+      `}} />
+
+      {/* Auto-fill form from session data */}
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function() {
+          fetch('/api/session-check', { credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              if (data && data.loggedIn) {
+                if (data.name) {
+                  var el = document.querySelector('form[action="/api/contact"] input[name="name"]');
+                  if (el && !el.value) el.value = data.name;
+                }
+                if (data.phone) {
+                  var el = document.querySelector('form[action="/api/contact"] input[name="phone"]');
+                  if (el && !el.value) el.value = '+226 ' + data.phone.replace(/^\\+?226\\s*/, '');
+                }
+                if (data.email) {
+                  var el = document.querySelector('form[action="/api/contact"] input[name="email"]');
+                  if (el && !el.value) el.value = data.email;
+                }
+              }
+            })
+            .catch(function() {});
+        })();
       `}} />
     </Layout>
   )

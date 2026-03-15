@@ -295,7 +295,7 @@ export const SimulateurPage = ({
                         <a id="see-multi-btn" href="/catalogue" class="text-xs bg-indigo-500 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-600 transition-colors">
                           <i class="fas fa-th-large mr-1"></i>Voir le catalogue
                         </a>
-                        <a id="devis-multi-btn" href="/rendez-vous" class="text-xs text-indigo-300 border border-indigo-500/40 px-3 py-1.5 rounded-lg hover:border-indigo-400 transition-colors">
+                        <a id="devis-multi-btn" href="/rendez-vous" class="text-xs px-3 py-1.5 rounded-lg transition-colors" style="color:#111827; border:1px solid #111827;">
                           <i class="fas fa-file-invoice-dollar mr-1"></i>Devis multi-unités
                         </a>
                       </div>
@@ -351,7 +351,7 @@ export const SimulateurPage = ({
             <div class="bg-gradient-to-br from-primary-700 to-ice-700 text-white rounded-2xl p-6 text-center reveal">
               <i class="fas fa-phone-alt text-3xl mb-3 opacity-90"></i>
               <h4 class="font-bold text-lg mb-2">Besoin d'un avis expert ?</h4>
-              <p class="text-blue-100/90 text-sm mb-4">Nos techniciens se déplacent gratuitement pour dimensionner votre projet.</p>
+              <p class="text-sm mb-4" style="color:#111827;">Nos techniciens se déplacent gratuitement pour dimensionner votre projet.</p>
               <a href="/rendez-vous" class="bg-white text-primary-700 font-bold px-6 py-3 rounded-xl inline-flex items-center space-x-2 hover:bg-blue-50 transition-colors shadow-md">
                 <i class="fas fa-calendar-check"></i>
                 <span>Prendre rendez-vous</span>

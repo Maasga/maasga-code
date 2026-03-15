@@ -1,4 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="8" fill="#1e3a8a"/>
-  <text x="16" y="23" text-anchor="middle" font-size="20" fill="white">❄</text>
+  <rect width="32" height="32" rx="8" fill="#0077b6"/>
+  <g transform="translate(16,16)" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round">
+    <!-- Main axes -->
+    <line y1="-10" y2="10"/>
+    <line x1="-8.66" y1="-5" x2="8.66" y2="5"/>
+    <line x1="-8.66" y1="5" x2="8.66" y2="-5"/>
+    <!-- Branches -->
+    <line x1="0" y1="-10" x2="-2.5" y2="-7"/>
+    <line x1="0" y1="-10" x2="2.5" y2="-7"/>
+    <line x1="0" y1="10" x2="-2.5" y2="7"/>
+    <line x1="0" y1="10" x2="2.5" y2="7"/>
+    <line x1="-8.66" y1="-5" x2="-7" y2="-2"/>
+    <line x1="-8.66" y1="-5" x2="-5.5" y2="-5.8"/>
+    <line x1="8.66" y1="5" x2="7" y2="2"/>
+    <line x1="8.66" y1="5" x2="5.5" y2="5.8"/>
+    <line x1="-8.66" y1="5" x2="-7" y2="2"/>
+    <line x1="-8.66" y1="5" x2="-5.5" y2="5.8"/>
+    <line x1="8.66" y1="-5" x2="7" y2="-2"/>
+    <line x1="8.66" y1="-5" x2="5.5" y2="-5.8"/>
+    <!-- Center dot -->
+    <circle r="1.5" fill="white" stroke="none"/>
+  </g>
 </svg>

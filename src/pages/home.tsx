@@ -2,15 +2,17 @@ import { Layout } from '../components/Layout'
 import { products } from '../data/products'
 import { reviews } from '../data/store'
 
-export const HomePage = ({ stats }: { stats?: { clientCount: number; avgNote: number; reviewCount: number } } = {}) => {
+export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientCount: number; avgNote: number; reviewCount: number }; topReviews?: any[] } = {}) => {
   const featuredProducts = products.filter(p => p.available).slice(0, 3)
-  const topReviews = reviews.filter(r => r.approved && r.note >= 4).slice(0, 3)
-  const displayClients = stats?.clientCount && stats.clientCount > 10 ? `${stats.clientCount}+` : '100+'
-  const displayNote = stats?.avgNote && stats.avgNote > 0 ? `${stats.avgNote.toFixed(1)}/5` : '3.8/5'
+  const topReviews = propReviews && propReviews.length > 0
+    ? propReviews
+    : reviews.filter(r => r.approved && r.note >= 4).slice(0, 3)
+  const displayClients = stats?.clientCount && stats.clientCount > 0 ? `${stats.clientCount}+` : '—'
+  const displayNote = stats?.avgNote && stats.avgNote > 0 ? `${stats.avgNote.toFixed(1)}/5` : '—'
   const displayReviews = stats?.reviewCount && stats.reviewCount > 0 ? `${stats.reviewCount}` : '—'
 
   return (
-    <Layout activePage="home" canonicalPath="/" description="MAASGA - N°1 de la climatisation à Ouagadougou, Burkina Faso. Vente, installation et maintenance de climatiseurs. Devis gratuit, techniciens certifiés, SAV 7j/7." jsonLd={JSON.stringify({"@context":"https://schema.org","@type":"LocalBusiness","name":"MAASGA Climatisation","description":"Expert en vente, installation et maintenance de climatiseurs à Ouagadougou","url":"https://maasga-website.pages.dev","telephone":"+22655996418","address":{"@type":"PostalAddress","streetAddress":"Ouagadougou","addressLocality":"Ouagadougou","addressCountry":"BF"},"geo":{"@type":"GeoCoordinates","latitude":12.3714,"longitude":-1.5197},"openingHoursSpecification":{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"opens":"07:30","closes":"18:00"},"priceRange":"$$","image":"https://maasga-website.pages.dev/og-image.png","aggregateRating":{"@type":"AggregateRating","ratingValue":"4.9","reviewCount":"500"}})}>
+    <Layout activePage="home" canonicalPath="/" description="MAASGA - N°1 de la climatisation à Ouagadougou, Burkina Faso. Vente, installation et maintenance de climatiseurs. Devis gratuit, techniciens certifiés, SAV 7j/7." jsonLd={JSON.stringify({"@context":"https://schema.org","@type":"LocalBusiness","name":"MAASGA Climatisation","description":"Expert en vente, installation et maintenance de climatiseurs à Ouagadougou","url":"https://maasga-website.pages.dev","telephone":"+22655996418","address":{"@type":"PostalAddress","streetAddress":"Ouagadougou","addressLocality":"Ouagadougou","addressCountry":"BF"},"geo":{"@type":"GeoCoordinates","latitude":12.3714,"longitude":-1.5197},"openingHoursSpecification":{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"opens":"07:30","closes":"18:00"},"priceRange":"$$","image":"https://maasga-website.pages.dev/og-image.png",...(stats?.avgNote && stats.avgNote > 0 && stats?.reviewCount && stats.reviewCount > 0 ? {"aggregateRating":{"@type":"AggregateRating","ratingValue":String(stats.avgNote.toFixed(1)),"reviewCount":String(stats.reviewCount)}} : {})})}>
 
       {/* ===== HERO SECTION ===== */}
       <section class="gradient-hero min-h-screen flex items-center relative overflow-hidden pt-20">
@@ -20,6 +22,8 @@ export const HomePage = ({ stats }: { stats?: { clientCount: number; avgNote: nu
           muted 
           loop 
           playsInline 
+          preload="metadata"
+          aria-hidden="true"
           class="absolute inset-0 w-full h-full object-cover pointer-events-none"
           style="z-index: 0; opacity: 0.2; object-position: 80% 50%;"
         >
@@ -132,8 +136,8 @@ export const HomePage = ({ stats }: { stats?: { clientCount: number; avgNote: nu
           {/* Exemple de calcul Card */}
           <a href="/simulateur" class="w-64 bg-white rounded-2xl p-4 shadow-2xl hover:scale-105 transition-transform duration-500 block border border-blue-100">
             <div class="flex items-center space-x-3 mb-2">
-              <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-xl">
-                🧮
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:linear-gradient(135deg,#0077b6,#00b4d8);">
+                <i class="fas fa-calculator text-white text-base"></i>
               </div>
               <span class="font-extrabold text-sm" style="color:#03045e;">Exemple de calcul</span>
             </div>
@@ -243,7 +247,7 @@ export const HomePage = ({ stats }: { stats?: { clientCount: number; avgNote: nu
             { icon: "fa-clipboard-check", color: "#0077b6", glow: "rgba(0,119,182,0.1)",  title: "Visite technique gratuite", desc: "Visite technique pour dimensionner correctement vos installations." },
             { icon: "fa-file-pdf",        color: "#f87171", glow: "rgba(248,113,113,0.1)", title: "Devis PDF détaillé", desc: "Devis transparent et complet remis immédiatement après visite technique  et  installation." },
             { icon: "fa-sync-alt",        color: "#34d399", glow: "rgba(52,211,153,0.1)",  title: "Maintenance tri.", desc: "Plan d'entretien régulier pour garantir les performances et la durée de vie." },
-            { icon: "fa-user-hard-hat",   color: "#fbbf24", glow: "rgba(251,191,36,0.1)",  title: "Techniciens qualifiés", desc: "Équipe formée et certifiée, spécialisée en froid et climatisation." }
+            { icon: "fa-helmet-safety",    color: "#fbbf24", glow: "rgba(251,191,36,0.1)",  title: "Techniciens qualifiés", desc: "Équipe formée et certifiée, spécialisée en froid et climatisation." }
           ].map(av => (
             <div class="card-hover rounded-3xl p-6 text-center group" style="background:#ffffff; border:1px solid rgba(0,119,182,0.1);">
               <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform" style={`background:${av.glow}; border:1px solid ${av.glow.replace('0.1','0.25')};`}>
@@ -278,37 +282,43 @@ export const HomePage = ({ stats }: { stats?: { clientCount: number; avgNote: nu
                 <p style="color:#64748b;">Aucun produit disponible pour le moment.</p>
               </div>
             ) : featuredProducts.map(p => (
-              <div class="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 group card-hover">
+              <div class="bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 group card-hover flex flex-col">
                 {/* Image zone */}
-                <div class="p-8 text-center relative" style="background:linear-gradient(145deg,#eff6ff,#dbeafe);">
-                  {(p as any).imageUrl
-                    ? <img src={(p as any).imageUrl} alt={p.name} class="w-28 h-28 object-contain mx-auto group-hover:scale-110 transition-transform duration-500" />
-                    : <div class="text-7xl group-hover:scale-110 transition-transform duration-500">{p.image}</div>
-                  }
+                <div class="relative" style="background:linear-gradient(145deg,#f0f7ff,#dbeafe); padding:28px 24px 20px;">
+                  <div class="flex items-center justify-center" style="min-height:180px;">
+                    {(p as any).imageUrl
+                      ? <img src={(p as any).imageUrl} alt={p.name}
+                          loading="lazy" width={250} height={180}
+                          class="object-contain mx-auto group-hover:scale-105 transition-transform duration-500"
+                          style="max-height:180px; max-width:100%; width:auto;" />
+                      : <div class="group-hover:scale-105 transition-transform duration-500" style="font-size:6rem; line-height:1;">{p.image}</div>
+                    }
+                  </div>
                   {p.inverter && (
-                    <span class="absolute top-3 right-3 text-xs text-white px-3 py-1 rounded-full font-bold" style="background:linear-gradient(135deg,#0077b6,#00b4d8);">INVERTER</span>
+                    <span class="absolute top-3 right-3 text-xs px-3 py-1 rounded-full font-bold" style="background:linear-gradient(135deg,#0077b6,#00b4d8); color:#ffffff;">INVERTER</span>
                   )}
                   <span class={`absolute top-3 left-3 text-xs px-3 py-1 rounded-full font-semibold ${p.stock > 3 ? 'badge-stock-ok' : p.stock > 0 ? 'badge-stock-low' : 'badge-stock-out'}`}>
                     {p.stock > 3 ? '✓ Disponible' : p.stock > 0 ? '⚠ Stock limité' : '✗ Rupture'}
                   </span>
                 </div>
-                <div class="p-6">
+                {/* Contenu */}
+                <div class="p-6 flex flex-col flex-1">
                   <div class="text-xs font-bold uppercase tracking-wider mb-1" style="color:#0077b6;">{p.brand}</div>
-                  <h3 class="font-extrabold text-base mb-2 leading-tight" style="color:#03045e;">{p.name}</h3>
-                  <p class="text-xs mb-4 line-clamp-2" style="color:#64748b;">{p.description}</p>
-                  <div class="flex items-center justify-between mb-5">
+                  <h3 class="font-extrabold text-lg mb-2 leading-snug" style="color:#03045e;">{p.name}</h3>
+                  <p class="text-sm mb-4 leading-relaxed" style="color:#64748b;">{p.description}</p>
+                  <div class="flex items-end justify-between mb-5 mt-auto">
                     <div>
-                      <div class="text-xl font-extrabold" style="color:#0077b6;">{p.price.toLocaleString()} <span class="text-sm font-normal" style="color:#64748b;">FCFA</span></div>
-                      <div class="text-xs font-semibold" style="color:#34d399;">Installation et livraison offerte</div>
+                      <div class="text-2xl font-extrabold" style="color:#0077b6;">{p.price.toLocaleString()} <span class="text-sm font-normal" style="color:#64748b;">FCFA</span></div>
+                      <div class="text-xs font-semibold mt-0.5" style="color:#34d399;"><i class="fas fa-check-circle mr-1"></i>Installation et livraison offerte</div>
                     </div>
                     <div class="text-right">
-                      <div class="text-sm font-bold" style="color:#0077b6;">{p.btu.toLocaleString()} BTU</div>
-                      <div class="text-xs" style="color:#64748b;">{p.surface_min}-{p.surface_max} m²</div>
+                      <div class="text-base font-bold" style="color:#03045e;">{p.btu.toLocaleString()} BTU</div>
+                      <div class="text-xs" style="color:#64748b;">{p.surface_min}–{p.surface_max} m²</div>
                     </div>
                   </div>
-                  <a href={`/catalogue?product=${p.id}`} class="w-full btn-primary text-white font-bold py-3 rounded-xl flex items-center justify-center space-x-2 group-hover:shadow-lg transition-all">
-                    <i class="fas fa-shopping-cart text-sm"></i>
-                    <span>Voir & Commander</span>
+                  <a href={`/catalogue?product=${p.id}`} class="w-full btn-primary font-bold py-3.5 rounded-2xl flex items-center justify-center space-x-2 group-hover:shadow-lg transition-all text-sm" style="color:#ffffff;">
+                    <i class="fas fa-eye text-sm" style="color:#ffffff;"></i>
+                    <span style="color:#ffffff;">Voir & Commander</span>
                   </a>
                 </div>
               </div>
@@ -418,7 +428,7 @@ export const HomePage = ({ stats }: { stats?: { clientCount: number; avgNote: nu
           <div>
             <div class="text-xs font-bold uppercase tracking-widest mb-3" style="color:#0077b6;">Témoignages</div>
             <h2 class="text-3xl font-extrabold mb-2" style="color:#03045e;">Ce que disent nos clients</h2>
-            <p style="color:#475569;">Plus de 100 installations réussies dans le pays</p>
+            <p style="color:#475569;">Installations réalisées à Ouagadougou et environs</p>
           </div>
           <a href="/avis" class="mt-4 sm:mt-0 inline-flex items-center space-x-2 font-semibold" style="color:#0077b6;">
             <span>Voir tous les avis</span>
@@ -504,7 +514,7 @@ export const HomePage = ({ stats }: { stats?: { clientCount: number; avgNote: nu
             { q: "Comment se déroule la visite technique ?", a: "Un technicien MAASGA se déplace gratuitement chez vous pour évaluer les besoins (surface, orientation, nombre de fenêtres). Il vous remet ensuite un devis PDF détaillé. Aucun engagement avant validation." },
             { q: "Quel est le délai d'installation ?", a: "En général, l'installation est réalisée sous 48 à 72h après validation du devis. Pour les urgences (dépannage, panne), nous intervenons sous 24h." },
             { q: "Proposez-vous la maintenance / entretien ?", a: "Oui, nous proposons des contrats de maintenance trimestrielle pour garantir les performances et la longévité de votre équipement. Nettoyage filtres, vérification gaz, contrôle électrique." },
-            { q: "Quels modes de paiement acceptez-vous ?", a: "Paiement en espèces, Orange Money, Moov Money ou virement bancaire. Le paiement se fait uniquement après la visite technique et votre validation du devis." },
+            { q: "Quels modes de paiement acceptez-vous ?", a: "Paiement en espèces, LigdiCash (paiement mobile sécurisé — Orange Money, Moov Money et plus), Wave ou virement bancaire. Le paiement se fait uniquement après la visite technique et votre validation du devis." },
             { q: "Quelle garantie sur les climatiseurs ?", a: "Tous nos climatiseurs sont neufs et bénéficient d'une garantie constructeur (1 à 3 ans selon les marques). MAASGA assure le service après-vente." },
             { q: "Couvrez-vous tout Ouagadougou ?", a: "Oui, nous intervenons dans tous les arrondissements de Ouagadougou et dans les zones périphériques. Contactez-nous pour vérifier la couverture de votre secteur." }
           ].map((faq, i) => (
@@ -530,7 +540,7 @@ export const HomePage = ({ stats }: { stats?: { clientCount: number; avgNote: nu
           { "@type": "Question", "name": "Comment se déroule la visite technique ?", "acceptedAnswer": { "@type": "Answer", "text": "Un technicien MAASGA se déplace gratuitement chez vous pour évaluer les besoins. Il vous remet ensuite un devis PDF détaillé." } },
           { "@type": "Question", "name": "Quel est le délai d'installation ?", "acceptedAnswer": { "@type": "Answer", "text": "En général, l'installation est réalisée sous 48 à 72h après validation du devis." } },
           { "@type": "Question", "name": "Proposez-vous la maintenance / entretien ?", "acceptedAnswer": { "@type": "Answer", "text": "Oui, nous proposons des contrats de maintenance trimestrielle pour garantir les performances et la longévité de votre équipement." } },
-          { "@type": "Question", "name": "Quels modes de paiement acceptez-vous ?", "acceptedAnswer": { "@type": "Answer", "text": "Paiement en espèces, Orange Money, Moov Money ou virement bancaire. Le paiement se fait après la visite technique." } },
+          { "@type": "Question", "name": "Quels modes de paiement acceptez-vous ?", "acceptedAnswer": { "@type": "Answer", "text": "Paiement en espèces, LigdiCash (Orange Money, Moov Money et plus), Wave ou virement bancaire. Le paiement se fait après la visite technique." } },
           { "@type": "Question", "name": "Quelle garantie sur les climatiseurs ?", "acceptedAnswer": { "@type": "Answer", "text": "Tous nos climatiseurs sont neufs et bénéficient d'une garantie constructeur de 1 à 3 ans." } },
           { "@type": "Question", "name": "Couvrez-vous tout Ouagadougou ?", "acceptedAnswer": { "@type": "Answer", "text": "Oui, nous intervenons dans tous les arrondissements de Ouagadougou et dans les zones périphériques." } }
         ]
@@ -546,10 +556,9 @@ export const HomePage = ({ stats }: { stats?: { clientCount: number; avgNote: nu
             Contactez-nous dès aujourd'hui. Visite technique gratuite, devis PDF sous 24h, installation par nos experts certifiés.
           </p>
 
-          <div class="inline-flex items-center space-x-2 mb-8 px-5 py-2.5 rounded-full" style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3);">
-            <span class="w-2 h-2 rounded-full bg-red-500" style="animation:waDot 1.8s ease-in-out infinite;"></span>
-            <span class="text-sm font-bold" style="color:#fca5a5;"><span id="urgency-count">3</span> demandes en cours aujourd'hui</span>
-            <span class="text-xs" style="color:#caf0f8; opacity:0.7;">· créneaux limités</span>
+          <div class="inline-flex items-center space-x-2 mb-8 px-5 py-2.5 rounded-full" style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3);">
+            <i class="fas fa-phone-alt text-sm" style="color:#38bdf8;"></i>
+            <span class="text-sm font-bold" style="color:#caf0f8;">Devis gratuit sous 24h — Appelez le 55 99 64 18</span>
           </div>
 
           <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -572,7 +581,7 @@ export const HomePage = ({ stats }: { stats?: { clientCount: number; avgNote: nu
                 <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white border-2" style={`background:${['#0096c7','#00b4d8','#48cae4'][i]}; border-color:#03045e; z-index:${3-i};`}>{l}</div>
               ))}
             </div>
-            <span class="text-xs" style="color:#caf0f8; opacity:0.6;">Rejoint par <strong class="text-white">{displayClients}</strong> pros à Ouagadougou</span>
+            <span class="text-xs" style="color:#caf0f8; opacity:0.6;">Faites confiance à <strong class="text-white">MAASGA</strong> pour votre climatisation</span>
           </div>
         </div>
       </section>

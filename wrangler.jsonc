@@ -8,5 +8,9 @@
 "binding": "DB",
 "database_name": "maasga_db",
 "database_id": "2317adea-fdbe-4597-b64d-11d68d03b63b"
-}]
+}],
+"vars": {
+  "LIGDICASH_API_KEY": "VOTRE_API_KEY_ICI",
+  "LIGDICASH_AUTH_TOKEN": "VOTRE_AUTH_TOKEN_ICI"
+}
 }
