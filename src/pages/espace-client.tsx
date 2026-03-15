@@ -68,6 +68,7 @@ interface ClientPayment {
   method?: string
   status: string
   provider_ref?: string
+  order_id?: number
   created_at: string
 }
 
@@ -316,11 +317,32 @@ function orderStatusColor(status: string): string {
   return 'color:#fbbf24; background:rgba(251,191,36,0.12);'
 }
 function orderStepIndex(status: string): number {
-  const steps = ['pending', 'paid', 'en_livraison', 'livre', 'validation_terrain', 'installed']
-  const idx = steps.indexOf(status)
-  if (status === 'devis_en_attente' || status === 'devis_valide' || status === 'devis_refuse') return 4
-  if (status === 'validated' || status === 'installing') return 4.5
-  return idx >= 0 ? idx : 0
+  if (status === 'pending') return 0
+  if (status === 'paid') return 1
+  if (status === 'en_livraison') return 2
+  if (status === 'livre') return 3
+  if (status === 'validation_terrain' || status === 'devis_en_attente' || status === 'devis_valide' || status === 'devis_refuse') return 4
+  if (status === 'validated' || status === 'installing') return 4
+  if (status === 'installed') return 5
+  return 0
+}
+function orderStepDesc(status: string): { msg: string; color: string } {
+  const m: Record<string, { msg: string; color: string }> = {
+    pending:            { msg: 'Commande reçue — paiement en cours de traitement', color: '#f59e0b' },
+    paid:               { msg: 'Paiement confirmé ✓ — préparation de la livraison', color: '#38bdf8' },
+    en_livraison:       { msg: 'Produit en cours de livraison chez vous', color: '#a78bfa' },
+    livre:              { msg: 'Produit livré — visite technique en attente', color: '#2dd4bf' },
+    validation_terrain: { msg: 'Visite terrain planifiée — validation en cours', color: '#f59e0b' },
+    devis_en_attente:   { msg: 'Devis technique envoyé — en attente de votre accord', color: '#f59e0b' },
+    devis_valide:       { msg: 'Devis accepté ✓ — planification de l\'installation', color: '#38bdf8' },
+    devis_refuse:       { msg: 'Devis refusé — contactez-nous pour ajuster', color: '#f87171' },
+    validated:          { msg: 'Dossier validé — installation planifiée', color: '#34d399' },
+    installing:         { msg: 'Installation en cours par nos techniciens', color: '#a78bfa' },
+    installed:          { msg: '✅ Installation terminée ! Profitez de votre climatiseur MAASGA', color: '#34d399' },
+    cancelled:          { msg: 'Commande annulée', color: '#f87171' },
+    refunded:           { msg: 'Commande annulée — remboursement traité', color: '#7c3aed' },
+  }
+  return m[status] || { msg: 'Statut en cours de mise à jour', color: '#94a3b8' }
 }
 function rdvStatusLabel(status: string): string {
   const map: Record<string, string> = { pending: 'En attente', confirmed: 'Confirmé', done: 'Effectué' }
@@ -554,26 +576,61 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                       </div>
 
                       {/* Step Progress Bar */}
-                      {!isCancelled && (
-                        <div class="flex items-center gap-0 mb-3 px-1 overflow-x-auto" style="min-height:44px;">
-                          {steps.map((s, i) => (
-                            <div class="flex items-center" style="flex:1; min-width:0;">
-                              <div class="flex flex-col items-center" style="min-width:28px;">
-                                <div
-                                  class="flex items-center justify-center rounded-full text-white"
-                                  style={`width:24px;height:24px;font-size:10px; ${s.done ? 'background:linear-gradient(135deg,#0077b6,#00b4d8);' : 'background:#cbd5e1;'}`}
-                                >
-                                  <i class={`fas ${s.icon}`}></i>
-                                </div>
-                                <span class="text-center mt-1" style={`font-size:9px;line-height:1.1; ${s.done ? 'color:#0077b6;font-weight:700;' : 'color:#94a3b8;'}`}>{s.label}</span>
-                              </div>
-                              {i < steps.length - 1 && (
-                                <div style={`flex:1;height:2px;margin:0 2px; ${steps[i+1].done ? 'background:#0077b6;' : 'background:#e2e8f0;'}`}></div>
-                              )}
+                      {!isCancelled && (() => {
+                        const desc = orderStepDesc(o.status)
+                        return (
+                          <div class="mb-3">
+                            {/* Step circles row */}
+                            <div class="flex items-center mb-2" style="gap:0;">
+                              {steps.map((s, i) => {
+                                const isActive = i === step
+                                const isDone = s.done && i < step
+                                return (
+                                  <div class="flex items-center" style="flex:1; min-width:0;">
+                                    <div class="flex flex-col items-center" style="flex-shrink:0;">
+                                      <div
+                                        class="flex items-center justify-center rounded-full"
+                                        style={`
+                                          width:${isActive ? '44px' : '34px'};
+                                          height:${isActive ? '44px' : '34px'};
+                                          font-size:${isActive ? '16px' : '13px'};
+                                          transition: all 0.3s;
+                                          ${isActive
+                                            ? 'background:linear-gradient(135deg,#0077b6,#00b4d8);color:#fff;box-shadow:0 0 0 4px rgba(0,180,216,0.25),0 2px 8px rgba(0,119,182,0.35);'
+                                            : isDone
+                                              ? 'background:linear-gradient(135deg,#059669,#10b981);color:#fff;'
+                                              : 'background:#e2e8f0;color:#94a3b8;'}
+                                        `}
+                                      >
+                                        <i class={`fas ${isDone ? 'fa-check' : s.icon}`}></i>
+                                      </div>
+                                      <span
+                                        class="text-center mt-1.5"
+                                        style={`
+                                          font-size:10px;
+                                          line-height:1.2;
+                                          max-width:52px;
+                                          white-space:normal;
+                                          text-align:center;
+                                          ${isActive ? 'color:#0077b6;font-weight:800;' : isDone ? 'color:#059669;font-weight:600;' : 'color:#94a3b8;font-weight:400;'}
+                                        `}
+                                      >{s.label}</span>
+                                    </div>
+                                    {i < steps.length - 1 && (
+                                      <div style={`flex:1;height:3px;margin:0 4px;margin-top:-16px;border-radius:4px; ${steps[i+1].done ? 'background:linear-gradient(90deg,#10b981,#0077b6);' : 'background:#e2e8f0;'}`}></div>
+                                    )}
+                                  </div>
+                                )
+                              })}
                             </div>
-                          ))}
-                        </div>
-                      )}
+                            {/* Status description */}
+                            <div class="flex items-center space-x-2 px-3 py-2 rounded-lg mt-2" style={`background:${desc.color}18; border-left:3px solid ${desc.color};`}>
+                              <i class="fas fa-info-circle text-xs" style={`color:${desc.color};`}></i>
+                              <span class="text-xs font-semibold" style={`color:${desc.color.replace('#','') === 'f59e0b' || desc.color === '#f59e0b' ? '#92400e' : desc.color};`}>{desc.msg}</span>
+                            </div>
+                          </div>
+                        )
+                      })()}
 
                       {/* Cancelled / refunded banner */}
                       {isCancelled && (

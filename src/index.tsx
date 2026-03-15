@@ -798,7 +798,7 @@ async function renderDashboard(c: any, clientId: number) {
       db.prepare('SELECT id, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date, notes FROM maintenance_contracts WHERE client_phone = ? ORDER BY created_at DESC').bind(client.phone),
       db.prepare('SELECT id, contract_id, visit_type, visit_date, status, technician, description, actions_performed, notes FROM maintenance_visits WHERE client_phone = ? ORDER BY visit_date DESC').bind(client.phone),
       db.prepare('SELECT id, request_type, description, preferred_date, equipment_type, plan_type, status, created_at FROM maintenance_requests WHERE phone = ? ORDER BY created_at DESC').bind(client.phone),
-      db.prepare('SELECT id, payment_type, amount, method, status, provider_ref, created_at FROM payments WHERE client_phone = ? ORDER BY created_at DESC').bind(client.phone),
+      db.prepare('SELECT id, payment_type, amount, method, status, provider_ref, order_id, created_at FROM payments WHERE client_phone = ? ORDER BY created_at DESC').bind(client.phone),
       db.prepare('SELECT id, action, category, details, created_at FROM user_activity_log WHERE client_id = ? ORDER BY created_at DESC LIMIT 50').bind(clientId)
     ])
     orders = ordersRes.results || []
@@ -808,6 +808,18 @@ async function renderDashboard(c: any, clientId: number) {
     maintenanceRequests = requestsRes.results || []
     clientPayments = paymentsRes.results || []
     activityLog = activityRes.results || []
+
+    // Auto-sync : passe les commandes encore à 'pending' dont le paiement est 'completed' → 'paid'
+    for (const p of clientPayments.filter((p: any) => p.status === 'completed' && p.order_id)) {
+      const ord = (orders as any[]).find((o: any) => o.id === p.order_id && o.status === 'pending')
+      if (ord) {
+        try {
+          await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?')
+            .bind('paid', new Date().toISOString(), ord.id).run()
+          ord.status = 'paid'
+        } catch(_) {}
+      }
+    }
   } catch (batchErr) {
     console.error('Dashboard batch query error:', batchErr)
     // Fallback: run core queries individually so dashboard still renders
@@ -2029,11 +2041,13 @@ app.post('/api/payment/initiate', async (c) => {
     ip: c.req.header('cf-connecting-ip') || ''
   })
 
-  // Check if LigdiCash is configured
+  // Paiement réel LigdiCash uniquement si PAYMENT_LIVE=true est explicitement défini en prod
+  // Par défaut (tests), tout paiement est simulé instantanément
+  const isLivePayment = c.env.PAYMENT_LIVE === 'true'
   const apiKey = c.env.LIGDICASH_API_KEY
   const authToken = c.env.LIGDICASH_AUTH_TOKEN
 
-  if (apiKey && authToken) {
+  if (isLivePayment && apiKey && authToken && !apiKey.startsWith('VOTRE')) {
     try {
       // LigdiCash API call
       const callbackUrl = new URL('/api/payment/callback', c.req.url).toString()
@@ -2065,10 +2079,12 @@ app.post('/api/payment/initiate', async (c) => {
     }
   }
 
-  // Fallback: no payment provider configured — simulate instant payment validation
+  // Simulation automatique : paiement validé instantanément (mode test ou LigdiCash non activé)
   const now = new Date().toISOString()
-  await db.prepare('UPDATE payments SET status = ?, provider_status = ?, updated_at = ? WHERE id = ?')
-    .bind('completed', 'simulated', now, payment?.id).run()
+  try {
+    await db.prepare('UPDATE payments SET status = ?, provider_status = ?, updated_at = ? WHERE id = ?')
+      .bind('completed', 'simulated', now, payment?.id).run()
+  } catch(e) { console.error('Erreur simulation payment update:', e) }
 
   // Mark the linked order as paid
   if (orderId) {

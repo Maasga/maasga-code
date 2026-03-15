@@ -4410,7 +4410,7 @@ export const AdminPaiementsPage = ({ payments = [], stats }: { payments: any[]; 
                   <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Statut</th>
                   <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider hidden lg:table-cell">Réf.</th>
                   <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider hidden md:table-cell">Date</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Actions</th>
+                  <th class="px-5 py-3"></th>
                 </tr>
               </thead>
               <tbody data-paginate="15">
@@ -4440,17 +4440,7 @@ export const AdminPaiementsPage = ({ payments = [], stats }: { payments: any[]; 
                       <td class="px-5 py-3 text-xs font-mono hidden lg:table-cell" style="color:#64748b;">{p.provider_ref || '—'}</td>
                       <td class="px-5 py-3 text-xs hidden md:table-cell" style="color:#94a3b8;">{p.created_at ? new Date(p.created_at).toLocaleDateString('fr-FR') : '—'}</td>
                       <td class="px-5 py-3">
-                        <div class="flex gap-1">
-                          {(p.status === 'pending' || p.status === 'processing') && (
-                            <form method="post" action="/admin/paiements/update-status" style="display:inline;" onsubmit="return confirm('Annuler ce paiement ?')">
-                              <input type="hidden" name="payment_id" value={p.id} />
-                              <input type="hidden" name="status" value="cancelled" />
-                              <button type="submit" class="p-2 rounded-lg hover:bg-red-500/20 transition-colors" title="Annuler">
-                                <i class="fas fa-times text-xs" style="color:#f87171;"></i>
-                              </button>
-                            </form>
-                          )}
-                        </div>
+                        <span class="text-xs" style="color:#475569;">—</span>
                       </td>
                     </tr>
                   )
