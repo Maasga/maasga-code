@@ -787,45 +787,55 @@ async function renderDashboard(c: any, clientId: number) {
       }
     })
   }
+  // Rétroactivement lier les commandes créées avec ce téléphone mais sans client_id
+  // Gère les variantes de format : "55996418", "+22655996418", "0022655996418"
+  if (client.phone) {
+    try {
+      const rawPhone = client.phone.replace(/\D/g, '')
+      const last8 = rawPhone.slice(-8)
+      await db.prepare("UPDATE orders SET client_id = ? WHERE (client_phone = ? OR client_phone LIKE ?) AND (client_id IS NULL OR client_id = 0)")
+        .bind(clientId, client.phone, `%${last8}`).run()
+    } catch(_) {}
+  }
   // Batch all dashboard queries for performance — wrapped in try/catch for resilience
   let orders: any[] = [], rdvs: any[] = [], maintenanceContracts: any[] = []
   let maintenanceVisits: any[] = [], maintenanceRequests: any[] = []
   let clientPayments: any[] = [], activityLog: any[] = []
-  try {
-    const [ordersRes, rdvsRes, contractsRes, visitsRes, requestsRes, paymentsRes, activityRes] = await db.batch([
-      db.prepare('SELECT o.id, o.type, o.status, o.notes, o.total_price, o.delivered_at, o.installed_at, o.created_at, p.name as product_name, p.btu, p.brand, p.image FROM orders o LEFT JOIN products p ON o.product_id = p.id WHERE o.client_phone = ? ORDER BY o.created_at DESC').bind(client.phone),
-      db.prepare('SELECT id, date, heure_debut, heure_fin, type, status, quartier, notes, created_at FROM appointments WHERE phone = ? ORDER BY date DESC').bind(client.phone),
-      db.prepare('SELECT id, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date, notes FROM maintenance_contracts WHERE client_phone = ? ORDER BY created_at DESC').bind(client.phone),
-      db.prepare('SELECT id, contract_id, visit_type, visit_date, status, technician, description, actions_performed, notes FROM maintenance_visits WHERE client_phone = ? ORDER BY visit_date DESC').bind(client.phone),
-      db.prepare('SELECT id, request_type, description, preferred_date, equipment_type, plan_type, status, created_at FROM maintenance_requests WHERE phone = ? ORDER BY created_at DESC').bind(client.phone),
-      db.prepare('SELECT id, payment_type, amount, method, status, provider_ref, order_id, created_at FROM payments WHERE client_phone = ? ORDER BY created_at DESC').bind(client.phone),
-      db.prepare('SELECT id, action, category, details, created_at FROM user_activity_log WHERE client_id = ? ORDER BY created_at DESC LIMIT 50').bind(clientId)
-    ])
-    orders = ordersRes.results || []
-    rdvs = rdvsRes.results || []
-    maintenanceContracts = contractsRes.results || []
-    maintenanceVisits = visitsRes.results || []
-    maintenanceRequests = requestsRes.results || []
-    clientPayments = paymentsRes.results || []
-    activityLog = activityRes.results || []
 
-    // Auto-sync : passe les commandes encore à 'pending' dont le paiement est 'completed' → 'paid'
-    for (const p of clientPayments.filter((p: any) => p.status === 'completed' && p.order_id)) {
-      const ord = (orders as any[]).find((o: any) => o.id === p.order_id && o.status === 'pending')
-      if (ord) {
-        try {
-          await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?')
-            .bind('paid', new Date().toISOString(), ord.id).run()
-          ord.status = 'paid'
-        } catch(_) {}
-      }
+  // Use individual queries instead of batch for better reliability
+  try {
+    orders = (await db.prepare('SELECT o.id, o.type, o.status, o.notes, o.total_price, o.delivered_at, o.installed_at, o.created_at, p.name as product_name, p.btu, p.brand, p.image FROM orders o LEFT JOIN products p ON o.product_id = p.id WHERE o.client_id = ? ORDER BY o.created_at DESC').bind(clientId).all()).results || []
+  } catch(e) { console.error('Dashboard orders query error:', e) }
+  try {
+    rdvs = (await db.prepare('SELECT id, date, heure_debut, heure_fin, type, status, quartier, notes, created_at FROM appointments WHERE phone = ? ORDER BY date DESC').bind(client.phone).all()).results || []
+  } catch(e) { console.error('Dashboard rdvs query error:', e) }
+  try {
+    maintenanceContracts = (await db.prepare('SELECT id, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date, notes FROM maintenance_contracts WHERE client_phone = ? ORDER BY created_at DESC').bind(client.phone).all()).results || []
+  } catch(e) { console.error('Dashboard contracts query error:', e) }
+  try {
+    maintenanceVisits = (await db.prepare('SELECT id, contract_id, visit_type, visit_date, status, technician, description, actions_performed, notes FROM maintenance_visits WHERE client_phone = ? ORDER BY visit_date DESC').bind(client.phone).all()).results || []
+  } catch(e) { console.error('Dashboard visits query error:', e) }
+  try {
+    maintenanceRequests = (await db.prepare('SELECT id, request_type, description, preferred_date, equipment_type, plan_type, status, created_at FROM maintenance_requests WHERE phone = ? ORDER BY created_at DESC').bind(client.phone).all()).results || []
+  } catch(e) { console.error('Dashboard requests query error:', e) }
+  try {
+    clientPayments = (await db.prepare('SELECT id, payment_type, amount, method, status, provider_ref, order_id, created_at FROM payments WHERE client_phone = ? ORDER BY created_at DESC').bind(client.phone).all()).results || []
+  } catch(e) { console.error('Dashboard payments query error:', e) }
+  try {
+    activityLog = (await db.prepare('SELECT id, action, category, details, created_at FROM user_activity_log WHERE client_id = ? ORDER BY created_at DESC LIMIT 50').bind(clientId).all()).results || []
+  } catch(e) { console.error('Dashboard activity query error:', e) }
+
+  // Auto-sync: only promote orders from 'pending'→'paid' if payment is completed
+  // Never regress a status that's already past 'paid'
+  for (const p of clientPayments.filter((p: any) => p.status === 'completed' && p.order_id)) {
+    const ord = (orders as any[]).find((o: any) => o.id === p.order_id && o.status === 'pending')
+    if (ord) {
+      try {
+        await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ? AND status = ?')
+          .bind('paid', new Date().toISOString(), ord.id, 'pending').run()
+        ord.status = 'paid'
+      } catch(_) {}
     }
-  } catch (batchErr) {
-    console.error('Dashboard batch query error:', batchErr)
-    // Fallback: run core queries individually so dashboard still renders
-    try { orders = (await db.prepare('SELECT o.id, o.type, o.status, o.notes, o.total_price, o.delivered_at, o.installed_at, o.created_at, p.name as product_name, p.btu, p.brand, p.image FROM orders o LEFT JOIN products p ON o.product_id = p.id WHERE o.client_phone = ? ORDER BY o.created_at DESC').bind(client.phone).all()).results || [] } catch(_) {}
-    try { rdvs = (await db.prepare('SELECT id, date, heure_debut, heure_fin, type, status, quartier, notes, created_at FROM appointments WHERE phone = ? ORDER BY date DESC').bind(client.phone).all()).results || [] } catch(_) {}
-    try { activityLog = (await db.prepare('SELECT id, action, category, details, created_at FROM user_activity_log WHERE client_id = ? ORDER BY created_at DESC LIMIT 50').bind(clientId).all()).results || [] } catch(_) {}
   }
   return c.html(<EspaceClientPage
     loggedIn={true}
@@ -3243,11 +3253,14 @@ app.post('/api/order/create', async (c) => {
         console.error('Erreur createClient depuis order:', error)
       }
 
-      // Log activity for connected users
+      // Log activity + link client_id for connected users
       try {
         const sessionToken = getCookie(c, 'maasga_session') || ''
         const session = sessionToken ? await getSession(c.env.DB, sessionToken) : null
         if (session) {
+          // Patch the order with the session's client_id so it shows up in dashboard
+          await db.prepare('UPDATE orders SET client_id = ? WHERE id = ? AND (client_id IS NULL OR client_id = 0)')
+            .bind(session.clientId, newOrder.id).run()
           await logActivity(db, {
             clientId: session.clientId,
             clientPhone: orderData.client_phone,
@@ -6643,7 +6656,7 @@ app.post('/api/admin/commande/update-statut', adminAuth, async (c) => {
     }
   }
 
-  return c.redirect('/admin/commandes?success=1')
+  return c.json({ success: true })
 })
 
 // ============================================================

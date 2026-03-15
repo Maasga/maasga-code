@@ -321,9 +321,8 @@ function orderStepIndex(status: string): number {
   if (status === 'paid') return 1
   if (status === 'en_livraison') return 2
   if (status === 'livre') return 3
-  if (status === 'validation_terrain' || status === 'devis_en_attente' || status === 'devis_valide' || status === 'devis_refuse') return 4
-  if (status === 'validated' || status === 'installing') return 4
-  if (status === 'installed') return 5
+  if (status === 'validation_terrain' || status === 'devis_en_attente' || status === 'devis_valide' || status === 'devis_refuse' || status === 'validated' || status === 'installing') return 3
+  if (status === 'installed') return 4
   return 0
 }
 function orderStepDesc(status: string): { msg: string; color: string } {
@@ -555,10 +554,9 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                   const steps = [
                     { label: 'Commande', icon: 'fa-receipt', done: step >= 0 },
                     { label: 'Payée', icon: 'fa-credit-card', done: step >= 1 },
-                    { label: 'Livraison', icon: 'fa-truck', done: step >= 2 },
+                    { label: 'En livraison', icon: 'fa-truck', done: step >= 2 },
                     { label: 'Livrée', icon: 'fa-box-open', done: step >= 3 },
-                    { label: 'Validation', icon: 'fa-clipboard-check', done: step >= 4 },
-                    { label: 'Installée', icon: 'fa-check-double', done: step >= 5 }
+                    { label: 'Installée', icon: 'fa-check-double', done: step >= 4 }
                   ]
                   return (
                     <div class="p-4 rounded-xl" style="background:#f0f7ff; border:1px solid rgba(0,119,182,0.1);">
@@ -1154,7 +1152,7 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
               modal.innerHTML = '<div style="background:white;border-radius:16px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;">'
                 + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
                 + '<h3 style="font-size:16px;font-weight:700;color:#03045e;">Devis #' + dv.id + '</h3>'
-                + '<button onclick="document.getElementById(\'devis-modal\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8;">&times;</button></div>'
+                + '<button onclick="document.getElementById(\\'devis-modal\\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8;">&times;</button></div>'
                 + '<p style="font-size:14px;font-weight:600;color:#334155;margin-bottom:4px;">' + (dv.title||'Devis') + '</p>'
                 + (dv.description ? '<p style="font-size:12px;color:#64748b;margin-bottom:12px;">' + dv.description + '</p>' : '')
                 + '<table style="width:100%;font-size:13px;border-collapse:collapse;margin-bottom:12px;"><thead><tr style="background:#f0f7ff;"><th style="padding:6px 10px;text-align:left;">Élément</th><th style="padding:6px 10px;text-align:right;">Montant</th></tr></thead><tbody>' + itemsHtml + '</tbody></table>'

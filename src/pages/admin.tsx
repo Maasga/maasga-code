@@ -2959,7 +2959,7 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
                 const paymentStatus = payment ? (payment.status === 'completed' ? '✅ Payé' : payment.status === 'pending' ? '⏳ En attente' : payment.status === 'failed' ? '❌ Échoué' : payment.status) : '—'
                 const paymentColor = payment ? (payment.status === 'completed' ? '#34d399' : payment.status === 'pending' ? '#fbbf24' : '#f87171') : '#94a3b8'
                 return (
-                <tr class="hover:bg-green-900/10 transition-colors">
+                <tr class="hover:bg-green-900/10 transition-colors" data-order-id={String(o.id)}>
                   <td class="py-3 px-4 text-xs text-gray-500 font-mono font-bold hidden lg:table-cell">#CMD-{String(o.id).padStart(4, '0')}</td>
                   <td class="py-3 px-4">
                     <div class="font-semibold text-gray-200 text-sm">{o.client_name}</div>
@@ -2972,23 +2972,29 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
                     {payment?.method && <div class="text-[10px] text-gray-500 mt-0.5">{payment.method}</div>}
                   </td>
                   <td class="py-3 px-4">
-                    <span class="text-xs px-2.5 py-1 rounded-full font-semibold" style={`background:${si.bg}; color:${si.color};`}>{si.label}</span>
+                    <span class="status-badge text-xs px-2.5 py-1 rounded-full font-semibold" style={`background:${si.bg}; color:${si.color};`}>{si.label}</span>
                   </td>
                   <td class="py-3 px-4 text-xs text-gray-500 hidden sm:table-cell">{new Date(o.created_at).toLocaleDateString('fr-FR')}</td>
                   <td class="py-3 px-4 hidden sm:table-cell">
                     <div class="flex items-center gap-2 flex-wrap">
-                      {/* Status dropdown — full flow */}
-                      <select name={`status-${o.id}`} onchange={`updateOrderStatus(${o.id}, this.value)`} class="text-xs border px-2 py-1.5 rounded-lg font-medium cursor-pointer" style="background:rgba(59,130,246,0.1); border-color:rgba(59,130,246,0.25); color:#60a5fa;">
-                        <option value="pending" selected={o.status === 'pending'}>En attente</option>
-                        <option value="paid" selected={o.status === 'paid'}>Payée</option>
-                        <option value="en_livraison" selected={o.status === 'en_livraison'}>En livraison</option>
-                        <option value="livre" selected={o.status === 'livre'}>Livrée</option>
-                        <option value="validation_terrain" selected={o.status === 'validation_terrain'}>Validation terrain</option>
-                        <option value="devis_en_attente" selected={o.status === 'devis_en_attente'}>Devis en attente</option>
-                        <option value="devis_valide" selected={o.status === 'devis_valide'}>Devis validé</option>
-                        <option value="installing" selected={o.status === 'installing'}>En installation</option>
-                        <option value="installed" selected={o.status === 'installed'}>Installée</option>
-                        <option value="cancelled" selected={o.status === 'cancelled'}>Annulée</option>
+                      {/* Status dropdown — contextual next steps only */}
+                      <select data-order-id={String(o.id)} name={`status-${o.id}`} onchange={`updateOrderStatus(${o.id}, this.value)`} class="text-xs border px-2 py-1.5 rounded-lg font-medium cursor-pointer" style="background:rgba(59,130,246,0.1); border-color:rgba(59,130,246,0.25); color:#60a5fa;">
+                        <option value={o.status} selected>
+                          {({ pending:'⏳ En attente', paid:'💳 Payée', en_livraison:'🚚 En livraison', livre:'📦 Livrée', validation_terrain:'🔍 Validation terrain', devis_en_attente:'📋 Devis en attente', devis_valide:'✅ Devis validé', devis_refuse:'❌ Devis refusé', installing:'🔧 Installation', installed:'✅ Installée', cancelled:'🚫 Annulée', validated:'✅ Validée', refunded:'💶 Remboursée' } as Record<string,string>)[o.status] || o.status}
+                        </option>
+                        {o.status === 'pending' && <option value="paid">→ Marquer payée</option>}
+                        {o.status === 'paid' && <option value="en_livraison">→ Envoyer en livraison</option>}
+                        {o.status === 'en_livraison' && <option value="livre">→ Marquer livrée</option>}
+                        {o.status === 'livre' && <option value="validation_terrain">→ Planifier visite terrain</option>}
+                        {o.status === 'livre' && <option value="installed">→ Marquer installée</option>}
+                        {o.status === 'validation_terrain' && <option value="devis_en_attente">→ Envoyer devis</option>}
+                        {o.status === 'validation_terrain' && <option value="installed">→ Marquer installée</option>}
+                        {o.status === 'devis_en_attente' && <option value="devis_valide">→ Devis accepté</option>}
+                        {o.status === 'devis_en_attente' && <option value="devis_refuse">→ Devis refusé</option>}
+                        {o.status === 'devis_valide' && <option value="installing">→ Lancer installation</option>}
+                        {o.status === 'devis_refuse' && <option value="devis_en_attente">→ Renvoyer devis</option>}
+                        {o.status === 'installing' && <option value="installed">→ Installation terminée</option>}
+                        {!['installed', 'cancelled', 'refunded'].includes(o.status) && <option value="cancelled">⛔ Annuler</option>}
                       </select>
                       {/* Créer devis pour cette commande */}
                       {(o.status === 'livre' || o.status === 'validation_terrain' || o.status === 'paid') && (
@@ -3365,13 +3371,35 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
       });
 
       function updateOrderStatus(orderId, newStatus) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/api/admin/commande/update-statut';
-        var i1 = document.createElement('input'); i1.type='hidden'; i1.name='id'; i1.value=String(orderId); form.appendChild(i1);
-        var i2 = document.createElement('input'); i2.type='hidden'; i2.name='status'; i2.value=newStatus; form.appendChild(i2);
-        document.body.appendChild(form);
-        form.submit();
+        var sel = document.querySelector('select[data-order-id="' + orderId + '"]');
+        if (sel) { sel.disabled = true; sel.style.opacity = '0.5'; }
+        var fd = new FormData();
+        fd.append('id', String(orderId));
+        fd.append('status', String(newStatus));
+        fetch('/api/admin/commande/update-statut', { method: 'POST', body: fd, credentials: 'same-origin' })
+          .then(function(r) {
+            // Expect redirect (3xx) or 200 — any non-5xx is a success
+            if (r.ok || r.redirected || r.status < 500) {
+              showToast('Statut mis à jour ✓', 'success');
+              // Update badge in row without page reload
+              var row = document.querySelector('tr[data-order-id="' + orderId + '"]');
+              if (row) {
+                var badge = row.querySelector('.status-badge');
+                var statusLabels = { pending:'En attente', paid:'Payée', en_livraison:'En livraison', livre:'Livrée',
+                  validation_terrain:'Visite terrain', devis_en_attente:'Devis en attente', devis_valide:'Devis validé',
+                  devis_refuse:'Devis refusé', validated:'Validée', installing:'En installation',
+                  installed:'Installée', cancelled:'Annulée', refunded:'Remboursée' };
+                if (badge) badge.textContent = statusLabels[newStatus] || newStatus;
+              }
+            } else {
+              showToast('Erreur mise à jour statut', 'error');
+            }
+            if (sel) { sel.disabled = false; sel.style.opacity = ''; }
+          })
+          .catch(function(e) {
+            showToast('Erreur réseau: ' + e.message, 'error');
+            if (sel) { sel.disabled = false; sel.style.opacity = ''; }
+          });
       }
 
       function openDevisModal(orderId, clientName, clientPhone) {
