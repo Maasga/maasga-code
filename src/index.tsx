@@ -11,7 +11,7 @@ import { AvisPage } from './pages/avis'
 import { AProposPage } from './pages/a-propos'
 import { ContactPage } from './pages/contact'
 import { EspaceClientPage } from './pages/espace-client'
-import { AdminPage, AdminProduitsPage, AdminRDVPage, AdminClientsPage, AdminCommandesPage, AdminAvisPage, AdminParametresPage, AdminDevisListPage, AdminDevisNewPage, AdminPaiementsPage, AdminMaintenancePage, AdminMessagesPage, AdminRealisationsPage, AdminSAVPage, AdminSAVDetailPage, AdminAuditLogPage, AdminNotificationsPage } from './pages/admin'
+import { AdminPage, AdminProduitsPage, AdminRDVPage, AdminClientsPage, AdminCommandesPage, AdminAvisPage, AdminParametresPage, AdminDevisListPage, AdminDevisNewPage, AdminDevisDetailPage, AdminPaiementsPage, AdminMaintenancePage, AdminMessagesPage, AdminRealisationsPage, AdminSAVPage, AdminSAVDetailPage, AdminAuditLogPage, AdminNotificationsPage } from './pages/admin'
 import { RealisationsPage } from './pages/realisations'
 import { ContratMaintenancePage } from './pages/contrat-maintenance'
 import { appointments, reviews, orders, clients, setMaintenanceDueCount } from './data/store'
@@ -801,41 +801,41 @@ async function renderDashboard(c: any, clientId: number) {
   let orders: any[] = [], rdvs: any[] = [], maintenanceContracts: any[] = []
   let maintenanceVisits: any[] = [], maintenanceRequests: any[] = []
   let clientPayments: any[] = [], activityLog: any[] = []
+  try {
+    const [ordersRes, rdvsRes, contractsRes, visitsRes, requestsRes, paymentsRes, activityRes] = await db.batch([
+      db.prepare('SELECT o.id, o.type, o.status, o.notes, o.total_price, o.delivered_at, o.installed_at, o.created_at, p.name as product_name, p.btu, p.brand, p.image FROM orders o LEFT JOIN products p ON o.product_id = p.id WHERE (o.client_phone = ? OR o.client_id = ?) GROUP BY o.id ORDER BY o.created_at DESC').bind(client.phone, clientId),
+      db.prepare('SELECT id, date, heure_debut, heure_fin, type, status, quartier, notes, created_at FROM appointments WHERE phone = ? ORDER BY date DESC').bind(client.phone),
+      db.prepare('SELECT id, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date, notes, order_id FROM maintenance_contracts WHERE (client_phone = ? OR (client_id IS NOT NULL AND client_id = ?)) GROUP BY id ORDER BY created_at DESC').bind(client.phone, clientId),
+      db.prepare('SELECT id, contract_id, visit_type, visit_date, status, technician, description, actions_performed, notes FROM maintenance_visits WHERE (client_phone = ? OR (client_id IS NOT NULL AND client_id = ?)) GROUP BY id ORDER BY visit_date DESC').bind(client.phone, clientId),
+      db.prepare('SELECT id, request_type, description, preferred_date, equipment_type, plan_type, status, created_at FROM maintenance_requests WHERE phone = ? ORDER BY created_at DESC').bind(client.phone),
+      db.prepare('SELECT id, payment_type, amount, method, status, provider_ref, order_id, created_at FROM payments WHERE client_phone = ? ORDER BY created_at DESC').bind(client.phone),
+      db.prepare('SELECT id, action, category, details, created_at FROM user_activity_log WHERE client_id = ? ORDER BY created_at DESC LIMIT 50').bind(clientId)
+    ])
+    orders = ordersRes.results || []
+    rdvs = rdvsRes.results || []
+    maintenanceContracts = contractsRes.results || []
+    maintenanceVisits = visitsRes.results || []
+    maintenanceRequests = requestsRes.results || []
+    clientPayments = paymentsRes.results || []
+    activityLog = activityRes.results || []
 
-  // Use individual queries instead of batch for better reliability
-  try {
-    orders = (await db.prepare('SELECT o.id, o.type, o.status, o.notes, o.total_price, o.delivered_at, o.installed_at, o.created_at, p.name as product_name, p.btu, p.brand, p.image FROM orders o LEFT JOIN products p ON o.product_id = p.id WHERE o.client_id = ? ORDER BY o.created_at DESC').bind(clientId).all()).results || []
-  } catch(e) { console.error('Dashboard orders query error:', e) }
-  try {
-    rdvs = (await db.prepare('SELECT id, date, heure_debut, heure_fin, type, status, quartier, notes, created_at FROM appointments WHERE phone = ? ORDER BY date DESC').bind(client.phone).all()).results || []
-  } catch(e) { console.error('Dashboard rdvs query error:', e) }
-  try {
-    maintenanceContracts = (await db.prepare('SELECT id, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date, notes FROM maintenance_contracts WHERE client_phone = ? ORDER BY created_at DESC').bind(client.phone).all()).results || []
-  } catch(e) { console.error('Dashboard contracts query error:', e) }
-  try {
-    maintenanceVisits = (await db.prepare('SELECT id, contract_id, visit_type, visit_date, status, technician, description, actions_performed, notes FROM maintenance_visits WHERE client_phone = ? ORDER BY visit_date DESC').bind(client.phone).all()).results || []
-  } catch(e) { console.error('Dashboard visits query error:', e) }
-  try {
-    maintenanceRequests = (await db.prepare('SELECT id, request_type, description, preferred_date, equipment_type, plan_type, status, created_at FROM maintenance_requests WHERE phone = ? ORDER BY created_at DESC').bind(client.phone).all()).results || []
-  } catch(e) { console.error('Dashboard requests query error:', e) }
-  try {
-    clientPayments = (await db.prepare('SELECT id, payment_type, amount, method, status, provider_ref, order_id, created_at FROM payments WHERE client_phone = ? ORDER BY created_at DESC').bind(client.phone).all()).results || []
-  } catch(e) { console.error('Dashboard payments query error:', e) }
-  try {
-    activityLog = (await db.prepare('SELECT id, action, category, details, created_at FROM user_activity_log WHERE client_id = ? ORDER BY created_at DESC LIMIT 50').bind(clientId).all()).results || []
-  } catch(e) { console.error('Dashboard activity query error:', e) }
-
-  // Auto-sync: only promote orders from 'pending'→'paid' if payment is completed
-  // Never regress a status that's already past 'paid'
-  for (const p of clientPayments.filter((p: any) => p.status === 'completed' && p.order_id)) {
-    const ord = (orders as any[]).find((o: any) => o.id === p.order_id && o.status === 'pending')
-    if (ord) {
-      try {
-        await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ? AND status = ?')
-          .bind('paid', new Date().toISOString(), ord.id, 'pending').run()
-        ord.status = 'paid'
-      } catch(_) {}
+    // Auto-sync : passe les commandes encore à 'pending' dont le paiement est 'completed' → 'paid'
+    for (const p of clientPayments.filter((p: any) => p.status === 'completed' && p.order_id)) {
+      const ord = (orders as any[]).find((o: any) => o.id === p.order_id && o.status === 'pending')
+      if (ord) {
+        try {
+          await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?')
+            .bind('paid', new Date().toISOString(), ord.id).run()
+          ord.status = 'paid'
+        } catch(_) {}
+      }
     }
+  } catch (batchErr) {
+    console.error('Dashboard batch query error:', batchErr)
+    // Fallback: run core queries individually so dashboard still renders
+    try { orders = (await db.prepare('SELECT o.id, o.type, o.status, o.notes, o.total_price, o.delivered_at, o.installed_at, o.created_at, p.name as product_name, p.btu, p.brand, p.image FROM orders o LEFT JOIN products p ON o.product_id = p.id WHERE (o.client_phone = ? OR o.client_id = ?) GROUP BY o.id ORDER BY o.created_at DESC').bind(client.phone, clientId).all()).results || [] } catch(_) {}
+    try { rdvs = (await db.prepare('SELECT id, date, heure_debut, heure_fin, type, status, quartier, notes, created_at FROM appointments WHERE phone = ? ORDER BY date DESC').bind(client.phone).all()).results || [] } catch(_) {}
+    try { activityLog = (await db.prepare('SELECT id, action, category, details, created_at FROM user_activity_log WHERE client_id = ? ORDER BY created_at DESC LIMIT 50').bind(clientId).all()).results || [] } catch(_) {}
   }
   return c.html(<EspaceClientPage
     loggedIn={true}
@@ -2727,195 +2727,250 @@ app.get('/api/order/invoice/:id', async (c) => {
     } catch {}
   }
   if (!session && !isAdmin) {
-    return c.redirect('/espace-client?error=' + encodeURIComponent('Veuillez vous connecter.'))
+    return c.redirect('/espace-client?error=' + encodeURIComponent('Veuillez vous connecter pour accéder à la facture.'))
   }
 
-  const order = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(orderId).first() as any
-  if (!order) return c.text('Commande introuvable', 404)
-
-  // Client: verify ownership
-  if (session && !isAdmin) {
-    const client = await db.prepare('SELECT * FROM clients WHERE id = ?').bind(session.clientId).first() as any
-    if (!client || (client.phone !== order.client_phone && (!order.client_id || client.id !== order.client_id))) {
-      return c.text('Accès non autorisé', 403)
-    }
-  }
-
-  // Fetch product info
-  const product = order.product_id ? await db.prepare('SELECT name, price, category, brand FROM products WHERE id = ?').bind(order.product_id).first() as any : null
-
-  // Fetch payment info
-  const payment = await db.prepare(
-    "SELECT amount, method, status, provider_ref, created_at FROM payments WHERE payment_type = 'order' AND (order_id = ? OR (client_phone = ? AND amount = ?)) ORDER BY created_at DESC LIMIT 1"
-  ).bind(orderId, order.client_phone, order.total_price).first() as any
-
-  // Fetch client info
-  const client = order.client_id ? await db.prepare('SELECT * FROM clients WHERE id = ?').bind(order.client_id).first() as any : null
-
-  // Fetch company IFU from site_settings
-  let companyIFU = '00127845A' // Default
   try {
-    const ifuRow = await db.prepare("SELECT value FROM site_settings WHERE key = 'ifu'").first() as any
-    if (ifuRow?.value) companyIFU = ifuRow.value
-  } catch (_) {}
+    const order = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(orderId).first() as any
+    if (!order) return c.text('Commande introuvable', 404)
 
-  const invoiceDate = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-  const invoiceNum = `MAASGA-CMD-${String(orderId).padStart(5, '0')}`
-  const orderDate = order.created_at ? new Date(order.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : invoiceDate
+    // Client: verify ownership
+    if (session && !isAdmin) {
+      const clientCheck = await db.prepare('SELECT id, phone FROM clients WHERE id = ?').bind(session.clientId).first() as any
+      if (!clientCheck || (clientCheck.phone !== order.client_phone && (!order.client_id || clientCheck.id !== order.client_id))) {
+        return c.text('Accès non autorisé', 403)
+      }
+    }
 
-  const statusLabels: Record<string, string> = { pending: 'En attente', validation_terrain: 'Validation terrain', validated: 'Validée', installed: 'Installée', cancelled: 'Annulée' }
-  const statusColors: Record<string, string> = { pending: 'background:rgba(217,119,6,0.1);color:#d97706;', validated: 'background:rgba(59,130,246,0.1);color:#3b82f6;', installed: 'background:rgba(22,163,74,0.1);color:#16a34a;', cancelled: 'background:rgba(239,68,68,0.1);color:#ef4444;', validation_terrain: 'background:rgba(168,85,247,0.1);color:#a855f7;' }
-  const payMethodLabels: Record<string, string> = { orange_money: 'Orange Money', moov_money: 'Moov Money', wave: 'Wave', carte_bancaire: 'Carte bancaire', ligdicash: 'LigdiCash', cash: 'Espèces', a_confirmer: 'À confirmer' }
+    // Fetch related data
+    const product = order.product_id
+      ? await db.prepare('SELECT name, price, brand FROM products WHERE id = ?').bind(order.product_id).first() as any
+      : null
 
-  const unitPrice = product?.price || (order.total_price / (order.quantity || 1))
-  const qty = order.quantity || 1
-  const subtotal = unitPrice * qty
-  const installPrice = order.installation_price || 0
-  const totalTTC = order.total_price || (subtotal + installPrice)
+    let payment: any = null
+    try {
+      payment = await db.prepare(
+        "SELECT amount, method, status, provider_ref, created_at FROM payments WHERE payment_type = 'order' AND (order_id = ? OR (client_phone = ? AND amount = ?)) ORDER BY created_at DESC LIMIT 1"
+      ).bind(orderId, order.client_phone || '', order.total_price || 0).first()
+    } catch (_) {}
 
-  const html = `<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Facture ${invoiceNum} — MAASGA</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Inter',sans-serif;background:#f8fafc;color:#1e293b}
-    .invoice-container{max-width:800px;margin:20px auto;background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden}
-    .header{background:linear-gradient(135deg,#03045e,#0077b6);color:#fff;padding:40px;display:flex;justify-content:space-between;align-items:flex-start}
-    .header .logo{font-size:28px;font-weight:800;letter-spacing:-0.5px}
-    .header .logo span{color:#00b4d8}
-    .header .inv-info{text-align:right;font-size:13px}
-    .header .inv-info .inv-num{font-size:18px;font-weight:700;margin-bottom:6px}
-    .body{padding:40px}
-    .parties{display:flex;gap:40px;margin-bottom:36px}
-    .party{flex:1}
-    .party h4{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;font-weight:700;margin-bottom:10px}
-    .party p{font-size:13px;line-height:1.7;color:#334155}
-    .party .name{font-size:15px;font-weight:700;color:#03045e;margin-bottom:4px}
-    table{width:100%;border-collapse:collapse;margin-bottom:30px}
-    table th{background:#f8fafc;padding:12px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:700;border-bottom:2px solid #e2e8f0}
-    table td{padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155}
-    .summary{margin-left:auto;width:320px;margin-bottom:30px}
-    .summary .row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9}
-    .summary .row.total{border-bottom:none;border-top:2px solid #03045e;padding-top:14px;margin-top:6px;font-size:18px;font-weight:800;color:#03045e}
-    .status-badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700}
-    .payment-info{border-radius:12px;padding:16px;margin-bottom:30px;display:flex;align-items:center;gap:12px}
-    .payment-info .pay-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
-    .footer{text-align:center;padding:30px 40px;border-top:1px solid #e2e8f0;font-size:12px;color:#94a3b8;line-height:1.6}
-    .btn-print{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#03045e,#0077b6);color:#fff;border:none;padding:12px 28px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin:20px auto;transition:all .2s}
-    .btn-print:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,119,182,0.35)}
-    .no-print{text-align:center;padding:20px}
-    @media print{body{background:#fff}.invoice-container{box-shadow:none;margin:0;border-radius:0}.no-print{display:none!important}.header{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-  </style>
-</head>
-<body>
-  <div class="no-print">
-    <button class="btn-print" onclick="window.print()">
-      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
-      Imprimer / Enregistrer en PDF
-    </button>
-  </div>
-  <div class="invoice-container">
-    <div class="header">
-      <div>
-        <img src="https://maasga-website.pages.dev/logo-site.png" alt="MAASGA Logo" style="height:60px;width:auto;border-radius:10px;margin-bottom:8px;display:block;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
-        <div class="logo" style="display:none;">MAASGA<span> ❄️</span></div>
-        <p style="font-size:13px;margin-top:6px;opacity:0.85;">Solutions Climatisation & Froid</p>
-      </div>
-      <div class="inv-info">
-        <div class="inv-num">${invoiceNum}</div>
-        <div>Date facture : ${invoiceDate}</div>
-        <div>Date commande : ${orderDate}</div>
-        <div style="margin-top:6px;">
-          <span class="status-badge" style="${statusColors[order.status] || statusColors.pending}">${statusLabels[order.status] || order.status}</span>
-        </div>
-      </div>
-    </div>
-    <div class="body">
-      <div class="parties">
-        <div class="party">
-          <h4>Emetteur</h4>
-          <p class="name">MAASGA SARL</p>
-          <p>Ouagadougou, Burkina Faso<br>
-          Tel : +226 55 99 64 18<br>
-          Email : maasgabf@gmail.com<br>
-          IFU : ${companyIFU}</p>
-        </div>
-        <div class="party">
-          <h4>Client</h4>
-          <p class="name">${escapeHtml(order.client_name)}</p>
-          <p>Tel : ${escapeHtml(order.client_phone)}<br>
-          ${order.client_email ? 'Email : ' + escapeHtml(order.client_email) + '<br>' : ''}
-          ${order.quartier ? 'Quartier : ' + escapeHtml(order.quartier) + '<br>' : ''}
-          ${order.client_id ? 'Ref. client : CLI-' + String(order.client_id).padStart(5, '0') : ''}</p>
-        </div>
-      </div>
+    let allDevis: any[] = []
+    try {
+      const dr = await db.prepare('SELECT * FROM order_devis WHERE order_id = ? ORDER BY id ASC').bind(orderId).all()
+      allDevis = dr.results || []
+    } catch (_) {}
 
-      <table>
-        <thead>
-          <tr>
-            <th>Description</th>
-            <th style="text-align:center;">Qte</th>
-            <th style="text-align:right;">Prix unit.</th>
-            <th style="text-align:right;">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>
-              <strong>${product ? escapeHtml(product.name) : 'Produit / Service'}</strong>
-              ${product?.brand ? '<br><span style="color:#64748b;font-size:12px;">' + escapeHtml(product.brand) + '</span>' : ''}
-              ${product?.category ? '<br><span style="color:#64748b;font-size:12px;">Cat: ' + escapeHtml(product.category) + '</span>' : ''}
-            </td>
-            <td style="text-align:center;">${qty}</td>
-            <td style="text-align:right;">${unitPrice.toLocaleString()} FCFA</td>
-            <td style="text-align:right;font-weight:600;">${subtotal.toLocaleString()} FCFA</td>
-          </tr>
-          ${installPrice > 0 ? '<tr><td>Installation / Mise en service</td><td style="text-align:center;">1</td><td style="text-align:right;">' + installPrice.toLocaleString() + ' FCFA</td><td style="text-align:right;font-weight:600;">' + installPrice.toLocaleString() + ' FCFA</td></tr>' : ''}
-        </tbody>
-      </table>
+    let companyIFU = '00127845A'
+    try {
+      const ifuRow = await db.prepare("SELECT value FROM site_settings WHERE key = 'ifu'").first() as any
+      if (ifuRow?.value) companyIFU = ifuRow.value
+    } catch (_) {}
 
-      <div class="summary">
-        <div class="row"><span>Sous-total produit(s)</span><span>${subtotal.toLocaleString()} FCFA</span></div>
-        ${installPrice > 0 ? '<div class="row"><span>Installation</span><span>' + installPrice.toLocaleString() + ' FCFA</span></div>' : ''}
-        <div class="row"><span>TVA (18%)</span><span>Incluse</span></div>
-        <div class="row total"><span>Total TTC</span><span>${totalTTC.toLocaleString()} FCFA</span></div>
-      </div>
+    // Compute amounts — no installation price, no TVA
+    const unitPrice: number = (product?.price) || (order.total_price ? Math.round(order.total_price / (order.quantity || 1)) : 0)
+    const qty: number = order.quantity || 1
+    const subtotal: number = unitPrice * qty
+    // Add validated devis total if any
+    const devisTotal: number = allDevis
+      .filter((d: any) => d.status === 'validated')
+      .reduce((sum: number, d: any) => sum + (d.total_amount || 0), 0)
+    const totalFinal: number = subtotal + devisTotal
 
-      ${payment ? `
-      <div class="payment-info" style="background:#f0fdf4;border:1px solid rgba(22,163,74,0.15);">
-        <div class="pay-icon" style="background:rgba(22,163,74,0.1);color:#16a34a;">✓</div>
-        <div>
-          <div style="font-size:14px;font-weight:700;color:#16a34a;">Paiement ${payment.status === 'completed' ? 'confirme' : payment.status === 'pending' ? 'en attente' : payment.status}</div>
-          <div style="font-size:12px;color:#64748b;">${payMethodLabels[payment.method] || payment.method || 'Non specifie'} · ${payment.created_at ? new Date(payment.created_at).toLocaleDateString('fr-FR') : ''} ${payment.provider_ref ? ' · Ref: ' + payment.provider_ref : ''}</div>
-        </div>
-      </div>
-      ` : `
-      <div class="payment-info" style="background:#fffbeb;border:1px solid rgba(217,119,6,0.15);">
-        <div class="pay-icon" style="background:rgba(217,119,6,0.1);color:#d97706;">&#8987;</div>
-        <div>
-          <div style="font-size:14px;font-weight:700;color:#d97706;">Paiement en attente</div>
-          <div style="font-size:12px;color:#64748b;">Le paiement sera confirme apres verification par notre equipe.</div>
-        </div>
-      </div>
-      `}
+    // Format helpers
+    const fmtDate = (d: string) => { try { return new Date(d).toLocaleDateString('fr-FR') } catch(_) { return d || '' } }
+    const fmtDateLong = (d: string) => { try { return new Date(d).toLocaleDateString('fr-FR', {day:'numeric',month:'long',year:'numeric'}) } catch(_) { return d || '' } }
+    const fmtNum = (n: number) => { try { return n.toLocaleString('fr-FR') } catch(_) { return String(n) } }
 
-      ${order.notes ? '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:20px;"><div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:700;margin-bottom:6px;">Notes</div><div style="font-size:13px;color:#334155;">' + escapeHtml(order.notes) + '</div></div>' : ''}
-    </div>
-    <div class="footer">
-      <p><strong>MAASGA SARL</strong> — Solutions Climatisation & Froid · Ouagadougou, Burkina Faso</p>
-      <p>Tel : +226 55 99 64 18 · Email : maasgabf@gmail.com · Web : maasga.com</p>
-      <p style="margin-top:8px;">Merci pour votre confiance. Ce document fait office de facture pour la commande referencee ci-dessus.</p>
-    </div>
-  </div>
-</body>
-</html>`
+    const invoiceDate = fmtDateLong(new Date().toISOString())
+    const invoiceNum = 'MAASGA-CMD-' + String(orderId).padStart(5, '0')
+    const orderDate = order.created_at ? fmtDateLong(order.created_at) : invoiceDate
 
-  return c.html(html)
+    const STATUS_LABEL: Record<string,string> = { pending:'En attente', paid:'Payée', livre:'Livrée', validation_terrain:'Validation terrain', devis_en_attente:'Devis envoyé', devis_valide:'Devis accepté', installed:'Installée', cancelled:'Annulée', refunded:'Remboursée' }
+    const STATUS_COLOR: Record<string,string> = { pending:'background:rgba(217,119,6,0.1);color:#d97706', paid:'background:rgba(59,130,246,0.1);color:#3b82f6', livre:'background:rgba(14,165,233,0.1);color:#0ea5e9', validation_terrain:'background:rgba(168,85,247,0.1);color:#a855f7', devis_en_attente:'background:rgba(245,158,11,0.1);color:#f59e0b', devis_valide:'background:rgba(16,185,129,0.1);color:#10b981', installed:'background:rgba(22,163,74,0.1);color:#16a34a', cancelled:'background:rgba(239,68,68,0.1);color:#ef4444', refunded:'background:rgba(124,58,237,0.1);color:#7c3aed' }
+    const PAY_METHOD: Record<string,string> = { orange_money:'Orange Money', moov_money:'Moov Money', wave:'Wave', carte_bancaire:'Carte bancaire', ligdicash:'LigdiCash', cash:'Espèces', a_confirmer:'À confirmer' }
+    const DEVIS_STATUS: Record<string,string> = { pending:'En attente', sent:'Envoyé', validated:'Accepté', refused:'Refusé', expired:'Expiré' }
+    const DEVIS_COLOR: Record<string,string> = { pending:'background:rgba(217,119,6,0.1);color:#d97706', sent:'background:rgba(59,130,246,0.1);color:#3b82f6', validated:'background:rgba(22,163,74,0.1);color:#16a34a', refused:'background:rgba(239,68,68,0.1);color:#ef4444', expired:'background:rgba(148,163,184,0.1);color:#94a3b8' }
+
+    // Build devis section using string concatenation to avoid nested template literal issues
+    let devisSection = ''
+    if (allDevis.length > 0) {
+      devisSection += '<div style="margin-bottom:30px;">'
+      devisSection += '<div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;font-weight:700;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #e2e8f0;">Devis associés à cette commande</div>'
+      for (let di = 0; di < allDevis.length; di++) {
+        const d: any = allDevis[di]
+        const dStatus = DEVIS_STATUS[d.status] || d.status || ''
+        const dColor = DEVIS_COLOR[d.status] || DEVIS_COLOR.pending
+        const dDate = d.created_at ? fmtDateLong(d.created_at) : ''
+        const dRef = 'DEV-' + String(d.id).padStart(5, '0')
+        devisSection += '<div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:14px;">'
+        devisSection += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">'
+        devisSection += '<div>'
+        devisSection += '<div style="font-size:14px;font-weight:700;color:#03045e;">Devis #' + (di + 1) + ' — ' + escapeHtml(d.title || 'Devis installation') + '</div>'
+        devisSection += '<div style="font-size:12px;color:#64748b;margin-top:2px;">Créé le ' + dDate + ' · Réf. ' + dRef + '</div>'
+        if (d.description) devisSection += '<div style="font-size:12px;color:#475569;margin-top:4px;">' + escapeHtml(d.description) + '</div>'
+        devisSection += '</div>'
+        devisSection += '<div style="text-align:right;">'
+        devisSection += '<span style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;' + dColor + '">' + dStatus + '</span>'
+        if (d.validated_at) devisSection += '<div style="font-size:11px;color:#16a34a;margin-top:4px;">Accepté le ' + fmtDate(d.validated_at) + '</div>'
+        if (d.refused_at) devisSection += '<div style="font-size:11px;color:#ef4444;margin-top:4px;">Refusé le ' + fmtDate(d.refused_at) + '</div>'
+        devisSection += '</div></div>'
+        let devisItems: any[] = []
+        try { devisItems = JSON.parse(d.items || '[]') } catch (_) {}
+        if (devisItems.length > 0) {
+          devisSection += '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;">'
+          devisSection += '<thead><tr style="background:#f8fafc;"><th style="padding:8px 10px;text-align:left;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Prestation / Article</th><th style="padding:8px 10px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Qté</th><th style="padding:8px 10px;text-align:right;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Prix unit.</th><th style="padding:8px 10px;text-align:right;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Total</th></tr></thead>'
+          devisSection += '<tbody>'
+          for (const it of devisItems) {
+            const itQty: number = it.quantity || 1
+            const itPrice: number = it.unit_price || it.price || 0
+            const itTotal: number = itQty * itPrice
+            devisSection += '<tr style="border-bottom:1px solid #f1f5f9;">'
+            devisSection += '<td style="padding:7px 10px;color:#334155;">' + escapeHtml(it.name || '') + (it.description ? '<br><span style="color:#94a3b8;font-size:11px;">' + escapeHtml(it.description) + '</span>' : '') + '</td>'
+            devisSection += '<td style="padding:7px 10px;text-align:center;color:#334155;">' + itQty + '</td>'
+            devisSection += '<td style="padding:7px 10px;text-align:right;color:#334155;">' + fmtNum(itPrice) + ' FCFA</td>'
+            devisSection += '<td style="padding:7px 10px;text-align:right;font-weight:600;color:#334155;">' + fmtNum(itTotal) + ' FCFA</td>'
+            devisSection += '</tr>'
+          }
+          devisSection += '</tbody></table>'
+        }
+        devisSection += '<div style="display:flex;justify-content:flex-end;margin-top:10px;">'
+        devisSection += '<div style="font-size:14px;font-weight:800;color:#03045e;">Total devis : ' + fmtNum(d.total_amount || 0) + ' FCFA</div>'
+        devisSection += '</div>'
+        if (d.client_response_notes) devisSection += '<div style="margin-top:8px;font-size:12px;color:#475569;background:#f8fafc;padding:8px 12px;border-radius:8px;"><strong>Réponse client :</strong> ' + escapeHtml(d.client_response_notes) + '</div>'
+        if (d.admin_notes) devisSection += '<div style="margin-top:6px;font-size:12px;color:#64748b;background:#fffbeb;padding:8px 12px;border-radius:8px;"><strong>Notes admin :</strong> ' + escapeHtml(d.admin_notes) + '</div>'
+        devisSection += '</div>'
+      }
+      devisSection += '</div>'
+    }
+
+    // Build product rows
+    let productRows = '<tr>'
+    productRows += '<td><strong>' + (product ? escapeHtml(product.name) : 'Produit / Service') + '</strong>'
+    if (product?.brand) productRows += '<br><span style="color:#64748b;font-size:12px;">' + escapeHtml(product.brand) + '</span>'
+    productRows += '</td>'
+    productRows += '<td style="text-align:center;">' + qty + '</td>'
+    productRows += '<td style="text-align:right;">' + fmtNum(unitPrice) + ' FCFA</td>'
+    productRows += '<td style="text-align:right;font-weight:600;">' + fmtNum(subtotal) + ' FCFA</td>'
+    productRows += '</tr>'
+
+    // Build summary rows — product only, devis if any, no TVA
+    let summaryRows = ''
+    if (devisTotal > 0) {
+      summaryRows += '<div class="row"><span>Climatiseur(s)</span><span>' + fmtNum(subtotal) + ' FCFA</span></div>'
+      summaryRows += '<div class="row"><span>Travaux suppl. (devis accepté)</span><span>' + fmtNum(devisTotal) + ' FCFA</span></div>'
+    }
+    summaryRows += '<div class="row total"><span>Total</span><span>' + fmtNum(totalFinal) + ' FCFA</span></div>'
+
+    // Build payment section
+    let paymentSection = ''
+    if (payment) {
+      const payStatus = payment.status === 'completed' ? 'Confirmé' : payment.status === 'pending' ? 'En attente' : (payment.status || 'Inconnu')
+      const payMethod = PAY_METHOD[payment.method] || payment.method || 'Non spécifié'
+      const payDate = payment.created_at ? fmtDate(payment.created_at) : ''
+      const payRef = payment.provider_ref ? ' · Réf: ' + payment.provider_ref : ''
+      paymentSection = '<div class="payment-info" style="background:#f0fdf4;border:1px solid rgba(22,163,74,0.15);">'
+      paymentSection += '<div class="pay-icon" style="background:rgba(22,163,74,0.1);color:#16a34a;">&#10003;</div>'
+      paymentSection += '<div><div style="font-size:14px;font-weight:700;color:#16a34a;">Paiement ' + payStatus + '</div>'
+      paymentSection += '<div style="font-size:12px;color:#64748b;">' + payMethod + (payDate ? ' · ' + payDate : '') + payRef + '</div></div>'
+      paymentSection += '</div>'
+    } else {
+      paymentSection = '<div class="payment-info" style="background:#fffbeb;border:1px solid rgba(217,119,6,0.15);">'
+      paymentSection += '<div class="pay-icon" style="background:rgba(217,119,6,0.1);color:#d97706;">&#8987;</div>'
+      paymentSection += '<div><div style="font-size:14px;font-weight:700;color:#d97706;">Paiement en attente</div>'
+      paymentSection += '<div style="font-size:12px;color:#64748b;">Le paiement sera confirmé après vérification par notre équipe.</div></div>'
+      paymentSection += '</div>'
+    }
+
+    // Build notes section
+    const notesSection = order.notes
+      ? '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:20px;"><div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:700;margin-bottom:6px;">Notes</div><div style="font-size:13px;color:#334155;">' + escapeHtml(order.notes) + '</div></div>'
+      : ''
+
+    const statusBadge = STATUS_COLOR[order.status] || STATUS_COLOR.pending
+    const statusLabel = STATUS_LABEL[order.status] || (order.status || 'Inconnu')
+
+    const html = '<!DOCTYPE html>\n<html lang="fr">\n<head>\n' +
+      '<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n' +
+      '<title>Facture ' + invoiceNum + ' \u2014 MAASGA</title>\n' +
+      '<style>\n' +
+      '@import url(\'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap\');\n' +
+      '*{margin:0;padding:0;box-sizing:border-box}\n' +
+      'body{font-family:\'Inter\',sans-serif;background:#f8fafc;color:#1e293b}\n' +
+      '.invoice-container{max-width:800px;margin:20px auto;background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden}\n' +
+      '.header{background:linear-gradient(135deg,#03045e,#0077b6);color:#fff;padding:40px;display:flex;justify-content:space-between;align-items:flex-start}\n' +
+      '.inv-num{font-size:18px;font-weight:700;margin-bottom:6px}\n' +
+      '.inv-info{text-align:right;font-size:13px;opacity:0.92}\n' +
+      '.body{padding:40px}\n' +
+      '.parties{display:flex;gap:40px;margin-bottom:36px}\n' +
+      '.party{flex:1}\n' +
+      '.party h4{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;font-weight:700;margin-bottom:10px}\n' +
+      '.party p{font-size:13px;line-height:1.8;color:#334155}\n' +
+      '.party .pname{font-size:15px;font-weight:700;color:#03045e;margin-bottom:4px}\n' +
+      'table{width:100%;border-collapse:collapse;margin-bottom:30px}\n' +
+      'table th{background:#f8fafc;padding:12px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:700;border-bottom:2px solid #e2e8f0}\n' +
+      'table td{padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155}\n' +
+      '.summary{margin-left:auto;width:320px;margin-bottom:30px}\n' +
+      '.row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px;color:#64748b;border-bottom:1px solid #f1f5f9}\n' +
+      '.row.total{border-bottom:none;border-top:2px solid #03045e;padding-top:14px;margin-top:6px;font-size:18px;font-weight:800;color:#03045e}\n' +
+      '.status-badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700}\n' +
+      '.payment-info{border-radius:12px;padding:16px;margin-bottom:30px;display:flex;align-items:center;gap:12px}\n' +
+      '.pay-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}\n' +
+      '.footer{text-align:center;padding:30px 40px;border-top:1px solid #e2e8f0;font-size:12px;color:#94a3b8;line-height:1.6}\n' +
+      '.btn-print{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#03045e,#0077b6);color:#fff;border:none;padding:12px 28px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin:20px auto;transition:all .2s}\n' +
+      '.btn-print:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,119,182,0.35)}\n' +
+      '.no-print{text-align:center;padding:20px}\n' +
+      '@media print{body{background:#fff}.invoice-container{box-shadow:none;margin:0;border-radius:0}.no-print{display:none!important}.header{-webkit-print-color-adjust:exact;print-color-adjust:exact}}\n' +
+      '</style>\n</head>\n<body>\n' +
+      '<div class="no-print"><button class="btn-print" onclick="window.print()"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>Imprimer / Enregistrer en PDF</button></div>\n' +
+      '<div class="invoice-container">\n' +
+      '<div class="header">\n' +
+      '<div style="display:flex;align-items:center;gap:16px;">\n' +
+      '<img src="/logo-site.png" alt="MAASGA" style="height:64px;width:auto;border-radius:10px;object-fit:contain;" onerror="this.style.display=\'none\'" />\n' +
+      '<div>\n' +
+      '<div style="font-size:26px;font-weight:800;letter-spacing:-0.5px;color:#fff;">MAASGA<span style="color:#00b4d8;"> ❄</span></div>\n' +
+      '<p style="font-size:13px;margin-top:4px;opacity:0.85;">Solutions Climatisation &amp; Froid</p>\n' +
+      '<p style="font-size:12px;margin-top:2px;opacity:0.7;">Ouagadougou, Burkina Faso</p>\n' +
+      '</div></div>\n' +
+      '<div class="inv-info">\n' +
+      '<div class="inv-num">' + invoiceNum + '</div>\n' +
+      '<div>Date facture : ' + invoiceDate + '</div>\n' +
+      '<div>Date commande : ' + orderDate + '</div>\n' +
+      '<div style="margin-top:8px;"><span class="status-badge" style="' + statusBadge + '">' + statusLabel + '</span></div>\n' +
+      '</div>\n</div>\n' +
+      '<div class="body">\n' +
+      '<div class="parties">\n' +
+      '<div class="party"><h4>Émetteur</h4>\n' +
+      '<p class="pname">MAASGA SARL</p>\n' +
+      '<p>Ouagadougou, Burkina Faso<br>Tél : +226 55 99 64 18<br>Email : maasgabf@gmail.com<br>IFU : ' + companyIFU + '</p></div>\n' +
+      '<div class="party"><h4>Client</h4>\n' +
+      '<p class="pname">' + escapeHtml(order.client_name) + '</p>\n' +
+      '<p>Tél : ' + escapeHtml(order.client_phone) + '<br>' +
+      (order.client_email ? 'Email : ' + escapeHtml(order.client_email) + '<br>' : '') +
+      (order.quartier ? 'Quartier : ' + escapeHtml(order.quartier) + '<br>' : '') +
+      (order.client_id ? 'Réf. client : CLI-' + String(order.client_id).padStart(5, '0') : '') +
+      '</p></div>\n</div>\n' +
+      '<table>\n<thead><tr><th>Description</th><th style="text-align:center;">Qté</th><th style="text-align:right;">Prix unit.</th><th style="text-align:right;">Total</th></tr></thead>\n' +
+      '<tbody>' + productRows + '</tbody>\n</table>\n' +
+      '<div class="summary">' + summaryRows + '</div>\n' +
+      paymentSection + '\n' +
+      devisSection + '\n' +
+      notesSection +
+      '</div>\n' +
+      '<div class="footer">\n' +
+      '<p><strong>MAASGA SARL</strong> — Solutions Climatisation &amp; Froid · Ouagadougou, Burkina Faso</p>\n' +
+      '<p>Tél : +226 55 99 64 18 · Email : maasgabf@gmail.com · Web : maasga.com</p>\n' +
+      '<p style="margin-top:8px;">Merci pour votre confiance. Ce document fait office de facture pour la commande référencée ci-dessus.</p>\n' +
+      '</div>\n</div>\n</body>\n</html>'
+
+    return c.html(html)
+
+  } catch (err: any) {
+    const errMsg = String(err?.message || err || 'unknown')
+    console.error('[Invoice order/' + orderId + ']', errMsg)
+    return c.html('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Erreur</title><style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8fafc;margin:0}div{background:#fff;padding:40px;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.08);text-align:center;max-width:420px}h2{color:#03045e;margin-bottom:12px}p{color:#64748b;font-size:14px;margin-bottom:20px}a{display:inline-block;padding:10px 24px;background:#0077b6;color:#fff;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px}</style></head><body><div><h2>&#9888; Erreur</h2><p>Impossible de g&#233;n&#233;rer la facture (#' + orderId + '). ' + errMsg.replace(/</g,'&lt;').substring(0,200) + '</p><a href="/espace-client">Mon espace</a></div></body></html>', 500)
+  }
 })
+
 
 // ============================================================
 // MAINTENANCE CONTRACT INVOICE (printable HTML → PDF via browser)
@@ -3303,7 +3358,7 @@ app.post('/api/order/confirm-delivery', async (c) => {
 
   const order = await db.prepare('SELECT * FROM orders WHERE id = ? AND client_id = ?').bind(orderId, session.clientId).first() as any
   if (!order) return c.json({ error: 'Commande introuvable' }, 404)
-  if (order.status !== 'en_livraison') return c.json({ error: 'Cette commande ne peut pas être confirmée comme livrée' }, 400)
+  if (order.status !== 'paid') return c.json({ error: 'Cette commande ne peut pas être confirmée comme livrée' }, 400)
 
   const now = new Date().toISOString()
   await db.prepare('UPDATE orders SET status = ?, delivered_at = ?, delivery_confirmed_by = ?, updated_at = ? WHERE id = ?')
@@ -3359,6 +3414,35 @@ app.post('/api/order/devis/validate', async (c) => {
   })
   await notifyAdmin(c.env, 'order', `Devis #${devisId} validé par client — Commande #${devis.order_id}`)
 
+  // Email admin via Brevo
+  try {
+    const brevoKey = (c.env as any).BREVO_API_KEY
+    if (brevoKey) {
+      await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sender: { name: 'MAASGA', email: 'maasgabf@gmail.com' },
+          to: [{ email: 'maasgabf@gmail.com', name: 'MAASGA Admin' }],
+          subject: `\u2705 Devis accept\u00e9 \u2014 Commande #${devis.order_id} \u2014 ${devis.client_name || ''}`,
+          htmlContent: `<html><body style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;">`
+            + `<div style="background:linear-gradient(135deg,#059669,#10b981);padding:24px;border-radius:12px 12px 0 0;">`
+            + `<h2 style="color:white;margin:0;font-size:20px;">\u2705 Devis accept\u00e9</h2></div>`
+            + `<div style="background:#f9fafb;padding:24px;border-radius:0 0 12px 12px;border:1px solid #e5e7eb;">`
+            + `<p style="font-size:15px;color:#374151;">Le client <strong>${devis.client_name || 'N/A'}</strong> (${devis.client_phone || 'N/A'}) a <strong style="color:#059669;">accept\u00e9</strong> le devis pour la commande <strong>#${devis.order_id}</strong>.</p>`
+            + `<div style="background:white;border:1px solid #d1fae5;border-radius:8px;padding:16px;margin:16px 0;">`
+            + `<div style="display:flex;justify-content:space-between;"><span style="color:#6b7280;">Montant du devis</span><span style="font-size:18px;font-weight:700;color:#059669;">${Number(devis.total_amount || 0).toLocaleString('fr-FR')} FCFA</span></div>`
+            + `</div>`
+            + `<p style="font-size:14px;color:#374151;background:#ecfdf5;border-left:4px solid #10b981;padding:12px;border-radius:4px;">\ud83d\udcc5 <strong>Prochaine \u00e9tape&nbsp;: planifier l\u2019installation.</strong></p>`
+            + `<a href="https://maasga.pages.dev/admin" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#059669;color:white;text-decoration:none;border-radius:8px;font-weight:700;">Voir dans l\u2019admin \u2192</a>`
+            + `</div></body></html>`
+        })
+      })
+    }
+  } catch (emailErr) {
+    console.error('Brevo email error (devis validate):', emailErr)
+  }
+
   return c.json({ success: true })
 })
 
@@ -3397,6 +3481,33 @@ app.post('/api/order/devis/refuse', async (c) => {
     ip: c.req.header('cf-connecting-ip') || ''
   })
   await notifyAdmin(c.env, 'order', `Devis #${devisId} refusé par client — Commande #${devis.order_id}${reason ? ' — Raison: ' + reason : ''}`)
+
+  // Email admin via Brevo
+  try {
+    const brevoKey = (c.env as any).BREVO_API_KEY
+    if (brevoKey) {
+      await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sender: { name: 'MAASGA', email: 'maasgabf@gmail.com' },
+          to: [{ email: 'maasgabf@gmail.com', name: 'MAASGA Admin' }],
+          subject: `\u274c Devis refus\u00e9 \u2014 Commande #${devis.order_id} \u2014 ${devis.client_name || ''}`,
+          htmlContent: `<html><body style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;">`
+            + `<div style="background:linear-gradient(135deg,#dc2626,#ef4444);padding:24px;border-radius:12px 12px 0 0;">`
+            + `<h2 style="color:white;margin:0;font-size:20px;">\u274c Devis refus\u00e9</h2></div>`
+            + `<div style="background:#f9fafb;padding:24px;border-radius:0 0 12px 12px;border:1px solid #e5e7eb;">`
+            + `<p style="font-size:15px;color:#374151;">Le client <strong>${devis.client_name || 'N/A'}</strong> (${devis.client_phone || 'N/A'}) a <strong style="color:#dc2626;">refus\u00e9</strong> le devis pour la commande <strong>#${devis.order_id}</strong>.</p>`
+            + (reason ? `<div style="background:white;border:1px solid #fecaca;border-radius:8px;padding:12px;margin:12px 0;"><span style="color:#6b7280;font-size:12px;">MOTIF DU REFUS</span><p style="margin:6px 0 0;color:#374151;">${reason}</p></div>` : '')
+            + `<p style="font-size:14px;color:#374151;background:#fef2f2;border-left:4px solid #ef4444;padding:12px;border-radius:4px;">\u26a0\ufe0f <strong>Le processus d\u2019achat-installation est d\u00e9finitivement arr\u00eat\u00e9.</strong></p>`
+            + `<a href="https://maasga.pages.dev/admin" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#374151;color:white;text-decoration:none;border-radius:8px;font-weight:700;">Voir dans l\u2019admin \u2192</a>`
+            + `</div></body></html>`
+        })
+      })
+    }
+  } catch (emailErr) {
+    console.error('Brevo email error (devis refuse):', emailErr)
+  }
 
   return c.json({ success: true })
 })
@@ -3457,7 +3568,7 @@ app.post('/api/order/cancel-order', async (c) => {
   const order = await db.prepare('SELECT * FROM orders WHERE id = ? AND client_id = ?').bind(orderId, session.clientId).first() as any
   if (!order) return c.json({ error: 'Commande introuvable' }, 404)
 
-  const cancellableStatuses = ['paid', 'en_livraison', 'livre', 'validation_terrain', 'devis_en_attente', 'devis_refuse']
+  const cancellableStatuses = ['paid', 'livre', 'validation_terrain', 'devis_en_attente', 'devis_refuse']
   if (!cancellableStatuses.includes(order.status)) return c.json({ error: 'Cette commande ne peut plus être annulée' }, 400)
 
   const now = new Date().toISOString()
@@ -3502,7 +3613,38 @@ app.get('/api/order/:orderId/devis', async (c) => {
   if (!order) return c.json({ error: 'Commande introuvable' }, 404)
 
   const devisRows = await db.prepare('SELECT * FROM order_devis WHERE order_id = ? ORDER BY id DESC').bind(orderId).all()
-  return c.json({ devis: devisRows.results || [] })
+  if (devisRows.results && devisRows.results.length > 0) {
+    return c.json({ devis: devisRows.results })
+  }
+
+  // Fallback: check standalone devis table (admin-created devis not yet synced to order_devis)
+  const standaloneRows = await db.prepare('SELECT * FROM devis WHERE order_id = ? ORDER BY id DESC').bind(orderId).all()
+  if (standaloneRows.results && standaloneRows.results.length > 0) {
+    const normalized = standaloneRows.results.map((d: any) => {
+      let accs: any[] = []
+      try { accs = JSON.parse(d.accessoires || '[]') } catch(e) {}
+      return {
+        id: d.id,
+        order_id: d.order_id,
+        client_name: d.client_name,
+        client_phone: d.client_phone,
+        client_email: d.client_email,
+        total_amount: d.total_ht,
+        status: d.status === 'draft' ? 'pending' : d.status,
+        climatiseur_nom: d.produit_nom || null,
+        climatiseur_prix: (d.produit_prix || 0) * (d.produit_quantite || 1),
+        main_oeuvre_prix: d.installation_prix || 0,
+        fournitures: d.accessoires || '[]',
+        motif: null,
+        message_client: d.message_client || null,
+        admin_notes: d.notes_internes || null,
+        created_at: d.created_at
+      }
+    })
+    return c.json({ devis: normalized })
+  }
+
+  return c.json({ devis: [] })
 })
 
 // ============================================================
@@ -3516,78 +3658,104 @@ app.post('/api/admin/order/create-devis', adminAuth, async (c) => {
 
   const body = await c.req.parseBody()
   const orderId = parseInt(body['order_id'] as string || '0')
-  const title = escapeHtml((body['title'] as string || 'Devis installation').trim())
-  const description = escapeHtml((body['description'] as string || '').trim())
-  const itemsRaw = (body['items'] as string || '[]').trim()
-  const totalAmount = parseInt(body['total_amount'] as string || '0')
-
-  if (!orderId || !totalAmount) return c.redirect('/admin/commandes?error=Données manquantes')
+  if (!orderId) return c.redirect('/admin/commandes?error=Données manquantes')
 
   const order = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(orderId).first() as any
   if (!order) return c.redirect('/admin/commandes?error=Commande introuvable')
 
   const now = new Date().toISOString()
 
-  // Validate items JSON
-  let items = '[]'
-  try { items = JSON.stringify(JSON.parse(itemsRaw)) } catch(e) { items = '[]' }
+  // Parse new structured fields
+  const climatiseurNom = escapeHtml((body['climatiseur_nom'] as string || '').trim()) || null
+  const climatiseurPrix = parseInt(body['climatiseur_prix'] as string || '0') || 0
+  const mainOeuvrePrix = parseInt(body['main_oeuvre_prix'] as string || '50000') || 0
+  const motif = escapeHtml((body['motif'] as string || '').trim()) || null
+  const messageClient = escapeHtml((body['message_client'] as string || '').trim()) || null
 
-  await db.prepare(
-    `INSERT INTO order_devis (order_id, client_id, client_name, client_phone, client_email, title, description, items, total_amount, status, admin_notes, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'sent', ?, ?, ?)`
-  ).bind(
-    orderId,
-    order.client_id || null,
-    order.client_name,
-    order.client_phone,
-    order.client_email || '',
-    title,
-    description,
-    items,
-    totalAmount,
-    escapeHtml((body['admin_notes'] as string || '').trim()),
-    now, now
-  ).run()
-
-  // Update order status to devis_en_attente
-  await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?')
-    .bind('devis_en_attente', now, orderId).run()
-  const memOrder = orders.find(o => o.id === orderId)
-  if (memOrder) memOrder.status = 'devis_en_attente' as any
-
-  // Send email notification if client has email
-  if (order.client_email) {
-    try {
-      const brevoKey = c.env.BREVO_API_KEY
-      if (brevoKey) {
-        await fetch('https://api.brevo.com/v3/smtp/email', {
-          method: 'POST',
-          headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sender: { name: 'MAASGA', email: 'maasgabf@gmail.com' },
-            to: [{ email: order.client_email, name: order.client_name }],
-            subject: `Devis pour votre commande #${orderId} — MAASGA`,
-            htmlContent: `<html><body style="font-family:Arial,sans-serif;padding:20px;">
-              <h2 style="color:#2563eb;">Nouveau devis disponible</h2>
-              <p>Bonjour ${order.client_name},</p>
-              <p>Un devis a été créé pour votre commande #${orderId} :</p>
-              <p><strong>${title}</strong></p>
-              ${description ? '<p>' + description + '</p>' : ''}
-              <p style="font-size:20px;font-weight:bold;color:#059669;">Montant : ${totalAmount.toLocaleString()} FCFA</p>
-              <p>Connectez-vous à votre espace client pour le valider ou le refuser :</p>
-              <p><a href="https://maasga.com/espace-client" style="display:inline-block;background:#2563eb;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold;">Voir le devis</a></p>
-              <p style="color:#6b7280;font-size:12px;">MAASGA SARL — Solutions Climatisation & Maintenance — Ouagadougou, Burkina Faso</p>
-            </body></html>`
-          })
-        })
-      }
-    } catch(e) { console.error('Erreur envoi email devis:', e) }
+  // Build fournitures JSON from dynamic d_acc_nom_N / d_acc_prix_N fields
+  const fournitures: Array<{nom: string; prix: number}> = []
+  for (let i = 1; i <= 20; i++) {
+    const nom = (body[`d_acc_nom_${i}`] as string || '').trim()
+    const prix = parseInt(body[`d_acc_prix_${i}`] as string || '0') || 0
+    if (nom) fournitures.push({ nom: escapeHtml(nom), prix })
   }
+  const accTotal = fournitures.reduce((s, a) => s + a.prix, 0)
 
-  // WhatsApp placeholder notification (log for manual follow-up)
-  await notifyAdmin(c.env, 'order', `Devis créé pour commande #${orderId} — ${order.client_name} (${order.client_phone}) — ${totalAmount.toLocaleString()} FCFA\n📱 WhatsApp à envoyer manuellement au ${order.client_phone}`)
+  // Compute total
+  const totalAmount = climatiseurPrix + mainOeuvrePrix + accTotal
 
-  return c.redirect('/admin/commandes?success=devis_created')
+  // Build legacy title/description for backward compat
+  const title = 'Devis d\'installation'
+
+  try {
+    await db.prepare(
+      `INSERT INTO order_devis (order_id, client_id, client_name, client_phone, client_email, title, description, items, total_amount, status, climatiseur_nom, climatiseur_prix, main_oeuvre_prix, fournitures, motif, message_client, admin_notes, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, '', '[]', ?, 'sent', ?, ?, ?, ?, ?, ?, '', ?, ?)`
+    ).bind(
+      orderId,
+      order.client_id || null,
+      order.client_name,
+      order.client_phone,
+      order.client_email || '',
+      title,
+      totalAmount,
+      climatiseurNom,
+      climatiseurPrix,
+      mainOeuvrePrix,
+      JSON.stringify(fournitures),
+      motif,
+      messageClient,
+      now, now
+    ).run()
+
+    // Update order status to devis_en_attente
+    await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?')
+      .bind('devis_en_attente', now, orderId).run()
+    const memOrder = orders.find(o => o.id === orderId)
+    if (memOrder) memOrder.status = 'devis_en_attente' as any
+
+    // Email notification if client has email
+    if (order.client_email) {
+      try {
+        const brevoKey = c.env.BREVO_API_KEY
+        if (brevoKey) {
+          const climLine = climatiseurNom ? `<tr><td>Climatiseur</td><td>${escapeHtml(climatiseurNom)}</td><td style="text-align:right">${climatiseurPrix.toLocaleString()} FCFA</td></tr>` : ''
+          const mdoLine = mainOeuvrePrix > 0 ? `<tr><td>Main d'œuvre / Installation</td><td></td><td style="text-align:right">${mainOeuvrePrix.toLocaleString()} FCFA</td></tr>` : ''
+          const fLines = fournitures.map(f => `<tr><td>${f.nom}</td><td></td><td style="text-align:right">${f.prix.toLocaleString()} FCFA</td></tr>`).join('')
+          await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sender: { name: 'MAASGA', email: 'maasgabf@gmail.com' },
+              to: [{ email: order.client_email, name: order.client_name }],
+              subject: `Devis d'installation — Commande #${orderId} — MAASGA`,
+              htmlContent: `<html><body style="font-family:Arial,sans-serif;padding:20px;max-width:600px;margin:0 auto;">
+                <h2 style="color:#d97706;">❄ Devis d'installation disponible</h2>
+                <p>Bonjour ${order.client_name},</p>
+                <p>Un devis d'installation a été préparé pour votre commande #${orderId}.</p>
+                ${motif ? `<p><strong>Motif :</strong> ${escapeHtml(motif)}</p>` : ''}
+                ${messageClient ? `<p style="background:#f0f9ff;border-left:4px solid #0284c7;padding:12px;">${escapeHtml(messageClient)}</p>` : ''}
+                <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">${climLine}${mdoLine}${fLines}
+                  <tr style="border-top:2px solid #e5e7eb;"><td colspan="2" style="padding-top:8px;font-weight:700;">TOTAL</td><td style="text-align:right;font-weight:800;color:#d97706;font-size:18px;">${totalAmount.toLocaleString()} FCFA</td></tr>
+                </table>
+                <p>Connectez-vous à votre espace client pour valider ou refuser ce devis :</p>
+                <p><a href="https://maasga.com/espace-client" style="display:inline-block;background:#d97706;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold;">Voir et valider le devis</a></p>
+                <p style="color:#6b7280;font-size:12px;">MAASGA SARL — Solutions Climatisation & Maintenance — Ouagadougou, Burkina Faso</p>
+              </body></html>`
+            })
+          })
+        }
+      } catch(emailErr) { console.error('Erreur envoi email devis:', emailErr) }
+    }
+
+    await notifyAdmin(c.env, 'order', `Devis d'installation créé — Commande #${orderId} — ${order.client_name} (${order.client_phone}) — ${totalAmount.toLocaleString()} FCFA`)
+
+    return c.redirect('/admin/commandes?success=devis_created')
+  } catch(e: any) {
+    console.error('Create order devis error:', e)
+    const errMsg = encodeURIComponent(String(e?.message || 'Erreur lors de la création du devis').substring(0, 150))
+    return c.redirect(`/admin/commandes?error=${errMsg}`)
+  }
 })
 
 // Admin marks order for terrain validation
@@ -4564,10 +4732,15 @@ app.post('/api/admin/sav/message', adminAuth, async (c) => {
 app.post('/api/client/sav/create', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB non disponible' }, 503)
+  const sessionToken = getCookie(c, 'maasga_session') || ''
+  const session = sessionToken ? await getSession(c.env.DB, sessionToken) : null
+  if (!session) return c.json({ error: 'Non connecté' }, 401)
+  // Use phone/name from DB (trusted) to prevent impersonation via body
+  const clientRow = await db.prepare('SELECT phone, name FROM clients WHERE id = ?').bind(session.clientId).first() as any
   await ensureSavTables(db)
   const body = await c.req.parseBody()
-  const client_phone = (body['client_phone'] as string || '').trim()
-  const client_name = (body['client_name'] as string || '').trim()
+  const client_phone = clientRow?.phone || (body['client_phone'] as string || '').trim()
+  const client_name = clientRow?.name || (body['client_name'] as string || '').trim()
   const category = (body['category'] as string || 'autre').trim()
   const subject = (body['subject'] as string || '').trim()
   const description = (body['description'] as string || '').trim()
@@ -4580,14 +4753,17 @@ app.post('/api/client/sav/create', async (c) => {
   return c.json({ success: true, ticket_ref })
 })
 
-// Client: voir ses tickets
+// Client: voir ses tickets (auth required)
 app.get('/api/client/sav/list', async (c) => {
   const db = c.env.DB
   if (!db) return c.json([])
+  const sessionToken = getCookie(c, 'maasga_session') || ''
+  const session = sessionToken ? await getSession(c.env.DB, sessionToken) : null
+  if (!session) return c.json({ error: 'Non connecté' }, 401)
+  const clientRow = await db.prepare('SELECT phone FROM clients WHERE id = ?').bind(session.clientId).first() as any
+  if (!clientRow?.phone) return c.json([])
   await ensureSavTables(db)
-  const phone = c.req.query('phone') || ''
-  if (!phone) return c.json([])
-  const tickets = (await db.prepare('SELECT id, ticket_ref, subject, category, priority, status, created_at, updated_at FROM sav_tickets WHERE client_phone = ? ORDER BY created_at DESC').bind(phone).all())?.results || []
+  const tickets = (await db.prepare('SELECT id, ticket_ref, subject, category, priority, status, created_at, updated_at FROM sav_tickets WHERE client_phone = ? ORDER BY created_at DESC').bind(clientRow.phone).all())?.results || []
   return c.json(tickets)
 })
 
@@ -4858,6 +5034,29 @@ async function ensureDevisTable(db: any) {
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`).run()
+  // Patch columns that might not exist in tables created by older app versions
+  const colPatches = [
+    'ALTER TABLE devis ADD COLUMN rdv_id INTEGER',
+    'ALTER TABLE devis ADD COLUMN order_id INTEGER',
+    'ALTER TABLE devis ADD COLUMN client_email TEXT',
+    'ALTER TABLE devis ADD COLUMN client_quartier TEXT',
+    'ALTER TABLE devis ADD COLUMN surface REAL',
+    'ALTER TABLE devis ADD COLUMN btu_recommande INTEGER',
+    'ALTER TABLE devis ADD COLUMN produit_id INTEGER',
+    'ALTER TABLE devis ADD COLUMN produit_nom TEXT',
+    'ALTER TABLE devis ADD COLUMN produit_btu INTEGER',
+    "ALTER TABLE devis ADD COLUMN produit_prix INTEGER DEFAULT 0",
+    "ALTER TABLE devis ADD COLUMN produit_quantite INTEGER DEFAULT 1",
+    "ALTER TABLE devis ADD COLUMN installation_prix INTEGER DEFAULT 50000",
+    "ALTER TABLE devis ADD COLUMN accessoires TEXT DEFAULT '[]'",
+    'ALTER TABLE devis ADD COLUMN remise INTEGER DEFAULT 0',
+    'ALTER TABLE devis ADD COLUMN total_ht INTEGER DEFAULT 0',
+    'ALTER TABLE devis ADD COLUMN message_client TEXT',
+    'ALTER TABLE devis ADD COLUMN notes_internes TEXT',
+    'ALTER TABLE devis ADD COLUMN expires_at TEXT',
+    'ALTER TABLE devis ADD COLUMN accepted_at TEXT',
+  ]
+  for (const sql of colPatches) { try { await db.prepare(sql).run() } catch {} }
 }
 
 function generateDevisToken(): string {
@@ -5160,7 +5359,8 @@ app.get('/admin/devis/new', adminAuth, refreshAdminCache, async (c) => {
     if (btuMatch && !btu) btu = btuMatch[1]
   }
   const effectiveRdv = rdv || (order ? { id: null, name: order.client_name, phone: order.client_phone, quartier: order.quartier, notes: order.notes, type: order.type } : null)
-  return c.html(<AdminDevisNewPage rdv={effectiveRdv} productsList={products} clientsList={clients} surface={surface} btu={btu} orderId={orderId || undefined} ticket={ticket} contract={contract} clientData={clientData} />)
+  const errorMsg = c.req.query('error') || undefined
+  return c.html(<AdminDevisNewPage rdv={effectiveRdv} productsList={products} clientsList={clients} surface={surface} btu={btu} orderId={orderId || undefined} ticket={ticket} contract={contract} clientData={clientData} error={errorMsg} />)
 })
 
 app.post('/api/admin/devis/create', adminAuth, async (c) => {
@@ -5174,6 +5374,7 @@ app.post('/api/admin/devis/create', adminAuth, async (c) => {
     const rdvId = body['rdv_id'] ? parseInt(body['rdv_id'] as string) : null
     const orderId = body['order_id'] ? parseInt(body['order_id'] as string) : null
     const action = (body['action'] as string) || 'draft'
+    const isSendAction = action === 'send' || action === 'send_whatsapp' || action === 'send_email'
 
     // Build accessories JSON (dynamic numbering from form)
     const accs: any[] = []
@@ -5194,7 +5395,7 @@ app.post('/api/admin/devis/create', adminAuth, async (c) => {
 
     const expiresAt = (body['expires_at'] as string) || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]
     const now = new Date().toISOString()
-    const status = action === 'send' ? 'sent' : 'draft'
+    const status = isSendAction ? 'sent' : 'draft'
 
     // Build notes_internes: prepend origine/urgence context if provided
     let notesInternes = (body['notes_internes'] as string || '').trim()
@@ -5210,10 +5411,242 @@ app.post('/api/admin/devis/create', adminAuth, async (c) => {
     await db.prepare(`INSERT INTO devis (rdv_id,order_id,numero,client_name,client_phone,client_email,client_quartier,surface,btu_recommande,produit_nom,produit_prix,produit_quantite,installation_prix,accessoires,remise,total_ht,message_client,notes_internes,token,status,expires_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
       .bind(rdvId, orderId, numero, body['client_name'], body['client_phone'], body['client_email'] || null, body['client_quartier'] || null, body['surface'] ? parseFloat(body['surface'] as string) : null, body['btu_recommande'] ? parseInt(body['btu_recommande'] as string) : null, body['produit_nom'] || null, prodPrix, prodQty, installPrix, JSON.stringify(accs), remise, totalHt, body['message_client'] || null, notesInternes || null, token, status, expiresAt, now, now)
       .run()
-    return c.redirect('/admin/devis')
-  } catch(e) {
+
+    // If linked to an order, always sync to order_devis so client can see it in their portal
+    // Draft → 'pending' status in order_devis (visible but client can act); Sent → 'sent'
+    if (orderId) {
+      const linkedOrder = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(orderId).first() as any
+      if (linkedOrder) {
+        const orderDevisStatus = isSendAction ? 'sent' : 'pending'
+        // Upsert: if already exists update it, otherwise insert
+        const existing = await db.prepare('SELECT id FROM order_devis WHERE order_id = ? AND status NOT IN (\'validated\',\'refused\') ORDER BY id DESC').bind(orderId).first() as any
+        if (existing) {
+          await db.prepare(`UPDATE order_devis SET client_name=?,client_phone=?,client_email=?,total_amount=?,status=?,climatiseur_nom=?,climatiseur_prix=?,main_oeuvre_prix=?,fournitures=?,message_client=?,updated_at=? WHERE id=?`)
+            .bind(
+              String(body['client_name'] || linkedOrder.client_name),
+              String(body['client_phone'] || linkedOrder.client_phone),
+              String(body['client_email'] || linkedOrder.client_email || ''),
+              totalHt,
+              orderDevisStatus,
+              body['produit_nom'] || null,
+              prodPrix * prodQty,
+              installPrix,
+              JSON.stringify(accs),
+              body['message_client'] || null,
+              now,
+              existing.id
+            ).run()
+        } else {
+          // No existing order_devis — insert fresh
+          await db.prepare(`INSERT INTO order_devis (order_id, client_id, client_name, client_phone, client_email, title, description, items, total_amount, status, climatiseur_nom, climatiseur_prix, main_oeuvre_prix, fournitures, motif, message_client, admin_notes, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, '', '[]', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+            .bind(
+              orderId,
+              linkedOrder.client_id || null,
+              String(body['client_name'] || linkedOrder.client_name),
+              String(body['client_phone'] || linkedOrder.client_phone),
+              String(body['client_email'] || linkedOrder.client_email || ''),
+              'Devis d\'installation',
+              totalHt,
+              orderDevisStatus,
+              body['produit_nom'] || null,
+              prodPrix * prodQty,
+              installPrix,
+              JSON.stringify(accs),
+              null,
+              body['message_client'] || null,
+              notesInternes || null,
+              now, now
+            ).run()
+        }
+        // Update order status to devis_en_attente only when actually sending
+        if (isSendAction) {
+          await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?')
+            .bind('devis_en_attente', now, orderId).run()
+          const memOrder = orders.find(o => o.id === orderId)
+          if (memOrder) memOrder.status = 'devis_en_attente' as any
+          // Email client notification on send
+          if (linkedOrder.client_email) {
+            try {
+              const brevoKey = c.env.BREVO_API_KEY
+              if (brevoKey) {
+                await fetch('https://api.brevo.com/v3/smtp/email', {
+                  method: 'POST',
+                  headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    sender: { name: 'MAASGA', email: 'maasgabf@gmail.com' },
+                    to: [{ email: linkedOrder.client_email, name: linkedOrder.client_name }],
+                    subject: `Devis d'installation disponible — Commande #${orderId} — MAASGA`,
+                    htmlContent: `<html><body style="font-family:Arial,sans-serif;padding:20px;max-width:600px;margin:0 auto;"><h2 style="color:#d97706;">❄ Devis d'installation disponible</h2><p>Bonjour ${escapeHtml(linkedOrder.client_name)},</p><p>Un devis d'installation a été préparé pour votre commande #${orderId}. Connectez-vous à votre espace client pour le consulter et le valider :</p><p><a href="https://maasga.com/espace-client" style="display:inline-block;background:#d97706;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold;">Voir et valider le devis</a></p><p style="color:#6b7280;font-size:12px;">MAASGA SARL — Solutions Climatisation & Maintenance — Ouagadougou, Burkina Faso</p></body></html>`
+                  })
+                })
+              }
+            } catch(emailErr) { console.error('Email notification error:', emailErr) }
+          }
+          await notifyAdmin(c.env, 'order', `Devis d'installation envoyé — Commande #${orderId} — ${linkedOrder.client_name} — ${totalHt.toLocaleString()} FCFA`)
+        }
+      }
+    }
+
+    // Handle send_email — send via Brevo
+    let emailOk = false, emailErrMsg = ''
+    if (action === 'send_email') {
+      const clientEmail = (body['client_email'] as string || '').trim()
+      if (!clientEmail) {
+        emailErrMsg = 'Email client non renseigné dans le formulaire'
+      } else {
+        const brevoKey = c.env.BREVO_API_KEY
+        if (!brevoKey) {
+          emailErrMsg = 'Service email non configuré'
+        } else {
+          try {
+            const publicUrl = `https://maasga.com/devis/${token}`
+            const prodRow = (body['produit_nom'] as string || '').trim()
+              ? `<tr><td style="padding:8px 12px;">${escapeHtml(body['produit_nom'] as string)} × ${prodQty}</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${(prodPrix * prodQty).toLocaleString('fr-FR')} FCFA</td></tr>` : ''
+            const installRow = installPrix > 0
+              ? `<tr><td style="padding:8px 12px;">Main d'œuvre / Installation</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${installPrix.toLocaleString('fr-FR')} FCFA</td></tr>` : ''
+            const accRows = accs.map((a: any) => `<tr><td style="padding:8px 12px;">${escapeHtml(a.nom)}</td><td style="padding:8px 12px;text-align:right;">${Number(a.prix || 0).toLocaleString('fr-FR')} FCFA</td></tr>`).join('')
+            const msgBlock = (body['message_client'] as string || '').trim()
+              ? `<p style="background:#f0f9ff;border-left:4px solid #0077b6;padding:14px;margin:20px 0;border-radius:0 8px 8px 0;">${escapeHtml(body['message_client'] as string)}</p>` : ''
+            const emailResp = await fetch('https://api.brevo.com/v3/smtp/email', {
+              method: 'POST',
+              headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                sender: { name: 'MAASGA', email: 'maasgabf@gmail.com' },
+                to: [{ email: clientEmail, name: (body['client_name'] as string) || 'Client' }],
+                subject: `Votre devis MAASGA — ${numero}`,
+                htmlContent: `<html><body style="font-family:Arial,sans-serif;padding:20px;max-width:600px;margin:0 auto;color:#1a1a2e;">
+                  <h2 style="color:#0077b6;border-bottom:2px solid #e2e8f0;padding-bottom:16px;">Devis ${escapeHtml(numero)}</h2>
+                  <p>Bonjour <strong>${escapeHtml((body['client_name'] as string) || '')}</strong>,</p>
+                  <p>MAASGA vous a préparé un devis personnalisé.</p>
+                  ${msgBlock}
+                  <table style="width:100%;border-collapse:collapse;font-size:14px;margin:20px 0;border:1px solid #e2e8f0;">
+                    <thead><tr style="background:#0077b6;color:white;"><th style="padding:10px 12px;text-align:left;">Désignation</th><th style="padding:10px 12px;text-align:right;">Montant</th></tr></thead>
+                    <tbody>${prodRow}${installRow}${accRows}
+                      <tr style="border-top:2px solid #0077b6;"><td style="padding:12px;font-weight:700;font-size:15px;">Total HT</td><td style="padding:12px;text-align:right;font-weight:800;color:#0077b6;font-size:18px;">${totalHt.toLocaleString('fr-FR')} FCFA</td></tr>
+                    </tbody>
+                  </table>
+                  <div style="text-align:center;margin:24px 0;">
+                    <a href="${publicUrl}" style="display:inline-block;background:#0077b6;color:white;padding:14px 32px;text-decoration:none;border-radius:10px;font-weight:bold;font-size:15px;">Consulter et valider le devis</a>
+                  </div>
+                  <p style="color:#6b7280;font-size:12px;border-top:1px solid #e2e8f0;padding-top:16px;">MAASGA SARL — Froid & Climatisation — Ouagadougou, Burkina Faso — +226 55 99 64 18</p>
+                </body></html>`
+              })
+            })
+            emailOk = emailResp.ok
+            if (!emailResp.ok) emailErrMsg = `Erreur envoi (${emailResp.status})`
+          } catch(emailEx: any) {
+            console.error('send_email devis error:', emailEx)
+            emailErrMsg = 'Erreur lors de l\'envoi de l\'email'
+          }
+        }
+      }
+    }
+
+    // Redirect based on action
+    if (action === 'draft') return c.redirect('/admin/devis')
+    if (action === 'send_email') {
+      if (emailOk) return c.redirect(`/admin/devis/detail/${token}?email=ok`)
+      if (emailErrMsg) return c.redirect(`/admin/devis/detail/${token}?email_err=${encodeURIComponent(emailErrMsg)}`)
+      return c.redirect(`/admin/devis/detail/${token}`)
+    }
+    if (action === 'send_whatsapp') return c.redirect(`/admin/devis/detail/${token}?notify=whatsapp`)
+    // generate, send (legacy), default → show detail page
+    return c.redirect(`/admin/devis/detail/${token}`)
+  } catch(e: any) {
     console.error('Devis create error:', e)
-    return c.redirect('/admin/devis/new?error=create_failed')
+    const errMsg = encodeURIComponent(String(e?.message || 'Erreur lors de la création du devis').substring(0, 150))
+    const oidParam = body['order_id'] ? `&order_id=${body['order_id']}` : ''
+    return c.redirect(`/admin/devis/new?error=${errMsg}${oidParam}`)
+  }
+})
+
+// ============================================================
+// DEVIS DETAIL — Admin view of a single devis with share/send options
+// ============================================================
+app.get('/admin/devis/detail/:token', adminAuth, async (c) => {
+  const token = c.req.param('token')
+  const db = c.env.DB
+  if (!db) return c.redirect('/admin/devis?error=no_db')
+  try {
+    await ensureDevisTable(db)
+    const devis = await db.prepare('SELECT * FROM devis WHERE token = ?').bind(token).first() as any
+    if (!devis) return c.redirect('/admin/devis?error=Devis+introuvable')
+    const host = c.req.header('host') || 'maasga.com'
+    const publicUrl = `https://${host}/devis/${token}`
+    const notify = c.req.query('notify') || ''
+    const emailOk = c.req.query('email') === 'ok'
+    const emailErr = c.req.query('email_err') ? decodeURIComponent(c.req.query('email_err') || '') : undefined
+    return c.html(<AdminDevisDetailPage devis={devis} publicUrl={publicUrl} notify={notify} emailOk={emailOk} emailErr={emailErr} />)
+  } catch(e: any) {
+    console.error('Devis detail error:', e)
+    return c.redirect(`/admin/devis?error=${encodeURIComponent(String(e?.message || 'Erreur').substring(0, 100))}`)
+  }
+})
+
+// ============================================================
+// DEVIS SEND EMAIL — Sends devis email from the detail page
+// ============================================================
+app.post('/api/admin/devis/send-email', adminAuth, async (c) => {
+  const body = await c.req.parseBody()
+  const db = c.env.DB
+  const token = (body['token'] as string || '').trim()
+  if (!db || !token) return c.redirect('/admin/devis?error=Paramètres manquants')
+  try {
+    await ensureDevisTable(db)
+    const devis = await db.prepare('SELECT * FROM devis WHERE token = ?').bind(token).first() as any
+    if (!devis) return c.redirect(`/admin/devis?error=Devis introuvable`)
+    if (!devis.client_email) return c.redirect(`/admin/devis/detail/${token}?email_err=${encodeURIComponent('Email client non renseigné')}`)
+    const brevoKey = c.env.BREVO_API_KEY
+    if (!brevoKey) return c.redirect(`/admin/devis/detail/${token}?email_err=${encodeURIComponent('Service email non configuré')}`)
+
+    const host = c.req.header('host') || 'maasga.com'
+    const publicUrl = `https://${host}/devis/${token}`
+    const accs: any[] = JSON.parse(devis.accessoires || '[]')
+    const prodTotal = Number(devis.produit_prix || 0) * Number(devis.produit_quantite || 1)
+    const prodRow = devis.produit_nom ? `<tr><td style="padding:8px 12px;">${escapeHtml(devis.produit_nom)} × ${Number(devis.produit_quantite) || 1}</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${prodTotal.toLocaleString('fr-FR')} FCFA</td></tr>` : ''
+    const installRow = Number(devis.installation_prix) > 0 ? `<tr><td style="padding:8px 12px;">Main d'œuvre / Installation</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${Number(devis.installation_prix).toLocaleString('fr-FR')} FCFA</td></tr>` : ''
+    const accRows = accs.filter((a: any) => a.nom).map((a: any) => `<tr><td style="padding:8px 12px;">${escapeHtml(a.nom)}</td><td style="padding:8px 12px;text-align:right;">${Number(a.prix || 0).toLocaleString('fr-FR')} FCFA</td></tr>`).join('')
+    const msgBlock = devis.message_client ? `<p style="background:#f0f9ff;border-left:4px solid #0077b6;padding:14px;margin:20px 0;border-radius:0 8px 8px 0;">${escapeHtml(devis.message_client)}</p>` : ''
+
+    const emailResp = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sender: { name: 'MAASGA', email: 'maasgabf@gmail.com' },
+        to: [{ email: devis.client_email, name: devis.client_name }],
+        subject: `Votre devis MAASGA — ${devis.numero}`,
+        htmlContent: `<html><body style="font-family:Arial,sans-serif;padding:20px;max-width:600px;margin:0 auto;color:#1a1a2e;">
+          <h2 style="color:#0077b6;border-bottom:2px solid #e2e8f0;padding-bottom:16px;">Devis ${escapeHtml(devis.numero)}</h2>
+          <p>Bonjour <strong>${escapeHtml(devis.client_name)}</strong>,</p>
+          <p>MAASGA vous a préparé un devis personnalisé.</p>
+          ${msgBlock}
+          <table style="width:100%;border-collapse:collapse;font-size:14px;margin:20px 0;border:1px solid #e2e8f0;">
+            <thead><tr style="background:#0077b6;color:white;"><th style="padding:10px 12px;text-align:left;">Désignation</th><th style="padding:10px 12px;text-align:right;">Montant</th></tr></thead>
+            <tbody>${prodRow}${installRow}${accRows}
+              <tr style="border-top:2px solid #0077b6;"><td style="padding:12px;font-weight:700;font-size:15px;">Total HT</td><td style="padding:12px;text-align:right;font-weight:800;color:#0077b6;font-size:18px;">${Number(devis.total_ht || 0).toLocaleString('fr-FR')} FCFA</td></tr>
+            </tbody>
+          </table>
+          <div style="text-align:center;margin:24px 0;">
+            <a href="${publicUrl}" style="display:inline-block;background:#0077b6;color:white;padding:14px 32px;text-decoration:none;border-radius:10px;font-weight:bold;font-size:15px;">Consulter et valider le devis</a>
+          </div>
+          <p style="color:#6b7280;font-size:12px;border-top:1px solid #e2e8f0;padding-top:16px;">MAASGA SARL — Froid & Climatisation — Ouagadougou, Burkina Faso — +226 55 99 64 18</p>
+        </body></html>`
+      })
+    })
+    if (!emailResp.ok) {
+      const errTxt = await emailResp.text().catch(() => '')
+      console.error('Send devis email failed:', emailResp.status, errTxt)
+      return c.redirect(`/admin/devis/detail/${token}?email_err=${encodeURIComponent('Erreur envoi (' + emailResp.status + ')')}`)
+    }
+    // Mark as sent if was draft
+    if (devis.status === 'draft') {
+      await db.prepare('UPDATE devis SET status=?, updated_at=? WHERE token=?').bind('sent', new Date().toISOString(), token).run()
+    }
+    return c.redirect(`/admin/devis/detail/${token}?email=ok`)
+  } catch(e: any) {
+    console.error('Devis send-email error:', e)
+    return c.redirect(`/admin/devis/detail/${token}?email_err=${encodeURIComponent(String(e?.message || 'Erreur').substring(0, 100))}`)
   }
 })
 
@@ -6260,7 +6693,7 @@ app.post('/api/admin/create-order', adminAuth, async (c) => {
     client_phone,
     quartier,
     type,
-    status: 'validated' as const,
+    status: 'validation_terrain' as const,
     created_at: new Date().toISOString()
   }
   orders.push(newOrder)
@@ -6276,7 +6709,7 @@ app.post('/api/admin/create-order', adminAuth, async (c) => {
         client_phone,
         quartier,
         type,
-        status: 'validated'
+        status: 'validation_terrain'
       })
     } catch (error) {
       console.error('Erreur lors de la création de la commande en D1:', error)
@@ -6582,9 +7015,9 @@ app.post('/api/admin/commande/update-statut', adminAuth, async (c) => {
   const body = await c.req.parseBody()
   const id = parseInt(body['id'] as string)
   const status = body['status'] as string
-  const allowedStatuses = ['pending', 'paid', 'en_livraison', 'livre', 'validation_terrain', 'devis_en_attente', 'devis_valide', 'devis_refuse', 'validated', 'installing', 'installed', 'cancelled', 'refunded']
+  const allowedStatuses = ['pending', 'paid', 'livre', 'validation_terrain', 'devis_en_attente', 'devis_valide', 'devis_refuse', 'installed', 'cancelled', 'refunded']
   if (!allowedStatuses.includes(status)) {
-    return c.redirect('/admin/commandes?error=Statut invalide')
+    return c.json({ error: 'Statut invalide' }, 400)
   }
   const order = orders.find(o => o.id === id)
 
@@ -6669,8 +7102,8 @@ app.get('/api/cron/maintenance-reminders', async (c) => {
   const env = c.env as HonoEnv['Bindings']
   // Auth: require ADMIN_SECRET or custom cron key
   const key = c.req.query('key') || ''
-  const expectedKey = env.ADMIN_SECRET || 'maasga-cron-2024'
-  if (key !== expectedKey) {
+  if (!env.ADMIN_SECRET) return c.json({ error: 'Cron endpoint non configuré (ADMIN_SECRET manquant)' }, 500)
+  if (key !== env.ADMIN_SECRET) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
 
@@ -6900,8 +7333,8 @@ async function handleScheduled(env: HonoEnv['Bindings']) {
 
 // sendTelegramMessage imported from ./utils/notifications
 
-// Endpoint to setup/verify webhook (call once after deployment)
-app.get('/api/telegram/setup', async (c) => {
+// Endpoint to setup/verify webhook (call once after deployment — admin only)
+app.get('/api/telegram/setup', adminAuth, async (c) => {
   const env = c.env
   if (!env.TELEGRAM_BOT_TOKEN) {
     return c.json({ ok: false, error: 'TELEGRAM_BOT_TOKEN not configured' }, 500)
@@ -7015,8 +7448,8 @@ app.post('/api/telegram/webhook', async (c) => {
         await db.prepare(`UPDATE appointments SET status='done' WHERE id=?`).bind(parseInt(id)).run()
         await sendTelegramMessage(token, chatId, `☑️ RDV #${id} marqué terminé.`)
       } else if (action === 'validate' && type === 'order' && db) {
-        await db.prepare(`UPDATE orders SET status='validated' WHERE id=?`).bind(parseInt(id)).run()
-        await sendTelegramMessage(token, chatId, `✅ Commande #${id} validée !`)
+        await db.prepare(`UPDATE orders SET status='livre', delivered_at=datetime('now') WHERE id=?`).bind(parseInt(id)).run()
+        await sendTelegramMessage(token, chatId, `✅ Commande #${id} livrée !`)
       } else if (action === 'cancel' && type === 'order' && db) {
         await db.prepare(`UPDATE orders SET status='cancelled' WHERE id=?`).bind(parseInt(id)).run()
         await sendTelegramMessage(token, chatId, `❌ Commande #${id} annulée.`)
@@ -7113,7 +7546,7 @@ app.post('/api/telegram/webhook', async (c) => {
       } else if (action === 'detail' && type === 'order' && db) {
         const o = await db.prepare(`SELECT o.*, c.name as client FROM orders o LEFT JOIN clients c ON o.client_id=c.id WHERE o.id=?`).bind(parseInt(id)).first()
         if (o) {
-          const stMap: Record<string, string> = { pending: '⏳ En attente', validated: '✅ Validé', installed: '📦 Installé', cancelled: '❌ Annulé' }
+          const stMap: Record<string, string> = { pending: '⏳ En attente', paid: '💰 Payée', livre: '🚚 Livrée', validation_terrain: '🔍 Validation', devis_en_attente: '📄 Devis envoyé', devis_valide: '✅ Devis accepté', installed: '📦 Installé', cancelled: '❌ Annulé' }
           await sendTelegramMessage(token, chatId,
             `🛒 *Commande #${o.id}*\n\n` +
             `👤 *${o.client || o.client_name || 'Anonyme'}*\n` +
@@ -7124,7 +7557,7 @@ app.post('/api/telegram/webhook', async (c) => {
             `📅 ${(o.created_at || '').slice(0, 10)}`,
             { inline_keyboard: [
               [
-                { text: '✅ Valider', callback_data: `validate:order:${id}` },
+                { text: '🚚 Livrée', callback_data: `validate:order:${id}` },
                 { text: '📦 Installé', callback_data: `installed:order:${id}` },
                 { text: '❌ Annuler', callback_data: `cancel:order:${id}` }
               ],
@@ -7365,7 +7798,7 @@ app.post('/api/telegram/webhook', async (c) => {
         let txt = `🛒 *Commandes récentes*\n\n`
         const buttons: any[] = []
         for (const r of rows.results as any[]) {
-          const st = r.status === 'pending' ? '⏳' : r.status === 'validated' ? '✅' : r.status === 'installed' ? '📦' : r.status === 'cancelled' ? '❌' : '🔄'
+          const st = r.status === 'pending' ? '⏳' : r.status === 'paid' ? '💰' : r.status === 'livre' ? '🚚' : r.status === 'installed' ? '📦' : r.status === 'cancelled' ? '❌' : '🔄'
           const nom = r.client || r.client_name || 'Anonyme'
           txt += `${st} #${r.id} — *${nom}*\n   ${(r.total_price || 0).toLocaleString()} FCFA | ${r.status}\n\n`
           if (r.status === 'pending') {
@@ -7723,6 +8156,375 @@ app.post('/api/telegram/webhook', async (c) => {
   }
 
   return c.json({ ok: true })
+})
+
+// ============================================================
+// API MOBILE — JSON + Bearer tokens (Expo/React Native)
+// ============================================================
+
+const DEFAULT_MOBILE_ADMIN_HASH_INPUT = 'maasga2025'
+
+// Simple one-way SHA-256 hash (no salt, same as mobile webapp)
+async function simpleSHA256(password: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password))
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+// Generate mobile Bearer token
+function generateMobileToken(payload: { id: number; name: string; role: string; phone?: string; email?: string }): string {
+  const data = btoa(JSON.stringify(payload))
+  const rand = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('')
+  return `${data}.${rand}`
+}
+
+// Mobile auth middleware (Bearer token)
+const mobileAuth = async (c: any, next: any) => {
+  const auth = c.req.header('Authorization') || ''
+  const token = auth.replace('Bearer ', '')
+  if (!token) return c.json({ error: 'Token manquant' }, 401)
+  try {
+    const payload = JSON.parse(atob(token.split('.')[0] || '{}'))
+    if (!payload.id && !payload.role) return c.json({ error: 'Token invalide' }, 401)
+    c.set('mobileUser', payload)
+    return next()
+  } catch {
+    return c.json({ error: 'Token invalide' }, 401)
+  }
+}
+
+// Mobile admin auth middleware
+const mobileAdminAuth = async (c: any, next: any) => {
+  const auth = c.req.header('Authorization') || ''
+  const token = auth.replace('Bearer ', '')
+  if (!token) return c.json({ error: 'Token manquant' }, 401)
+  try {
+    const payload = JSON.parse(atob(token.split('.')[0] || '{}'))
+    if (payload.role !== 'admin') return c.json({ error: 'Accès admin requis' }, 403)
+    c.set('mobileUser', payload)
+    return next()
+  } catch {
+    return c.json({ error: 'Token invalide' }, 401)
+  }
+}
+
+// ── POST /api/mobile/login ────────────────────────────────────
+app.post('/api/mobile/login', async (c) => {
+  const body = await c.req.json()
+  const identifier = (body.identifier || '').trim()
+  const password = (body.password || '').trim()
+  if (!identifier || !password) return c.json({ error: 'Identifiants manquants' }, 400)
+
+  const db = c.env.DB
+  let validAdminUsername = DEFAULT_ADMIN_USERNAME
+  let validAdminHash = ''
+
+  if (db) {
+    try {
+      const hashRow = await db.prepare('SELECT value FROM admin_settings WHERE key = ?').bind('admin_password_hash').first() as any
+      if (hashRow?.value && !hashRow.value.startsWith('pbkdf2:')) validAdminHash = hashRow.value
+      const userRow = await db.prepare('SELECT value FROM admin_settings WHERE key = ?').bind('admin_username').first() as any
+      if (userRow?.value) validAdminUsername = userRow.value
+    } catch (_) {}
+  }
+  if (!validAdminHash) validAdminHash = await simpleSHA256(DEFAULT_MOBILE_ADMIN_HASH_INPUT)
+
+  const submittedHash = await simpleSHA256(password)
+  if (identifier === validAdminUsername && submittedHash === validAdminHash) {
+    const token = generateMobileToken({ id: 0, name: 'Admin', role: 'admin' })
+    return c.json({ token, role: 'admin', user: { id: 0, name: 'Admin', role: 'admin' } })
+  }
+
+  if (db) {
+    try {
+      const cleanId = identifier.replace(/\s/g, '')
+      const withPrefix = cleanId.startsWith('+226') ? cleanId : ('+226' + cleanId)
+      const withoutPrefix = cleanId.startsWith('+226') ? cleanId.slice(4) : cleanId
+      const client = await db.prepare(
+        'SELECT id, name, phone, email, quartier, password_hash FROM clients WHERE phone = ? OR phone = ? OR phone = ? OR email = ?'
+      ).bind(cleanId, withPrefix, withoutPrefix, identifier).first() as any
+
+      if (client && client.password_hash && client.password_hash !== 'pending') {
+        if (submittedHash === client.password_hash) {
+          const token = generateMobileToken({ id: client.id, name: client.name, role: 'client', phone: client.phone, email: client.email })
+          return c.json({ token, role: 'client', user: { id: client.id, name: client.name, phone: client.phone, email: client.email, quartier: client.quartier, role: 'client' } })
+        }
+        return c.json({ error: 'Mot de passe incorrect' }, 401)
+      }
+
+      if (client && (!client.password_hash || client.password_hash === 'pending')) {
+        await db.prepare('UPDATE clients SET password_hash = ?, updated_at = ? WHERE id = ?')
+          .bind(submittedHash, new Date().toISOString(), client.id).run()
+        const token = generateMobileToken({ id: client.id, name: client.name, role: 'client', phone: client.phone, email: client.email })
+        return c.json({ token, role: 'client', user: { id: client.id, name: client.name, phone: client.phone, email: client.email, quartier: client.quartier, role: 'client' } })
+      }
+    } catch (e) { console.error('Mobile login D1 error:', e) }
+  }
+
+  return c.json({ error: 'Identifiants incorrects' }, 401)
+})
+
+// ── POST /api/mobile/register ─────────────────────────────────
+app.post('/api/mobile/register', async (c) => {
+  const body = await c.req.json()
+  const name = (body.name || '').trim()
+  const phone = (body.phone || '').trim()
+  const email = (body.email || '').trim()
+  const quartier = (body.quartier || '').trim()
+  const password = (body.password || '').trim()
+
+  if (!name || !phone) return c.json({ error: 'Nom et téléphone obligatoires' }, 400)
+  if (password.length < 6) return c.json({ error: 'Le mot de passe doit faire au moins 6 caractères' }, 400)
+
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const fullPhone = phone.startsWith('+226') ? phone.replace(/\s/g, '') : '+226' + phone.replace(/\s/g, '')
+    const existing = await db.prepare(
+      'SELECT id, password_hash FROM clients WHERE phone = ? OR phone = ?'
+    ).bind(phone, fullPhone).first() as any
+
+    if (existing && existing.password_hash && existing.password_hash !== 'pending') {
+      return c.json({ error: 'Un compte existe déjà avec ce numéro. Connectez-vous.' }, 409)
+    }
+
+    const password_hash = await simpleSHA256(password)
+    const now = new Date().toISOString()
+    let clientId: number
+
+    if (existing) {
+      await db.prepare('UPDATE clients SET password_hash = ?, name = ?, email = ?, quartier = ?, updated_at = ? WHERE id = ?')
+        .bind(password_hash, name, email || null, quartier || null, now, existing.id).run()
+      clientId = existing.id
+    } else {
+      await db.prepare(
+        'INSERT INTO clients (name, phone, email, quartier, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      ).bind(name, fullPhone, email || null, quartier || null, password_hash, now, now).run()
+      const inserted = await db.prepare('SELECT id FROM clients WHERE phone = ?').bind(fullPhone).first() as any
+      clientId = inserted?.id
+    }
+
+    if (!clientId) return c.json({ error: 'Erreur création compte' }, 500)
+
+    const token = generateMobileToken({ id: clientId, name, role: 'client', phone: fullPhone, email })
+    return c.json({ token, role: 'client', user: { id: clientId, name, phone: fullPhone, email, quartier, role: 'client' } })
+  } catch (e) {
+    console.error('Mobile register error:', e)
+    return c.json({ error: 'Erreur inscription' }, 500)
+  }
+})
+
+// ── GET /api/mobile/profile ───────────────────────────────────
+app.get('/api/mobile/profile', mobileAuth, async (c) => {
+  const user = c.get('mobileUser')
+  if (user.role === 'admin') return c.json({ id: 0, name: 'Admin', role: 'admin' })
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'DB indisponible' }, 503)
+  const client = await db.prepare('SELECT id, name, phone, email, quartier, created_at FROM clients WHERE id = ?').bind(user.id).first()
+  if (!client) return c.json({ error: 'Client introuvable' }, 404)
+  return c.json({ ...client, role: 'client' })
+})
+
+// ── GET /api/mobile/products ──────────────────────────────────
+app.get('/api/mobile/products', async (c) => {
+  const db = c.env.DB
+  let list: any[] = [...products]
+  if (db) {
+    try {
+      const dbProducts = await getProducts(db)
+      if (dbProducts.length > 0) list = dbProducts as any[]
+    } catch (_) {}
+  }
+  list = list.filter((p: any) => p.available || p.stock > 0)
+  return c.json(list)
+})
+
+// ── GET /api/mobile/products/:id ──────────────────────────────
+app.get('/api/mobile/products/:id', async (c) => {
+  const id = parseInt(c.req.param('id'))
+  const db = c.env.DB
+  let product: any = products.find((p: any) => p.id === id)
+  if (db) {
+    try {
+      const p = await getProductById(db, id)
+      if (p) product = p
+    } catch (_) {}
+  }
+  if (!product) return c.json({ error: 'Produit non trouvé' }, 404)
+  return c.json(product)
+})
+
+// ── GET /api/mobile/reviews ───────────────────────────────────
+app.get('/api/mobile/reviews', async (c) => {
+  const db = c.env.DB
+  let list = reviews.filter((r: any) => r.approved)
+  if (db) {
+    try {
+      const dbReviews = await getReviews(db, true)
+      if (dbReviews.length > 0) list = dbReviews as any[]
+    } catch (_) {}
+  }
+  return c.json(list)
+})
+
+// ── GET /api/mobile/quartiers ─────────────────────────────────
+app.get('/api/mobile/quartiers', async (c) => {
+  const db = c.env.DB
+  let list = quartiers
+  if (db) {
+    try { list = await getQuartiers(db) as any } catch (_) {}
+  }
+  return c.json(list)
+})
+
+// ── POST /api/mobile/rdv ─────────────────────────────────────
+app.post('/api/mobile/rdv', mobileAuth, async (c) => {
+  const body = await c.req.json()
+  const name = (body.name || '').trim()
+  const phone = (body.phone || '').trim()
+  const quartier = (body.quartier || '').trim()
+  const date = (body.date || '').trim()
+  const type = (body.type || 'devis').toLowerCase()
+  const notes = (body.notes || '').trim()
+
+  if (!name || !phone || !quartier || !date) return c.json({ error: 'Champs obligatoires manquants' }, 400)
+
+  const db = c.env.DB
+  if (db) {
+    try {
+      await createAppointment(db, {
+        name, phone, quartier, date,
+        heure_debut: body.heure_debut || '08:00',
+        heure_fin: body.heure_fin || '18:00',
+        type, notes,
+        latitude: body.latitude || null,
+        longitude: body.longitude || null,
+        adresse_precise: body.adresse_precise || null,
+      })
+      try {
+        await createClient(db, { name, phone, email: body.email || null, quartier, adresse_precise: null, latitude: null, longitude: null, type_demande: type, notes, product_id: null })
+      } catch (_) {}
+      return c.json({ success: true, id: Date.now() })
+    } catch (e) { console.error('Mobile rdv error:', e) }
+  }
+  const newRdv = { id: appointments.length + 1, name, phone, quartier, date, heure_debut: '08:00', heure_fin: '18:00', type, notes, latitude: null, longitude: null, adresse_precise: '', status: 'pending' as const, created_at: new Date().toISOString() }
+  appointments.push(newRdv)
+  return c.json({ success: true, id: newRdv.id })
+})
+
+// ── GET /api/mobile/my-rdvs ──────────────────────────────────
+app.get('/api/mobile/my-rdvs', mobileAuth, async (c) => {
+  const user = c.get('mobileUser')
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    const client = await db.prepare('SELECT phone FROM clients WHERE id = ?').bind(user.id).first() as any
+    if (!client) return c.json([])
+    const rdvs = await db.prepare('SELECT * FROM appointments WHERE phone = ? ORDER BY date DESC').bind(client.phone).all()
+    return c.json(rdvs.results || [])
+  } catch (e) { console.error('Mobile my-rdvs error:', e); return c.json([]) }
+})
+
+// ── GET /api/mobile/my-orders ─────────────────────────────────
+app.get('/api/mobile/my-orders', mobileAuth, async (c) => {
+  const user = c.get('mobileUser')
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    const client = await db.prepare('SELECT phone FROM clients WHERE id = ?').bind(user.id).first() as any
+    if (!client) return c.json([])
+    const ordersResult = await db.prepare(
+      'SELECT o.*, p.name as product_name, p.btu, p.brand FROM orders o LEFT JOIN products p ON o.product_id = p.id WHERE o.client_phone = ? ORDER BY o.created_at DESC'
+    ).bind(client.phone).all()
+    return c.json(ordersResult.results || [])
+  } catch (e) { console.error('Mobile my-orders error:', e); return c.json([]) }
+})
+
+// ── POST /api/mobile/commandes ────────────────────────────────
+app.post('/api/mobile/commandes', mobileAuth, async (c) => {
+  const body = await c.req.json()
+  const user = c.get('mobileUser')
+  const db = c.env.DB
+
+  const clientName = (body.client_name || user.name || '').trim()
+  const clientPhone = (body.client_phone || user.phone || '').trim()
+  const quartier = (body.quartier || '').trim()
+  const productId = body.product_id ? parseInt(body.product_id) : null
+  const quantity = body.quantity || 1
+  const paymentMethod = body.payment_method || 'Téléphone'
+  const notes = body.notes || ''
+  const totalPrice = body.total_price || 0
+
+  if (!clientName || !clientPhone) return c.json({ error: 'Nom et téléphone requis' }, 400)
+
+  if (db) {
+    try {
+      await db.prepare(
+        'INSERT INTO orders (client_name, client_phone, quartier, product_id, quantity, notes, total_price, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      ).bind(clientName, clientPhone, quartier, productId, quantity, `[${paymentMethod}] ${notes}`.trim(), totalPrice, 'pending', new Date().toISOString()).run()
+      return c.json({ success: true })
+    } catch (e) { console.error('Mobile commande create error:', e) }
+  }
+  return c.json({ success: true })
+})
+
+// ── POST /api/mobile/maintenance ─────────────────────────────
+app.post('/api/mobile/maintenance', mobileAuth, async (c) => {
+  const body = await c.req.json()
+  const user = c.get('mobileUser')
+  const db = c.env.DB
+
+  const name = (body.name || user.name || '').trim()
+  const phone = (body.phone || user.phone || '').trim()
+  const description = (body.description || '').trim()
+  const planType = body.plan_type || 'semestriel'
+  const equipmentType = body.equipment_type || 'Split mural'
+  const preferredDate = body.preferred_date || ''
+  const requestType = body.request_type || 'contrat'
+
+  if (!name || !phone || !description) return c.json({ error: 'Champs requis manquants' }, 400)
+
+  const notes = [
+    `Formule: ${planType}`,
+    `Type: ${requestType}`,
+    `Équipement: ${equipmentType}`,
+    preferredDate ? `Date souhaitée: ${preferredDate}` : '',
+    description,
+  ].filter(Boolean).join(' | ')
+
+  if (db) {
+    try {
+      await db.prepare(
+        'INSERT INTO appointments (name, phone, quartier, date, heure_debut, heure_fin, type, notes, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      ).bind(name, phone, body.quartier || '', preferredDate || new Date().toISOString().split('T')[0], '08:00', '18:00', 'maintenance', notes, 'pending', new Date().toISOString()).run()
+      return c.json({ success: true })
+    } catch (e) { console.error('Mobile maintenance error:', e) }
+  }
+  return c.json({ success: true })
+})
+
+// ── GET /api/mobile/activity ─────────────────────────────────
+app.get('/api/mobile/activity', mobileAuth, async (c) => {
+  const user = c.get('mobileUser')
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    const client = await db.prepare('SELECT phone FROM clients WHERE id = ?').bind(user.id).first() as any
+    if (!client) return c.json([])
+    const phone = client.phone
+
+    const [rdvs, orders] = await Promise.all([
+      db.prepare('SELECT id, type, status, date, notes, created_at FROM appointments WHERE phone = ? ORDER BY created_at DESC LIMIT 20').bind(phone).all(),
+      db.prepare('SELECT id, status, total_price, payment_method, notes, created_at FROM orders WHERE client_phone = ? ORDER BY created_at DESC LIMIT 20').bind(phone).all(),
+    ])
+
+    const activity: any[] = [
+      ...(rdvs.results || []).map((r: any) => ({ ...r, _type: 'rdv' })),
+      ...(orders.results || []).map((o: any) => ({ ...o, _type: 'order' })),
+    ]
+    activity.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    return c.json(activity.slice(0, 30))
+  } catch (e) { console.error('Mobile activity error:', e); return c.json([]) }
 })
 
 // ============================================================
