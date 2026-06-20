@@ -63,8 +63,8 @@ export const initCGUModal = () => {
   if (typeof window === 'undefined') return
 
   // Vérifier si l'utilisateur a déjà accepté
-  const hasAccepted = localStorage.getItem('maasga_cgu_accepted')
-  
+  const hasAccepted = localStorage.getItem('maasga_cgu_accepted') === 'true'
+
   if (!hasAccepted) {
     setTimeout(() => {
       const modal = document.getElementById('cgu-modal')
@@ -86,8 +86,8 @@ export const initCGUModal = () => {
   (window as any).acceptCGU = () => {
     const checkbox = document.getElementById('accept-cgu') as HTMLInputElement
     if (checkbox?.checked) {
-      localStorage.setItem('maasga_cgu_accepted', JSON.stringify({
-        accepted: true,
+      localStorage.setItem('maasga_cgu_accepted', 'true')
+      localStorage.setItem('maasga_cgu_meta', JSON.stringify({
         timestamp: new Date().toISOString(),
         version: '1.0'
       }))

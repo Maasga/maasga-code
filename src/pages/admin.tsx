@@ -256,33 +256,58 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
             if (remaining < 1800) el.style.color = '#fbbf24';
           }
           update();
-          setInterval(update, 60000);
+          setInterval(update, 10000); // Mise à jour toutes les 10s pour éviter le lag d'affichage
         })();
 
-        // Global search
+        // Global search — construction DOM sécurisée (pas de innerHTML avec données serveur)
         var _searchTimeout;
-        function escSearch(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+        function esc(s) { var d = document.createElement('div'); d.textContent = String(s||''); return d.innerHTML; }
         function globalSearch(q) {
           clearTimeout(_searchTimeout);
           var box = document.getElementById('global-search-results');
           if (!q || q.length < 2) { box.classList.add('hidden'); return; }
           _searchTimeout = setTimeout(function() {
-            fetch('/api/admin/search?q=' + encodeURIComponent(q)).then(function(r){return r.json()}).then(function(data) {
-              if (!data.length) { box.innerHTML = '<div class="p-4 text-xs text-gray-500 text-center">Aucun résultat</div>'; box.classList.remove('hidden'); return; }
+            fetch('/api/admin/search?q=' + encodeURIComponent(q)).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function(data) {
+              box.innerHTML = '';
+              if (!data.length) {
+                var empty = document.createElement('div');
+                empty.className = 'p-4 text-xs text-gray-500 text-center';
+                empty.textContent = 'Aucun résultat';
+                box.appendChild(empty);
+                box.classList.remove('hidden');
+                return;
+              }
               var typeIcons = {Produit:'fa-box',Client:'fa-user',RDV:'fa-calendar',Commande:'fa-shopping-cart',Ticket:'fa-headset'};
               var typeColors = {Produit:'#60a5fa',Client:'#34d399',RDV:'#fbbf24',Commande:'#a78bfa',Ticket:'#fb923c'};
-              var html = '';
+              var frag = document.createDocumentFragment();
               data.forEach(function(r) {
-                html += '<a href="' + r.url + '" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-b border-gray-800/50">'
-                  + '<i class="fas ' + (typeIcons[r.type]||'fa-circle') + ' text-sm" style="color:' + (typeColors[r.type]||'#94a3b8') + ';"></i>'
-                  + '<div class="flex-1 min-w-0">'
-                  + '<div class="text-xs text-white font-medium truncate">' + escSearch(r.label) + '</div>'
-                  + '<div class="text-xs text-gray-500 truncate">' + escSearch(r.sub) + '</div>'
-                  + '</div>'
-                  + '<span class="text-xs px-2 py-0.5 rounded-lg flex-shrink-0" style="background:rgba(148,163,184,0.1); color:' + (typeColors[r.type]||'#94a3b8') + ';">' + r.type + '</span>'
-                  + '</a>';
+                var a = document.createElement('a');
+                // r.url vient du serveur — on valide que c'est un chemin relatif
+                a.href = (r.url && /^\/[a-zA-Z0-9/_-]/.test(r.url)) ? r.url : '#';
+                a.className = 'flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-b border-gray-800/50';
+                var icon = document.createElement('i');
+                icon.className = 'fas ' + (typeIcons[r.type]||'fa-circle') + ' text-sm';
+                icon.style.color = typeColors[r.type]||'#94a3b8';
+                var info = document.createElement('div');
+                info.className = 'flex-1 min-w-0';
+                var label = document.createElement('div');
+                label.className = 'text-xs text-white font-medium truncate';
+                label.textContent = r.label || '';
+                var sub = document.createElement('div');
+                sub.className = 'text-xs text-gray-500 truncate';
+                sub.textContent = r.sub || '';
+                info.appendChild(label);
+                info.appendChild(sub);
+                var badge = document.createElement('span');
+                badge.className = 'text-xs px-2 py-0.5 rounded-lg flex-shrink-0';
+                badge.style.cssText = 'background:rgba(148,163,184,0.1); color:' + (typeColors[r.type]||'#94a3b8') + ';';
+                badge.textContent = r.type || '';
+                a.appendChild(icon);
+                a.appendChild(info);
+                a.appendChild(badge);
+                frag.appendChild(a);
               });
-              box.innerHTML = html;
+              box.appendChild(frag);
               box.classList.remove('hidden');
             }).catch(function() {});
           }, 250);
@@ -297,7 +322,7 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
 
         // Notification bell
         function loadNotifCount() {
-          fetch('/api/admin/notifications/count').then(function(r){return r.json()}).then(function(d) {
+          fetch('/api/admin/notifications/count').then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function(d) {
             var badge = document.getElementById('notif-badge');
             if (d.count > 0) { badge.textContent = d.count > 9 ? '9+' : d.count; badge.classList.remove('hidden'); badge.classList.add('flex'); }
             else { badge.classList.add('hidden'); badge.classList.remove('flex'); }
@@ -311,7 +336,7 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
           } else { panel.classList.add('hidden'); }
         }
         function loadNotifList() {
-          fetch('/api/admin/notifications').then(function(r){return r.json()}).then(function(data) {
+          fetch('/api/admin/notifications').then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function(data) {
             var list = data.notifications || (Array.isArray(data) ? data : []);
             var el = document.getElementById('notif-list');
             if (!list.length) { el.innerHTML = '<div class="p-4 text-xs text-gray-500 text-center">Aucune notification</div>'; return; }
@@ -3603,7 +3628,8 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
         <span class="text-red-300 font-medium text-sm">
           {error === 'wrong_current' ? 'Mot de passe actuel incorrect.' :
            error === 'mismatch' ? 'Les mots de passe ne correspondent pas.' :
-           error === 'too_short' ? 'Le mot de passe doit faire au moins 8 caractères.' :
+           error === 'too_short' ? 'Le mot de passe doit faire au moins 12 caractères.' :
+           error === 'rate_limited' ? 'Trop de tentatives. Réessayez dans 15 minutes.' :
            error === 'username_short' ? "Le nom d'utilisateur doit faire au moins 3 caractères." :
            'Une erreur est survenue.'}
         </span>
@@ -3634,7 +3660,7 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
           </div>
           <div>
             <label class="block text-xs font-semibold text-gray-400 mb-1.5">Nouveau mot de passe *</label>
-            <input type="password" name="new_password" required placeholder="Minimum 8 caractères" minlength={8} class="input-field text-sm" />
+            <input type="password" name="new_password" required placeholder="Minimum 12 caractères" minlength={12} class="input-field text-sm" />
           </div>
           <div>
             <label class="block text-xs font-semibold text-gray-400 mb-1.5">Confirmer le nouveau mot de passe *</label>
@@ -4362,6 +4388,44 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
   )
 }
 
+
+// ============================================================
+// ADMIN DEVIS DETAIL PAGE
+// ============================================================
+
+export const AdminDevisDetailPage = ({ devis, publicUrl, notify, emailOk, emailErr }: { devis: any; publicUrl: string; notify?: string; emailOk?: boolean; emailErr?: string }) => {
+  const statusColors: Record<string,string> = { draft: '#94a3b8', sent: '#fbbf24', accepted: '#34d399', refused: '#f87171', expired: '#f97316' }
+  const statusLabels: Record<string,string> = { draft: 'Brouillon', sent: 'Envoyé', accepted: 'Accepté', refused: 'Refusé', expired: 'Expiré' }
+  return (
+    <AdminLayout activePage="devis">
+      <div class="max-w-3xl mx-auto space-y-6">
+        {notify && <div class="rounded-xl p-4 text-sm" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#34d399;">{notify}</div>}
+        {emailOk && <div class="rounded-xl p-4 text-sm" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#34d399;">Email envoyé avec succès.</div>}
+        {emailErr && <div class="rounded-xl p-4 text-sm" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#f87171;">Erreur email : {emailErr}</div>}
+        <div class="rounded-2xl p-6" style="background:#111827;border:1px solid rgba(56,189,248,0.1);">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-white">Devis {devis?.numero}</h2>
+            <span class="text-xs px-3 py-1 rounded-full font-semibold" style={`background:rgba(148,163,184,0.1);color:${statusColors[devis?.status]||'#94a3b8'}`}>{statusLabels[devis?.status]||devis?.status}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+            <div><span class="text-gray-500">Client :</span> <span class="text-white">{devis?.client_name}</span></div>
+            <div><span class="text-gray-500">Téléphone :</span> <span class="text-white">{devis?.client_phone}</span></div>
+            <div><span class="text-gray-500">Total :</span> <span class="text-cyan-400 font-bold">{devis?.total?.toLocaleString()} FCFA</span></div>
+            <div><span class="text-gray-500">Date :</span> <span class="text-white">{devis?.created_at ? new Date(devis.created_at).toLocaleDateString('fr-FR') : '-'}</span></div>
+          </div>
+          <div class="flex flex-wrap gap-3 mt-4">
+            <a href={publicUrl} target="_blank" class="btn-secondary text-sm px-4 py-2 rounded-xl"><i class="fas fa-eye mr-2"></i>Voir le devis</a>
+            <form method="post" action="/api/admin/devis/send-email" style="display:inline;">
+              <input type="hidden" name="token" value={devis?.token} />
+              <button type="submit" class="btn-primary text-sm px-4 py-2 rounded-xl"><i class="fas fa-envelope mr-2"></i>Envoyer par email</button>
+            </form>
+            <a href="/admin/devis" class="text-sm px-4 py-2 rounded-xl" style="background:rgba(148,163,184,0.1);color:#94a3b8;"><i class="fas fa-arrow-left mr-2"></i>Retour</a>
+          </div>
+        </div>
+      </div>
+    </AdminLayout>
+  )
+}
 
 // ============================================================
 // ADMIN PAIEMENTS PAGE

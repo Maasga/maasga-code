@@ -27,8 +27,11 @@ import { sendSmsWithLog, notifyAdmin, logActivity, logSecurityEvent, sendTelegra
 
 const app = new Hono<HonoEnv>()
 
+// SITE_URL centralisé — à synchroniser avec Layout.tsx si le domaine change
+const SITE_URL = 'https://maasga-website.pages.dev'
+
 app.use('/api/*', cors({
-  origin: ['https://maasga-website.pages.dev'],
+  origin: [SITE_URL, 'http://localhost:5173', 'http://127.0.0.1:5173'],
   allowHeaders: ['Content-Type', 'Authorization'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
@@ -207,7 +210,7 @@ async function verifyToken(token: string, secret: string): Promise<boolean> {
 }
 
 // CSRF protection: verify Origin/Referer header on all state-changing requests
-const ALLOWED_ORIGINS = ['https://maasga-website.pages.dev', 'http://localhost', 'http://127.0.0.1']
+const ALLOWED_ORIGINS = [SITE_URL, 'http://localhost', 'http://127.0.0.1']
 function csrfCheck(c: any): boolean {
   if (c.req.method === 'GET' || c.req.method === 'HEAD') return true
   const origin = c.req.header('Origin') || ''
@@ -1195,15 +1198,25 @@ app.post('/api/resend-verification', async (c) => {
 
 // API Login
 app.post('/api/login', async (c) => {
-  // Rate limiting: 10 attempts per IP per 15 minutes
+  // Rate limiting: 10 attempts per IP per 15 minutes + 20 per identifier
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
   const rl = rateLimit(`login:${ip}`, 10, 15 * 60 * 1000)
   if (!rl.allowed) {
+    logSecurityEvent(c.env?.DB, { event: 'login_rate_limit_ip', severity: 'warn', ip, details: `Login rate limited for IP ${ip}` })
     return c.redirect('/espace-client?error=' + encodeURIComponent('Trop de tentatives. Réessayez dans 15 minutes.'))
   }
 
   const body = await c.req.parseBody()
   const identifier = (body['identifier'] as string || '').trim()
+
+  // Rate limit per identifier (prevents distributed brute force)
+  if (identifier) {
+    const idRl = rateLimit(`login-id:${identifier.toLowerCase()}`, 20, 15 * 60 * 1000)
+    if (!idRl.allowed) {
+      logSecurityEvent(c.env?.DB, { event: 'login_rate_limit_id', severity: 'warn', ip, details: `Login rate limited for identifier ${identifier}` })
+      return c.redirect('/espace-client?error=' + encodeURIComponent('Trop de tentatives sur ce compte. Réessayez dans 15 minutes.'))
+    }
+  }
   const password = (body['password'] as string || '').trim()
   const redirectParam = (body['redirect'] as string || '').trim()
   // Valider le redirect: doit commencer par / et ne contenir que des caractères sûrs
@@ -1461,8 +1474,10 @@ app.post('/api/client/request-reset-email', async (c) => {
     return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Aucun compte trouvé avec cette adresse email.'))
   }
 
-  // Generate 6-digit code
-  const code = String(Math.floor(100000 + Math.random() * 900000))
+  // Generate cryptographically secure 8-digit code (crypto.getRandomValues, not Math.random)
+  const codeBytes = new Uint32Array(1)
+  crypto.getRandomValues(codeBytes)
+  const code = String(10000000 + (codeBytes[0] % 90000000))
   const tokenBytes = new Uint8Array(16)
   crypto.getRandomValues(tokenBytes)
   const token = Array.from(tokenBytes).map(b => b.toString(16).padStart(2, '0')).join('')
@@ -1524,8 +1539,10 @@ app.post('/api/client/request-reset', async (c) => {
     return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Aucun compte trouvé avec ce numéro.'))
   }
 
-  // Generate 6-digit code
-  const code = String(Math.floor(100000 + Math.random() * 900000))
+  // Generate cryptographically secure 8-digit code (crypto.getRandomValues, not Math.random)
+  const codeBytes2 = new Uint32Array(1)
+  crypto.getRandomValues(codeBytes2)
+  const code = String(10000000 + (codeBytes2[0] % 90000000))
   const tokenBytes = new Uint8Array(16)
   crypto.getRandomValues(tokenBytes)
   const token = Array.from(tokenBytes).map(b => b.toString(16).padStart(2, '0')).join('')
@@ -2145,7 +2162,7 @@ app.post('/api/payment/callback', async (c) => {
     }
     const webhookToken = c.req.header('Authorization') || c.req.header('X-Webhook-Token') || ''
     const expectedBearer = `Bearer ${authToken}`
-    if (webhookToken !== expectedBearer && webhookToken !== authToken) {
+    if (webhookToken !== expectedBearer) {
       console.warn('[PAYMENT] Webhook rejected — invalid token from IP:', cbIp)
       logSecurityEvent(db, { event: 'payment_invalid_token', severity: 'critical', ip: cbIp, details: `Invalid webhook token from ${cbIp}` })
       return c.json({ ok: false, error: 'unauthorized' }, 401)
@@ -4961,13 +4978,21 @@ app.post('/api/admin/site-settings', adminAuth, async (c) => {
 })
 
 app.post('/api/admin/change-password', adminAuth, async (c) => {
+  const ip = c.req.header('cf-connecting-ip') || 'unknown'
+  // Rate limit: max 5 attempts per 15 min to prevent brute force
+  const pwdRl = rateLimit(`admin-pwd-change:${ip}`, 5, 15 * 60 * 1000)
+  if (!pwdRl.allowed) {
+    logSecurityEvent(c.env?.DB, { event: 'admin_pwd_change_rate_limit', severity: 'warn', ip, details: 'Password change rate limited' })
+    return c.redirect('/admin/parametres?error=rate_limited')
+  }
+
   const body = await c.req.parseBody()
   const current = (body['current_password'] as string || '').trim()
   const newPwd = (body['new_password'] as string || '').trim()
   const confirm = (body['confirm_password'] as string || '').trim()
   const newUsername = (body['new_username'] as string || '').trim()
   if (!newPwd || newPwd !== confirm) return c.redirect('/admin/parametres?error=mismatch')
-  if (newPwd.length < 8) return c.redirect('/admin/parametres?error=too_short')
+  if (newPwd.length < 12) return c.redirect('/admin/parametres?error=too_short')
   if (newUsername && newUsername.length < 3) return c.redirect('/admin/parametres?error=username_short')
 
   // Verify current password
@@ -4986,7 +5011,10 @@ app.post('/api/admin/change-password', adminAuth, async (c) => {
     else return c.redirect('/admin/parametres?error=no_init')
   }
   const isCurrentValid = await verifyPassword(current, storedHash)
-  if (!isCurrentValid) return c.redirect('/admin/parametres?error=wrong_current')
+  if (!isCurrentValid) {
+    logSecurityEvent(db, { event: 'admin_pwd_change_wrong_current', severity: 'critical', ip, details: `Failed password change attempt from ${ip}` })
+    return c.redirect('/admin/parametres?error=wrong_current')
+  }
 
   // Store new password hash (and optional username) in D1
   const newHash = await hashPassword(newPwd)
@@ -4998,6 +5026,9 @@ app.post('/api/admin/change-password', adminAuth, async (c) => {
       }
     } catch(e) { console.error('Error saving admin credentials:', e) }
   }
+  // Audit log: password change successful
+  logSecurityEvent(db, { event: 'admin_pwd_changed', severity: 'warn', ip, details: `Admin password changed successfully from ${ip}` })
+  logActivity(db, { type: 'admin', action: 'Mot de passe admin modifié', details: `Depuis IP: ${ip}`, ip })
   return c.redirect('/admin/parametres?success=pwd')
 })
 

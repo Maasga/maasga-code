@@ -1,5 +1,17 @@
 import { CGUModal, initCGUModal } from './CGUModal'
 
+export const AnimatedIcon = ({ src, trigger = "hover", size = 20, colors = "primary:#0077b6,secondary:#caf0f8", class: className = "" }: { src: string, trigger?: string, size?: number, colors?: string, class?: string }) => {
+  return (
+    <lord-icon
+      src={src}
+      trigger={trigger}
+      colors={colors}
+      class={className}
+      style={{ width: `${size}px`, height: `${size}px` }}
+    />
+  )
+}
+
 export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisation Burkina Faso", activePage = "", description = "MAASGA - Spécialiste vente, installation et maintenance de climatiseurs à Ouagadougou, Burkina Faso. Devis gratuit, techniciens certifiés.", canonicalPath = "", jsonLd }: {
   children: any
   title?: string
@@ -8,7 +20,10 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
   canonicalPath?: string
   jsonLd?: string
 }) => {
-  const siteUrl = 'https://maasga-website.pages.dev'
+  // SITE_URL centralisé — modifier ici si le domaine change
+  const siteUrl = typeof globalThis !== 'undefined' && (globalThis as any).MAASGA_SITE_URL
+    ? (globalThis as any).MAASGA_SITE_URL
+    : 'https://maasga-website.pages.dev'
   const canonical = canonicalPath ? `${siteUrl}${canonicalPath}` : ''
   return (
     <html lang="fr">
@@ -45,6 +60,47 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         <title>{title}</title>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" media="print" onload="this.media='all'" />
         <noscript><link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" /></noscript>
+        <script src="https://cdn.lordicon.com/lordicon.js" defer></script>
+
+        {/* Global Agentation System — Control via ?agentation=1 */}
+        <script type="importmap">{`{
+          "imports": {
+            "react": "https://esm.sh/react@18.3.1",
+            "react-dom/client": "https://esm.sh/react-dom@18.3.1/client?external=react"
+          }
+        }`}</script>
+        <script type="module" dangerouslySetInnerHTML={{ __html: `
+          (async function() {
+            try {
+              var qs = new URLSearchParams(window.location.search);
+              if (qs.get('agentation') === '1') localStorage.setItem('maasga_agentation', '1');
+              if (qs.get('agentation') === '0') localStorage.removeItem('maasga_agentation');
+              if (localStorage.getItem('maasga_agentation') !== '1') return;
+
+              const [reactMod, domMod, agentMod] = await Promise.all([
+                import('react'),
+                import('react-dom/client'),
+                import('https://esm.sh/agentation@3.0.2?external=react,react-dom/client')
+              ]);
+
+              const { Agentation } = agentMod;
+              function mount() {
+                if (document.getElementById('agentation-root')) return;
+                const host = document.createElement('div');
+                host.id = 'agentation-root';
+                document.body.appendChild(host);
+                domMod.createRoot(host).render(reactMod.createElement(Agentation, {}));
+              }
+              if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', mount, { once: true });
+              } else { mount(); }
+              console.info('[Agentation] activé (public)');
+            } catch (e) {
+              console.error('[Agentation] échec:', e);
+            }
+          })();
+        ` }} />
+
         {/* Google Analytics GA4 — consent-aware (load async FIRST, then configure) */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-LCQJE6963G"></script>
         <script dangerouslySetInnerHTML={{ __html: `
@@ -145,17 +201,17 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             {/* Nav Desktop — visible xl+ */}
             <nav class="hidden xl:flex items-center gap-0.5 whitespace-nowrap" aria-label="Navigation principale">
               {[
-                { href: "/", icon: "fa-home", label: "Accueil", key: "home" },
-                { href: "/simulateur", icon: "fa-calculator", label: "Simulateur", key: "simulateur" },
-                { href: "/catalogue", icon: "fa-th-large", label: "Catalogue", key: "catalogue" },
-                { href: "/contrat-maintenance", icon: "fa-shield-alt", label: "Maintenance", key: "maintenance" },
-                { href: "/rendez-vous", icon: "fa-calendar", label: "Rendez-vous", key: "rdv" },
-                { href: "/avis", icon: "fa-star", label: "Avis", key: "avis" },
-                { href: "/a-propos", icon: "fa-info-circle", label: "À propos", key: "apropos" },
-                { href: "/contact", icon: "fa-envelope", label: "Contact", key: "contact" },
+                { href: "/", icon: "https://cdn.lordicon.com/gmzxduhd.json", label: "Accueil", key: "home" },
+                { href: "/simulateur", icon: "https://cdn.lordicon.com/qnpnzjqz.json", label: "Simulateur", key: "simulateur" },
+                { href: "/catalogue", icon: "https://cdn.lordicon.com/msetzzbt.json", label: "Catalogue", key: "catalogue" },
+                { href: "/contrat-maintenance", icon: "https://cdn.lordicon.com/becezzra.json", label: "Maintenance", key: "maintenance" },
+                { href: "/rendez-vous", icon: "https://cdn.lordicon.com/wmluxarr.json", label: "Rendez-vous", key: "rdv" },
+                { href: "/avis", icon: "https://cdn.lordicon.com/hbwbeoul.json", label: "Avis", key: "avis" },
+                { href: "/a-propos", icon: "https://cdn.lordicon.com/jyvscvfr.json", label: "À propos", key: "apropos" },
+                { href: "/contact", icon: "https://cdn.lordicon.com/diuoeasy.json", label: "Contact", key: "contact" },
               ].map(n => (
                 <a href={n.href} class={`nav-link flex items-center gap-1.5 font-semibold px-2.5 py-2 rounded-lg transition-all text-xs uppercase tracking-wide ${activePage===n.key ? 'active' : ''}`} {...(activePage===n.key ? {'aria-current': 'page'} : {})}>
-                  <i class={`fas ${n.icon} text-[10px]`} style={activePage===n.key ? 'color:#0077b6' : 'color:#94a3b8'}></i>
+                  <AnimatedIcon src={n.icon} size={18} colors={activePage===n.key ? 'primary:#0077b6,secondary:#00b4d8' : 'primary:#94a3b8,secondary:#cbd5e1'} />
                   {n.label}
                 </a>
               ))}
@@ -164,15 +220,15 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             {/* Nav Tablet — visible lg only (condensed) */}
             <nav class="hidden lg:flex xl:hidden items-center gap-0.5 whitespace-nowrap" aria-label="Navigation principale">
               {[
-                { href: "/", icon: "fa-home", label: "Accueil", key: "home" },
-                { href: "/catalogue", icon: "fa-th-large", label: "Catalogue", key: "catalogue" },
-                { href: "/contrat-maintenance", icon: "fa-shield-alt", label: "Maintenance", key: "maintenance" },
-                { href: "/rendez-vous", icon: "fa-calendar", label: "Rendez-vous", key: "rdv" },
-                { href: "/avis", icon: "fa-star", label: "Avis", key: "avis" },
-                { href: "/contact", icon: "fa-envelope", label: "Contact", key: "contact" },
+                { href: "/", icon: "https://cdn.lordicon.com/gmzxduhd.json", label: "Accueil", key: "home" },
+                { href: "/catalogue", icon: "https://cdn.lordicon.com/msetzzbt.json", label: "Catalogue", key: "catalogue" },
+                { href: "/contrat-maintenance", icon: "https://cdn.lordicon.com/becezzra.json", label: "Maintenance", key: "maintenance" },
+                { href: "/rendez-vous", icon: "https://cdn.lordicon.com/wmluxarr.json", label: "Rendez-vous", key: "rdv" },
+                { href: "/avis", icon: "https://cdn.lordicon.com/hbwbeoul.json", label: "Avis", key: "avis" },
+                { href: "/contact", icon: "https://cdn.lordicon.com/diuoeasy.json", label: "Contact", key: "contact" },
               ].map(n => (
                 <a href={n.href} class={`nav-link flex items-center gap-1.5 font-semibold px-2.5 py-2 rounded-lg transition-all text-xs uppercase tracking-wide ${activePage===n.key ? 'active' : ''}`} {...(activePage===n.key ? {'aria-current': 'page'} : {})}>
-                  <i class={`fas ${n.icon} text-[10px]`} style={activePage===n.key ? 'color:#0077b6' : 'color:#94a3b8'}></i>
+                  <AnimatedIcon src={n.icon} size={18} colors={activePage===n.key ? 'primary:#0077b6,secondary:#00b4d8' : 'primary:#94a3b8,secondary:#cbd5e1'} />
                   {n.label}
                 </a>
               ))}
@@ -184,11 +240,11 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 </button>
                 <div id="nav-more-dropdown" class="hidden absolute right-0 top-full mt-2 w-48 rounded-xl shadow-xl py-2" style="background:rgba(255,255,255,0.98); backdrop-filter:blur(20px); border:1px solid rgba(0,119,182,0.12); z-index:60;">
                   {[
-                    { href: "/a-propos", icon: "fa-info-circle", label: "À propos", key: "apropos" },
-                    { href: "/espace-client", icon: "fa-user", label: "Espace client", key: "client" },
+                    { href: "/a-propos", icon: "https://cdn.lordicon.com/jyvscvfr.json", label: "À propos", key: "apropos" },
+                    { href: "/espace-client", icon: "https://cdn.lordicon.com/kthelypq.json", label: "Espace client", key: "client" },
                   ].map(n => (
                     <a href={n.href} class={`flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium transition-all hover:bg-blue-50 ${activePage===n.key ? 'font-bold' : ''}`} style={activePage===n.key ? 'color:#0077b6' : 'color:#334155'}>
-                      <i class={`fas ${n.icon} w-4 text-center text-xs`} style="color:#0077b6;"></i>
+                      <AnimatedIcon src={n.icon} size={18} colors="primary:#0077b6,secondary:#00b4d8" />
                       {n.label}
                     </a>
                   ))}
@@ -224,17 +280,17 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             {/* Navigation grid */}
             <div class="grid grid-cols-2 gap-1 p-3">
               {[
-                { href: "/", icon: "fa-home", label: "Accueil", key: "home" },
-                { href: "/simulateur", icon: "fa-calculator", label: "Simulateur BTU", key: "simulateur" },
-                { href: "/catalogue", icon: "fa-th-large", label: "Catalogue", key: "catalogue" },
-                { href: "/contrat-maintenance", icon: "fa-shield-alt", label: "Maintenance", key: "maintenance" },
-                { href: "/rendez-vous", icon: "fa-calendar", label: "Rendez-vous", key: "rdv" },
-                { href: "/avis", icon: "fa-star", label: "Avis clients", key: "avis" },
-                { href: "/contact", icon: "fa-envelope", label: "Contact", key: "contact" },
-                { href: "/a-propos", icon: "fa-info-circle", label: "À propos", key: "apropos" },
+                { href: "/", icon: "https://cdn.lordicon.com/gmzxduhd.json", label: "Accueil", key: "home" },
+                { href: "/simulateur", icon: "https://cdn.lordicon.com/qnpnzjqz.json", label: "Simulateur BTU", key: "simulateur" },
+                { href: "/catalogue", icon: "https://cdn.lordicon.com/msetzzbt.json", label: "Catalogue", key: "catalogue" },
+                { href: "/contrat-maintenance", icon: "https://cdn.lordicon.com/becezzra.json", label: "Maintenance", key: "maintenance" },
+                { href: "/rendez-vous", icon: "https://cdn.lordicon.com/wmluxarr.json", label: "Rendez-vous", key: "rdv" },
+                { href: "/avis", icon: "https://cdn.lordicon.com/hbwbeoul.json", label: "Avis clients", key: "avis" },
+                { href: "/contact", icon: "https://cdn.lordicon.com/diuoeasy.json", label: "Contact", key: "contact" },
+                { href: "/a-propos", icon: "https://cdn.lordicon.com/jyvscvfr.json", label: "À propos", key: "apropos" },
               ].map(n => (
                 <a href={n.href} class={`flex items-center gap-2.5 py-3 px-3.5 rounded-xl text-sm font-semibold transition-all ${activePage===n.key ? 'mobile-nav-active' : 'hover:bg-blue-50'}`} style={activePage===n.key ? 'background:rgba(0,119,182,0.08); color:#0077b6;' : ''} {...(activePage===n.key ? {'aria-current': 'page'} : {})}>
-                  <i class={`fas ${n.icon} w-4 text-center text-sm`} style={activePage===n.key ? 'color:#0077b6;' : 'color:#94a3b8;'}></i>
+                  <AnimatedIcon src={n.icon} size={20} colors={activePage===n.key ? 'primary:#0077b6,secondary:#00b4d8' : 'primary:#94a3b8,secondary:#cbd5e1'} />
                   <span>{n.label}</span>
                 </a>
               ))}
@@ -282,25 +338,25 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                     <div class="font-semibold mb-3" style="color:#03045e;">Directeurs</div>
                     <div class="flex items-center space-x-2 mb-2">
                       <div style="width:22px;height:22px;border-radius:50%;background:rgba(0,119,182,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <i class="fas fa-user text-xs" style="color:#0077b6;"></i>
+                        <AnimatedIcon src="https://cdn.lordicon.com/kthelypq.json" size={12} trigger="hover" colors="primary:#0077b6,secondary:#caf0f8" />
                       </div>
                       <span>Malick KOMPAORE - Directeur Commercial</span>
                     </div>
                     <div class="flex items-center space-x-2 mb-3">
                       <div style="width:22px;height:22px;border-radius:50%;background:rgba(0,119,182,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <i class="fas fa-phone text-xs" style="color:#0077b6;"></i>
+                        <AnimatedIcon src="https://cdn.lordicon.com/tftunupn.json" size={12} trigger="hover" colors="primary:#0077b6,secondary:#caf0f8" />
                       </div>
                       <a href="tel:+22607494444" class="hover:text-white transition">+226 07 49 44 44</a>
                     </div>
                     <div class="flex items-center space-x-2 mb-2">
                       <div style="width:22px;height:22px;border-radius:50%;background:rgba(124,58,237,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <i class="fas fa-user-cog text-xs" style="color:#7c3aed;"></i>
+                        <AnimatedIcon src="https://cdn.lordicon.com/kthelypq.json" size={12} trigger="hover" colors="primary:#7c3aed,secondary:#caf0f8" />
                       </div>
                       <span>Sherif SAWADOGO - Directeur Technique</span>
                     </div>
                     <div class="flex items-center space-x-2">
                       <div style="width:22px;height:22px;border-radius:50%;background:rgba(124,58,237,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <i class="fas fa-phone text-xs" style="color:#7c3aed;"></i>
+                        <AnimatedIcon src="https://cdn.lordicon.com/tftunupn.json" size={12} trigger="hover" colors="primary:#7c3aed,secondary:#caf0f8" />
                       </div>
                       <a href="tel:+22655996418" class="hover:text-white transition">+226 55 99 64 18</a>
                     </div>
@@ -334,13 +390,13 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 <ul class="space-y-3 text-sm" style="color:#64748b;">
                   {["Vente climatiseurs","Installation pro","Maintenance tri.","Devis gratuit","SAV réactif","Techniciens certifiés"].map(s => (
                     <li class="flex items-center space-x-2">
-                      <i class="fas fa-check-circle text-xs" style="color:#0ea5e9;"></i>
+                      <AnimatedIcon src="https://cdn.lordicon.com/yqzmiobz.json" size={14} trigger="hover" colors="primary:#0ea5e9,secondary:#caf0f8" />
                       <span>{s}</span>
                     </li>
                   ))}
                 </ul>
                 <div class="mt-5 p-3 rounded-xl text-xs" style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.12); color:#64748b;">
-                  <i class="fas fa-map-marker-alt mr-2" style="color:#0ea5e9;"></i>
+                  <AnimatedIcon src="https://cdn.lordicon.com/zzaxpnyy.json" size={14} trigger="hover" colors="primary:#0ea5e9,secondary:#caf0f8" class="mr-2" />
                   Ouagadougou, Secteurs 35
                   <div class="mt-1 ml-5" style="color:#475569;">Burkina Faso</div>
                 </div>
@@ -394,7 +450,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             // Profile avatar: show first letter of name when logged in
             (function() {
               fetch('/api/session-check', { credentials: 'same-origin' })
-                .then(function(r) { return r.json(); })
+                .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
                 .then(function(data) {
                   if (data && data.loggedIn && data.name) {
                     var btn = document.getElementById('user-nav-btn');
@@ -473,7 +529,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
 
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
-            const hasAccepted = localStorage.getItem('maasga_cgu_accepted')
+            const hasAccepted = localStorage.getItem('maasga_cgu_accepted') === 'true'
             if (!hasAccepted) {
               setTimeout(() => {
                 const modal = document.getElementById('cgu-modal')
@@ -490,8 +546,9 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             window.acceptCGU = () => {
               const checkbox = document.getElementById('accept-cgu')
               if (checkbox?.checked) {
-                localStorage.setItem('maasga_cgu_accepted', JSON.stringify({
-                  accepted: true,
+                localStorage.setItem('maasga_cgu_accepted', 'true');
+                // Legacy: also keep version info in a separate key (does not bloat the check key)
+                localStorage.setItem('maasga_cgu_meta', JSON.stringify({
                   timestamp: new Date().toISOString(),
                   version: '1.0'
                 }))
@@ -628,14 +685,14 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
           function openWa(msg) {
             window.open('https://wa.me/22655996418?text=' + encodeURIComponent(msg), '_blank');
           }
-          // Auto-open after 8s on first visit
-          if (!sessionStorage.getItem('wa_shown')) {
+          // Auto-open after 30s on first visit (only if user hasn't dismissed, no DNT)
+          if (!sessionStorage.getItem('wa_shown') && navigator.doNotTrack !== '1') {
             setTimeout(function() {
               if (document.getElementById('wa-panel').style.display === 'none') {
                 toggleWaPanel();
                 sessionStorage.setItem('wa_shown', '1');
               }
-            }, 8000);
+            }, 30000);
           }
         ` }} />
 
