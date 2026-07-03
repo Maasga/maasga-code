@@ -123,11 +123,11 @@
   border: 1px solid var(--slate-200);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  transition: transform 0.45s var(--ease-spring), box-shadow 0.45s var(--ease-out-expo), border-color 0.4s ease;
+  transition: transform 0.45s var(--ease-out-expo), box-shadow 0.45s var(--ease-out-expo), border-color 0.4s var(--ease-out-expo);
 }
 .surface-elevated:hover {
   transform: translateY(-6px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 20px 45px rgba(3,105,161,0.18), 0 6px 16px rgba(3,105,161,0.10);
   border-color: rgba(3,105,161,0.3);
 }
 /* Section / carte navy premium */
@@ -166,11 +166,11 @@
 .glass-card {
   background: #ffffff;
   border: 1px solid rgba(0,119,182,0.12);
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: all 0.4s var(--ease-out-expo);
 }
 .glass-card:hover {
-  border-color: rgba(0,119,182,0.28);
-  box-shadow: 0 20px 40px rgba(0,119,182,0.1);
+  border-color: rgba(3,105,161,0.3);
+  box-shadow: 0 20px 45px rgba(3,105,161,0.18), 0 6px 16px rgba(3,105,161,0.10);
   background: #f0f8ff;
   transform: translateY(-6px);
 }
