@@ -193,11 +193,14 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
           <div class="grid md:grid-cols-3 gap-8 items-stretch" data-stagger>
             {/* Vente */}
             <div data-tilt class="surface-elevated p-8 group">
-              <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:rotate-6 transition-transform" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan)); color:#ffffff;">
+              <div class="tilt-image w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:rotate-6 transition-transform" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan)); color:#ffffff;">
                 <i class="ph-duotone ph-shopping-cart-simple"></i>
               </div>
-              <h3 class="text-2xl font-extrabold mb-4 font-display" style="color:var(--navy-900);">Vente Premium</h3>
-              <p class="mb-6" style="color:var(--slate-700);">Des climatiseurs de marques internationales, économes en énergie et adaptés au climat sahélien.</p>
+              <div class="tilt-caption">
+                <h3 class="text-2xl font-extrabold mb-4 font-display" style="color:var(--navy-900);">Vente Premium</h3>
+                <p class="mb-6" style="color:var(--slate-700);">Des climatiseurs de marques internationales, économes en énergie et adaptés au climat sahélien.</p>
+              </div>
+              <div class="tilt-shine" aria-hidden="true"></div>
               <ul class="text-sm space-y-2 mb-8" style="color:var(--slate-500);">
                 <li><i class="fas fa-check mr-2" style="color:var(--accent);"></i>Inverter (Économie 40%)</li>
                 <li><i class="fas fa-check mr-2" style="color:var(--accent);"></i>Garantie 1-3 ans constructeur</li>
@@ -212,11 +215,14 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
               <div class="absolute top-0 right-0 p-4 text-8xl" style="opacity:0.08; color:#ffffff;">
                 <i class="ph-duotone ph-wrench"></i>
               </div>
-              <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-6" style="background:rgba(202,240,248,0.14); color:var(--ice);">
+              <div class="tilt-image w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-6" style="background:rgba(202,240,248,0.14); color:var(--ice);">
                 <i class="ph-duotone ph-wrench"></i>
               </div>
-              <h3 class="text-2xl font-extrabold mb-4 font-display" style="color:#ffffff;">Maintenance</h3>
-              <p class="mb-6" style="color:#cbd5e1;">Interventions rapides et programmées pour garantir la longévité de vos appareils. SAV 7j/7.</p>
+              <div class="tilt-caption">
+                <h3 class="text-2xl font-extrabold mb-4 font-display" style="color:#ffffff;">Maintenance</h3>
+                <p class="mb-6" style="color:#cbd5e1;">Interventions rapides et programmées pour garantir la longévité de vos appareils. SAV 7j/7.</p>
+              </div>
+              <div class="tilt-shine" aria-hidden="true"></div>
               <ul class="text-sm space-y-2 mb-8" style="color:#94a3b8;">
                 <li><i class="fas fa-check mr-2" style="color:var(--ice);"></i>Entretien trimestriel</li>
                 <li><i class="fas fa-check mr-2" style="color:var(--ice);"></i>Intervention sous 24h</li>
@@ -228,11 +234,14 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
 
             {/* Suivi */}
             <div data-tilt class="surface-elevated p-8 group">
-              <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:rotate-6 transition-transform" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan)); color:#ffffff;">
+              <div class="tilt-image w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:rotate-6 transition-transform" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan)); color:#ffffff;">
                 <i class="ph-duotone ph-chart-line-up"></i>
               </div>
-              <h3 class="text-2xl font-extrabold mb-4 font-display" style="color:var(--navy-900);">Suivi de Performance</h3>
-              <p class="mb-6" style="color:var(--slate-700);">Un espace client dédié pour consulter vos contrats, historiques d'interventions et alertes.</p>
+              <div class="tilt-caption">
+                <h3 class="text-2xl font-extrabold mb-4 font-display" style="color:var(--navy-900);">Suivi de Performance</h3>
+                <p class="mb-6" style="color:var(--slate-700);">Un espace client dédié pour consulter vos contrats, historiques d'interventions et alertes.</p>
+              </div>
+              <div class="tilt-shine" aria-hidden="true"></div>
               <ul class="text-sm space-y-2 mb-8" style="color:var(--slate-500);">
                 <li><i class="fas fa-check mr-2" style="color:var(--accent);"></i>Rapports mensuels</li>
                 <li><i class="fas fa-check mr-2" style="color:var(--accent);"></i>Alertes pannes</li>
@@ -260,11 +269,14 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             { icon: "fa-helmet-safety",   color: "#f59e0b", title: "Techniciens qualifiés", desc: "Équipe formée et certifiée, spécialisée en froid et climatisation." }
           ].map(av => (
             <div data-tilt class="surface-elevated p-6 text-center group">
-              <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform" style={`background:${av.color}14; border:1px solid ${av.color}26;`}>
+              <div class="tilt-image w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform" style={`background:${av.color}14; border:1px solid ${av.color}26;`}>
                 <i class={`fas ${av.icon} text-2xl`} style={`color:${av.color};`}></i>
               </div>
-              <h3 class="font-bold mb-2 font-display" style="color:var(--navy-900);">{av.title}</h3>
-              <p class="text-sm leading-relaxed" style="color:var(--slate-700);">{av.desc}</p>
+              <div class="tilt-caption">
+                <h3 class="font-bold mb-2 font-display" style="color:var(--navy-900);">{av.title}</h3>
+                <p class="text-sm leading-relaxed" style="color:var(--slate-700);">{av.desc}</p>
+              </div>
+              <div class="tilt-shine" aria-hidden="true"></div>
             </div>
           ))}
         </div>
@@ -294,7 +306,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             ) : featuredProducts.map(p => (
               <div data-tilt class="surface-elevated overflow-hidden group flex flex-col">
                 {/* Image */}
-                <div class="relative" style="background:linear-gradient(145deg,#f0f7ff,#dbeafe); padding:28px 24px 20px;">
+                <div class="tilt-image relative" style="background:linear-gradient(145deg,#f0f7ff,#dbeafe); padding:28px 24px 20px;">
                   <div class="flex items-center justify-center" style="min-height:180px;">
                     {(p as any).imageUrl
                       ? <img src={(p as any).imageUrl} alt={p.name}
@@ -314,9 +326,11 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                 </div>
                 {/* Contenu */}
                 <div class="p-6 flex flex-col flex-1">
-                  <div class="text-xs font-bold uppercase tracking-wider mb-1" style="color:var(--accent);">{p.brand}</div>
-                  <h3 class="font-extrabold text-lg mb-2 leading-snug font-display" style="color:var(--navy-900);">{p.name}</h3>
-                  <p class="text-sm mb-4 leading-relaxed" style="color:var(--slate-500);">{p.description}</p>
+                  <div class="tilt-caption">
+                    <div class="text-xs font-bold uppercase tracking-wider mb-1" style="color:var(--accent);">{p.brand}</div>
+                    <h3 class="font-extrabold text-lg mb-2 leading-snug font-display" style="color:var(--navy-900);">{p.name}</h3>
+                    <p class="text-sm mb-4 leading-relaxed" style="color:var(--slate-500);">{p.description}</p>
+                  </div>
                   <div class="flex items-end justify-between mb-5 mt-auto">
                     <div>
                       <div class="text-2xl font-extrabold font-display" style="color:var(--accent);">{p.price.toLocaleString()} <span class="text-sm font-normal" style="color:var(--slate-500);">FCFA</span></div>
@@ -331,6 +345,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                     <i class="fas fa-eye text-sm"></i>
                     <span>Voir &amp; Commander</span>
                   </a>
+                  <div class="tilt-shine" aria-hidden="true"></div>
                 </div>
               </div>
             ))}
@@ -362,11 +377,14 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
               { icon: "fa-calendar-check",    title: "Suivi entretien",   desc: "Rappels automatiques pour la maintenance et suivi de votre historique.",      href: "/espace-client", color: "#f59e0b" }
             ].map(f => (
               <a href={f.href} data-tilt class="surface-elevated p-6 text-center group block">
-                <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform" style={`background:${f.color}14; border:1px solid ${f.color}26;`}>
+                <div class="tilt-image w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform" style={`background:${f.color}14; border:1px solid ${f.color}26;`}>
                   <i class={`fas ${f.icon} text-2xl`} style={`color:${f.color};`}></i>
                 </div>
-                <h3 class="font-bold mb-2 font-display" style="color:var(--navy-900);">{f.title}</h3>
-                <p class="text-sm leading-relaxed" style="color:var(--slate-700);">{f.desc}</p>
+                <div class="tilt-caption">
+                  <h3 class="font-bold mb-2 font-display" style="color:var(--navy-900);">{f.title}</h3>
+                  <p class="text-sm leading-relaxed" style="color:var(--slate-700);">{f.desc}</p>
+                </div>
+                <div class="tilt-shine" aria-hidden="true"></div>
               </a>
             ))}
           </div>
