@@ -587,22 +587,36 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                   });
                 });
 
-                // Tilt 3D — cartes avec [data-tilt], desktop uniquement
+                // Tilt parallax — cartes avec [data-tilt], couches .tilt-image/.tilt-caption/.tilt-shine
                 document.querySelectorAll('[data-tilt]').forEach(function(card) {
                   var rect = null;
+                  var img = card.querySelector('.tilt-image');
+                  var caption = card.querySelector('.tilt-caption');
+                  var shine = card.querySelector('.tilt-shine');
+                  var layers = [img, caption, shine].filter(Boolean);
                   card.addEventListener('mousemove', function(e) {
                     rect = rect || card.getBoundingClientRect();
                     var x = (e.clientX - rect.left) / rect.width - 0.5;
                     var y = (e.clientY - rect.top) / rect.height - 0.5;
-                    gsap.to(card, {
-                      rotateY: x * 9, rotateX: -y * 9,
-                      transformPerspective: 800, transformOrigin: 'center',
-                      duration: 0.4, ease: 'power2.out'
-                    });
+                    if (img) {
+                      gsap.to(img, {
+                        rotateY: x * 10, rotateX: -y * 10,
+                        transformPerspective: 800, transformOrigin: 'center',
+                        duration: 0.4, ease: 'power2.out'
+                      });
+                    }
+                    if (caption) {
+                      gsap.to(caption, { x: x * 40, y: y * 40, duration: 0.4, ease: 'power2.out' });
+                    }
+                    if (shine) {
+                      gsap.to(shine, { x: x * 100, y: y * 100, duration: 0.4, ease: 'power2.out' });
+                    }
                   });
                   card.addEventListener('mouseleave', function() {
                     rect = null;
-                    gsap.to(card, { rotateX: 0, rotateY: 0, duration: 0.6, ease: 'power3.out' });
+                    if (layers.length) {
+                      gsap.to(layers, { rotateX: 0, rotateY: 0, x: 0, y: 0, duration: 0.6, ease: 'elastic.out(1, 0.4)' });
+                    }
                   });
                 });
               }
