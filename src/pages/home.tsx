@@ -21,7 +21,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
         <div id="hero-carousel" class="absolute inset-0 pointer-events-none">
           {["/hero/hero-1.jpg","/hero/hero-2.jpg","/hero/hero-3.jpg","/hero/hero-4.jpg","/hero/hero-5.jpg","/hero/hero-6.jpg","/hero/hero-7.jpg"].map((src, i) => (
             <div class={`hero-carousel-slide${i === 0 ? ' active' : ''}`}>
-              <img src={src} alt="MAASGA — installation climatisation" loading={i === 0 ? 'eager' : 'lazy'} />
+              <img src={src} alt="MAASGA — installation climatisation" loading="eager" decoding="async" fetchpriority={i === 0 ? 'high' : 'low'} />
             </div>
           ))}
           {/* Overlay sombre : z-index:5 pour rester au-dessus des slides (qui montent à z-index 3 pendant la transition) */}
@@ -710,35 +710,6 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
               });
             };
             if (document.fonts && document.fonts.ready) { document.fonts.ready.then(go); } else { go(); }
-            return true;
-          }
-          if (!run()) { var n = 0, iv = setInterval(function(){ n++; if (run() || n > 60) clearInterval(iv); }, 50); }
-        })();
-      ` }} />
-
-      {/* ===== Tilt 3D des cartes services (desktop, désactivé au toucher) ===== */}
-      <script dangerouslySetInnerHTML={{ __html: `
-        (function(){
-          if (window.matchMedia('(hover: none)').matches) return;
-          function run(){
-            if (!window.gsap) return false;
-            document.querySelectorAll('[data-tilt]').forEach(function(card){
-              var rect = null;
-              card.addEventListener('mousemove', function(e){
-                rect = rect || card.getBoundingClientRect();
-                var x = (e.clientX - rect.left) / rect.width - 0.5;
-                var y = (e.clientY - rect.top) / rect.height - 0.5;
-                gsap.to(card, {
-                  rotateY: x * 9, rotateX: -y * 9,
-                  transformPerspective: 800, transformOrigin: 'center',
-                  duration: 0.4, ease: 'power2.out'
-                });
-              });
-              card.addEventListener('mouseleave', function(){
-                rect = null;
-                gsap.to(card, { rotateX: 0, rotateY: 0, duration: 0.6, ease: 'power3.out' });
-              });
-            });
             return true;
           }
           if (!run()) { var n = 0, iv = setInterval(function(){ n++; if (run() || n > 60) clearInterval(iv); }, 50); }

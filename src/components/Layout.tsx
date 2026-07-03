@@ -67,12 +67,12 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         <script src="https://cdn.lordicon.com/lordicon.js" defer></script>
 
         {/* Global Agentation System — Control via ?agentation=1 */}
-        <script type="importmap">{`{
+        <script type="importmap" dangerouslySetInnerHTML={{ __html: `{
           "imports": {
             "react": "https://esm.sh/react@18.3.1",
             "react-dom/client": "https://esm.sh/react-dom@18.3.1/client?external=react"
           }
-        }`}</script>
+        }` }} />
         <script type="module" dangerouslySetInnerHTML={{ __html: `
           (async function() {
             try {
@@ -584,6 +584,25 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                   });
                   btn.addEventListener('mouseleave', function() {
                     gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: 'elastic.out(1, 0.4)' });
+                  });
+                });
+
+                // Tilt 3D — cartes avec [data-tilt], desktop uniquement
+                document.querySelectorAll('[data-tilt]').forEach(function(card) {
+                  var rect = null;
+                  card.addEventListener('mousemove', function(e) {
+                    rect = rect || card.getBoundingClientRect();
+                    var x = (e.clientX - rect.left) / rect.width - 0.5;
+                    var y = (e.clientY - rect.top) / rect.height - 0.5;
+                    gsap.to(card, {
+                      rotateY: x * 9, rotateX: -y * 9,
+                      transformPerspective: 800, transformOrigin: 'center',
+                      duration: 0.4, ease: 'power2.out'
+                    });
+                  });
+                  card.addEventListener('mouseleave', function() {
+                    rect = null;
+                    gsap.to(card, { rotateX: 0, rotateY: 0, duration: 0.6, ease: 'power3.out' });
                   });
                 });
               }
