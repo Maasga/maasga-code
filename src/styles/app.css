@@ -343,6 +343,22 @@
 .hover-glow { transition: box-shadow 0.3s ease; }
 .hover-glow:hover { box-shadow: 0 0 20px rgba(0,119,182,0.2); }
 
+/* ─── Tilt parallax layers (image/caption/shine) ─── */
+[data-tilt] {
+  position: relative;
+  overflow: hidden;
+}
+
+.tilt-shine {
+  position: absolute;
+  top: -60%;
+  left: -60%;
+  width: 220%;
+  height: 220%;
+  pointer-events: none;
+  background: linear-gradient(45deg, transparent 35%, rgba(0,180,216,0.16) 50%, transparent 65%);
+}
+
 /* ─── MOBILE MENU ─── */
 .mobile-menu { display: none; opacity: 0; transform: translateY(-8px); transition: opacity 0.25s ease, transform 0.25s ease; }
 .mobile-menu.open { display: block; opacity: 1; transform: translateY(0); animation: menuSlideIn 0.25s ease forwards; }
