@@ -292,7 +292,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                 <p style="color:var(--slate-500);">Aucun produit disponible pour le moment.</p>
               </div>
             ) : featuredProducts.map(p => (
-              <div class="surface-elevated overflow-hidden group flex flex-col">
+              <div data-tilt class="surface-elevated overflow-hidden group flex flex-col">
                 {/* Image */}
                 <div class="relative" style="background:linear-gradient(145deg,#f0f7ff,#dbeafe); padding:28px 24px 20px;">
                   <div class="flex items-center justify-center" style="min-height:180px;">

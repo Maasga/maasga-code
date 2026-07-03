@@ -162,7 +162,7 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
             ) : (
               <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 reveal" id="products-grid">
                 {paginatedProducts.map(p => (
-                  <div data-brand={p.brand} data-btu={String(p.btu)} data-inverter={String(p.inverter)} data-stock={String(p.stock)} data-available={String(p.available)} data-id={String(p.id)} data-name={p.name} data-price={String(p.price)} data-model={p.model} data-energy={p.energy_class} data-image={p.image} class={`product-card glass-card rounded-2xl overflow-hidden transition-all duration-300 group ${!p.available || p.stock === 0 ? 'opacity-60' : 'hover-lift'}`}>
+                  <div {...((p.available && p.stock !== 0) ? { 'data-tilt': true } : {})} data-brand={p.brand} data-btu={String(p.btu)} data-inverter={String(p.inverter)} data-stock={String(p.stock)} data-available={String(p.available)} data-id={String(p.id)} data-name={p.name} data-price={String(p.price)} data-model={p.model} data-energy={p.energy_class} data-image={p.image} class={`product-card glass-card rounded-2xl overflow-hidden transition-all duration-300 group ${!p.available || p.stock === 0 ? 'opacity-60' : 'hover-lift'}`}>
                     {/* Image */}
                     <div class="relative p-6 text-center" style="background:linear-gradient(145deg,#e8f2ff,#f0f7ff);">
                       {(p as any).imageUrl
