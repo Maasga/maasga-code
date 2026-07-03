@@ -164,7 +164,7 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
                 {paginatedProducts.map(p => (
                   <div {...((p.available && p.stock !== 0) ? { 'data-tilt': true } : {})} data-brand={p.brand} data-btu={String(p.btu)} data-inverter={String(p.inverter)} data-stock={String(p.stock)} data-available={String(p.available)} data-id={String(p.id)} data-name={p.name} data-price={String(p.price)} data-model={p.model} data-energy={p.energy_class} data-image={p.image} class={`product-card glass-card rounded-2xl overflow-hidden transition-all duration-300 group ${!p.available || p.stock === 0 ? 'opacity-60' : 'hover-lift'}`}>
                     {/* Image */}
-                    <div class="relative p-6 text-center" style="background:linear-gradient(145deg,#e8f2ff,#f0f7ff);">
+                    <div class="tilt-image relative p-6 text-center" style="background:linear-gradient(145deg,#e8f2ff,#f0f7ff);">
                       {(p as any).imageUrl
                         ? <img src={(p as any).imageUrl} alt={p.name} class="w-32 h-32 object-contain mx-auto mb-2" loading="lazy" />
                         : <img src="/static/ac-placeholder.svg" alt={p.name} class="w-32 h-32 object-contain mx-auto mb-2" loading="lazy" />
@@ -182,9 +182,11 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
 
                     {/* Info */}
                     <div class="p-5">
-                      <div class="text-xs font-bold uppercase tracking-wider mb-1" style="color:#38bdf8;">{p.brand}</div>
-                      <h3 class="font-bold text-white text-sm mb-1 leading-tight">{p.name}</h3>
-                      <p class="text-xs mb-3" style="color:#64748b;">Réf: {p.model}</p>
+                      <div class="tilt-caption">
+                        <div class="text-xs font-bold uppercase tracking-wider mb-1" style="color:#38bdf8;">{p.brand}</div>
+                        <h3 class="font-bold text-white text-sm mb-1 leading-tight">{p.name}</h3>
+                        <p class="text-xs mb-3" style="color:#64748b;">Réf: {p.model}</p>
+                      </div>
 
                       <div class="grid grid-cols-2 gap-2 my-3">
                         <div class="rounded-lg px-2 py-2 text-center" style="background:rgba(56,189,248,0.07); border:1px solid rgba(56,189,248,0.15);">
@@ -260,6 +262,7 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
                         </div>
                       )}
                     </div>
+                    <div class="tilt-shine" aria-hidden="true"></div>
                   </div>
                 ))}
               </div>
