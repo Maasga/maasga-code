@@ -38,9 +38,21 @@ module.exports = {
           500: '#152247',
           400: '#1e2f55',
         },
+        navy: {
+          950: '#020617',
+          900: '#0F172A',
+          800: '#1E293B',
+          700: '#334155',
+        },
+        accent: {
+          DEFAULT: '#0369A1',
+          bright: '#0077b6',
+          cyan: '#00b4d8',
+        },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['Sora', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
       },
     },
   },

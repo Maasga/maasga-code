@@ -51,15 +51,19 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         <link rel="icon" type="image/png" href="/favicon.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
-        <noscript><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" /></noscript>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" defer crossorigin="anonymous"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js" defer crossorigin="anonymous"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+        <noscript><link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" /></noscript>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js" defer crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js" defer crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/SplitText.min.js" defer crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js" defer crossorigin="anonymous"></script>
         <link rel="stylesheet" href="/static/tailwind.css" />
         <link rel="stylesheet" href="/static/style.css" />
         <title>{title}</title>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" media="print" onload="this.media='all'" />
         <noscript><link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" /></noscript>
+        <link href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/duotone/style.css" rel="stylesheet" media="print" onload="this.media='all'" />
+        <link href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/fill/style.css" rel="stylesheet" media="print" onload="this.media='all'" />
         <script src="https://cdn.lordicon.com/lordicon.js" defer></script>
 
         {/* Global Agentation System — Control via ?agentation=1 */}
@@ -118,6 +122,10 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
       </head>
       <body class="min-h-screen pb-16 md:pb-0" style="background-color:#f8fbff; color:#03045e;" onload="window.initCGUModal?.()">
 
+        {/* js-ready : pose immédiatement la classe pour activer l'état initial caché
+            des reveals. Si JS est désactivé, la classe n'est jamais posée → contenu visible. */}
+        <script dangerouslySetInnerHTML={{ __html: `document.documentElement.classList.add('js-ready');` }} />
+
         {/* PAGE LOADER — affiché uniquement au premier chargement de la session */}
         <div id="page-loader" style="position:fixed;inset:0;z-index:999999;background:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.3s ease,visibility 0.3s ease;">
           <div style="position:relative;margin-bottom:1.5rem;">
@@ -175,9 +183,6 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         {/* Skip to content — accessibility */}
         <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[99999] focus:px-4 focus:py-2 focus:rounded-lg focus:text-white" style="background:#0ea5e9;">Aller au contenu principal</a>
 
-        {/* SCROLL PROGRESS BAR */}
-        <div id="scroll-progress" style="position:fixed; top:0; left:0; height:3px; width:0%; background:linear-gradient(90deg,#0ea5e9,#38bdf8,#7dd3fc); z-index:9999; transition:width 0.1s linear; box-shadow:0 0 8px rgba(56,189,248,0.5);"></div>
-
         {/* PAGE TRANSITION OVERLAY */}
         <div id="page-transition" style="position:fixed; inset:0; z-index:99999; background:#f8fbff; display:flex; align-items:center; justify-content:center; transition:opacity 0.3s ease; pointer-events:none; opacity:0;">
           <i class="fas fa-snowflake text-3xl" style="color:#38bdf8; animation:spin 1s linear infinite;"></i>
@@ -190,7 +195,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
 
         {/* HEADER — floating pill */}
         <header class="fixed w-full z-50 px-3 sm:px-4 lg:px-6 pt-3 sm:pt-4">
-          <div class="max-w-7xl mx-auto flex justify-between items-center glass rounded-full px-4 sm:px-6 py-2.5 sm:py-3 shadow-lg">
+          <div id="header-pill" class="max-w-7xl mx-auto flex justify-between items-center glass rounded-full px-4 sm:px-6 py-2.5 sm:py-3 shadow-lg">
 
             {/* Logo */}
             <a href="/" class="font-extrabold tracking-tight flex items-center shrink-0 gap-2">
@@ -464,7 +469,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 .catch(function() {});
             })();
 
-            // Scroll reveal (+ left/right variants)
+            // Scroll reveal (+ left/right variants) — classe legacy .visible
             var observer = new IntersectionObserver(function(entries) {
               entries.forEach(function(entry) {
                 if (entry.isIntersecting) {
@@ -475,14 +480,24 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
             document.querySelectorAll('.reveal,.reveal-left,.reveal-right').forEach(function(el) { observer.observe(el); });
 
-            // Scroll progress bar
-            var progressBar = document.getElementById('scroll-progress');
+            // Moteur de révélation data-* — robuste, indépendant de GSAP.
+            // Ajoute .in dès que l'élément entre à l'écran (CSS gère l'anim + cascade).
+            var revealObserver = new IntersectionObserver(function(entries) {
+              entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                  entry.target.classList.add('in');
+                  revealObserver.unobserve(entry.target);
+                }
+              });
+            }, { threshold: 0.05, rootMargin: '0px 0px -8% 0px' });
+            document.querySelectorAll('[data-reveal],[data-stagger],[data-hero]').forEach(function(el) { revealObserver.observe(el); });
+
             var backToTop = document.getElementById('back-to-top');
+            var headerPill = document.getElementById('header-pill');
             window.addEventListener('scroll', function() {
               var scrollTop = window.scrollY;
-              var docHeight = document.documentElement.scrollHeight - window.innerHeight;
-              if (docHeight > 0) progressBar.style.width = (scrollTop / docHeight * 100) + '%';
               if (backToTop) backToTop.style.display = scrollTop > 400 ? 'flex' : 'none';
+              if (headerPill) headerPill.classList.toggle('scrolled', scrollTop > 20);
             }, { passive: true });
 
             // Animated number counters
@@ -525,6 +540,65 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             overlay.style.pointerEvents = 'all';
             setTimeout(function() { window.location.href = href; }, 150);
           });
+        `}} />
+
+        {/* ─── MOTEUR D'ANIMATION GSAP DÉCLARATIF (perf-safe) ───────────────
+             Piloté par attributs data-* sur n'importe quelle page :
+               data-reveal    → apparition au scroll
+               data-stagger   → enfants directs révélés en cascade
+               data-parallax  → parallax léger (valeur = intensité px, borné ±60)
+               .magnetic      → CTA magnétique (desktop pointer:fine uniquement)
+             FALLBACK : le contenu est visible par défaut ; l'état caché (opacity:0)
+             n'existe que sous html.gsap-ready, posé seulement quand GSAP répond.
+             Si GSAP absent/lent ou reduced-motion → tout reste visible. */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            var finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+            function initGsap() {
+              if (!window.gsap || !window.ScrollTrigger) return false;
+              var gsap = window.gsap;
+              gsap.registerPlugin(window.ScrollTrigger);
+
+              // Les reveals/cascades sont gérés en CSS+IntersectionObserver (robuste).
+              // GSAP n'ajoute QUE des enrichissements : parallax + CTA magnétiques.
+              if (reduce) return true;
+
+              gsap.utils.toArray('[data-parallax]').forEach(function(el) {
+                var amount = parseFloat(el.getAttribute('data-parallax')) || 30;
+                amount = Math.max(-80, Math.min(80, amount));
+                gsap.to(el, {
+                  y: amount, ease: 'none',
+                  scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: 1 }
+                });
+              });
+
+              if (finePointer) {
+                document.querySelectorAll('.magnetic').forEach(function(btn) {
+                  btn.addEventListener('mousemove', function(e) {
+                    var r = btn.getBoundingClientRect();
+                    var mx = e.clientX - r.left - r.width / 2;
+                    var my = e.clientY - r.top - r.height / 2;
+                    gsap.to(btn, { x: mx * 0.22, y: my * 0.3, duration: 0.4, ease: 'power3.out' });
+                  });
+                  btn.addEventListener('mouseleave', function() {
+                    gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: 'elastic.out(1, 0.4)' });
+                  });
+                });
+              }
+              return true;
+            }
+
+            // GSAP chargé en defer : on tente jusqu'à ~3s, sinon le contenu reste visible
+            if (!initGsap()) {
+              var tries = 0;
+              var iv = setInterval(function() {
+                tries++;
+                if (initGsap() || tries > 60) clearInterval(iv);
+              }, 50);
+            }
+          })();
         `}} />
 
         <script dangerouslySetInnerHTML={{ __html: `
@@ -791,6 +865,57 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             }
             window.__focusTrapStack = window.__focusTrapStack.filter(function(m) { return m !== modalEl; });
           };
+        ` }} />
+
+        {/* ─── Lenis smooth scroll (se synchronise au ticker GSAP existant) ─── */}
+        <div id="cursor-dot" aria-hidden="true"></div>
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function(){
+            function boot(){
+              if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+              if (typeof Lenis === 'undefined') return;
+              var lenis = new Lenis({ duration: 1.1, smoothWheel: true });
+              window.__lenis = lenis;
+              var usingGsap = false;
+              // Fallback rAF : garantit que Lenis avance même si GSAP tarde (jamais de scroll figé)
+              function raf(t){ if (!usingGsap) { lenis.raf(t); requestAnimationFrame(raf); } }
+              requestAnimationFrame(raf);
+              function wire(){
+                if (window.gsap && window.ScrollTrigger) {
+                  lenis.on('scroll', ScrollTrigger.update);
+                  gsap.ticker.add(function(t){ lenis.raf(t * 1000); });
+                  gsap.ticker.lagSmoothing(0);
+                  usingGsap = true; // stoppe le fallback à sa prochaine frame
+                  return true;
+                }
+                return false;
+              }
+              if (!wire()) { var n = 0, iv = setInterval(function(){ n++; if (wire() || n > 60) clearInterval(iv); }, 50); }
+            }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+          })();
+        ` }} />
+
+        {/* ─── Curseur custom (desktop only) — la magnétique reste gérée par le moteur GSAP ─── */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function(){
+            if (window.matchMedia('(hover: none)').matches) return;
+            function boot(){
+              if (!window.gsap) return false;
+              var dot = document.getElementById('cursor-dot');
+              if (!dot) return true;
+              gsap.set(dot, { xPercent: -50, yPercent: -50 });
+              var xTo = gsap.quickTo(dot, 'x', { duration: 0.35, ease: 'power3' });
+              var yTo = gsap.quickTo(dot, 'y', { duration: 0.35, ease: 'power3' });
+              window.addEventListener('mousemove', function(e){ dot.style.opacity = '1'; xTo(e.clientX); yTo(e.clientY); });
+              document.querySelectorAll('a, button, .magnetic, [data-magnetic]').forEach(function(el){
+                el.addEventListener('mouseenter', function(){ dot.classList.add('hovering'); });
+                el.addEventListener('mouseleave', function(){ dot.classList.remove('hovering'); });
+              });
+              return true;
+            }
+            if (!boot()) { var n = 0, iv = setInterval(function(){ n++; if (boot() || n > 60) clearInterval(iv); }, 50); }
+          })();
         ` }} />
       </body>
     </html>

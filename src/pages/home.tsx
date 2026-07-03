@@ -7,7 +7,8 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
   const topReviews = propReviews && propReviews.length > 0
     ? propReviews
     : reviews.filter(r => r.approved && r.note >= 4).slice(0, 3)
-  const displayClients = stats?.clientCount && stats.clientCount > 0 ? `${stats.clientCount}+` : '—'
+  const hasClients = !!(stats?.clientCount && stats.clientCount > 0)
+  const displayClients = hasClients ? `${stats!.clientCount}+` : '—'
   const displayNote = stats?.avgNote && stats.avgNote > 0 ? `${stats.avgNote.toFixed(1)}/5` : '—'
   const displayReviews = stats?.reviewCount && stats.reviewCount > 0 ? `${stats.reviewCount}` : '—'
 
@@ -16,105 +17,101 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
 
       {/* ===== HERO SECTION ===== */}
       <section class="gradient-hero min-h-screen flex items-center relative overflow-hidden pt-20">
-        {/* Background Video (Lower opacity) */}
-        <video 
-          autoPlay 
-          muted 
-          loop 
-          playsInline 
-          preload="metadata"
-          aria-hidden="true"
-          class="absolute inset-0 w-full h-full object-cover pointer-events-none"
-          style="z-index: 0; opacity: 0.2; object-position: 80% 50%;"
-        >
-          <source src="/HOMZ3.mp4" type="video/mp4" />
-        </video>
+        {/* Carrousel photo plein écran — 7 photos, balayage clip-path (GSAP, étape 1B) */}
+        <div id="hero-carousel" class="absolute inset-0 pointer-events-none">
+          {["/hero/hero-1.jpg","/hero/hero-2.jpg","/hero/hero-3.jpg","/hero/hero-4.jpg","/hero/hero-5.jpg","/hero/hero-6.jpg","/hero/hero-7.jpg"].map((src, i) => (
+            <div class={`hero-carousel-slide${i === 0 ? ' active' : ''}`}>
+              <img src={src} alt="MAASGA — installation climatisation" loading={i === 0 ? 'eager' : 'lazy'} />
+            </div>
+          ))}
+          {/* Overlay sombre : z-index:5 pour rester au-dessus des slides (qui montent à z-index 3 pendant la transition) */}
+          <div class="absolute inset-0" style="z-index:5; background:linear-gradient(100deg,rgba(0,0,0,0.82) 0%,rgba(0,0,0,0.55) 42%,rgba(0,0,0,0.28) 75%,rgba(0,0,0,0.5) 100%),linear-gradient(180deg,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.55) 100%);"></div>
+        </div>
 
-        {/* Snow particles container */}
+        {/* Particules de neige — conservées par-dessus le carrousel */}
         <div id="snow-container" class="absolute inset-0 overflow-hidden pointer-events-none"></div>
 
-        {/* Glow blobs */}
-        <div class="glow-dot w-96 h-96 top-[-80px] right-[-80px]" style="background:rgba(0,180,216,0.15);"></div>
-        <div class="glow-dot w-80 h-80 bottom-[-60px] left-[-60px]" style="background:rgba(0,119,182,0.12);"></div>
-
-        {/* Floating snowflakes */}
-        <i class="fas fa-snowflake absolute top-24 left-10 text-5xl float" style="color:rgba(202,240,248,0.12);"></i>
-        <i class="fas fa-snowflake absolute bottom-40 right-20 text-3xl float" style="color:rgba(202,240,248,0.08); animation-delay:1s;"></i>
-        <i class="fas fa-snowflake absolute top-1/2 left-1/4 text-7xl float" style="color:rgba(202,240,248,0.05); animation-delay:2s;"></i>
+        {/* Halos lumineux subtils — parallaxe légère (au-dessus de l'overlay, derrière le texte) */}
+        <div class="glow-dot w-96 h-96 top-[-60px] right-[-40px] pointer-events-none" style="z-index:6; background:rgba(0,180,216,0.14);" data-parallax="40"></div>
+        <div class="glow-dot w-80 h-80 bottom-[-40px] left-[-40px] pointer-events-none" style="z-index:6; background:rgba(3,105,161,0.16);" data-parallax="-30"></div>
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10 w-full">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
-            <div class="hero-content text-white">
-              {/* Badge */}
-              <div class="inline-flex items-center space-x-2 rounded-full px-4 py-2 text-sm mb-6 fade-in-up" style="background:rgba(202,240,248,0.1); border:1px solid rgba(202,240,248,0.25);">
-                <i class="fas fa-shield-alt text-xs" style="color:#caf0f8;"></i>
-                <span style="color:#caf0f8;">Techniciens certifiés · Burkina Faso</span>
+            <div class="hero-content text-white" data-hero>
+              {/* Badge confiance */}
+              <div class="eyebrow eyebrow-ice inline-flex items-center gap-2 mb-6">
+                <i class="ph-duotone ph-lock-key text-xs" style="color:var(--ice);"></i>
+                <span>Techniciens certifiés · Burkina Faso</span>
               </div>
 
-              <h1 class="text-5xl md:text-6xl lg:text-7xl font-extrabold leading-tight mb-6 fade-in-up delay-1">
-                Le Frais <br /><span style="color:#caf0f8;">Réinventé</span> au Burkina.
+              <h1 data-split-hero class="display-1 text-balance mb-6">
+                Le Frais <br /><span class="hero-grad">Réinventé</span> au Burkina.
               </h1>
 
-              <p class="text-lg mb-8 leading-relaxed max-w-lg fade-in-up delay-2" style="color:#caf0f8; opacity:0.9;">
+              <p class="text-lg mb-8 leading-relaxed max-w-lg" style="color:#cbd5e1;">
                 Spécialiste en <strong class="text-white">vente, installation et maintenance</strong> de climatiseurs à Ouagadougou. Visite technique gratuite sur site · Devis PDF gratuit · Maintenance trimestrielle.
               </p>
 
-              <div class="flex flex-col sm:flex-row gap-4 mb-8 fade-in-up delay-3">
-                <a href="/catalogue" class="font-bold px-8 py-4 rounded-xl flex items-center justify-center space-x-3 group transition-all shadow-xl active:scale-95" style="background:linear-gradient(135deg,#ffffff 0%,#caf0f8 50%,#0077b6 100%); color:#03045e; box-shadow:0 8px 30px rgba(0,119,182,0.4), 0 2px 8px rgba(0,180,216,0.3); border:1px solid rgba(255,255,255,0.6);">
-                  <i class="fas fa-snowflake" style="color:#0077b6;"></i>
+              <div class="flex flex-col sm:flex-row gap-4 mb-8">
+                <a href="/catalogue" class="magnetic btn-light font-bold px-8 py-4 rounded-2xl flex items-center justify-center gap-3 group">
+                  <i class="ph-duotone ph-snowflake" style="color:var(--accent);"></i>
                   <span>Commander une climatisation</span>
-                  <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform text-sm" style="color:#0077b6;"></i>
+                  <i class="ph-duotone ph-arrow-right group-hover:translate-x-1 transition-transform text-sm" style="color:var(--accent);"></i>
                 </a>
-                <a href="/rendez-vous" class="btn-secondary font-bold px-8 py-4 rounded-xl flex items-center justify-center space-x-3" style="border-color:rgba(202,240,248,0.35); color:white; background:rgba(255,255,255,0.1);">
-                  <i class="fas fa-calendar-plus"></i>
+                <a href="/rendez-vous" class="font-bold px-8 py-4 rounded-2xl flex items-center justify-center gap-3 transition-all" style="border:1.5px solid rgba(202,240,248,0.35); color:white; background:rgba(255,255,255,0.06);">
+                  <i class="ph-duotone ph-calendar-plus" style="color:var(--ice);"></i>
                   <span>Demander un devis</span>
                 </a>
               </div>
 
               {/* Social proof */}
-              <div class="flex items-center space-x-4 mb-10 fade-in-up delay-3">
+              <div class="flex items-center gap-4 mb-10">
                 <div class="flex -space-x-2">
                   {['M','A','S','K'].map((l, i) => (
-                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white border-2" style={`background:${['#0077b6','#0096c7','#00b4d8','#48cae4'][i]}; border-color:#03045e; z-index:${4-i};`}>{l}</div>
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white border-2" style={`background:${['#0369a1','#0077b6','#00b4d8','#48cae4'][i]}; border-color:#0F172A; z-index:${4-i};`}>{l}</div>
                   ))}
                 </div>
                 <div>
-                  <div class="flex items-center space-x-1">
-                    {[1,2,3,4,5].map(_ => <i class="fas fa-star text-yellow-400" style="font-size:0.65rem;"></i>)}
+                  <div class="flex items-center gap-1">
+                    {[1,2,3,4,5].map(_ => <i class="ph-fill ph-star text-yellow-400" style="font-size:0.65rem;"></i>)}
                     <span class="font-bold text-white text-sm ml-1">{displayNote}</span>
                   </div>
-                  <div class="text-xs" style="color:#caf0f8; opacity:0.7;"><strong class="text-white">{displayClients}</strong> clients satisfaits</div>
+                  <div class="text-xs" style="color:#94a3b8;"><strong class="text-white">{displayClients}</strong> clients satisfaits</div>
                 </div>
               </div>
 
-              {/* Stats */}
-              <div class="grid grid-cols-3 gap-4 fade-in-up delay-4">
-                {[
-                  { val: displayClients, label: "Clients satisfaits" },
-                  { val: "5 ans", label: "D'expérience" },
-                  { val: displayNote, label: `Note moyenne${stats?.reviewCount ? ` (${displayReviews} avis)` : ''}` }
-                ].map(s => (
-                  <div class="text-center p-4 rounded-2xl hover-lift" style="background:rgba(202,240,248,0.08); border:1px solid rgba(202,240,248,0.15);">
-                    <div class="text-2xl font-extrabold text-white">{s.val}</div>
-                    <div class="text-xs mt-1" style="color:#caf0f8; opacity:0.7;">{s.label}</div>
+              {/* Stats — compteurs animés */}
+              <div class="grid grid-cols-3 gap-4">
+                <div class="text-center p-4 rounded-2xl" style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.16);">
+                  <div class="text-2xl font-extrabold text-white font-display">
+                    {hasClients
+                      ? <span data-count={String(stats!.clientCount)} data-suffix="+">0+</span>
+                      : displayClients}
                   </div>
-                ))}
+                  <div class="text-xs mt-1" style="color:#94a3b8;">Clients satisfaits</div>
+                </div>
+                <div class="text-center p-4 rounded-2xl" style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.16);">
+                  <div class="text-2xl font-extrabold text-white font-display"><span data-count="5" data-suffix=" ans">0 ans</span></div>
+                  <div class="text-xs mt-1" style="color:#94a3b8;">D'expérience</div>
+                </div>
+                <div class="text-center p-4 rounded-2xl" style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.16);">
+                  <div class="text-2xl font-extrabold text-white font-display">{displayNote}</div>
+                  <div class="text-xs mt-1" style="color:#94a3b8;">Note moyenne{stats?.reviewCount ? ` (${displayReviews} avis)` : ''}</div>
+                </div>
               </div>
             </div>
 
-         
-
-            {/* Mobile visual */}
+            {/* Visuel mobile */}
             <div class="lg:hidden fade-in-up delay-3">
               <div class="flex flex-wrap gap-3 justify-center">
                 {[
-                  { icon: "fa-check-circle", color: "#34d399", text: "Validation sur site" },
+                  { icon: "fa-circle-check", color: "#34d399", text: "Validation sur site" },
                   { icon: "fa-file-pdf", color: "#f87171", text: "Devis PDF gratuit" },
-                  { icon: "fa-tools", color: "#caf0f8", text: "SAV réactif" },
-                  { icon: "fa-shield-alt", color: "#fbbf24", text: "Techniciens certifiés" }
+                  { icon: "fa-screwdriver-wrench", color: "#caf0f8", text: "SAV réactif" },
+                  { icon: "fa-shield-halved", color: "#fbbf24", text: "Techniciens certifiés" }
                 ].map(b => (
-                  <div class="flex items-center space-x-2 rounded-xl px-3 py-2 text-sm" style="background:rgba(202,240,248,0.08); border:1px solid rgba(202,240,248,0.2);">
+                  <div class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm" style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.2);">
                     <i class={`fas ${b.icon}`} style={`color:${b.color};`}></i>
                     <span class="font-semibold text-white text-xs">{b.text}</span>
                   </div>
@@ -125,47 +122,60 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
           </div>
         </div>
 
-        {/* Scroll hint */}
+        {/* Indice de scroll */}
         <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center animate-bounce" style="opacity:0.5;">
           <span class="text-xs uppercase tracking-widest text-white mb-2">Découvrir</span>
-          <i class="fas fa-chevron-down text-white"></i>
+          <i class="ph-duotone ph-caret-down text-white"></i>
         </div>
 
-        {/* Floating Cards - Bottom Right */}
+        {/* Carte flottante — bas droite */}
         <div class="hidden lg:flex flex-col gap-4 absolute bottom-0 right-10 z-30">
-          {/* Exemple de calcul Card */}
-          <a href="/simulateur" class="w-64 bg-white rounded-2xl p-4 shadow-2xl hover:scale-105 transition-transform duration-500 block border border-blue-100">
-            <div class="flex items-center space-x-3 mb-2">
-              <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:linear-gradient(135deg,#0077b6,#00b4d8);">
+          <a href="/simulateur" class="surface-elevated w-64 p-4 block">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan));">
                 <i class="fas fa-calculator text-white text-base"></i>
               </div>
-              <span class="font-extrabold text-sm" style="color:#03045e;">Exemple de calcul</span>
+              <span class="font-extrabold text-sm font-display" style="color:var(--navy-900);">Exemple de calcul</span>
             </div>
-            <div class="text-xs text-blue-600 font-bold flex items-center justify-between">
+            <div class="text-xs font-bold flex items-center justify-between" style="color:var(--accent);">
               <span>Simulateur BTU Gratuit</span>
-              <i class="fas fa-arrow-right"></i>
+              <i class="ph-duotone ph-arrow-right"></i>
             </div>
           </a>
         </div>
       </section>
 
-      {/* ===== TRUST GUARANTEE BAR ===== */}
-      <section class="py-5" style="background:#ffffff; border-top:3px solid #caf0f8; border-bottom:1px solid rgba(0,119,182,0.1); box-shadow:0 2px 12px rgba(0,119,182,0.06);">
+      {/* ===== BARRE DE GARANTIES ===== */}
+      <section class="py-5" style="background:#ffffff; border-bottom:1px solid var(--slate-200); box-shadow:var(--shadow-sm);">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4" data-stagger>
             {[
-              { icon: "fa-shield-alt", color: "#34d399", title: "Garantie 1 an", sub: "Constructeur" },
-              { icon: "fa-truck", color: "#0077b6", title: "Livraison gratuite", sub: "Ouagadougou" },
-              { icon: "fa-tools", color: "#fbbf24", title: "Installation pro", sub: "24-48h" },
-              { icon: "fa-headset", color: "#a78bfa", title: "SAV réactif", sub: "7j/7" },
+              { icon: "fa-shield-halved", color: "#10b981", title: "Garantie 1 an", sub: "Constructeur" },
+              { icon: "fa-truck-fast", color: "#0369a1", title: "Livraison gratuite", sub: "Ouagadougou" },
+              { icon: "fa-screwdriver-wrench", color: "#f59e0b", title: "Installation pro", sub: "24-48h" },
+              { icon: "fa-headset", color: "#8b5cf6", title: "SAV réactif", sub: "7j/7" },
             ].map(t => (
-              <div class="flex items-center space-x-3 justify-center">
-                <i class={`fas ${t.icon} text-xl`} style={`color:${t.color};`}></i>
+              <div class="flex items-center gap-3 justify-center">
+                <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={`background:${t.color}14;`}>
+                  <i class={`fas ${t.icon} text-lg`} style={`color:${t.color};`}></i>
+                </div>
                 <div>
-                  <div class="text-sm font-bold" style="color:#03045e;">{t.title}</div>
-                  <div class="text-xs" style="color:#64748b;">{t.sub}</div>
+                  <div class="text-sm font-bold" style="color:var(--navy-900);">{t.title}</div>
+                  <div class="text-xs" style="color:var(--slate-500);">{t.sub}</div>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== MARQUES PARTENAIRES (marquee) ===== */}
+      <section class="py-10 bg-white border-y" style="border-color:rgba(3,105,161,0.08);" aria-label="Marques partenaires">
+        <p class="text-center text-xs font-bold uppercase tracking-[0.2em] mb-6" style="color:var(--slate-500);">Les grandes marques que nous installons</p>
+        <div class="brand-marquee">
+          <div class="brand-track">
+            {[...["Airwell","LG","Sharp","Nasco","Mona","Solstar","Boreal","Roch"], ...["Airwell","LG","Sharp","Nasco","Mona","Solstar","Boreal","Roch"]].map(b => (
+              <span class="brand-item font-display">{b}</span>
             ))}
           </div>
         </div>
@@ -174,61 +184,61 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       {/* ===== NOTRE EXPERTISE ===== */}
       <section id="services" class="py-24 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="text-center mb-20">
-            <div class="inline-block text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4" style="color:#0077b6; background:rgba(0,119,182,0.08); border:1px solid rgba(0,119,182,0.2);">Nos engagements</div>
-            <h2 class="text-4xl font-extrabold mb-4 reveal" style="color:#03045e;">Notre Expertise</h2>
-            <div class="w-20 h-1.5 mx-auto rounded-full" style="background:linear-gradient(90deg,#0077b6,#00b4d8);"></div>
+          <div class="text-center mb-16" data-reveal>
+            <span class="eyebrow mb-4">Nos engagements</span>
+            <h2 data-split class="display-2 mt-4 mb-4" style="color:var(--navy-900);">Notre Expertise</h2>
+            <div class="w-20 h-1.5 mx-auto rounded-full" style="background:linear-gradient(90deg,var(--accent),var(--accent-cyan));"></div>
           </div>
 
-          <div class="grid md:grid-cols-3 gap-10 reveal">
+          <div class="grid md:grid-cols-3 gap-8 items-stretch" data-stagger>
             {/* Vente */}
-            <div class="card-hover p-8 rounded-3xl group" style="background:#eff6ff; border:1px solid rgba(0,119,182,0.12);">
-              <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:rotate-12 transition-transform" style="background:linear-gradient(135deg,#0077b6,#00b4d8); color:#ffffff;">
-                <i class="fas fa-shopping-cart" style="color:#ffffff;"></i>
+            <div data-tilt class="surface-elevated p-8 group">
+              <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:rotate-6 transition-transform" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan)); color:#ffffff;">
+                <i class="ph-duotone ph-shopping-cart-simple"></i>
               </div>
-              <h3 class="text-2xl font-extrabold mb-4" style="color:#03045e;">Vente Premium</h3>
-              <p class="mb-6" style="color:#475569;">Des climatiseurs de marques internationales, économes en énergie et adaptés au climat sahélien.</p>
-              <ul class="text-sm space-y-2 mb-8" style="color:#64748b;">
-                <li><i class="fas fa-check mr-2" style="color:#0077b6;"></i>Inverter (Économie 40%)</li>
-                <li><i class="fas fa-check mr-2" style="color:#0077b6;"></i>Garantie 1-3 ans constructeur</li>
+              <h3 class="text-2xl font-extrabold mb-4 font-display" style="color:var(--navy-900);">Vente Premium</h3>
+              <p class="mb-6" style="color:var(--slate-700);">Des climatiseurs de marques internationales, économes en énergie et adaptés au climat sahélien.</p>
+              <ul class="text-sm space-y-2 mb-8" style="color:var(--slate-500);">
+                <li><i class="fas fa-check mr-2" style="color:var(--accent);"></i>Inverter (Économie 40%)</li>
+                <li><i class="fas fa-check mr-2" style="color:var(--accent);"></i>Garantie 1-3 ans constructeur</li>
               </ul>
-              <a href="/catalogue" class="inline-flex items-center font-semibold text-sm group-hover:translate-x-1 transition-transform" style="color:#0077b6;">
-                Voir le catalogue <i class="fas fa-arrow-right ml-2"></i>
+              <a href="/catalogue" class="inline-flex items-center font-semibold text-sm group-hover:translate-x-1 transition-transform" style="color:var(--accent);">
+                Voir le catalogue <i class="ph-duotone ph-arrow-right ml-2"></i>
               </a>
             </div>
 
-            {/* Maintenance — carte centrale mise en valeur */}
-            <div class="card-hover p-8 rounded-3xl shadow-2xl scale-105 relative overflow-hidden" style="background:linear-gradient(135deg,#03045e 0%,#0077b6 100%); color:#ffffff;">
-              <div class="absolute top-0 right-0 p-4 text-8xl" style="opacity:0.1; color:#ffffff;">
-                <i class="fas fa-tools"></i>
+            {/* Maintenance — carte navy centrale */}
+            <div data-tilt class="surface-navy p-8 relative overflow-hidden md:-mt-4 md:mb-[-1rem]">
+              <div class="absolute top-0 right-0 p-4 text-8xl" style="opacity:0.08; color:#ffffff;">
+                <i class="ph-duotone ph-wrench"></i>
               </div>
-              <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-6" style="background:rgba(202,240,248,0.2); color:#ffffff;">
-                <i class="fas fa-tools" style="color:#ffffff;"></i>
+              <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-6" style="background:rgba(202,240,248,0.14); color:var(--ice);">
+                <i class="ph-duotone ph-wrench"></i>
               </div>
-              <h3 class="text-2xl font-extrabold mb-4" style="color:#ffffff;">Maintenance</h3>
-              <p class="mb-6" style="color:#caf0f8;">Interventions rapides et programmées pour garantir la longévité de vos appareils. SAV 7j/7.</p>
-              <ul class="text-sm space-y-2 mb-8" style="color:#caf0f8; opacity:0.85;">
-                <li><i class="fas fa-check mr-2" style="color:#caf0f8;"></i>Entretien trimestriel</li>
-                <li><i class="fas fa-check mr-2" style="color:#caf0f8;"></i>Intervention sous 24h</li>
+              <h3 class="text-2xl font-extrabold mb-4 font-display" style="color:#ffffff;">Maintenance</h3>
+              <p class="mb-6" style="color:#cbd5e1;">Interventions rapides et programmées pour garantir la longévité de vos appareils. SAV 7j/7.</p>
+              <ul class="text-sm space-y-2 mb-8" style="color:#94a3b8;">
+                <li><i class="fas fa-check mr-2" style="color:var(--ice);"></i>Entretien trimestriel</li>
+                <li><i class="fas fa-check mr-2" style="color:var(--ice);"></i>Intervention sous 24h</li>
               </ul>
-              <a href="/rendez-vous" class="block text-center bg-white font-bold px-6 py-3 rounded-xl hover:bg-blue-50 transition-colors" style="color:#03045e;">
+              <a href="/rendez-vous" class="btn-light block text-center font-bold px-6 py-3 rounded-xl">
                 Planifier un entretien
               </a>
             </div>
 
             {/* Suivi */}
-            <div class="card-hover p-8 rounded-3xl group" style="background:#eff6ff; border:1px solid rgba(0,119,182,0.12);">
-              <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:rotate-12 transition-transform" style="background:linear-gradient(135deg,#0077b6,#00b4d8); color:#ffffff;">
-                <i class="fas fa-chart-line" style="color:#ffffff;"></i>
+            <div data-tilt class="surface-elevated p-8 group">
+              <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:rotate-6 transition-transform" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan)); color:#ffffff;">
+                <i class="ph-duotone ph-chart-line-up"></i>
               </div>
-              <h3 class="text-2xl font-extrabold mb-4" style="color:#03045e;">Suivi de Performance</h3>
-              <p class="mb-6" style="color:#475569;">Un espace client dédié pour consulter vos contrats, historiques d'interventions et alertes.</p>
-              <ul class="text-sm space-y-2 mb-8" style="color:#64748b;">
-                <li><i class="fas fa-check mr-2" style="color:#0077b6;"></i>Rapports mensuels</li>
-                <li><i class="fas fa-check mr-2" style="color:#0077b6;"></i>Alertes pannes</li>
+              <h3 class="text-2xl font-extrabold mb-4 font-display" style="color:var(--navy-900);">Suivi de Performance</h3>
+              <p class="mb-6" style="color:var(--slate-700);">Un espace client dédié pour consulter vos contrats, historiques d'interventions et alertes.</p>
+              <ul class="text-sm space-y-2 mb-8" style="color:var(--slate-500);">
+                <li><i class="fas fa-check mr-2" style="color:var(--accent);"></i>Rapports mensuels</li>
+                <li><i class="fas fa-check mr-2" style="color:var(--accent);"></i>Alertes pannes</li>
               </ul>
-              <a href="/espace-client" class="inline-flex items-center font-semibold text-sm group-hover:translate-x-1 transition-transform" style="color:#0077b6;">
-                Espace client <i class="fas fa-arrow-right ml-2"></i>
+              <a href="/espace-client" class="inline-flex items-center font-semibold text-sm group-hover:translate-x-1 transition-transform" style="color:var(--accent);">
+                Espace client <i class="ph-duotone ph-arrow-right ml-2"></i>
               </a>
             </div>
           </div>
@@ -237,53 +247,53 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
 
       {/* ===== AVANTAGES ===== */}
       <section class="py-20 px-4 max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <div class="text-center mb-14">
-          <div class="inline-block text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4" style="color:#0077b6; background:rgba(0,119,182,0.08); border:1px solid rgba(0,119,182,0.2);">Pourquoi MAASGA ?</div>
-          <h2 class="text-3xl md:text-4xl font-extrabold mb-3" style="color:#03045e;">Une approche professionnelle</h2>
-          <p class="max-w-xl mx-auto" style="color:#475569;">Une rigueur à chaque étape de votre projet de climatisation.</p>
+        <div class="text-center mb-14" data-reveal>
+          <span class="eyebrow mb-4">Pourquoi MAASGA ?</span>
+          <h2 data-split class="display-2 mt-4 mb-3" style="color:var(--navy-900);">Une approche professionnelle</h2>
+          <p class="max-w-xl mx-auto" style="color:var(--slate-700);">Une rigueur à chaque étape de votre projet de climatisation.</p>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 reveal">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" data-stagger>
           {[
-            { icon: "fa-clipboard-check", color: "#0077b6", glow: "rgba(0,119,182,0.1)",  title: "Visite technique gratuite", desc: "Visite technique pour dimensionner correctement vos installations." },
-            { icon: "fa-file-pdf",        color: "#f87171", glow: "rgba(248,113,113,0.1)", title: "Devis PDF détaillé", desc: "Devis transparent et complet remis immédiatement après visite technique  et  installation." },
-            { icon: "fa-sync-alt",        color: "#34d399", glow: "rgba(52,211,153,0.1)",  title: "Maintenance tri.", desc: "Plan d'entretien régulier pour garantir les performances et la durée de vie." },
-            { icon: "fa-helmet-safety",    color: "#fbbf24", glow: "rgba(251,191,36,0.1)",  title: "Techniciens qualifiés", desc: "Équipe formée et certifiée, spécialisée en froid et climatisation." }
+            { icon: "fa-clipboard-check", color: "#0369a1", title: "Visite technique gratuite", desc: "Visite technique pour dimensionner correctement vos installations." },
+            { icon: "fa-file-pdf",        color: "#ef4444", title: "Devis PDF détaillé", desc: "Devis transparent et complet remis immédiatement après visite technique et installation." },
+            { icon: "fa-arrows-rotate",   color: "#10b981", title: "Maintenance trim.", desc: "Plan d'entretien régulier pour garantir les performances et la durée de vie." },
+            { icon: "fa-helmet-safety",   color: "#f59e0b", title: "Techniciens qualifiés", desc: "Équipe formée et certifiée, spécialisée en froid et climatisation." }
           ].map(av => (
-            <div class="card-hover rounded-3xl p-6 text-center group" style="background:#ffffff; border:1px solid rgba(0,119,182,0.1);">
-              <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform" style={`background:${av.glow}; border:1px solid ${av.glow.replace('0.1','0.25')};`}>
+            <div data-tilt class="surface-elevated p-6 text-center group">
+              <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform" style={`background:${av.color}14; border:1px solid ${av.color}26;`}>
                 <i class={`fas ${av.icon} text-2xl`} style={`color:${av.color};`}></i>
               </div>
-              <h3 class="font-bold mb-2" style="color:#03045e;">{av.title}</h3>
-              <p class="text-sm leading-relaxed" style="color:#475569;">{av.desc}</p>
+              <h3 class="font-bold mb-2 font-display" style="color:var(--navy-900);">{av.title}</h3>
+              <p class="text-sm leading-relaxed" style="color:var(--slate-700);">{av.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ===== PRODUITS VEDETTES ===== */}
-      <section id="ventes" class="py-20 overflow-hidden" style="background:#f8fbff;">
+      <section id="ventes" class="py-20 overflow-hidden" style="background:var(--slate-50);">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-4">
+          <div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-4" data-reveal>
             <div>
-              <span class="text-xs font-bold tracking-widest uppercase" style="color:#0077b6;"></span>
-              <h2 class="text-4xl font-extrabold mt-2" style="color:#03045e;">Le Meilleur du Froid</h2>
-              <p class="mt-2" style="color:#475569;">Sélection des modèles les plus demandés à Ouagadougou</p>
+              <span class="eyebrow mb-3">Catalogue</span>
+              <h2 data-split class="display-2 mt-3" style="color:var(--navy-900);">Le Meilleur du Froid</h2>
+              <p class="mt-2" style="color:var(--slate-700);">Sélection des modèles les plus demandés à Ouagadougou</p>
             </div>
-            <a href="/catalogue" class="inline-flex items-center space-x-2 font-semibold group transition-colors" style="color:#0077b6;">
+            <a href="/catalogue" class="inline-flex items-center gap-2 font-semibold group transition-colors" style="color:var(--accent);">
               <span>Voir tout le catalogue</span>
-              <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform text-sm"></i>
+              <i class="ph-duotone ph-arrow-right group-hover:translate-x-1 transition-transform text-sm"></i>
             </a>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 reveal">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6" data-stagger>
             {featuredProducts.length === 0 ? (
               <div class="col-span-3 text-center py-16">
-                <i class="fas fa-box-open text-5xl mb-4" style="color:#caf0f8;"></i>
-                <p style="color:#64748b;">Aucun produit disponible pour le moment.</p>
+                <i class="fas fa-box-open text-5xl mb-4" style="color:#94a3b8;"></i>
+                <p style="color:var(--slate-500);">Aucun produit disponible pour le moment.</p>
               </div>
             ) : featuredProducts.map(p => (
-              <div class="bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 group card-hover flex flex-col">
-                {/* Image zone */}
+              <div class="surface-elevated overflow-hidden group flex flex-col">
+                {/* Image */}
                 <div class="relative" style="background:linear-gradient(145deg,#f0f7ff,#dbeafe); padding:28px 24px 20px;">
                   <div class="flex items-center justify-center" style="min-height:180px;">
                     {(p as any).imageUrl
@@ -295,30 +305,31 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                     }
                   </div>
                   {p.inverter && (
-                    <span class="absolute top-3 right-3 text-xs px-3 py-1 rounded-full font-bold" style="background:linear-gradient(135deg,#0077b6,#00b4d8); color:#ffffff;">INVERTER</span>
+                    <span class="absolute top-3 right-3 text-xs px-3 py-1 rounded-full font-bold" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan)); color:#ffffff;">INVERTER</span>
                   )}
-                  <span class={`absolute top-3 left-3 text-xs px-3 py-1 rounded-full font-semibold ${p.stock > 3 ? 'badge-stock-ok' : p.stock > 0 ? 'badge-stock-low' : 'badge-stock-out'}`}>
-                    {p.stock > 3 ? '✓ Disponible' : p.stock > 0 ? '⚠ Stock limité' : '✗ Rupture'}
+                  <span class={`absolute top-3 left-3 text-xs px-3 py-1 rounded-full font-semibold inline-flex items-center gap-1.5 ${p.stock > 3 ? 'badge-stock-ok' : p.stock > 0 ? 'badge-stock-low' : 'badge-stock-out'}`}>
+                    <i class={`fas ${p.stock > 3 ? 'fa-circle-check' : p.stock > 0 ? 'fa-triangle-exclamation' : 'fa-circle-xmark'}`}></i>
+                    {p.stock > 3 ? 'Disponible' : p.stock > 0 ? 'Stock limité' : 'Rupture'}
                   </span>
                 </div>
                 {/* Contenu */}
                 <div class="p-6 flex flex-col flex-1">
-                  <div class="text-xs font-bold uppercase tracking-wider mb-1" style="color:#0077b6;">{p.brand}</div>
-                  <h3 class="font-extrabold text-lg mb-2 leading-snug" style="color:#03045e;">{p.name}</h3>
-                  <p class="text-sm mb-4 leading-relaxed" style="color:#64748b;">{p.description}</p>
+                  <div class="text-xs font-bold uppercase tracking-wider mb-1" style="color:var(--accent);">{p.brand}</div>
+                  <h3 class="font-extrabold text-lg mb-2 leading-snug font-display" style="color:var(--navy-900);">{p.name}</h3>
+                  <p class="text-sm mb-4 leading-relaxed" style="color:var(--slate-500);">{p.description}</p>
                   <div class="flex items-end justify-between mb-5 mt-auto">
                     <div>
-                      <div class="text-2xl font-extrabold" style="color:#0077b6;">{p.price.toLocaleString()} <span class="text-sm font-normal" style="color:#64748b;">FCFA</span></div>
-                      <div class="text-xs font-semibold mt-0.5" style="color:#34d399;"><i class="fas fa-check-circle mr-1"></i>Installation et livraison offerte</div>
+                      <div class="text-2xl font-extrabold font-display" style="color:var(--accent);">{p.price.toLocaleString()} <span class="text-sm font-normal" style="color:var(--slate-500);">FCFA</span></div>
+                      <div class="text-xs font-semibold mt-0.5" style="color:#10b981;"><i class="fas fa-circle-check mr-1"></i>Installation et livraison offerte</div>
                     </div>
                     <div class="text-right">
-                      <div class="text-base font-bold" style="color:#03045e;">{p.btu.toLocaleString()} BTU</div>
-                      <div class="text-xs" style="color:#64748b;">{p.surface_min}–{p.surface_max} m²</div>
+                      <div class="text-base font-bold" style="color:var(--navy-900);">{p.btu.toLocaleString()} BTU</div>
+                      <div class="text-xs" style="color:var(--slate-500);">{p.surface_min}–{p.surface_max} m²</div>
                     </div>
                   </div>
-                  <a href={`/catalogue?product=${p.id}`} class="w-full btn-primary font-bold py-3.5 rounded-2xl flex items-center justify-center space-x-2 group-hover:shadow-lg transition-all text-sm" style="color:#ffffff;">
-                    <i class="fas fa-eye text-sm" style="color:#ffffff;"></i>
-                    <span style="color:#ffffff;">Voir & Commander</span>
+                  <a href={`/catalogue?product=${p.id}`} class="w-full btn-primary font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 text-sm">
+                    <i class="fas fa-eye text-sm"></i>
+                    <span>Voir &amp; Commander</span>
                   </a>
                 </div>
               </div>
@@ -326,9 +337,9 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
           </div>
 
           {/* Notice */}
-          <div class="mt-8 rounded-2xl p-4 flex items-start space-x-3" style="background:rgba(251,191,36,0.06); border:1px solid rgba(251,191,36,0.2);">
-            <i class="fas fa-exclamation-triangle mt-0.5 flex-shrink-0" style="color:#fbbf24;"></i>
-            <p class="text-sm" style="color:#475569;">
+          <div class="mt-8 rounded-2xl p-4 flex items-start gap-3" style="background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2);">
+            <i class="fas fa-triangle-exclamation mt-0.5 flex-shrink-0" style="color:#f59e0b;"></i>
+            <p class="text-sm" style="color:var(--slate-700);">
               <strong style="color:#b45309;">Important :</strong> Toute commande est soumise à une Visite technique gratuite préalable sur site. Le paiement est effectué uniquement après cette visite et confirmation du devis.
             </p>
           </div>
@@ -338,24 +349,24 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       {/* ===== FONCTIONNALITÉS ===== */}
       <section class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="text-center mb-14">
-            <div class="inline-block text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4" style="color:#0077b6; background:rgba(0,119,182,0.08); border:1px solid rgba(0,119,182,0.2);">Plateforme</div>
-            <h2 class="text-3xl md:text-4xl font-extrabold mb-3" style="color:#03045e;">Nos fonctionnalités</h2>
-            <p style="color:#475569;">Tout ce dont vous avez besoin sur une seule plateforme.</p>
+          <div class="text-center mb-14" data-reveal>
+            <span class="eyebrow mb-4">Plateforme</span>
+            <h2 data-split class="display-2 mt-4 mb-3" style="color:var(--navy-900);">Nos fonctionnalités</h2>
+            <p style="color:var(--slate-700);">Tout ce dont vous avez besoin sur une seule plateforme.</p>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 reveal">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" data-stagger>
             {[
-              { icon: "fa-th-large",       title: "Catalogue complet",  desc: "Tous nos climatiseurs avec fiches techniques, prix et disponibilité en temps réel.", href: "/catalogue",     color: "#0077b6" },
-              { icon: "fa-calculator",     title: "Simulateur BTU",    desc: "Calculez la puissance idéale pour votre espace en quelques secondes.",        href: "/simulateur",    color: "#a78bfa" },
-              { icon: "fa-tools",          title: "Installation Pro",  desc: "Pose par nos techniciens certifiés avec vérification finale garantie.",       href: "/rendez-vous",   color: "#34d399" },
-              { icon: "fa-calendar-check", title: "Suivi entretien",   desc: "Rappels automatiques pour la maintenance et suivi de votre historique.",      href: "/espace-client", color: "#fbbf24" }
+              { icon: "fa-table-cells-large", title: "Catalogue complet",  desc: "Tous nos climatiseurs avec fiches techniques, prix et disponibilité en temps réel.", href: "/catalogue",     color: "#0369a1" },
+              { icon: "fa-calculator",        title: "Simulateur BTU",    desc: "Calculez la puissance idéale pour votre espace en quelques secondes.",        href: "/simulateur",    color: "#8b5cf6" },
+              { icon: "fa-screwdriver-wrench",title: "Installation Pro",  desc: "Pose par nos techniciens certifiés avec vérification finale garantie.",       href: "/rendez-vous",   color: "#10b981" },
+              { icon: "fa-calendar-check",    title: "Suivi entretien",   desc: "Rappels automatiques pour la maintenance et suivi de votre historique.",      href: "/espace-client", color: "#f59e0b" }
             ].map(f => (
-              <a href={f.href} class="card-hover rounded-3xl p-6 text-center group block" style="background:#f8fbff; border:1px solid rgba(0,119,182,0.1);">
-                <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform" style={`background:${f.color}18; border:1px solid ${f.color}33;`}>
+              <a href={f.href} data-tilt class="surface-elevated p-6 text-center group block">
+                <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform" style={`background:${f.color}14; border:1px solid ${f.color}26;`}>
                   <i class={`fas ${f.icon} text-2xl`} style={`color:${f.color};`}></i>
                 </div>
-                <h3 class="font-bold mb-2" style="color:#03045e;">{f.title}</h3>
-                <p class="text-sm leading-relaxed" style="color:#475569;">{f.desc}</p>
+                <h3 class="font-bold mb-2 font-display" style="color:var(--navy-900);">{f.title}</h3>
+                <p class="text-sm leading-relaxed" style="color:var(--slate-700);">{f.desc}</p>
               </a>
             ))}
           </div>
@@ -363,58 +374,59 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       </section>
 
       {/* ===== SIMULATEUR CTA ===== */}
-      <section class="py-20 relative overflow-hidden" style="background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 50%,#eff6ff 100%);">
+      <section class="py-20 relative overflow-hidden" style="background:linear-gradient(135deg,var(--slate-50) 0%,#dbeafe 50%,var(--slate-50) 100%);">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center reveal">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center" data-reveal>
             <div>
-              <div class="inline-flex items-center space-x-2 rounded-full px-4 py-2 text-sm font-semibold mb-5" style="background:rgba(167,139,250,0.12); border:1px solid rgba(167,139,250,0.3); color:#7c3aed;">
-                <i class="fas fa-calculator"></i>
-                <span>Outil gratuit</span>
-              </div>
-              <h2 class="text-3xl font-extrabold mb-4" style="color:#03045e;">Quel climatiseur pour votre pièce ?</h2>
-              <p class="mb-6 leading-relaxed" style="color:#475569;">
+              <span class="eyebrow mb-5" style="color:#7c3aed; background:rgba(139,92,246,0.1); border-color:rgba(139,92,246,0.25);">
+                <i class="fas fa-calculator mr-1"></i> Outil gratuit
+              </span>
+              <h2 data-split class="display-2 mt-5 mb-4" style="color:var(--navy-900);">Quel climatiseur pour votre pièce ?</h2>
+              <p class="mb-6 leading-relaxed" style="color:var(--slate-700);">
                 Notre simulateur BTU calcule en quelques secondes la puissance nécessaire pour climatiser efficacement votre espace.
               </p>
               <div class="space-y-3 mb-8">
                 {["Surface de la pièce en m²","Hauteur du plafond","Exposition solaire","Nombre de fenêtres"].map(item => (
-                  <div class="flex items-center space-x-3">
-                    <i class="fas fa-check-circle text-sm" style="color:#34d399;"></i>
-                    <span class="text-sm" style="color:#475569;">{item}</span>
+                  <div class="flex items-center gap-3">
+                    <i class="fas fa-circle-check text-sm" style="color:#10b981;"></i>
+                    <span class="text-sm" style="color:var(--slate-700);">{item}</span>
                   </div>
                 ))}
               </div>
-              <a href="/simulateur" class="font-bold px-8 py-4 rounded-2xl inline-flex items-center space-x-3" style="background:#ffffff; color:#0077b6; border:2px solid rgba(0,119,182,0.3); box-shadow:0 4px 14px rgba(0,119,182,0.15); transition:all 0.3s ease;">
+              <a href="/simulateur" class="btn-primary font-bold px-8 py-4 rounded-2xl inline-flex items-center gap-3">
                 <i class="fas fa-calculator"></i>
                 <span>Lancer le simulateur BTU</span>
-                <i class="fas fa-arrow-right text-sm"></i>
+                <i class="ph-duotone ph-arrow-right text-sm"></i>
               </a>
             </div>
 
-            {/* Calculator card */}
-            <div class="bg-white rounded-3xl p-8 shadow-xl" style="border:1px solid rgba(0,119,182,0.1);">
+            {/* Carte calcul */}
+            <div class="surface-elevated p-8">
               <div class="text-center mb-6">
-                <div class="text-5xl mb-3">🧮</div>
-                <h3 class="font-extrabold text-lg" style="color:#03045e;">Exemple de calcul</h3>
+                <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan));">
+                  <i class="fas fa-calculator text-white text-xl"></i>
+                </div>
+                <h3 class="font-extrabold text-lg font-display" style="color:var(--navy-900);">Exemple de calcul</h3>
               </div>
               <div class="space-y-3">
                 {[
                   { label: "Surface", value: "20 m²", icon: "fa-ruler-combined" },
-                  { label: "Plafond", value: "2,8 m", icon: "fa-arrows-alt-v" },
+                  { label: "Plafond", value: "2,8 m", icon: "fa-arrows-up-down" },
                   { label: "Exposition", value: "Forte (sud)", icon: "fa-sun" },
                   { label: "Fenêtres", value: "2 grandes", icon: "fa-border-all" }
                 ].map(item => (
-                  <div class="flex items-center justify-between rounded-xl px-4 py-3" style="background:#f8fbff; border:1px solid rgba(0,119,182,0.1);">
-                    <div class="flex items-center space-x-3">
-                      <i class={`fas ${item.icon} w-4 text-sm`} style="color:#0077b6;"></i>
-                      <span class="text-sm" style="color:#64748b;">{item.label}</span>
+                  <div class="flex items-center justify-between rounded-xl px-4 py-3" style="background:var(--slate-50); border:1px solid var(--slate-200);">
+                    <div class="flex items-center gap-3">
+                      <i class={`fas ${item.icon} w-4 text-sm`} style="color:var(--accent);"></i>
+                      <span class="text-sm" style="color:var(--slate-500);">{item.label}</span>
                     </div>
-                    <span class="text-sm font-bold" style="color:#03045e;">{item.value}</span>
+                    <span class="text-sm font-bold" style="color:var(--navy-900);">{item.value}</span>
                   </div>
                 ))}
-                <div class="rounded-2xl px-4 py-5 text-center mt-4" style="background:linear-gradient(135deg,#0077b6,#00b4d8); box-shadow:0 8px 30px rgba(0,119,182,0.25);">
-                  <div class="text-xs mb-1" style="color:#ffffff; opacity:0.8;">Puissance recommandée</div>
-                  <div class="text-3xl font-extrabold" style="color:#ffffff;">12 000 BTU / 1,5 CV</div>
-                  <div class="text-xs mt-1" style="color:#caf0f8;">→ 2 modèles compatibles</div>
+                <div class="rounded-2xl px-4 py-5 text-center mt-4" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan)); box-shadow:0 8px 30px rgba(3,105,161,0.25);">
+                  <div class="text-xs mb-1" style="color:#ffffff; opacity:0.85;">Puissance recommandée</div>
+                  <div class="text-3xl font-extrabold font-display" style="color:#ffffff;">12 000 BTU / 1,5 CV</div>
+                  <div class="text-xs mt-1" style="color:var(--ice);">→ 2 modèles compatibles</div>
                 </div>
               </div>
             </div>
@@ -423,92 +435,88 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       </section>
 
       {/* ===== AVIS CLIENTS ===== */}
-      <section class="py-20 px-4 max-w-7xl mx-auto sm:px-6 lg:px-8 reveal">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-12">
+      <section class="py-20 px-4 max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-12" data-reveal>
           <div>
-            <div class="text-xs font-bold uppercase tracking-widest mb-3" style="color:#0077b6;">Témoignages</div>
-            <h2 class="text-3xl font-extrabold mb-2" style="color:#03045e;">Ce que disent nos clients</h2>
-            <p style="color:#475569;">Installations réalisées à Ouagadougou et environs</p>
+            <span class="eyebrow mb-3">Témoignages</span>
+            <h2 data-split class="display-2 mt-3 mb-2" style="color:var(--navy-900);">Ce que disent nos clients</h2>
+            <p style="color:var(--slate-700);">Installations réalisées à Ouagadougou et environs</p>
           </div>
-          <a href="/avis" class="mt-4 sm:mt-0 inline-flex items-center space-x-2 font-semibold" style="color:#0077b6;">
+          <a href="/avis" class="mt-4 sm:mt-0 inline-flex items-center gap-2 font-semibold" style="color:var(--accent);">
             <span>Voir tous les avis</span>
-            <i class="fas fa-arrow-right text-sm"></i>
+            <i class="ph-duotone ph-arrow-right text-sm"></i>
           </a>
         </div>
 
         {topReviews.length === 0 ? (
-          <div class="text-center py-12 rounded-3xl" style="background:#f8fbff; border:1px solid rgba(0,119,182,0.1);">
-            <i class="fas fa-star text-4xl mb-3" style="color:#caf0f8;"></i>
-            <p style="color:#64748b;">Aucun avis pour le moment. Soyez le premier !</p>
-            <a href="/avis" class="inline-block mt-4 text-sm font-bold px-6 py-2.5 rounded-xl" style="background:#ffffff; color:#0077b6; border:2px solid rgba(0,119,182,0.3); box-shadow:0 4px 14px rgba(0,119,182,0.12);">Laisser un avis</a>
+          <div class="surface text-center py-12">
+            <i class="ph-fill ph-star text-4xl mb-3" style="color:#94a3b8;"></i>
+            <p style="color:var(--slate-500);">Aucun avis pour le moment. Soyez le premier !</p>
+            <a href="/avis" class="btn-primary inline-block mt-4 text-sm font-bold px-6 py-2.5 rounded-xl">Laisser un avis</a>
           </div>
         ) : (
-          <div class="relative">
-            <div id="testimonial-carousel" class="flex gap-6 overflow-x-auto scroll-smooth pb-4" style="scrollbar-width:none; -webkit-overflow-scrolling:touch;">
-              {[...topReviews, ...topReviews].map((r, idx) => (
-                <div class="rounded-3xl p-6 flex-shrink-0 shadow-sm hover:shadow-lg transition-all" style="min-width:320px; max-width:360px; background:#ffffff; border:1px solid rgba(0,119,182,0.1);">
+          <>
+          <div class="relative" style="overflow:hidden;" data-reveal>
+            <div class="testimonial-track">
+              {[...topReviews, ...topReviews, ...topReviews].map((r, idx) => (
+                <div class="surface-elevated p-6 flex-shrink-0 testimonial-card-in" style={`min-width:320px; max-width:360px; transition-delay:${0.08 * (idx % topReviews.length)}s;`} data-testimonial-card>
                   <div class="flex items-center justify-between mb-4">
                     <div class="flex space-x-0.5">
                       {[1,2,3,4,5].map(s => (
-                        <i class={`fas fa-star text-sm ${s <= r.note ? 'star-filled' : 'star-empty'}`}></i>
+                        <i class={`ph-fill ph-star text-sm ${s <= r.note ? 'star-filled' : 'star-empty'}`}></i>
                       ))}
                     </div>
                     <span class="text-xs" style="color:#94a3b8;">{r.date}</span>
                   </div>
-                  <p class="text-sm leading-relaxed mb-4 italic" style="color:#475569;">"{r.comment}"</p>
-                  <div class="flex items-center space-x-3">
-                    <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:rgba(0,119,182,0.08); border:1px solid rgba(0,119,182,0.15);">
-                      <i class="fas fa-user text-sm" style="color:#0077b6;"></i>
+                  <p class="text-sm leading-relaxed mb-4 italic" style="color:var(--slate-700);">"{r.comment}"</p>
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:rgba(3,105,161,0.08); border:1px solid rgba(3,105,161,0.15);">
+                      <i class="ph-duotone ph-user text-sm" style="color:var(--accent);"></i>
                     </div>
                     <div>
-                      <div class="text-sm font-bold" style="color:#03045e;">{r.name}</div>
-                      <div class="text-xs" style="color:#64748b;">{r.service}</div>
+                      <div class="text-sm font-bold" style="color:var(--navy-900);">{r.name}</div>
+                      <div class="text-xs" style="color:var(--slate-500);">{r.service}</div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-            <div class="flex justify-center mt-6 space-x-2">
-              {topReviews.map((_, i) => (
-                <button onclick={`scrollCarousel(${i})`} class="carousel-dot h-2.5 rounded-full transition-all" style={i === 0 ? 'background:#0077b6; width:20px;' : 'background:rgba(0,119,182,0.25); width:10px;'}></button>
-              ))}
-            </div>
-            <script dangerouslySetInnerHTML={{ __html: `
-              (function() {
-                var c = document.getElementById('testimonial-carousel');
-                if (!c) return;
-                var cw = 344, ci = 0, tc = ${topReviews.length};
-                var dots = document.querySelectorAll('.carousel-dot');
-                function ud(i) { dots.forEach(function(d,j){ d.style.background = j===i ? '#0077b6' : 'rgba(0,119,182,0.25)'; d.style.width = j===i ? '20px' : '10px'; }); }
-                window.scrollCarousel = function(i) { ci = i; c.scrollTo({ left: i * cw, behavior: 'smooth' }); ud(i); };
-                setInterval(function() { ci = (ci + 1) % tc; c.scrollTo({ left: ci * cw, behavior: 'smooth' }); ud(ci); }, 4500);
-              })();
-            ` }} />
           </div>
+          <script dangerouslySetInnerHTML={{ __html: `
+            (function() {
+              var cards = document.querySelectorAll('[data-testimonial-card]');
+              if (!cards.length) return;
+              var io = new IntersectionObserver(function(entries) {
+                entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+              }, { threshold: 0.1 });
+              cards.forEach(function(c) { io.observe(c); });
+            })();
+          ` }} />
+          </>
         )}
 
         {topReviews.length > 0 && (
           <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <div class="flex items-center space-x-2">
+            <div class="flex items-center gap-2">
               <div class="flex space-x-0.5">
-                {[1,2,3,4,5].map(_ => <i class="fas fa-star text-yellow-400 text-sm"></i>)}
+                {[1,2,3,4,5].map(_ => <i class="ph-fill ph-star text-yellow-400 text-sm"></i>)}
               </div>
-              <span class="text-xl font-extrabold" style="color:#03045e;">{displayNote}</span>
+              <span class="text-xl font-extrabold font-display" style="color:var(--navy-900);">{displayNote}</span>
             </div>
-            <div class="text-sm" style="color:#475569;">Noté par <strong style="color:#03045e;">{displayClients}</strong> clients à Ouagadougou</div>
-            <a href="/avis" class="text-xs font-bold px-4 py-2 rounded-xl" style="background:rgba(0,119,182,0.08); color:#0077b6; border:1px solid rgba(0,119,182,0.2);">Déposer mon avis</a>
+            <div class="text-sm" style="color:var(--slate-700);">Noté par <strong style="color:var(--navy-900);">{displayClients}</strong> clients à Ouagadougou</div>
+            <a href="/avis" class="text-xs font-bold px-4 py-2 rounded-xl" style="background:rgba(3,105,161,0.08); color:var(--accent); border:1px solid rgba(3,105,161,0.2);">Déposer mon avis</a>
           </div>
         )}
       </section>
 
       {/* ===== FAQ ===== */}
-      <section class="py-20 px-4 max-w-4xl mx-auto sm:px-6 lg:px-8 reveal">
-        <div class="text-center mb-12">
-          <div class="inline-block text-xs font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4" style="color:#0077b6; background:rgba(0,119,182,0.08); border:1px solid rgba(0,119,182,0.2);">FAQ</div>
-          <h2 class="text-3xl md:text-4xl font-extrabold mb-3" style="color:#03045e;">Questions fréquentes</h2>
-          <p style="color:#475569;">Tout ce que vous devez savoir avant de commander</p>
+      <section class="py-20 px-4 max-w-4xl mx-auto sm:px-6 lg:px-8">
+        <div class="text-center mb-12" data-reveal>
+          <span class="eyebrow mb-4">FAQ</span>
+          <h2 data-split class="display-2 mt-4 mb-3" style="color:var(--navy-900);">Questions fréquentes</h2>
+          <p style="color:var(--slate-700);">Tout ce que vous devez savoir avant de commander</p>
         </div>
-        <div class="space-y-3">
+        <div class="space-y-3" data-stagger>
           {[
             { q: "Les prix incluent-ils l'installation ?", a: "Oui. Tous nos prix catalogue incluent la livraison et l'installation complète par nos techniciens certifiés. Aucuns frais cachés." },
             { q: "Comment se déroule la visite technique ?", a: "Un technicien MAASGA se déplace gratuitement chez vous pour évaluer les besoins (surface, orientation, nombre de fenêtres). Il vous remet ensuite un devis PDF détaillé. Aucun engagement avant validation." },
@@ -518,12 +526,12 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             { q: "Quelle garantie sur les climatiseurs ?", a: "Tous nos climatiseurs sont neufs et bénéficient d'une garantie constructeur (1 à 3 ans selon les marques). MAASGA assure le service après-vente." },
             { q: "Couvrez-vous tout Ouagadougou ?", a: "Oui, nous intervenons dans tous les arrondissements de Ouagadougou et dans les zones périphériques. Contactez-nous pour vérifier la couverture de votre secteur." }
           ].map((faq, i) => (
-            <details class="group rounded-2xl overflow-hidden" style="background:#ffffff; border:1px solid rgba(0,119,182,0.1);">
+            <details class="group surface overflow-hidden">
               <summary class="flex items-center justify-between p-5 cursor-pointer list-none">
-                <span class="font-bold text-sm pr-4" style="color:#03045e;">{faq.q}</span>
-                <i class="fas fa-chevron-down text-xs transition-transform group-open:rotate-180 flex-shrink-0" style="color:#0077b6;"></i>
+                <span class="font-bold text-sm pr-4" style="color:var(--navy-900);">{faq.q}</span>
+                <i class="ph-duotone ph-caret-down text-xs transition-transform group-open:rotate-180 flex-shrink-0" style="color:var(--accent);"></i>
               </summary>
-              <div class="px-5 pb-5 text-sm leading-relaxed" style="color:#475569;">
+              <div class="px-5 pb-5 text-sm leading-relaxed" style="color:var(--slate-700);">
                 {faq.a}
               </div>
             </details>
@@ -547,46 +555,46 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       }) }} />
 
       {/* ===== CTA FINAL ===== */}
-      <section class="py-20 relative overflow-hidden reveal" style="background:linear-gradient(135deg,#03045e 0%,#0077b6 100%);">
-        <div class="glow-dot w-80 h-80 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style="background:rgba(0,180,216,0.15);"></div>
+      <section class="py-20 relative overflow-hidden bg-navy" data-reveal>
+        <div class="glow-dot w-80 h-80 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style="background:rgba(3,105,161,0.25);" data-parallax="-30"></div>
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <i class="fas fa-snowflake text-4xl mb-5 animate-pulse-slow" style="color:#caf0f8;"></i>
-          <h2 class="text-3xl md:text-4xl font-extrabold mb-4" style="color:#ffffff;">Prêt à profiter du confort climatisé ?</h2>
-          <p class="mb-4 text-lg max-w-2xl mx-auto" style="color:#caf0f8; opacity:0.9;">
+          <i class="ph-duotone ph-rocket-launch text-5xl mb-4" style="color:var(--ice);"></i>
+          <h2 data-split class="display-2 mb-4" style="color:#ffffff;">Prêt à profiter du confort climatisé ?</h2>
+          <p class="mb-4 text-lg max-w-2xl mx-auto" style="color:#cbd5e1;">
             Contactez-nous dès aujourd'hui. Visite technique gratuite, devis PDF sous 24h, installation par nos experts certifiés.
           </p>
 
-          <div class="inline-flex items-center space-x-2 mb-8 px-5 py-2.5 rounded-full" style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3);">
-            <i class="fas fa-phone-alt text-sm" style="color:#38bdf8;"></i>
-            <span class="text-sm font-bold" style="color:#caf0f8;">Devis gratuit sous 24h — Appelez le 55 99 64 18</span>
+          <div class="inline-flex items-center gap-2 mb-8 px-5 py-2.5 rounded-full" style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3);">
+            <i class="fas fa-phone text-sm" style="color:#38bdf8;"></i>
+            <span class="text-sm font-bold" style="color:var(--ice);">Devis gratuit sous 24h — Appelez le 55 99 64 18</span>
           </div>
 
           <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="/rendez-vous" class="bg-white font-extrabold px-10 py-4 rounded-2xl text-lg flex items-center justify-center space-x-3 hover:bg-blue-50 transition-all shadow-lg" style="color:#03045e;">
-              <i class="fas fa-calendar-plus" style="color:#0077b6;"></i>
+            <a href="/rendez-vous" class="magnetic btn-light font-extrabold px-10 py-4 rounded-2xl text-lg flex items-center justify-center gap-3">
+              <i class="ph-duotone ph-calendar-plus" style="color:var(--accent);"></i>
               <span>Demander un devis gratuit</span>
             </a>
-            <a href="/catalogue" class="btn-secondary font-extrabold px-10 py-4 rounded-2xl text-lg flex items-center justify-center space-x-3" style="border-color:rgba(202,240,248,0.35); color:white; background:rgba(255,255,255,0.1);">
-              <i class="fas fa-th-large"></i>
+            <a href="/catalogue" class="font-extrabold px-10 py-4 rounded-2xl text-lg flex items-center justify-center gap-3 transition-all" style="border:1.5px solid rgba(202,240,248,0.35); color:white; background:rgba(255,255,255,0.06);">
+              <i class="fas fa-table-cells-large"></i>
               <span>Voir le catalogue</span>
             </a>
           </div>
-          <p class="text-sm mt-6" style="color:#caf0f8; opacity:0.6;">
-            <i class="fas fa-shield-alt mr-2"></i>
+          <p class="text-sm mt-6" style="color:#94a3b8;">
+            <i class="ph-duotone ph-shield-check mr-2"></i>
             Visite technique gratuite obligatoire · Paiement après visite · Satisfaction garantie
           </p>
-          <div class="flex items-center justify-center space-x-4 mt-4">
+          <div class="flex items-center justify-center gap-4 mt-4">
             <div class="flex -space-x-1.5">
               {['M','A','S'].map((l, i) => (
-                <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white border-2" style={`background:${['#0096c7','#00b4d8','#48cae4'][i]}; border-color:#03045e; z-index:${3-i};`}>{l}</div>
+                <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white border-2" style={`background:${['#0096c7','#00b4d8','#48cae4'][i]}; border-color:#0F172A; z-index:${3-i};`}>{l}</div>
               ))}
             </div>
-            <span class="text-xs" style="color:#caf0f8; opacity:0.6;">Faites confiance à <strong class="text-white">MAASGA</strong> pour votre climatisation</span>
+            <span class="text-xs" style="color:#94a3b8;">Faites confiance à <strong class="text-white">MAASGA</strong> pour votre climatisation</span>
           </div>
         </div>
       </section>
 
-      {/* ===== GSAP — snow only (le CSS fade-in-up gère le héro) ===== */}
+      {/* ===== GSAP — neige uniquement (le CSS fade-in-up gère le héro) ===== */}
       <script dangerouslySetInnerHTML={{ __html: `
         (function() {
           function initSnow() {
@@ -614,6 +622,126 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
           } else {
             setTimeout(initSnow, 150);
           }
+        })();
+      ` }} />
+
+      {/* ===== Hero carousel — balayage clip-path GSAP (étape 1B) ===== */}
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          var slides = Array.prototype.slice.call(
+            document.querySelectorAll('#hero-carousel .hero-carousel-slide')
+          );
+          if (slides.length < 2) return;
+          var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          function start(){
+            if (reduce || !window.gsap) {
+              slides.forEach(function(s, idx){ s.style.clipPath = idx === 0 ? 'inset(0 0 0 0%)' : 'inset(0 0 0 100%)'; });
+              return;
+            }
+            slides.forEach(function(s, idx){ s.style.zIndex = idx === 0 ? 2 : 1; });
+            var i = 0, DELAY = 4200;
+            function next(){
+              var cur = slides[i];
+              var n = (i + 1) % slides.length;
+              var inc = slides[n];
+              var img = inc.querySelector('img');
+              inc.style.zIndex = 3;
+              gsap.set(inc, { clipPath: 'inset(0 0 0 100%)' });
+              if (img) gsap.set(img, { scale: 1.14, xPercent: 4 });
+              var tl = gsap.timeline({ onComplete: function(){
+                cur.style.zIndex = 1; inc.style.zIndex = 2;
+                gsap.set(cur, { clipPath: 'inset(0 0 0 100%)' });
+                i = n;
+              }});
+              tl.to(inc, { clipPath: 'inset(0 0 0 0%)', duration: 1.15, ease: 'power2.inOut' }, 0);
+              if (img) tl.to(img, { scale: 1, xPercent: 0, duration: 1.6, ease: 'power2.out' }, 0);
+            }
+            var timer = setInterval(next, DELAY);
+            var hero = document.getElementById('hero-carousel');
+            if (hero) {
+              hero.addEventListener('mouseenter', function(){ clearInterval(timer); });
+              hero.addEventListener('mouseleave', function(){ timer = setInterval(next, DELAY); });
+            }
+          }
+          // GSAP est chargé en defer : on tente un court instant avant de démarrer (sinon fallback statique)
+          if (window.gsap || reduce) { start(); }
+          else { var n = 0, iv = setInterval(function(){ n++; if (window.gsap || n > 60) { clearInterval(iv); start(); } }, 50); }
+        })();
+      ` }} />
+
+      {/* ===== SplitText — titres de section révélés ligne par ligne au scroll ===== */}
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+          function run(){
+            if (!window.gsap || !window.SplitText || !window.ScrollTrigger) return false;
+            gsap.registerPlugin(SplitText, ScrollTrigger);
+            var go = function(){
+              document.querySelectorAll('[data-split]').forEach(function(el){
+                var split = new SplitText(el, { type: 'lines', linesClass: 'split-line' });
+                gsap.from(split.lines, {
+                  yPercent: 110, opacity: 0, duration: 0.8, ease: 'power3.out', stagger: 0.12,
+                  scrollTrigger: { trigger: el, start: 'top 85%', once: true }
+                });
+              });
+              ScrollTrigger.refresh();
+            };
+            if (document.fonts && document.fonts.ready) { document.fonts.ready.then(go); } else { go(); }
+            return true;
+          }
+          if (!run()) { var n = 0, iv = setInterval(function(){ n++; if (run() || n > 60) clearInterval(iv); }, 50); }
+        })();
+      ` }} />
+
+      {/* ===== SplitText — slogan hero composé mot par mot ===== */}
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+          function run(){
+            if (!window.gsap || !window.SplitText) return false;
+            var target = document.querySelector('[data-split-hero]');
+            if (!target) return true;
+            gsap.registerPlugin(SplitText);
+            var go = function(){
+              var split = new SplitText(target, { type: 'lines,words', linesClass: 'split-line' });
+              gsap.from(split.words, {
+                yPercent: 120, opacity: 0, duration: 0.9,
+                ease: 'power3.out', stagger: 0.035, delay: 0.2
+              });
+            };
+            if (document.fonts && document.fonts.ready) { document.fonts.ready.then(go); } else { go(); }
+            return true;
+          }
+          if (!run()) { var n = 0, iv = setInterval(function(){ n++; if (run() || n > 60) clearInterval(iv); }, 50); }
+        })();
+      ` }} />
+
+      {/* ===== Tilt 3D des cartes services (desktop, désactivé au toucher) ===== */}
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          if (window.matchMedia('(hover: none)').matches) return;
+          function run(){
+            if (!window.gsap) return false;
+            document.querySelectorAll('[data-tilt]').forEach(function(card){
+              var rect = null;
+              card.addEventListener('mousemove', function(e){
+                rect = rect || card.getBoundingClientRect();
+                var x = (e.clientX - rect.left) / rect.width - 0.5;
+                var y = (e.clientY - rect.top) / rect.height - 0.5;
+                gsap.to(card, {
+                  rotateY: x * 9, rotateX: -y * 9,
+                  transformPerspective: 800, transformOrigin: 'center',
+                  duration: 0.4, ease: 'power2.out'
+                });
+              });
+              card.addEventListener('mouseleave', function(){
+                rect = null;
+                gsap.to(card, { rotateX: 0, rotateY: 0, duration: 0.6, ease: 'power3.out' });
+              });
+            });
+            return true;
+          }
+          if (!run()) { var n = 0, iv = setInterval(function(){ n++; if (run() || n > 60) clearInterval(iv); }, 50); }
         })();
       ` }} />
 
