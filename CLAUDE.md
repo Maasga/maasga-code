@@ -64,7 +64,10 @@ Browser → Cloudflare PoP (edge cache, 10 min TTL for public pages)
 - Design tokens in `:root`: `--primary`, `--accent`, `--dark`, `--secondary`, shadow scale (`--shadow-sm/md/lg/xl`), easing (`--ease-out-expo`, `--ease-spring`)
 - Key utility classes: `.glass`, `.glass-card`, `.glass-premium`, `.gradient-hero`, `.btn-primary`, `.btn-secondary`, `.input-field`, `.hover-lift`, `.frost-grain`, `.frost-edge`, `.surface`, `.surface-elevated`, `.display-1`, `.display-2`
 - **Animation attributes** (handled globally by GSAP engine in `Layout.tsx`): `data-reveal` (scroll reveal), `data-stagger` (cascade children), `data-parallax="N"` (parallax px offset), `data-count="N" data-suffix="X"` (number counter), `.magnetic` (mouse-tracking hover on desktop)
-- All animations respect `prefers-reduced-motion` — a global CSS block and GSAP guard disable everything when set
+- **Card tilt parallax** (`[data-tilt]`, handled in the same GSAP engine): container itself no longer rotates — only marked children move independently. `.tilt-image` (icon/photo, ±5° rotation), `.tilt-caption` (title/text or name/price, ±20px translate), `.tilt-shine` (empty decorative div, accent-cyan diagonal sweep, ±50px translate, most movement of the three). All three are optional per card — the engine skips whichever is absent, no errors.
+- `.icon-pulse`: continuous CSS scale pulse (2.2s loop) — apply to the icon `<i>` glyph itself, never to a `.tilt-image` wrapper (would fight the GSAP transform on the same element).
+- **Card layer scroll-reveal** (`.tilt-image`/`.tilt-caption`/`.tilt-shine` inside a `[data-tilt]` card that itself sits inside `[data-stagger]`/`[data-hero]`): these layers get their own nested 3D "settle-in" transition, independent of the mouse-hover tilt, that fires when the parent grid's `.in` class is added — icon rotates in via `perspective`/`rotateX`/`rotateY`/`scale`, caption follows with `translateY`, shine sweeps in with `translate` — each with its own `transition-delay` (0.12s/0.2s/0.3s) so they cascade after the card itself. The `[data-tilt]` container never gets a transform here either, same rule as the hover tilt. Pure CSS, no JS/markup needed — it rides the existing `.in` class the reveal engine already toggles, so it also applies automatically anywhere else the same `[data-stagger]/[data-hero]` + `[data-tilt]` + layer-class pattern is used (e.g. catalogue product cards use `.reveal`, not `[data-stagger]`, so they are **not** currently affected by this).
+- All animations respect `prefers-reduced-motion` — a global CSS block and GSAP guard disable everything when set. **If a user reports "animations aren't playing," check their OS/browser reduced-motion setting first — most sessions' first hypothesis should be this, not a code bug.** The reduced-motion block zeroes both `transition-duration` **and** `transition-delay` on the universal selector (`*, *::before, *::after`) — duration alone isn't enough, since per-element `transition-delay` (stagger cascades, nested card-layer delays above) would otherwise still make the user wait out the delay before the near-instant transition kicks in.
 
 ### GSAP animation engine
 Injected once in `Layout.tsx` via `dangerouslySetInnerHTML`. It:
@@ -75,7 +78,7 @@ Injected once in `Layout.tsx` via `dangerouslySetInnerHTML`. It:
 ### Security patterns
 - **Admin auth**: HMAC-signed token (not JWT) — `ADMIN_SECRET` env var. Cookie `maasga_admin` + per-request verification
 - **Rate limiting**: in-memory sliding window per Cloudflare isolate — `rateLimit(key, max, windowMs)`. Per-IP and per-identifier limits on login/sensitive endpoints. Cap at 10 000 entries to prevent OOM
-- **CSP** (`src/index.tsx` security-headers middleware): allows `cdnjs.cloudflare.com`, `cdn.jsdelivr.net`, `fonts.googleapis.com`. **Any new CDN source requires editing the CSP header here**
+- **CSP** (`src/index.tsx` security-headers middleware): allows `cdnjs.cloudflare.com`, `cdn.jsdelivr.net`, `cdn.lordicon.com`, `fonts.googleapis.com`. **Any new CDN source requires editing the CSP header here** — and remember `<lord-icon>` needs its domain in **both** `script-src` (loads the player) **and** `connect-src` (the player `fetch()`s each icon's animation JSON at runtime) — missing either one fails silently (no visible icon, no thrown error unless you check the console for CSP violations)
 - **XSS**: all user-supplied strings must go through `escapeHtml()` (server-side) or `textContent` / `createTextNode` (client-side inline JS). Never use `innerHTML` with user data in admin JS
 - **Input validation**: `isValidEmail`, `isValidPhone` (Burkina Faso: 8 digits ± `+226` prefix), `validateImageMagicBytes` for uploads
 
@@ -87,6 +90,14 @@ Set via `wrangler secret put <NAME>` — never in code.
 
 ### Database migrations
 28 SQL migration files in `migrations/`. Apply in order with `npm run migrate` (remote) or `npm run migrate:local` (local wrangler D1). Never edit applied migrations — add a new numbered file instead.
+
+### Local dev / testing gotchas
+- On this machine, `npm run dev` (Vite) sometimes binds `[::1]:5173` (IPv6 loopback) only — `http://localhost:5173` or `http://127.0.0.1:5173` can fail to connect even though the server is up. Try `http://[::1]:5173/` explicitly, or prefer `npm run build && npm run dev:sandbox` (wrangler, binds all interfaces on `:3000`) for automated/browser testing — more reliable, though it serves the last built `dist/`, not live source.
+- Any browser automation (Playwright, etc.) hitting a fresh context will get blocked by the CGU consent modal on first load. Pre-seed `localStorage` before navigating: `maasga_cgu_accepted` and `maasga_cookies_accepted`, both `'true'`.
+- Known issue: most Lordicon icon IDs already hardcoded in `Layout.tsx`'s nav (`msetzzbt`, `becezzra`, `wmluxarr`, `hbwbeoul`, `jyvscvfr`, `diuoeasy`, `tftunupn`, `zzaxpnyy`) do not render even with correct CSP — likely invalid or premium-only assets on Lordicon's free CDN. Only `gmzxduhd` (used for "Accueil") is confirmed working. Needs replacement icons or a different source before relying on them.
+
+### Git remote
+`origin` points to `https://github.com/Maasga/maasga-code.git` (private, account `maasgabf@gmail.com`) — changed from a prior personal `sayta22/maasga-code` remote. Local git commit identity (`git config user.email/name`) is still `sayta22` — commits are authored as sayta22 but pushed to the Maasga account; nobody has yet decided whether to update the local commit identity to match.
 
 ### Routing conventions
 All routes live in `src/index.tsx`:
