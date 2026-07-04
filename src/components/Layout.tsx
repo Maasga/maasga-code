@@ -439,7 +439,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
           </div>
         </footer>
 
-        {/* Loader hide + Scroll Reveal + Scroll Progress + Back-to-top + Counter animation + Page transitions */}
+        {/* Loader hide + Scroll Reveal + Scroll Progress + Back-to-top + Counter animation */}
         <script dangerouslySetInnerHTML={{ __html: `
           // Hide loader (rapide si déjà visité)
           (function() {
@@ -454,6 +454,63 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             if (document.readyState !== 'loading') { setTimeout(hideLoader, 50); }
             else { document.addEventListener('DOMContentLoaded', function() { setTimeout(hideLoader, 50); }); }
           })();
+
+          // Scroll reveal (+ left/right variants) — classe legacy .visible
+          var legacyRevealObserver = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                legacyRevealObserver.unobserve(entry.target);
+              }
+            });
+          }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+
+          // Moteur de révélation data-* — robuste, indépendant de GSAP.
+          // Ajoute .in dès que l'élément entre à l'écran (CSS gère l'anim + cascade).
+          var revealObserver = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('in');
+                revealObserver.unobserve(entry.target);
+              }
+            });
+          }, { threshold: 0.05, rootMargin: '0px 0px -8% 0px' });
+
+          // Animated number counters
+          var counterObserver = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+              if (entry.isIntersecting) {
+                var el = entry.target;
+                var target = el.getAttribute('data-count');
+                var isNum = /^\\d+$/.test(target);
+                if (isNum) {
+                  var end = parseInt(target);
+                  var duration = 1800;
+                  var startTime = null;
+                  function animate(timestamp) {
+                    if (!startTime) startTime = timestamp;
+                    var progress = Math.min((timestamp - startTime) / duration, 1);
+                    var eased = 1 - Math.pow(1 - progress, 3);
+                    el.textContent = Math.floor(eased * end) + (el.getAttribute('data-suffix') || '');
+                    if (progress < 1) requestAnimationFrame(animate);
+                  }
+                  requestAnimationFrame(animate);
+                }
+                counterObserver.unobserve(el);
+              }
+            });
+          }, { threshold: 0.3 });
+
+          // Attache les 3 observers ci-dessus à tout élément concerné sous root —
+          // document au chargement initial, le nouveau <main> après un swap de
+          // transition async (voir bloc "ASYNC PAGE TRANSITIONS" plus bas).
+          function initPageBehaviors(root) {
+            root = root || document;
+            root.querySelectorAll('.reveal,.reveal-left,.reveal-right').forEach(function(el) { legacyRevealObserver.observe(el); });
+            root.querySelectorAll('[data-reveal],[data-stagger],[data-hero]').forEach(function(el) { revealObserver.observe(el); });
+            root.querySelectorAll('[data-count]').forEach(function(el) { counterObserver.observe(el); });
+          }
+          window.__maasgaInitPageBehaviors = initPageBehaviors;
 
           document.addEventListener('DOMContentLoaded', function() {
             // Close "Plus" dropdown on outside click
@@ -487,28 +544,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 .catch(function() {});
             })();
 
-            // Scroll reveal (+ left/right variants) — classe legacy .visible
-            var observer = new IntersectionObserver(function(entries) {
-              entries.forEach(function(entry) {
-                if (entry.isIntersecting) {
-                  entry.target.classList.add('visible');
-                  observer.unobserve(entry.target);
-                }
-              });
-            }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
-            document.querySelectorAll('.reveal,.reveal-left,.reveal-right').forEach(function(el) { observer.observe(el); });
-
-            // Moteur de révélation data-* — robuste, indépendant de GSAP.
-            // Ajoute .in dès que l'élément entre à l'écran (CSS gère l'anim + cascade).
-            var revealObserver = new IntersectionObserver(function(entries) {
-              entries.forEach(function(entry) {
-                if (entry.isIntersecting) {
-                  entry.target.classList.add('in');
-                  revealObserver.unobserve(entry.target);
-                }
-              });
-            }, { threshold: 0.05, rootMargin: '0px 0px -8% 0px' });
-            document.querySelectorAll('[data-reveal],[data-stagger],[data-hero]').forEach(function(el) { revealObserver.observe(el); });
+            initPageBehaviors(document);
 
             var backToTop = document.getElementById('back-to-top');
             var headerPill = document.getElementById('header-pill');
@@ -517,46 +553,6 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               if (backToTop) backToTop.style.display = scrollTop > 400 ? 'flex' : 'none';
               if (headerPill) headerPill.classList.toggle('scrolled', scrollTop > 20);
             }, { passive: true });
-
-            // Animated number counters
-            var counterObserver = new IntersectionObserver(function(entries) {
-              entries.forEach(function(entry) {
-                if (entry.isIntersecting) {
-                  var el = entry.target;
-                  var target = el.getAttribute('data-count');
-                  var isNum = /^\\d+$/.test(target);
-                  if (isNum) {
-                    var end = parseInt(target);
-                    var duration = 1800;
-                    var start = 0;
-                    var startTime = null;
-                    function animate(timestamp) {
-                      if (!startTime) startTime = timestamp;
-                      var progress = Math.min((timestamp - startTime) / duration, 1);
-                      var eased = 1 - Math.pow(1 - progress, 3);
-                      el.textContent = Math.floor(eased * end) + (el.getAttribute('data-suffix') || '');
-                      if (progress < 1) requestAnimationFrame(animate);
-                    }
-                    requestAnimationFrame(animate);
-                  }
-                  counterObserver.unobserve(el);
-                }
-              });
-            }, { threshold: 0.3 });
-            document.querySelectorAll('[data-count]').forEach(function(el) { counterObserver.observe(el); });
-          });
-
-          // Page transitions for internal links (rapide)
-          document.addEventListener('click', function(e) {
-            var link = e.target.closest('a[href]');
-            if (!link) return;
-            var href = link.getAttribute('href');
-            if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('tel:') || href.startsWith('mailto:') || link.target === '_blank') return;
-            e.preventDefault();
-            var overlay = document.getElementById('page-transition');
-            overlay.style.opacity = '1';
-            overlay.style.pointerEvents = 'all';
-            setTimeout(function() { window.location.href = href; }, 150);
           });
         `}} />
 
@@ -574,7 +570,8 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             var finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
-            function initGsap() {
+            function initGsap(root) {
+              root = root || document;
               if (!window.gsap || !window.ScrollTrigger) return false;
               var gsap = window.gsap;
               gsap.registerPlugin(window.ScrollTrigger);
@@ -583,7 +580,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               // GSAP n'ajoute QUE des enrichissements : parallax + CTA magnétiques.
               if (reduce) return true;
 
-              gsap.utils.toArray('[data-parallax]').forEach(function(el) {
+              gsap.utils.toArray(root.querySelectorAll('[data-parallax]')).forEach(function(el) {
                 var amount = parseFloat(el.getAttribute('data-parallax')) || 30;
                 amount = Math.max(-80, Math.min(80, amount));
                 gsap.to(el, {
@@ -593,7 +590,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               });
 
               if (finePointer) {
-                document.querySelectorAll('.magnetic').forEach(function(btn) {
+                root.querySelectorAll('.magnetic').forEach(function(btn) {
                   btn.addEventListener('mousemove', function(e) {
                     var r = btn.getBoundingClientRect();
                     var mx = e.clientX - r.left - r.width / 2;
@@ -606,7 +603,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 });
 
                 // Tilt parallax — cartes avec [data-tilt], couches .tilt-image/.tilt-caption/.tilt-shine
-                document.querySelectorAll('[data-tilt]').forEach(function(card) {
+                root.querySelectorAll('[data-tilt]').forEach(function(card) {
                   var rect = null;
                   var img = card.querySelector('.tilt-image');
                   var caption = card.querySelector('.tilt-caption');
@@ -640,13 +637,14 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               }
               return true;
             }
+            window.__maasgaReinitGsap = initGsap;
 
             // GSAP chargé en defer : on tente jusqu'à ~3s, sinon le contenu reste visible
-            if (!initGsap()) {
+            if (!initGsap(document)) {
               var tries = 0;
               var iv = setInterval(function() {
                 tries++;
-                if (initGsap() || tries > 60) clearInterval(iv);
+                if (initGsap(document) || tries > 60) clearInterval(iv);
               }, 50);
             }
           })();
