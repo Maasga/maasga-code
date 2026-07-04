@@ -667,6 +667,102 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
           })();
         `}} />
 
+        {/* ASYNC PAGE TRANSITIONS — fetch + swap de <main>, overlay texte qui glisse */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            var MIN_DISPLAY_MS = 900;
+            var FETCH_TIMEOUT_MS = 5000;
+            var ROUTE_LABELS = ${JSON.stringify(ROUTE_LABELS)};
+            var navigationInProgress = false;
+
+            function labelForPath(pathname) {
+              if (ROUTE_LABELS[pathname]) return ROUTE_LABELS[pathname];
+              var segment = pathname.split('/').filter(Boolean).pop() || 'Accueil';
+              return segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
+            }
+
+            function showOverlay(label) {
+              var overlay = document.getElementById('page-transition');
+              var text = document.getElementById('page-transition-text');
+              if (!overlay || !text) return;
+              text.textContent = label;
+              text.classList.remove('pt-slide');
+              void text.offsetWidth; // force reflow so the animation restarts every time
+              text.classList.add('pt-slide');
+              overlay.style.opacity = '1';
+              overlay.style.pointerEvents = 'all';
+            }
+
+            function hideOverlay() {
+              var overlay = document.getElementById('page-transition');
+              if (overlay) {
+                overlay.style.opacity = '0';
+                overlay.style.pointerEvents = 'none';
+              }
+            }
+
+            function runNewMainScripts(main) {
+              main.querySelectorAll('script').forEach(function(oldScript) {
+                var newScript = document.createElement('script');
+                for (var i = 0; i < oldScript.attributes.length; i++) {
+                  var attr = oldScript.attributes[i];
+                  newScript.setAttribute(attr.name, attr.value);
+                }
+                newScript.textContent = oldScript.textContent;
+                oldScript.parentNode.replaceChild(newScript, oldScript);
+              });
+            }
+
+            function swapContent(html) {
+              var doc = new DOMParser().parseFromString(html, 'text/html');
+              var newMain = doc.getElementById('main-content');
+              var currentMain = document.getElementById('main-content');
+              if (!newMain || !currentMain) return false;
+              document.adoptNode(newMain);
+              currentMain.replaceWith(newMain);
+              document.title = doc.title;
+              runNewMainScripts(newMain);
+              if (window.__maasgaInitPageBehaviors) window.__maasgaInitPageBehaviors(newMain);
+              if (window.__maasgaReinitGsap) window.__maasgaReinitGsap(newMain);
+              return true;
+            }
+
+            function navigate(href, isPopstate) {
+              if (navigationInProgress) return;
+              navigationInProgress = true;
+              var pathname = href.split('?')[0].split('#')[0];
+              showOverlay(labelForPath(pathname));
+
+              var minTimer = new Promise(function(resolve) { setTimeout(resolve, MIN_DISPLAY_MS); });
+              var fetchPromise = fetch(href, { credentials: 'same-origin' })
+                .then(function(res) {
+                  if (!res.ok) throw new Error('HTTP ' + res.status);
+                  return res.text();
+                });
+
+              Promise.all([fetchPromise, minTimer]).then(function(results) {
+                var ok = swapContent(results[0]);
+                if (!ok) { window.location.href = href; return; }
+                hideOverlay();
+                navigationInProgress = false;
+              }).catch(function() {
+                window.location.href = href;
+              });
+            }
+
+            document.addEventListener('click', function(e) {
+              var link = e.target.closest('a[href]');
+              if (!link) return;
+              var href = link.getAttribute('href');
+              if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('tel:') || href.startsWith('mailto:') || href.startsWith('/admin') || link.target === '_blank') return;
+              e.preventDefault();
+              navigate(href, false);
+            });
+
+            window.__maasgaNavigate = navigate; // exposé pour le hardening des tâches suivantes
+          })();
+        `}} />
+
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
             const hasAccepted = localStorage.getItem('maasga_cgu_accepted') === 'true'
