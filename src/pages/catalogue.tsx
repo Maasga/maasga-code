@@ -1712,107 +1712,114 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
 
       {/* ===== JS COMPARATEUR ===== */}
       <script dangerouslySetInnerHTML={{ __html: `
-        const compareSelected = new Set();
-        const MAX_COMPARE = 3;
+        (function() {
+          const compareSelected = new Set();
+          const MAX_COMPARE = 3;
 
-        function toggleCompare(id) {
-          const btn = document.getElementById('compare-btn-' + id);
-          if (compareSelected.has(id)) {
-            compareSelected.delete(id);
-            if (btn) { btn.style.background = 'rgba(167,139,250,0.07)'; btn.style.borderColor = 'rgba(167,139,250,0.18)'; btn.querySelector('span').textContent = 'Comparer'; }
-          } else {
-            if (compareSelected.size >= MAX_COMPARE) {
-              showToast('Vous pouvez comparer au maximum 3 produits.', 'warning');
-              return;
-            }
-            compareSelected.add(id);
-            if (btn) { btn.style.background = 'rgba(167,139,250,0.25)'; btn.style.borderColor = 'rgba(167,139,250,0.5)'; btn.querySelector('span').textContent = 'Sélectionné ✓'; }
-          }
-          updateCompareBar();
-        }
-
-        function updateCompareBar() {
-          const bar = document.getElementById('compare-bar');
-          const count = compareSelected.size;
-          const countEl = document.getElementById('compare-count');
-          const openBtn = document.getElementById('compare-open-btn');
-          if (count === 0) {
-            bar.classList.add('hidden');
-          } else {
-            bar.classList.remove('hidden');
-            countEl.textContent = count + ' produit' + (count > 1 ? 's' : '') + ' sélectionné' + (count > 1 ? 's' : '');
-            openBtn.disabled = count < 2;
-          }
-        }
-
-        function clearCompare() {
-          compareSelected.forEach(id => {
+          function toggleCompare(id) {
             const btn = document.getElementById('compare-btn-' + id);
-            if (btn) { btn.style.background = 'rgba(167,139,250,0.07)'; btn.style.borderColor = 'rgba(167,139,250,0.18)'; btn.querySelector('span').textContent = 'Comparer'; }
-          });
-          compareSelected.clear();
-          updateCompareBar();
-        }
-
-        function openCompareModal() {
-          const modal = document.getElementById('compare-modal');
-          const content = document.getElementById('compare-content');
-          const ids = [...compareSelected];
-          // Gather product data from DOM
-          const cards = document.querySelectorAll('.product-card');
-          const products = {};
-          cards.forEach(card => {
-            const id = parseInt(card.dataset.id);
-            if (ids.includes(id)) {
-              products[id] = {
-                id: id, name: card.dataset.name, brand: card.dataset.brand, btu: card.dataset.btu,
-                price: card.dataset.price, model: card.dataset.model, energy: card.dataset.energy,
-                inverter: card.dataset.inverter === 'true', stock: parseInt(card.dataset.stock), image: card.dataset.image
-              };
+            if (compareSelected.has(id)) {
+              compareSelected.delete(id);
+              if (btn) { btn.style.background = 'rgba(167,139,250,0.07)'; btn.style.borderColor = 'rgba(167,139,250,0.18)'; btn.querySelector('span').textContent = 'Comparer'; }
+            } else {
+              if (compareSelected.size >= MAX_COMPARE) {
+                showToast('Vous pouvez comparer au maximum 3 produits.', 'warning');
+                return;
+              }
+              compareSelected.add(id);
+              if (btn) { btn.style.background = 'rgba(167,139,250,0.25)'; btn.style.borderColor = 'rgba(167,139,250,0.5)'; btn.querySelector('span').textContent = 'Sélectionné ✓'; }
             }
-          });
-          const cols = ids.map(id => products[id]).filter(Boolean);
-          const rows = [
-            { label: 'Marque', fn: p => p.brand },
-            { label: 'Modèle', fn: p => p.model },
-            { label: 'Puissance', fn: p => Number(p.btu).toLocaleString('fr-FR') + ' BTU' },
-            { label: 'Prix', fn: p => Number(p.price).toLocaleString('fr-FR') + ' FCFA' },
-            { label: 'Inverter', fn: p => p.inverter ? '<span style="color:#34d399;">✓ Oui</span>' : '<span style="color:#f87171;">✗ Non</span>' },
-            { label: 'Classe énergie', fn: p => p.energy },
-            { label: 'Stock', fn: p => p.stock > 0 ? '<span style="color:#34d399;">' + p.stock + ' dispo</span>' : '<span style="color:#f87171;">Rupture</span>' },
-          ];
+            updateCompareBar();
+          }
 
-          let html = '<div style="display:grid; grid-template-columns: 140px repeat(' + cols.length + ', 1fr); gap:0;">';
-          // Header
-          html += '<div style="background:rgba(56,189,248,0.05); padding:12px; font-weight:700; font-size:0.75rem; color:#38bdf8; text-transform:uppercase;">Caractéristique</div>';
-          cols.forEach(p => {
-            html += '<div style="background:rgba(56,189,248,0.05); padding:12px; text-align:center; border-left:1px solid rgba(56,189,248,0.08);">';
-            html += '<img src="' + (p.imageUrl || '/static/ac-placeholder.svg') + '" alt="' + p.name + '" style="width:50px;height:50px;object-fit:contain;margin-bottom:4px;" loading="lazy" />';
-            html += '<div style="font-size:0.7rem; color:#38bdf8; font-weight:700; text-transform:uppercase;">' + p.brand + '</div>';
-            html += '<div style="font-size:0.8rem; color:white; font-weight:600; line-height:1.3; margin-bottom:6px;">' + p.name + '</div>';
-            html += '<a href="/rendez-vous?product=' + p.id + '" style="display:inline-block; background:linear-gradient(135deg,#0ea5e9,#3b82f6); color:white; padding:5px 10px; border-radius:8px; font-size:0.7rem; font-weight:700; text-decoration:none;">Commander</a>';
-            html += '</div>';
-          });
-          // Rows
-          rows.forEach((row, ri) => {
-            const bg = ri % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent';
-            html += '<div style="background:' + bg + '; padding:10px 12px; font-size:0.75rem; font-weight:600; color:#8ba3c0; border-top:1px solid rgba(56,189,248,0.06);">' + row.label + '</div>';
-            cols.forEach(p => {
-              html += '<div style="background:' + bg + '; padding:10px 12px; text-align:center; font-size:0.82rem; color:white; border-left:1px solid rgba(56,189,248,0.06); border-top:1px solid rgba(56,189,248,0.06);">' + row.fn(p) + '</div>';
+          function updateCompareBar() {
+            const bar = document.getElementById('compare-bar');
+            const count = compareSelected.size;
+            const countEl = document.getElementById('compare-count');
+            const openBtn = document.getElementById('compare-open-btn');
+            if (count === 0) {
+              bar.classList.add('hidden');
+            } else {
+              bar.classList.remove('hidden');
+              countEl.textContent = count + ' produit' + (count > 1 ? 's' : '') + ' sélectionné' + (count > 1 ? 's' : '');
+              openBtn.disabled = count < 2;
+            }
+          }
+
+          function clearCompare() {
+            compareSelected.forEach(id => {
+              const btn = document.getElementById('compare-btn-' + id);
+              if (btn) { btn.style.background = 'rgba(167,139,250,0.07)'; btn.style.borderColor = 'rgba(167,139,250,0.18)'; btn.querySelector('span').textContent = 'Comparer'; }
             });
-          });
-          html += '</div>';
+            compareSelected.clear();
+            updateCompareBar();
+          }
 
-          content.innerHTML = html;
-          modal.classList.remove('hidden');
-          if (window.trapFocus) window.trapFocus(modal);
-        }
+          function openCompareModal() {
+            const modal = document.getElementById('compare-modal');
+            const content = document.getElementById('compare-content');
+            const ids = [...compareSelected];
+            // Gather product data from DOM
+            const cards = document.querySelectorAll('.product-card');
+            const products = {};
+            cards.forEach(card => {
+              const id = parseInt(card.dataset.id);
+              if (ids.includes(id)) {
+                products[id] = {
+                  id: id, name: card.dataset.name, brand: card.dataset.brand, btu: card.dataset.btu,
+                  price: card.dataset.price, model: card.dataset.model, energy: card.dataset.energy,
+                  inverter: card.dataset.inverter === 'true', stock: parseInt(card.dataset.stock), image: card.dataset.image
+                };
+              }
+            });
+            const cols = ids.map(id => products[id]).filter(Boolean);
+            const rows = [
+              { label: 'Marque', fn: p => p.brand },
+              { label: 'Modèle', fn: p => p.model },
+              { label: 'Puissance', fn: p => Number(p.btu).toLocaleString('fr-FR') + ' BTU' },
+              { label: 'Prix', fn: p => Number(p.price).toLocaleString('fr-FR') + ' FCFA' },
+              { label: 'Inverter', fn: p => p.inverter ? '<span style="color:#34d399;">✓ Oui</span>' : '<span style="color:#f87171;">✗ Non</span>' },
+              { label: 'Classe énergie', fn: p => p.energy },
+              { label: 'Stock', fn: p => p.stock > 0 ? '<span style="color:#34d399;">' + p.stock + ' dispo</span>' : '<span style="color:#f87171;">Rupture</span>' },
+            ];
 
-        function closeCompareModal() {
-          var cm = document.getElementById('compare-modal');
-          cm.classList.add('hidden');
-          if (window.releaseFocus) window.releaseFocus(cm);
-        }
+            let html = '<div style="display:grid; grid-template-columns: 140px repeat(' + cols.length + ', 1fr); gap:0;">';
+            // Header
+            html += '<div style="background:rgba(56,189,248,0.05); padding:12px; font-weight:700; font-size:0.75rem; color:#38bdf8; text-transform:uppercase;">Caractéristique</div>';
+            cols.forEach(p => {
+              html += '<div style="background:rgba(56,189,248,0.05); padding:12px; text-align:center; border-left:1px solid rgba(56,189,248,0.08);">';
+              html += '<img src="' + (p.imageUrl || '/static/ac-placeholder.svg') + '" alt="' + p.name + '" style="width:50px;height:50px;object-fit:contain;margin-bottom:4px;" loading="lazy" />';
+              html += '<div style="font-size:0.7rem; color:#38bdf8; font-weight:700; text-transform:uppercase;">' + p.brand + '</div>';
+              html += '<div style="font-size:0.8rem; color:white; font-weight:600; line-height:1.3; margin-bottom:6px;">' + p.name + '</div>';
+              html += '<a href="/rendez-vous?product=' + p.id + '" style="display:inline-block; background:linear-gradient(135deg,#0ea5e9,#3b82f6); color:white; padding:5px 10px; border-radius:8px; font-size:0.7rem; font-weight:700; text-decoration:none;">Commander</a>';
+              html += '</div>';
+            });
+            // Rows
+            rows.forEach((row, ri) => {
+              const bg = ri % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent';
+              html += '<div style="background:' + bg + '; padding:10px 12px; font-size:0.75rem; font-weight:600; color:#8ba3c0; border-top:1px solid rgba(56,189,248,0.06);">' + row.label + '</div>';
+              cols.forEach(p => {
+                html += '<div style="background:' + bg + '; padding:10px 12px; text-align:center; font-size:0.82rem; color:white; border-left:1px solid rgba(56,189,248,0.06); border-top:1px solid rgba(56,189,248,0.06);">' + row.fn(p) + '</div>';
+              });
+            });
+            html += '</div>';
+
+            content.innerHTML = html;
+            modal.classList.remove('hidden');
+            if (window.trapFocus) window.trapFocus(modal);
+          }
+
+          function closeCompareModal() {
+            var cm = document.getElementById('compare-modal');
+            cm.classList.add('hidden');
+            if (window.releaseFocus) window.releaseFocus(cm);
+          }
+
+          window.toggleCompare = toggleCompare;
+          window.clearCompare = clearCompare;
+          window.openCompareModal = openCompareModal;
+          window.closeCompareModal = closeCompareModal;
+        })();
       `}} />
     </Layout>
   )
