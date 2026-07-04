@@ -1,0 +1,5 @@
+allprojects {
+    afterEvaluate {
+        println("Project: ${project.name}, Kotlin Plugin version: ${project.plugins.findPlugin('org.jetbrains.kotlin.android')?.javaClass?.package?.implementationVersion}")
+    }
+}

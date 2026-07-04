@@ -1,0 +1,15 @@
+allprojects {
+    tasks.register("inspectKotlinVersionClass") {
+        doLast {
+            try {
+                def clazz = Class.forName("org.jetbrains.kotlin.gradle.dsl.KotlinVersion")
+                println("Methods in KotlinVersion:")
+                clazz.methods.each { println("${it.name}(${it.parameterTypes.collect { p -> p.simpleName }.join(', ')})") }
+                println("Fields in KotlinVersion:")
+                clazz.fields.each { println(it.name) }
+            } catch (Exception e) {
+                println("Could not find class: " + e.message)
+            }
+        }
+    }
+}
