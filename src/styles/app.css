@@ -359,6 +359,18 @@
   background: linear-gradient(45deg, transparent 35%, rgba(0,180,216,0.16) 50%, transparent 65%);
 }
 
+/* ─── Icon pulse (cartes services) ─── */
+@keyframes icon-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+.icon-pulse {
+  animation: icon-pulse 2.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .icon-pulse { animation: none; }
+}
+
 /* ─── MOBILE MENU ─── */
 .mobile-menu { display: none; opacity: 0; transform: translateY(-8px); transition: opacity 0.25s ease, transform 0.25s ease; }
 .mobile-menu.open { display: block; opacity: 1; transform: translateY(0); animation: menuSlideIn 0.25s ease forwards; }

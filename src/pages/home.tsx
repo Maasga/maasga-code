@@ -194,7 +194,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             {/* Vente */}
             <div data-tilt class="surface-elevated p-8 group">
               <div class="tilt-image w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:rotate-6 transition-transform" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan)); color:#ffffff;">
-                <i class="ph-duotone ph-shopping-cart-simple"></i>
+                <i class="icon-pulse ph-duotone ph-shopping-cart-simple"></i>
               </div>
               <div class="tilt-caption">
                 <h3 class="text-2xl font-extrabold mb-4 font-display" style="color:var(--navy-900);">Vente Premium</h3>
@@ -216,7 +216,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                 <i class="ph-duotone ph-wrench"></i>
               </div>
               <div class="tilt-image w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-6" style="background:rgba(202,240,248,0.14); color:var(--ice);">
-                <i class="ph-duotone ph-wrench"></i>
+                <i class="icon-pulse ph-duotone ph-wrench"></i>
               </div>
               <div class="tilt-caption">
                 <h3 class="text-2xl font-extrabold mb-4 font-display" style="color:#ffffff;">Maintenance</h3>
@@ -235,7 +235,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             {/* Suivi */}
             <div data-tilt class="surface-elevated p-8 group">
               <div class="tilt-image w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:rotate-6 transition-transform" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan)); color:#ffffff;">
-                <i class="ph-duotone ph-chart-line-up"></i>
+                <i class="icon-pulse ph-duotone ph-chart-line-up"></i>
               </div>
               <div class="tilt-caption">
                 <h3 class="text-2xl font-extrabold mb-4 font-display" style="color:var(--navy-900);">Suivi de Performance</h3>
