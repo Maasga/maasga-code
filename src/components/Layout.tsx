@@ -718,7 +718,12 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               var newMain = doc.getElementById('main-content');
               var currentMain = document.getElementById('main-content');
               if (!newMain || !currentMain) return false;
-              document.adoptNode(newMain);
+              newMain = document.adoptNode(newMain);
+              if (window.ScrollTrigger) {
+                window.ScrollTrigger.getAll().forEach(function(st) {
+                  if (st.trigger && currentMain.contains(st.trigger)) st.kill();
+                });
+              }
               currentMain.replaceWith(newMain);
               document.title = doc.title;
               runNewMainScripts(newMain);
@@ -734,8 +739,11 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               showOverlay(labelForPath(pathname));
 
               var minTimer = new Promise(function(resolve) { setTimeout(resolve, MIN_DISPLAY_MS); });
-              var fetchPromise = fetch(href, { credentials: 'same-origin' })
+              var controller = new AbortController();
+              var timeoutId = setTimeout(function() { controller.abort(); }, FETCH_TIMEOUT_MS);
+              var fetchPromise = fetch(href, { credentials: 'same-origin', signal: controller.signal })
                 .then(function(res) {
+                  clearTimeout(timeoutId);
                   if (!res.ok) throw new Error('HTTP ' + res.status);
                   return res.text();
                 });
@@ -747,6 +755,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 hideOverlay();
                 navigationInProgress = false;
               }).catch(function() {
+                navigationInProgress = false;
                 window.location.href = href;
               });
             }
