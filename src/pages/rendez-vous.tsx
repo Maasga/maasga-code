@@ -497,6 +497,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
 
         {/* Script gestion localisation */}
         <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
           let mapLat = 12.365069;
           let mapLng = -1.520926;
 
@@ -611,6 +612,14 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
             const newMapSrc = \`https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2000!2d\${lng}!3d\${lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1sAdresse+sélectionnée!2sBurkina+Faso!5e0!3m2!1sfr!2sfr!4v1234567890\`;
             document.getElementById('map-iframe').src = newMapSrc;
           }
+
+          window.openLocationModal = openLocationModal;
+          window.closeLocationModal = closeLocationModal;
+          window.confirmLocation = confirmLocation;
+          window.updateLocationPreview = updateLocationPreview;
+          window.geolocateUser = geolocateUser;
+          window.selectSuggestion = selectSuggestion;
+          })();
         `}} />
 
         {/* Script compteur prochain créneau */}

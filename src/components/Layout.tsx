@@ -713,6 +713,33 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               });
             }
 
+            function syncNavActiveState(doc) {
+              var oldHeader = document.querySelector('header');
+              var newHeader = doc.querySelector('header');
+              if (!oldHeader || !newHeader) return;
+              newHeader.querySelectorAll('a[href]').forEach(function(newLink) {
+                var href = newLink.getAttribute('href');
+                if (!href) return;
+                oldHeader.querySelectorAll('a[href="' + CSS.escape(href) + '"]').forEach(function(oldLink) {
+                  oldLink.className = newLink.className;
+                  if (newLink.hasAttribute('aria-current')) oldLink.setAttribute('aria-current', newLink.getAttribute('aria-current'));
+                  else oldLink.removeAttribute('aria-current');
+                  if (newLink.hasAttribute('style')) oldLink.setAttribute('style', newLink.getAttribute('style'));
+                  else oldLink.removeAttribute('style');
+                  var newIcon = newLink.querySelector('lord-icon');
+                  var oldIcon = oldLink.querySelector('lord-icon');
+                  if (newIcon && oldIcon && newIcon.hasAttribute('colors')) oldIcon.setAttribute('colors', newIcon.getAttribute('colors'));
+                });
+              });
+              var oldEyebrow = oldHeader.querySelector('.eyebrow');
+              var newEyebrow = newHeader.querySelector('.eyebrow');
+              if (oldEyebrow && newEyebrow) {
+                oldEyebrow.textContent = newEyebrow.textContent;
+              } else if (oldEyebrow && !newEyebrow) {
+                oldEyebrow.remove();
+              }
+            }
+
             function swapContent(html) {
               var doc = new DOMParser().parseFromString(html, 'text/html');
               var newMain = doc.getElementById('main-content');
@@ -726,6 +753,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               }
               currentMain.replaceWith(newMain);
               document.title = doc.title;
+              syncNavActiveState(doc);
               runNewMainScripts(newMain);
               if (window.__maasgaInitPageBehaviors) window.__maasgaInitPageBehaviors(newMain);
               if (window.__maasgaReinitGsap) window.__maasgaReinitGsap(newMain);
@@ -751,7 +779,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               Promise.all([fetchPromise, minTimer]).then(function(results) {
                 var ok = swapContent(results[0]);
                 if (!ok) { window.location.href = href; return; }
-                if (!isPopstate) history.pushState(null, '', href);
+                if (!isPopstate) { history.pushState(null, '', href); window.scrollTo(0, 0); }
                 if (typeof window.gtag === 'function') {
                   window.gtag('event', 'page_view', { page_path: pathname, page_title: document.title });
                 }
@@ -766,6 +794,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             document.addEventListener('click', function(e) {
               var link = e.target.closest('a[href]');
               if (!link) return;
+              if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
               var href = link.getAttribute('href');
               if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('tel:') || href.startsWith('mailto:') || href.startsWith('/admin') || link.target === '_blank') return;
               e.preventDefault();

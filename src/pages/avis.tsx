@@ -206,6 +206,7 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
       </div>
 
       <script dangerouslySetInnerHTML={{ __html: `
+        (function() {
         let currentRating = 5;
         function rateUs(rating) {
           currentRating = rating;
@@ -220,6 +221,8 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
           }
         }
         rateUs(5);
+        window.rateUs = rateUs;
+        })();
       `}} />
     </Layout>
   )

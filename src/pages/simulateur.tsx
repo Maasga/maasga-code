@@ -363,6 +363,7 @@ export const SimulateurPage = ({
 
       {/* Script calcul BTU */}
       <script dangerouslySetInnerHTML={{ __html: `
+        (function() {
         // Mode comparaison: récupérer le BTU du produit passé en paramètre
         const PRODUCT_BTU = ${productBtu ? productBtu : 'null'};
 
@@ -547,6 +548,7 @@ export const SimulateurPage = ({
           // Scroll vers résultat sur mobile
           document.getElementById('result-zone').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         });
+        })();
       `}} />
     </Layout>
   )
