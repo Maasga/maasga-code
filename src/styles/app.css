@@ -492,6 +492,7 @@ html.js-ready [data-hero].in > [data-tilt] .tilt-shine {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+    transition-delay: 0.001ms !important;
     scroll-behavior: auto !important;
   }
   html.js-ready [data-reveal],
