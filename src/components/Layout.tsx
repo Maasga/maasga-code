@@ -752,6 +752,9 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 var ok = swapContent(results[0]);
                 if (!ok) { window.location.href = href; return; }
                 if (!isPopstate) history.pushState(null, '', href);
+                if (typeof window.gtag === 'function') {
+                  window.gtag('event', 'page_view', { page_path: pathname, page_title: document.title });
+                }
                 hideOverlay();
                 navigationInProgress = false;
               }).catch(function() {
