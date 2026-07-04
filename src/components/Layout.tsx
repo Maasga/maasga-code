@@ -1,5 +1,18 @@
 import { CGUModal, initCGUModal } from './CGUModal'
 
+const PAGE_LABELS: Record<string, string> = {
+  home: "Accueil",
+  simulateur: "Simulateur",
+  catalogue: "Catalogue",
+  maintenance: "Maintenance",
+  rdv: "Rendez-vous",
+  avis: "Avis",
+  apropos: "À propos",
+  contact: "Contact",
+  client: "Espace client",
+  realisations: "Réalisations",
+}
+
 export const AnimatedIcon = ({ src, trigger = "hover", size = 20, colors = "primary:#0077b6,secondary:#caf0f8", class: className = "" }: { src: string, trigger?: string, size?: number, colors?: string, class?: string }) => {
   return (
     <lord-icon
@@ -256,6 +269,11 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 </div>
               </div>
             </nav>
+
+            {/* Indicateur de page — visible uniquement quand la nav desktop/tablette est masquée (<1024px) */}
+            {activePage && PAGE_LABELS[activePage] && (
+              <span class="eyebrow lg:hidden">{PAGE_LABELS[activePage]}</span>
+            )}
 
             {/* Actions */}
             <div class="flex items-center gap-1.5 sm:gap-2">
