@@ -13,6 +13,23 @@ const PAGE_LABELS: Record<string, string> = {
   realisations: "Réalisations",
 }
 
+// Mapping route → libellé pour le texte de l'overlay de transition de page
+// (client-side, voir bloc ASYNC PAGE TRANSITIONS). Couvre toutes les routes
+// publiques définies dans src/index.tsx ; /admin* n'a pas besoin d'entrée
+// puisqu'il est exclu du pipeline de transition.
+const ROUTE_LABELS: Record<string, string> = {
+  "/": PAGE_LABELS.home,
+  "/catalogue": PAGE_LABELS.catalogue,
+  "/contrat-maintenance": PAGE_LABELS.maintenance,
+  "/simulateur": PAGE_LABELS.simulateur,
+  "/rendez-vous": PAGE_LABELS.rdv,
+  "/avis": PAGE_LABELS.avis,
+  "/a-propos": PAGE_LABELS.apropos,
+  "/contact": PAGE_LABELS.contact,
+  "/realisations": PAGE_LABELS.realisations,
+  "/espace-client": PAGE_LABELS.client,
+}
+
 export const AnimatedIcon = ({ src, trigger = "hover", size = 20, colors = "primary:#0077b6,secondary:#caf0f8", class: className = "" }: { src: string, trigger?: string, size?: number, colors?: string, class?: string }) => {
   return (
     <lord-icon
@@ -196,9 +213,9 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         {/* Skip to content — accessibility */}
         <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[99999] focus:px-4 focus:py-2 focus:rounded-lg focus:text-white" style="background:#0ea5e9;">Aller au contenu principal</a>
 
-        {/* PAGE TRANSITION OVERLAY */}
-        <div id="page-transition" style="position:fixed; inset:0; z-index:99999; background:#f8fbff; display:flex; align-items:center; justify-content:center; transition:opacity 0.3s ease; pointer-events:none; opacity:0;">
-          <i class="fas fa-snowflake text-3xl" style="color:#38bdf8; animation:spin 1s linear infinite;"></i>
+        {/* PAGE TRANSITION OVERLAY — grand texte qui traverse pendant le fetch async */}
+        <div id="page-transition" style="position:fixed; inset:0; z-index:99999; background:#03045e; display:flex; align-items:center; justify-content:center; overflow:hidden; transition:opacity 0.3s ease; pointer-events:none; opacity:0;">
+          <span id="page-transition-text" class="pt-text"></span>
         </div>
 
         {/* BACK TO TOP */}

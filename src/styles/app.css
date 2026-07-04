@@ -371,6 +371,24 @@
   .icon-pulse { animation: none; }
 }
 
+/* ─── Page transition overlay : texte qui glisse (async page transitions) ─── */
+.pt-text {
+  position: absolute;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: clamp(2rem, 8vw, 4.5rem);
+  color: #caf0f8;
+  letter-spacing: -0.02em;
+  transform: translateX(110%);
+}
+.pt-text.pt-slide {
+  animation: pt-slide-across 1s var(--ease-out-expo) forwards;
+}
+@keyframes pt-slide-across {
+  from { transform: translateX(110%); }
+  to { transform: translateX(-110%); }
+}
+
 /* ─── MOBILE MENU ─── */
 .mobile-menu { display: none; opacity: 0; transform: translateY(-8px); transition: opacity 0.25s ease, transform 0.25s ease; }
 .mobile-menu.open { display: block; opacity: 1; transform: translateY(0); animation: menuSlideIn 0.25s ease forwards; }
