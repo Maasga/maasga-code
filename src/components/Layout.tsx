@@ -743,6 +743,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               Promise.all([fetchPromise, minTimer]).then(function(results) {
                 var ok = swapContent(results[0]);
                 if (!ok) { window.location.href = href; return; }
+                if (!isPopstate) history.pushState(null, '', href);
                 hideOverlay();
                 navigationInProgress = false;
               }).catch(function() {
@@ -760,6 +761,10 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             });
 
             window.__maasgaNavigate = navigate; // exposé pour le hardening des tâches suivantes
+
+            window.addEventListener('popstate', function() {
+              navigate(window.location.pathname + window.location.search, true);
+            });
           })();
         `}} />
 
