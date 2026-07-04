@@ -722,6 +722,7 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
       </div>
 
       <script dangerouslySetInnerHTML={{ __html: `
+        (function() {
         window.__CAT_PRODUCTS__ = ${JSON.stringify(allProducts.map(p => ({
           id: p.id, name: p.name, brand: p.brand, model: p.model,
           btu: p.btu, price: p.price, stock: p.stock, energy_class: p.energy_class,
@@ -1679,6 +1680,22 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
           if (urlParams.has('brand') || urlParams.has('btu') || urlParams.has('inverter') || urlParams.has('available')) {
             applyFilters();
           }
+        })();
+
+        window.openCartModal = openCartModal;
+        window.openProductDetail = openProductDetail;
+        window.submitStockAlert = submitStockAlert;
+        window.updateQty = updateQty;
+        window.closeCartModal = closeCartModal;
+        window.clearCart = clearCart;
+        window.validateCart = validateCart;
+        window.closeOrderModal = closeOrderModal;
+        window.requestOrderLocation = requestOrderLocation;
+        window.submitOrder = submitOrder;
+        window.addToCart = addToCart;
+        window.openOrderModal = openOrderModal;
+        window.cartQty = cartQty;
+        window.cartRemove = cartRemove;
         })();
       `}} />
 
