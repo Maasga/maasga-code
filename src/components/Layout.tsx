@@ -30,16 +30,11 @@ const ROUTE_LABELS: Record<string, string> = {
   "/espace-client": PAGE_LABELS.client,
 }
 
-export const AnimatedIcon = ({ src, trigger = "hover", size = 20, colors = "primary:#0077b6,secondary:#caf0f8", class: className = "" }: { src: string, trigger?: string, size?: number, colors?: string, class?: string }) => {
-  return (
-    <lord-icon
-      src={src}
-      trigger={trigger}
-      colors={colors}
-      class={className}
-      style={{ width: `${size}px`, height: `${size}px` }}
-    />
-  )
+// Icônes Font Awesome (déjà chargé, fiable) — remplace l'ancien AnimatedIcon
+// basé sur Lordicon : la plupart des IDs Lordicon gratuits renvoyaient 404 et
+// le player Lottie plantait en boucle (voir CLAUDE.md, "known issue").
+export const NavIcon = ({ icon, color = '#94a3b8', size = 16, class: className = '' }: { icon: string, color?: string, size?: number, class?: string }) => {
+  return <i class={`fas ${icon} ${className}`} style={{ color, fontSize: `${size}px`, width: `${size + 4}px`, textAlign: 'center' }} aria-hidden="true"></i>
 }
 
 export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisation Burkina Faso", activePage = "", description = "MAASGA - Spécialiste vente, installation et maintenance de climatiseurs à Ouagadougou, Burkina Faso. Devis gratuit, techniciens certifiés.", canonicalPath = "", jsonLd }: {
@@ -94,7 +89,6 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         <noscript><link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" /></noscript>
         <link href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/duotone/style.css" rel="stylesheet" media="print" onload="this.media='all'" />
         <link href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/fill/style.css" rel="stylesheet" media="print" onload="this.media='all'" />
-        <script src="https://cdn.lordicon.com/lordicon.js" defer></script>
 
         {/* Global Agentation System — Control via ?agentation=1 */}
         <script type="importmap" dangerouslySetInnerHTML={{ __html: `{
@@ -236,17 +230,17 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             {/* Nav Desktop — visible xl+ */}
             <nav class="hidden xl:flex items-center gap-0.5 whitespace-nowrap" aria-label="Navigation principale">
               {[
-                { href: "/", icon: "https://cdn.lordicon.com/gmzxduhd.json", label: "Accueil", key: "home" },
-                { href: "/simulateur", icon: "https://cdn.lordicon.com/qnpnzjqz.json", label: "Simulateur", key: "simulateur" },
-                { href: "/catalogue", icon: "https://cdn.lordicon.com/msetzzbt.json", label: "Catalogue", key: "catalogue" },
-                { href: "/contrat-maintenance", icon: "https://cdn.lordicon.com/becezzra.json", label: "Maintenance", key: "maintenance" },
-                { href: "/rendez-vous", icon: "https://cdn.lordicon.com/wmluxarr.json", label: "Rendez-vous", key: "rdv" },
-                { href: "/avis", icon: "https://cdn.lordicon.com/hbwbeoul.json", label: "Avis", key: "avis" },
-                { href: "/a-propos", icon: "https://cdn.lordicon.com/jyvscvfr.json", label: "À propos", key: "apropos" },
-                { href: "/contact", icon: "https://cdn.lordicon.com/diuoeasy.json", label: "Contact", key: "contact" },
+                { href: "/", icon: "fa-house", label: "Accueil", key: "home" },
+                { href: "/simulateur", icon: "fa-calculator", label: "Simulateur", key: "simulateur" },
+                { href: "/catalogue", icon: "fa-snowflake", label: "Catalogue", key: "catalogue" },
+                { href: "/contrat-maintenance", icon: "fa-screwdriver-wrench", label: "Maintenance", key: "maintenance" },
+                { href: "/rendez-vous", icon: "fa-calendar-check", label: "Rendez-vous", key: "rdv" },
+                { href: "/avis", icon: "fa-star", label: "Avis", key: "avis" },
+                { href: "/a-propos", icon: "fa-circle-info", label: "À propos", key: "apropos" },
+                { href: "/contact", icon: "fa-envelope", label: "Contact", key: "contact" },
               ].map(n => (
                 <a href={n.href} class={`nav-link flex items-center gap-1.5 font-semibold px-2.5 py-2 rounded-lg transition-all text-xs uppercase tracking-wide ${activePage===n.key ? 'active' : ''}`} {...(activePage===n.key ? {'aria-current': 'page'} : {})}>
-                  <AnimatedIcon src={n.icon} size={18} colors={activePage===n.key ? 'primary:#0077b6,secondary:#00b4d8' : 'primary:#94a3b8,secondary:#cbd5e1'} />
+                  <NavIcon icon={n.icon} size={14} color={activePage===n.key ? '#0077b6' : '#94a3b8'} />
                   {n.label}
                 </a>
               ))}
@@ -255,31 +249,31 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             {/* Nav Tablet — visible lg only (condensed) */}
             <nav class="hidden lg:flex xl:hidden items-center gap-0.5 whitespace-nowrap" aria-label="Navigation principale">
               {[
-                { href: "/", icon: "https://cdn.lordicon.com/gmzxduhd.json", label: "Accueil", key: "home" },
-                { href: "/catalogue", icon: "https://cdn.lordicon.com/msetzzbt.json", label: "Catalogue", key: "catalogue" },
-                { href: "/contrat-maintenance", icon: "https://cdn.lordicon.com/becezzra.json", label: "Maintenance", key: "maintenance" },
-                { href: "/rendez-vous", icon: "https://cdn.lordicon.com/wmluxarr.json", label: "Rendez-vous", key: "rdv" },
-                { href: "/avis", icon: "https://cdn.lordicon.com/hbwbeoul.json", label: "Avis", key: "avis" },
-                { href: "/contact", icon: "https://cdn.lordicon.com/diuoeasy.json", label: "Contact", key: "contact" },
+                { href: "/", icon: "fa-house", label: "Accueil", key: "home" },
+                { href: "/catalogue", icon: "fa-snowflake", label: "Catalogue", key: "catalogue" },
+                { href: "/contrat-maintenance", icon: "fa-screwdriver-wrench", label: "Maintenance", key: "maintenance" },
+                { href: "/rendez-vous", icon: "fa-calendar-check", label: "Rendez-vous", key: "rdv" },
+                { href: "/avis", icon: "fa-star", label: "Avis", key: "avis" },
+                { href: "/contact", icon: "fa-envelope", label: "Contact", key: "contact" },
               ].map(n => (
                 <a href={n.href} class={`nav-link flex items-center gap-1.5 font-semibold px-2.5 py-2 rounded-lg transition-all text-xs uppercase tracking-wide ${activePage===n.key ? 'active' : ''}`} {...(activePage===n.key ? {'aria-current': 'page'} : {})}>
-                  <AnimatedIcon src={n.icon} size={18} colors={activePage===n.key ? 'primary:#0077b6,secondary:#00b4d8' : 'primary:#94a3b8,secondary:#cbd5e1'} />
+                  <NavIcon icon={n.icon} size={14} color={activePage===n.key ? '#0077b6' : '#94a3b8'} />
                   {n.label}
                 </a>
               ))}
               {/* Plus dropdown */}
               <div class="relative" id="nav-more-wrapper">
-                <button onclick="document.getElementById('nav-more-dropdown').classList.toggle('hidden')" class="nav-link flex items-center gap-1.5 font-semibold px-2.5 py-2 rounded-lg transition-all text-xs uppercase tracking-wide" aria-label="Plus de pages" aria-expanded="false" aria-controls="nav-more-dropdown">
+                <button onclick="document.getElementById('nav-more-dropdown').classList.toggle('hidden')" class={`nav-link flex items-center gap-1.5 font-semibold px-2.5 py-2 rounded-lg transition-all text-xs uppercase tracking-wide ${['apropos','client'].includes(activePage) ? 'active' : ''}`} aria-label="Plus de pages" aria-expanded="false" aria-controls="nav-more-dropdown">
                   <i class="fas fa-ellipsis-h text-[10px]" style="color:#94a3b8;"></i>
                   Plus
                 </button>
                 <div id="nav-more-dropdown" class="hidden absolute right-0 top-full mt-2 w-48 rounded-xl shadow-xl py-2" style="background:rgba(255,255,255,0.98); backdrop-filter:blur(20px); border:1px solid rgba(0,119,182,0.12); z-index:60;">
                   {[
-                    { href: "/a-propos", icon: "https://cdn.lordicon.com/jyvscvfr.json", label: "À propos", key: "apropos" },
-                    { href: "/espace-client", icon: "https://cdn.lordicon.com/kthelypq.json", label: "Espace client", key: "client" },
+                    { href: "/a-propos", icon: "fa-circle-info", label: "À propos", key: "apropos" },
+                    { href: "/espace-client", icon: "fa-user", label: "Espace client", key: "client" },
                   ].map(n => (
                     <a href={n.href} class={`flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium transition-all hover:bg-blue-50 ${activePage===n.key ? 'font-bold' : ''}`} style={activePage===n.key ? 'color:#0077b6' : 'color:#334155'}>
-                      <AnimatedIcon src={n.icon} size={18} colors="primary:#0077b6,secondary:#00b4d8" />
+                      <NavIcon icon={n.icon} size={14} color="#0077b6" />
                       {n.label}
                     </a>
                   ))}
@@ -320,17 +314,17 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             {/* Navigation grid */}
             <div class="grid grid-cols-2 gap-1 p-3">
               {[
-                { href: "/", icon: "https://cdn.lordicon.com/gmzxduhd.json", label: "Accueil", key: "home" },
-                { href: "/simulateur", icon: "https://cdn.lordicon.com/qnpnzjqz.json", label: "Simulateur BTU", key: "simulateur" },
-                { href: "/catalogue", icon: "https://cdn.lordicon.com/msetzzbt.json", label: "Catalogue", key: "catalogue" },
-                { href: "/contrat-maintenance", icon: "https://cdn.lordicon.com/becezzra.json", label: "Maintenance", key: "maintenance" },
-                { href: "/rendez-vous", icon: "https://cdn.lordicon.com/wmluxarr.json", label: "Rendez-vous", key: "rdv" },
-                { href: "/avis", icon: "https://cdn.lordicon.com/hbwbeoul.json", label: "Avis clients", key: "avis" },
-                { href: "/contact", icon: "https://cdn.lordicon.com/diuoeasy.json", label: "Contact", key: "contact" },
-                { href: "/a-propos", icon: "https://cdn.lordicon.com/jyvscvfr.json", label: "À propos", key: "apropos" },
+                { href: "/", icon: "fa-house", label: "Accueil", key: "home" },
+                { href: "/simulateur", icon: "fa-calculator", label: "Simulateur BTU", key: "simulateur" },
+                { href: "/catalogue", icon: "fa-snowflake", label: "Catalogue", key: "catalogue" },
+                { href: "/contrat-maintenance", icon: "fa-screwdriver-wrench", label: "Maintenance", key: "maintenance" },
+                { href: "/rendez-vous", icon: "fa-calendar-check", label: "Rendez-vous", key: "rdv" },
+                { href: "/avis", icon: "fa-star", label: "Avis clients", key: "avis" },
+                { href: "/contact", icon: "fa-envelope", label: "Contact", key: "contact" },
+                { href: "/a-propos", icon: "fa-circle-info", label: "À propos", key: "apropos" },
               ].map(n => (
                 <a href={n.href} class={`flex items-center gap-2.5 py-3 px-3.5 rounded-xl text-sm font-semibold transition-all ${activePage===n.key ? 'mobile-nav-active' : 'hover:bg-blue-50'}`} style={activePage===n.key ? 'background:rgba(0,119,182,0.08); color:#0077b6;' : ''} {...(activePage===n.key ? {'aria-current': 'page'} : {})}>
-                  <AnimatedIcon src={n.icon} size={20} colors={activePage===n.key ? 'primary:#0077b6,secondary:#00b4d8' : 'primary:#94a3b8,secondary:#cbd5e1'} />
+                  <NavIcon icon={n.icon} size={16} color={activePage===n.key ? '#0077b6' : '#94a3b8'} />
                   <span>{n.label}</span>
                 </a>
               ))}
@@ -378,25 +372,25 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                     <div class="font-semibold mb-3" style="color:#03045e;">Directeurs</div>
                     <div class="flex items-center space-x-2 mb-2">
                       <div style="width:22px;height:22px;border-radius:50%;background:rgba(0,119,182,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <AnimatedIcon src="https://cdn.lordicon.com/kthelypq.json" size={12} trigger="hover" colors="primary:#0077b6,secondary:#caf0f8" />
+                        <NavIcon icon="fa-user" size={11} color="#0077b6" />
                       </div>
                       <span>Malick KOMPAORE - Directeur Commercial</span>
                     </div>
                     <div class="flex items-center space-x-2 mb-3">
                       <div style="width:22px;height:22px;border-radius:50%;background:rgba(0,119,182,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <AnimatedIcon src="https://cdn.lordicon.com/tftunupn.json" size={12} trigger="hover" colors="primary:#0077b6,secondary:#caf0f8" />
+                        <NavIcon icon="fa-phone" size={11} color="#0077b6" />
                       </div>
                       <a href="tel:+22607494444" class="hover:text-white transition">+226 07 49 44 44</a>
                     </div>
                     <div class="flex items-center space-x-2 mb-2">
                       <div style="width:22px;height:22px;border-radius:50%;background:rgba(124,58,237,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <AnimatedIcon src="https://cdn.lordicon.com/kthelypq.json" size={12} trigger="hover" colors="primary:#7c3aed,secondary:#caf0f8" />
+                        <NavIcon icon="fa-user" size={11} color="#7c3aed" />
                       </div>
                       <span>Sherif SAWADOGO - Directeur Technique</span>
                     </div>
                     <div class="flex items-center space-x-2">
                       <div style="width:22px;height:22px;border-radius:50%;background:rgba(124,58,237,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <AnimatedIcon src="https://cdn.lordicon.com/tftunupn.json" size={12} trigger="hover" colors="primary:#7c3aed,secondary:#caf0f8" />
+                        <NavIcon icon="fa-phone" size={11} color="#7c3aed" />
                       </div>
                       <a href="tel:+22655996418" class="hover:text-white transition">+226 55 99 64 18</a>
                     </div>
@@ -430,13 +424,13 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 <ul class="space-y-3 text-sm" style="color:#64748b;">
                   {["Vente climatiseurs","Installation pro","Maintenance tri.","Devis gratuit","SAV réactif","Techniciens certifiés"].map(s => (
                     <li class="flex items-center space-x-2">
-                      <AnimatedIcon src="https://cdn.lordicon.com/yqzmiobz.json" size={14} trigger="hover" colors="primary:#0ea5e9,secondary:#caf0f8" />
+                      <NavIcon icon="fa-circle-check" size={13} color="#0ea5e9" />
                       <span>{s}</span>
                     </li>
                   ))}
                 </ul>
                 <div class="mt-5 p-3 rounded-xl text-xs" style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.12); color:#64748b;">
-                  <AnimatedIcon src="https://cdn.lordicon.com/zzaxpnyy.json" size={14} trigger="hover" colors="primary:#0ea5e9,secondary:#caf0f8" class="mr-2" />
+                  <NavIcon icon="fa-location-dot" size={13} color="#0ea5e9" class="mr-2" />
                   Ouagadougou, Secteurs 35
                   <div class="mt-1 ml-5" style="color:#475569;">Burkina Faso</div>
                 </div>
@@ -717,20 +711,36 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               var oldHeader = document.querySelector('header');
               var newHeader = doc.querySelector('header');
               if (!oldHeader || !newHeader) return;
-              newHeader.querySelectorAll('a[href]').forEach(function(newLink) {
-                var href = newLink.getAttribute('href');
-                if (!href) return;
-                oldHeader.querySelectorAll('a[href="' + CSS.escape(href) + '"]').forEach(function(oldLink) {
+              // Le header est rendu par le MÊME composant Layout pour chaque page :
+              // l'ordre des <a href> est identique d'une page à l'autre, seul l'état
+              // actif change. On apparie donc par INDEX (et non par href) — car le
+              // même href apparaît dans plusieurs variantes (nav xl / nav lg /
+              // dropdown / menu mobile) ET comme CTA (bouton "Rendez-vous"), chacun
+              // avec un style actif différent. L'ancien appariement par href
+              // recopiait la classe de CHAQUE nouveau lien vers TOUS les anciens de
+              // même href : le dernier dans l'ordre DOM (souvent un CTA non-actif)
+              // écrasait l'état actif du vrai lien nav → aucune page marquée active.
+              var oldLinks = oldHeader.querySelectorAll('a[href]');
+              var newLinks = newHeader.querySelectorAll('a[href]');
+              if (oldLinks.length === newLinks.length) {
+                for (var i = 0; i < oldLinks.length; i++) {
+                  var oldLink = oldLinks[i], newLink = newLinks[i];
                   oldLink.className = newLink.className;
                   if (newLink.hasAttribute('aria-current')) oldLink.setAttribute('aria-current', newLink.getAttribute('aria-current'));
                   else oldLink.removeAttribute('aria-current');
                   if (newLink.hasAttribute('style')) oldLink.setAttribute('style', newLink.getAttribute('style'));
                   else oldLink.removeAttribute('style');
-                  var newIcon = newLink.querySelector('lord-icon');
-                  var oldIcon = oldLink.querySelector('lord-icon');
-                  if (newIcon && oldIcon && newIcon.hasAttribute('colors')) oldIcon.setAttribute('colors', newIcon.getAttribute('colors'));
-                });
-              });
+                  var newIcon = newLink.querySelector('i.fas');
+                  var oldIcon = oldLink.querySelector('i.fas');
+                  if (newIcon && oldIcon && newIcon.hasAttribute('style')) oldIcon.setAttribute('style', newIcon.getAttribute('style'));
+                }
+              }
+              // Bouton "Plus" (dropdown lg) : ce n'est pas un <a href>, on le
+              // synchronise à part pour qu'il s'illumine quand la page courante est
+              // l'une de ses entrées (À propos / Espace client).
+              var oldPlus = oldHeader.querySelector('#nav-more-wrapper > button');
+              var newPlus = newHeader.querySelector('#nav-more-wrapper > button');
+              if (oldPlus && newPlus) oldPlus.className = newPlus.className;
               var oldEyebrow = oldHeader.querySelector('.eyebrow');
               var newEyebrow = newHeader.querySelector('.eyebrow');
               if (oldEyebrow && newEyebrow) {
@@ -763,6 +773,19 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             function navigate(href, isPopstate) {
               if (navigationInProgress) return;
               navigationInProgress = true;
+              // Replie toute navigation ouverte AVANT la transition — sinon le
+              // dropdown "Plus" (fermé uniquement au clic extérieur) et le menu
+              // mobile restent ouverts par-dessus la nouvelle page.
+              var dd = document.getElementById('nav-more-dropdown');
+              if (dd) dd.classList.add('hidden');
+              var mm = document.getElementById('mobile-menu');
+              if (mm) mm.classList.remove('open');
+              var burger = document.querySelector('button[aria-controls="mobile-menu"]');
+              if (burger) {
+                burger.setAttribute('aria-expanded', 'false');
+                var bi = burger.querySelector('i');
+                if (bi) bi.className = 'fas fa-bars text-lg';
+              }
               var pathname = href.split('?')[0].split('#')[0];
               showOverlay(labelForPath(pathname));
 

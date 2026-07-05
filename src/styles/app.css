@@ -502,6 +502,18 @@ html.js-ready [data-hero].in > [data-tilt] .tilt-shine {
     transform: none !important;
   }
   .float, .animate-pulse-slow, .shimmer, .animate-bounce { animation: none !important; }
+
+  /* Sous reduced-motion, le lift (translateY) des cartes est neutralisé par le
+     "transform: none !important" ci-dessus, et le tilt GSAP est coupé → le
+     survol des cartes n'a presque aucun retour visuel. On rétablit un feedback
+     NET mais SANS mouvement : bordure accent + anneau + ombre appuyée, plus une
+     icône avivée (filter, non-mouvement, autorisé sous reduced-motion). */
+  .surface-elevated:hover,
+  .surface-navy:hover {
+    border-color: rgba(3,105,161,0.55) !important;
+    box-shadow: 0 0 0 2px rgba(3,105,161,0.35), 0 18px 40px rgba(3,105,161,0.20) !important;
+  }
+  [data-tilt]:hover .tilt-image { filter: brightness(1.12) saturate(1.15); }
 }
 
 /* ─── SMOOTH SCROLL ─── */
