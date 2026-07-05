@@ -926,12 +926,20 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
         <h2 class="text-xl font-bold text-white">Gestion des produits</h2>
         <p class="text-sm text-gray-400 mt-1">{products.length} produits au catalogue · {products.filter(p => p.available && p.stock > 0).length} disponibles</p>
       </div>
-      <button onclick="document.getElementById('add-product-modal').classList.remove('hidden')"
-        class="btn-primary font-semibold px-5 py-2.5 rounded-xl flex items-center space-x-2 text-sm shadow-md">
-        <i class="fas fa-plus"></i>
-        <span class="hidden sm:inline">Ajouter un produit</span>
-        <span class="sm:hidden">Ajouter</span>
-      </button>
+      <div class="flex items-center gap-2">
+        <button id="btn-ouvrir-import-masse"
+          class="inline-flex items-center gap-2 rounded-xl border border-purple-500/40 bg-purple-500/10 px-4 py-2.5 text-sm font-medium text-purple-300 hover:bg-purple-500/20 transition-colors">
+          <i class="fas fa-file-import"></i>
+          <span class="hidden sm:inline">Importer en masse</span>
+          <span class="sm:hidden">Importer</span>
+        </button>
+        <button onclick="document.getElementById('add-product-modal').classList.remove('hidden')"
+          class="btn-primary font-semibold px-5 py-2.5 rounded-xl flex items-center space-x-2 text-sm shadow-md">
+          <i class="fas fa-plus"></i>
+          <span class="hidden sm:inline">Ajouter un produit</span>
+          <span class="sm:hidden">Ajouter</span>
+        </button>
+      </div>
     </div>
 
     {/* Résumé stock */}
@@ -1832,6 +1840,217 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
         });
         document.getElementById('edit-media-json').value = JSON.stringify(window.editMediaArray);
       }
+    `}} />
+
+    {/* Import en masse — Produits (Excel) */}
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <div id="modal-import-masse" class="hidden fixed inset-0 bg-black/60 z-50 items-center justify-center p-4">
+      <div class="w-full max-w-3xl rounded-2xl p-6 shadow-2xl max-h-[85vh] overflow-y-auto" style="background:#111827; border:1px solid rgba(168,85,247,0.15);">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-purple-400"></span>
+            Import en masse — Produits
+          </h2>
+          <button id="btn-fermer-import-masse" class="text-gray-400 hover:text-white text-xl">&times;</button>
+        </div>
+
+        <div id="zone-depot" class="rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition-colors" style="border-color:rgba(168,85,247,0.3);">
+          <p class="text-gray-300 text-sm mb-1">Glisse ton fichier <span class="text-white font-medium">.xlsx</span> ici, ou clique pour parcourir</p>
+          <p class="text-gray-500 text-xs">Utilise le modèle "modele_import_produits_MAASGA.xlsx" pour être sûr que les colonnes matchent</p>
+          <input id="input-fichier" type="file" accept=".xlsx,.xls" class="hidden" />
+        </div>
+
+        <div id="zone-apercu" class="hidden mt-5">
+          <div id="resume-import" class="mb-3 text-sm"></div>
+          <div class="max-h-72 overflow-auto rounded-xl" style="border:1px solid rgba(148,163,184,0.15);">
+            <table class="w-full text-xs text-left">
+              <thead class="text-gray-500 sticky top-0" style="background:rgba(15,23,42,0.9);">
+                <tr>
+                  <th class="px-3 py-2">#</th>
+                  <th class="px-3 py-2">Nom</th>
+                  <th class="px-3 py-2">Marque</th>
+                  <th class="px-3 py-2">BTU</th>
+                  <th class="px-3 py-2">Prix FCFA</th>
+                  <th class="px-3 py-2">Stock</th>
+                  <th class="px-3 py-2">Statut</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-apercu" class="divide-y divide-gray-700/30 text-gray-200"></tbody>
+            </table>
+          </div>
+
+          <div class="mt-4 flex items-center justify-end gap-3">
+            <button id="btn-annuler-import" class="rounded-xl px-4 py-2 text-sm text-gray-300 hover:text-white">Annuler</button>
+            <button id="btn-confirmer-import" class="rounded-xl bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed">
+              Confirmer l'import
+            </button>
+          </div>
+        </div>
+
+        <div id="zone-resultat" class="hidden mt-5 rounded-xl p-4 text-sm"></div>
+      </div>
+    </div>
+    <script dangerouslySetInnerHTML={{__html: `
+      (function () {
+        const CATEGORIES_VALIDES = ["Mural/Split", "Cassette", "Gainable", "Colonne", "Multi-split", "Rooftop", "Industriel"];
+        const MARQUES_VALIDES = ["Airwell", "LG", "Sharp", "Nasco", "Mona", "Solstar", "Boreal", "Roch"];
+        const CLASSES_VALIDES = ["A", "A+", "A++", "A+++"];
+
+        const modal = document.getElementById("modal-import-masse");
+        const btnOuvrir = document.getElementById("btn-ouvrir-import-masse");
+        const btnFermer = document.getElementById("btn-fermer-import-masse");
+        const zoneDepot = document.getElementById("zone-depot");
+        const inputFichier = document.getElementById("input-fichier");
+        const zoneApercu = document.getElementById("zone-apercu");
+        const resumeImport = document.getElementById("resume-import");
+        const tbodyApercu = document.getElementById("tbody-apercu");
+        const btnAnnuler = document.getElementById("btn-annuler-import");
+        const btnConfirmer = document.getElementById("btn-confirmer-import");
+        const zoneResultat = document.getElementById("zone-resultat");
+        if (!modal || !btnOuvrir) return;
+
+        let lignesParsees = [];
+
+        function ouvrirModal() {
+          modal.classList.remove("hidden");
+          modal.classList.add("flex");
+        }
+        function fermerModal() {
+          modal.classList.add("hidden");
+          modal.classList.remove("flex");
+          resetEtat();
+        }
+        function resetEtat() {
+          lignesParsees = [];
+          zoneApercu.classList.add("hidden");
+          zoneResultat.classList.add("hidden");
+          zoneDepot.classList.remove("hidden");
+          tbodyApercu.innerHTML = "";
+          inputFichier.value = "";
+        }
+
+        btnOuvrir.addEventListener("click", ouvrirModal);
+        btnFermer.addEventListener("click", fermerModal);
+        btnAnnuler.addEventListener("click", resetEtat);
+        zoneDepot.addEventListener("click", function () { inputFichier.click(); });
+        zoneDepot.addEventListener("dragover", function (e) { e.preventDefault(); zoneDepot.style.borderColor = "rgba(168,85,247,0.6)"; });
+        zoneDepot.addEventListener("dragleave", function () { zoneDepot.style.borderColor = "rgba(168,85,247,0.3)"; });
+        zoneDepot.addEventListener("drop", function (e) {
+          e.preventDefault();
+          zoneDepot.style.borderColor = "rgba(168,85,247,0.3)";
+          if (e.dataTransfer.files.length) traiterFichier(e.dataTransfer.files[0]);
+        });
+        inputFichier.addEventListener("change", function (e) {
+          if (e.target.files.length) traiterFichier(e.target.files[0]);
+        });
+
+        function traiterFichier(fichier) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            const wb = XLSX.read(e.target.result, { type: "array" });
+            const feuille = wb.Sheets["Produits"] || wb.Sheets[wb.SheetNames[0]];
+            const donnees = XLSX.utils.sheet_to_json(feuille, { defval: "" });
+            lignesParsees = donnees.map(mapperLigne).filter(function (l) { return l.nom !== ""; });
+            afficherApercu();
+          };
+          reader.readAsArrayBuffer(fichier);
+        }
+
+        function mapperLigne(row) {
+          function val(cle) { return row[cle] !== undefined ? String(row[cle]).trim() : ""; }
+          return {
+            nom: val("Nom du produit*"),
+            categorie: val("Categorie*"),
+            marque: val("Marque*"),
+            modele: val("Modele / Reference"),
+            puissanceBtu: Number(val("Puissance BTU*")) || null,
+            prixFcfa: Number(val("Prix FCFA*")) || null,
+            prixGrossisteFcfa: Number(val("Prix Grossiste FCFA")) || null,
+            stockInitial: val("Stock initial*") !== "" ? Number(val("Stock initial*")) : null,
+            classeEnergie: val("Classe energie"),
+            surfaceMin: Number(val("Surface min m2")) || null,
+            surfaceMax: Number(val("Surface max m2")) || null,
+            inverter: val("Technologie Inverter").toLowerCase() === "oui",
+            disponible: val("Disponible a la vente").toLowerCase() !== "non",
+            description: val("Description"),
+            mentions: val("Mentions / Fonctionnalites (separees par ;)").split(";").map(function (m) { return m.trim(); }).filter(Boolean)
+          };
+        }
+
+        function validerLigneClient(l) {
+          const erreurs = [];
+          if (!l.nom) erreurs.push("nom manquant");
+          if (!CATEGORIES_VALIDES.includes(l.categorie)) erreurs.push("catégorie invalide");
+          if (!MARQUES_VALIDES.includes(l.marque)) erreurs.push("marque invalide");
+          if (!l.puissanceBtu) erreurs.push("BTU invalide");
+          if (!l.prixFcfa) erreurs.push("prix invalide");
+          if (l.stockInitial === null) erreurs.push("stock invalide");
+          if (l.classeEnergie && !CLASSES_VALIDES.includes(l.classeEnergie)) erreurs.push("classe d'énergie invalide");
+          return erreurs;
+        }
+
+        function afficherApercu() {
+          zoneDepot.classList.add("hidden");
+          zoneApercu.classList.remove("hidden");
+          tbodyApercu.innerHTML = "";
+
+          let nbErreurs = 0;
+          lignesParsees.forEach(function (l, i) {
+            const erreurs = validerLigneClient(l);
+            if (erreurs.length) nbErreurs++;
+            const tr = document.createElement("tr");
+            tr.innerHTML =
+              '<td class="px-3 py-2">' + (i + 1) + '</td>' +
+              '<td class="px-3 py-2">' + (l.nom || "-") + '</td>' +
+              '<td class="px-3 py-2">' + (l.marque || "-") + '</td>' +
+              '<td class="px-3 py-2">' + (l.puissanceBtu != null ? l.puissanceBtu : "-") + '</td>' +
+              '<td class="px-3 py-2">' + (l.prixFcfa ? l.prixFcfa.toLocaleString("fr-FR") : "-") + '</td>' +
+              '<td class="px-3 py-2">' + (l.stockInitial != null ? l.stockInitial : "-") + '</td>' +
+              '<td class="px-3 py-2">' + (erreurs.length
+                ? '<span class="text-red-400" title="' + erreurs.join(", ") + '">' + erreurs.length + ' erreur(s)</span>'
+                : '<span class="text-emerald-400">OK</span>') + '</td>';
+            tbodyApercu.appendChild(tr);
+          });
+
+          resumeImport.innerHTML = nbErreurs
+            ? '<span class="text-red-400">' + nbErreurs + ' ligne(s) à corriger avant import — corrige ton fichier Excel et redépose-le.</span>'
+            : '<span class="text-emerald-400">' + lignesParsees.length + ' produit(s) prêt(s) à importer.</span>';
+
+          btnConfirmer.disabled = nbErreurs > 0;
+        }
+
+        btnConfirmer.addEventListener("click", function () {
+          btnConfirmer.disabled = true;
+          btnConfirmer.textContent = "Import en cours...";
+          fetch("/api/admin/produits/import", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lignes: lignesParsees })
+          }).then(function (r) { return r.json(); }).then(function (data) {
+            zoneApercu.classList.add("hidden");
+            zoneResultat.classList.remove("hidden");
+            if (data.succes) {
+              zoneResultat.className = "mt-5 rounded-xl p-4 text-sm";
+              zoneResultat.style.cssText = "background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); color:#6ee7b7;";
+              zoneResultat.textContent = data.message || (data.importes + " produit(s) importé(s) avec succès.");
+              setTimeout(function () { window.location.reload(); }, 1500);
+            } else {
+              zoneResultat.className = "mt-5 rounded-xl p-4 text-sm";
+              zoneResultat.style.cssText = "background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#fca5a5;";
+              zoneResultat.textContent = data.message || "Échec de l'import. Vérifie ton fichier.";
+            }
+          }).catch(function () {
+            zoneApercu.classList.add("hidden");
+            zoneResultat.classList.remove("hidden");
+            zoneResultat.className = "mt-5 rounded-xl p-4 text-sm";
+            zoneResultat.style.cssText = "background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#fca5a5;";
+            zoneResultat.textContent = "Erreur réseau pendant l'import. Réessaie.";
+          }).finally(function () {
+            btnConfirmer.disabled = false;
+            btnConfirmer.textContent = "Confirmer l'import";
+          });
+        });
+      })();
     `}} />
   </AdminLayout>
 )

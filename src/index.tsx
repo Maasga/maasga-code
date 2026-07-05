@@ -93,7 +93,7 @@ app.use(async (c, next) => {
   c.res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)')
   c.res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
   // CSP: allow inline styles/scripts for SSR JSX, Google Maps embeds, Font Awesome CDN, Google Analytics
-  c.res.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.lordicon.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' data: https:; frame-src https://www.google.com; connect-src 'self' https://app.ligdicash.com https://www.google-analytics.com https://analytics.google.com https://cdn.jsdelivr.net https://cdn.lordicon.com;")
+  c.res.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' data: https:; frame-src https://www.google.com; connect-src 'self' https://app.ligdicash.com https://www.google-analytics.com https://analytics.google.com https://www.google.com https://cdn.jsdelivr.net;")
   // Cache control per route type
   const path = new URL(c.req.url).pathname
   if (path.startsWith('/api/')) {
@@ -6343,6 +6343,151 @@ app.post('/api/admin/produit/add', adminAuth, async (c) => {
   }
   await notifyAdmin((c as any).env, 'product', `${name} — ${brand}, ${btu.toLocaleString()} BTU — ${price.toLocaleString()} FCFA (stock: ${stock})`)
   return c.redirect('/admin/produits?success=1')
+})
+
+// Valeurs acceptées pour l'import en masse (doivent matcher les listes déroulantes du fichier Excel modèle)
+const IMPORT_CATEGORIES_VALIDES = ['Mural/Split', 'Cassette', 'Gainable', 'Colonne', 'Multi-split', 'Rooftop', 'Industriel']
+const IMPORT_MARQUES_VALIDES = ['Airwell', 'LG', 'Sharp', 'Nasco', 'Mona', 'Solstar', 'Boreal', 'Roch']
+const IMPORT_CLASSES_VALIDES = ['A', 'A+', 'A++', 'A+++']
+
+interface LigneImportProduit {
+  nom?: string
+  categorie?: string
+  marque?: string
+  modele?: string
+  puissanceBtu?: number
+  prixFcfa?: number
+  prixGrossisteFcfa?: number
+  stockInitial?: number
+  classeEnergie?: string
+  surfaceMin?: number
+  surfaceMax?: number
+  inverter?: boolean
+  disponible?: boolean
+  description?: string
+  mentions?: string[]
+}
+
+interface ErreurLigneImport {
+  ligne: number
+  champ: string
+  message: string
+}
+
+function validerLigneImportProduit(l: LigneImportProduit, index: number): ErreurLigneImport[] {
+  const erreurs: ErreurLigneImport[] = []
+  const ligne = index + 1
+  if (!l.nom || !l.nom.trim()) {
+    erreurs.push({ ligne, champ: 'nom', message: 'Nom du produit manquant.' })
+  }
+  if (!l.categorie || !IMPORT_CATEGORIES_VALIDES.includes(l.categorie)) {
+    erreurs.push({ ligne, champ: 'categorie', message: `Catégorie invalide ou manquante (${IMPORT_CATEGORIES_VALIDES.join(', ')}).` })
+  }
+  if (!l.marque || !IMPORT_MARQUES_VALIDES.includes(l.marque)) {
+    erreurs.push({ ligne, champ: 'marque', message: `Marque invalide ou manquante (${IMPORT_MARQUES_VALIDES.join(', ')}).` })
+  }
+  if (!l.puissanceBtu || l.puissanceBtu <= 0) {
+    erreurs.push({ ligne, champ: 'puissanceBtu', message: 'Puissance BTU invalide.' })
+  }
+  if (!l.prixFcfa || l.prixFcfa <= 0) {
+    erreurs.push({ ligne, champ: 'prixFcfa', message: 'Prix FCFA invalide.' })
+  }
+  if (l.stockInitial === undefined || l.stockInitial === null || l.stockInitial < 0) {
+    erreurs.push({ ligne, champ: 'stockInitial', message: 'Stock initial invalide.' })
+  }
+  if (l.classeEnergie && !IMPORT_CLASSES_VALIDES.includes(l.classeEnergie)) {
+    erreurs.push({ ligne, champ: 'classeEnergie', message: `Classe énergie invalide (${IMPORT_CLASSES_VALIDES.join(', ')}).` })
+  }
+  return erreurs
+}
+
+// API Admin - Import en masse de produits depuis un fichier Excel (parsé côté client)
+app.post('/api/admin/produits/import', adminAuth, async (c) => {
+  const body = await c.req.json<{ lignes: LigneImportProduit[] }>().catch(() => null)
+  const lignes = body?.lignes ?? []
+
+  if (lignes.length === 0) {
+    return c.json({ succes: false, message: 'Aucune ligne à importer.' }, 400)
+  }
+  if (lignes.length > 500) {
+    return c.json({ succes: false, message: 'Maximum 500 lignes par import. Découpe ton fichier.' }, 400)
+  }
+
+  // 1) Validation complète AVANT toute écriture en base
+  const toutesErreurs: ErreurLigneImport[] = []
+  lignes.forEach((l, i) => toutesErreurs.push(...validerLigneImportProduit(l, i)))
+  if (toutesErreurs.length > 0) {
+    return c.json({ succes: false, erreurs: toutesErreurs }, 422)
+  }
+
+  const db = c.env.DB
+  if (!db) {
+    return c.json({ succes: false, message: 'Base de données indisponible.' }, 500)
+  }
+
+  const now = new Date().toISOString()
+  const stmt = db.prepare(`
+    INSERT INTO products (
+      name, brand, model, btu, price, price_wholesale, stock, surface_min, surface_max,
+      energy_class, description, inverter, available, category, warranty, features,
+      image, imageUrl, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `)
+
+  const batch = lignes.map((l) => {
+    const name = escapeHtml(l.nom!.trim())
+    const brand = escapeHtml(l.marque!.trim())
+    const model = escapeHtml((l.modele || '').trim())
+    const description = escapeHtml((l.description || '').trim())
+    const features = Array.isArray(l.mentions) && l.mentions.length > 0 ? JSON.stringify(l.mentions) : null
+    const available = l.disponible !== false
+    return stmt.bind(
+      name, brand, model || null, l.puissanceBtu, l.prixFcfa,
+      l.prixGrossisteFcfa || null, l.stockInitial, l.surfaceMin || null, l.surfaceMax || null,
+      l.classeEnergie || 'A++', description || null, l.inverter ? 1 : 0, available ? 1 : 0,
+      l.categorie, '1 an constructeur', features, '❄️', null, now, now
+    )
+  })
+
+  try {
+    const resultats = await db.batch(batch)
+    resultats.forEach((r: any, i) => {
+      const id = r?.meta?.last_row_id
+      if (!id) return
+      const l = lignes[i]
+      products.push({
+        id,
+        name: escapeHtml(l.nom!.trim()),
+        brand: escapeHtml(l.marque!.trim()),
+        model: (l.modele || '').trim(),
+        btu: l.puissanceBtu,
+        price: l.prixFcfa,
+        price_install: 0,
+        stock: l.stockInitial,
+        surface_min: l.surfaceMin || 10,
+        surface_max: l.surfaceMax || 25,
+        energy_class: l.classeEnergie || 'A++',
+        description: (l.description || '').trim(),
+        inverter: !!l.inverter,
+        available: l.disponible !== false,
+        image: '❄️',
+        imageUrl: '',
+        features: l.mentions || [],
+        warranty: '1 an constructeur',
+        category: l.categorie,
+        price_wholesale: l.prixGrossisteFcfa || null
+      } as any)
+    })
+    await notifyAdmin((c as any).env, 'product', `Import en masse : ${resultats.length} produit(s) ajouté(s).`)
+    return c.json({
+      succes: true,
+      importes: resultats.length,
+      message: `${resultats.length} produit(s) importé(s). Pense à ajouter les photos depuis chaque fiche produit.`
+    })
+  } catch (err) {
+    console.error('Erreur import produits:', err)
+    return c.json({ succes: false, message: "Erreur serveur pendant l'insertion. Rien n'a été enregistré." }, 500)
+  }
 })
 
 // API Admin - Modifier un produit
