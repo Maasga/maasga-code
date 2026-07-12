@@ -69,3 +69,6 @@ eduplatform-v4 (2).html
 
 # compagnon visuel brainstorming (mockups de session, non versionnés)
 .superpowers/
+
+# app mobile Flutter — retirée du dépôt web, conservée en local uniquement
+mobile/

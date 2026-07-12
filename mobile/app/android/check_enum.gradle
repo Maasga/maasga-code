@@ -1,8 +1,0 @@
-allprojects {
-    tasks.register("printEnumValues") {
-        doLast {
-            println("Available KotlinVersion values:")
-            org.jetbrains.kotlin.gradle.dsl.KotlinVersion.values().forEach { println(it.name) }
-        }
-    }
-}
