@@ -1165,7 +1165,6 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         ` }} />
 
         {/* ─── Lenis smooth scroll (se synchronise au ticker GSAP existant) ─── */}
-        <div id="cursor-dot" aria-hidden="true"></div>
         <script dangerouslySetInnerHTML={{ __html: `
           (function(){
             function boot(){
@@ -1193,27 +1192,6 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
           })();
         ` }} />
 
-        {/* ─── Curseur custom (desktop only) — la magnétique reste gérée par le moteur GSAP ─── */}
-        <script dangerouslySetInnerHTML={{ __html: `
-          (function(){
-            if (window.matchMedia('(hover: none)').matches) return;
-            function boot(){
-              if (!window.gsap) return false;
-              var dot = document.getElementById('cursor-dot');
-              if (!dot) return true;
-              gsap.set(dot, { xPercent: -50, yPercent: -50 });
-              var xTo = gsap.quickTo(dot, 'x', { duration: 0.35, ease: 'power3' });
-              var yTo = gsap.quickTo(dot, 'y', { duration: 0.35, ease: 'power3' });
-              window.addEventListener('mousemove', function(e){ dot.style.opacity = '1'; xTo(e.clientX); yTo(e.clientY); });
-              document.querySelectorAll('a, button, .magnetic, [data-magnetic]').forEach(function(el){
-                el.addEventListener('mouseenter', function(){ dot.classList.add('hovering'); });
-                el.addEventListener('mouseleave', function(){ dot.classList.remove('hovering'); });
-              });
-              return true;
-            }
-            if (!boot()) { var n = 0, iv = setInterval(function(){ n++; if (boot() || n > 60) clearInterval(iv); }, 50); }
-          })();
-        ` }} />
       </body>
     </html>
   )
