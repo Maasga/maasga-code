@@ -59,10 +59,11 @@ export const AProposPage = () => {
                 { val: "99%", label: "Taux de satisfaction", icon: "fa-smile", color: "from-green-500 to-emerald-600" },
                 { val: "<2h", label: "Délai de réponse", icon: "fa-bolt", color: "from-purple-500 to-primary-600" }
               ].map(s => (
-                <div class={`bg-gradient-to-br ${s.color} text-white rounded-2xl p-5 text-center hover-lift`}>
-                  <i class={`fas ${s.icon} text-2xl mb-2`} style="color:#ffffff;"></i>
-                  <div class="text-2xl font-bold" style="color:#ffffff;">{s.val}</div>
+                <div data-tilt class={`bg-gradient-to-br ${s.color} text-white rounded-2xl p-5 text-center`}>
+                  <i class={`tilt-image fas ${s.icon} text-2xl mb-2`} style="color:#ffffff;"></i>
+                  <div class="tilt-caption text-2xl font-bold" style="color:#ffffff;">{s.val}</div>
                   <div class="text-xs mt-1" style="color:#ffffff; opacity:0.9;">{s.label}</div>
+                  <div class="tilt-shine" aria-hidden="true"></div>
                 </div>
               ))}
             </div>
@@ -82,12 +83,15 @@ export const AProposPage = () => {
               { icon: "fa-clock",          color: "#fbbf24", bg: "rgba(251,191,36,0.1)",  title: "Réactivité", desc: "Réponse sous 2h, déplacement rapide. Votre confort ne peut pas attendre." },
               { icon: "fa-leaf",           color: "#a78bfa", bg: "rgba(167,139,250,0.1)", title: "Durabilité", desc: "Nous préconisons des solutions économes en énergie et respectueuses de l'environnement." }
             ].map(v => (
-              <div class="glass-card rounded-2xl p-6 text-center hover:-translate-y-1 transition-all hover-lift">
-                <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={`background:${v.bg}; border:1px solid ${v.bg.replace('0.1','0.25')};`}>
+              <div data-tilt class="glass-card rounded-2xl p-6 text-center transition-all">
+                <div class="tilt-image w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={`background:${v.bg}; border:1px solid ${v.bg.replace('0.1','0.25')};`}>
                   <i class={`fas ${v.icon} text-2xl`} style={`color:${v.color};`}></i>
                 </div>
-                <h3 class="font-bold text-white mb-2">{v.title}</h3>
-                <p class="text-sm leading-relaxed" style="color:#8ba3c0;">{v.desc}</p>
+                <div class="tilt-caption">
+                  <h3 class="font-bold text-white mb-2">{v.title}</h3>
+                  <p class="text-sm leading-relaxed" style="color:#8ba3c0;">{v.desc}</p>
+                </div>
+                <div class="tilt-shine" aria-hidden="true"></div>
               </div>
             ))}
           </div>
@@ -102,45 +106,54 @@ export const AProposPage = () => {
           <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
 
             {/* Directeur Technique */}
-            <div class="glass-card rounded-2xl p-6 text-center hover-lift">
-              <div class="w-28 h-28 rounded-full mx-auto mb-4 overflow-hidden" style="border:3px solid rgba(0,119,182,0.25); box-shadow:0 4px 20px rgba(0,119,182,0.15);">
+            <div data-tilt class="glass-card rounded-2xl p-6 text-center">
+              <div class="tilt-image w-28 h-28 rounded-full mx-auto mb-4 overflow-hidden" style="border:3px solid rgba(0,119,182,0.25); box-shadow:0 4px 20px rgba(0,119,182,0.15);">
                 <img src="/cherif.jpeg" alt="Sherif SAWADOGO" loading="lazy" width={112} height={112} class="w-full h-full object-cover" />
               </div>
-              <h3 class="font-extrabold text-lg mb-1" style="color:#03045e;">Sherif SAWADOGO</h3>
-              <p class="text-sm font-semibold mb-1" style="color:#0077b6;">Directeur Technique</p>
-              <p class="text-xs mb-3" style="color:#64748b;">Chef d'équipe installation · 8 ans d'expérience</p>
-              <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#0077b6; border:1px solid rgba(0,119,182,0.2);">
-                <i class="fas fa-hard-hat text-xs" style="color:#ffffff; background:#0077b6; padding:3px 4px; border-radius:4px;"></i>
-                <span>Directeur technique</span>
+              <div class="tilt-caption">
+                <h3 class="font-extrabold text-lg mb-1" style="color:#03045e;">Sherif SAWADOGO</h3>
+                <p class="text-sm font-semibold mb-1" style="color:#0077b6;">Directeur Technique</p>
+                <p class="text-xs mb-3" style="color:#64748b;">Chef d'équipe installation · 8 ans d'expérience</p>
+                <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#0077b6; border:1px solid rgba(0,119,182,0.2);">
+                  <i class="fas fa-hard-hat text-xs" style="color:#ffffff; background:#0077b6; padding:3px 4px; border-radius:4px;"></i>
+                  <span>Directeur technique</span>
+                </div>
               </div>
+              <div class="tilt-shine" aria-hidden="true"></div>
             </div>
 
             {/* Directeur Commercial */}
-            <div class="glass-card rounded-2xl p-6 text-center hover-lift">
-              <div class="w-28 h-28 rounded-full mx-auto mb-4 overflow-hidden" style="border:3px solid rgba(0,119,182,0.25); box-shadow:0 4px 20px rgba(0,119,182,0.15);">
+            <div data-tilt class="glass-card rounded-2xl p-6 text-center">
+              <div class="tilt-image w-28 h-28 rounded-full mx-auto mb-4 overflow-hidden" style="border:3px solid rgba(0,119,182,0.25); box-shadow:0 4px 20px rgba(0,119,182,0.15);">
                 <img src="/malick.jpg" alt="Kompaore Abdoul Malick" loading="lazy" width={112} height={112} class="w-full h-full object-cover" />
               </div>
-              <h3 class="font-extrabold text-lg mb-1" style="color:#03045e;">Kompaore Abdoul Malick</h3>
-              <p class="text-sm font-semibold mb-1" style="color:#0077b6;">Directeur Commercial</p>
-              <p class="text-xs mb-3" style="color:#64748b;">Devis & relation client · 4 ans d'expérience</p>
-              <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#0077b6; border:1px solid rgba(0,119,182,0.2);">
-                <i class="fas fa-handshake text-xs" style="color:#ffffff; background:#0077b6; padding:3px 4px; border-radius:4px;"></i>
-                <span>Expert commercial</span>
+              <div class="tilt-caption">
+                <h3 class="font-extrabold text-lg mb-1" style="color:#03045e;">Kompaore Abdoul Malick</h3>
+                <p class="text-sm font-semibold mb-1" style="color:#0077b6;">Directeur Commercial</p>
+                <p class="text-xs mb-3" style="color:#64748b;">Devis & relation client · 4 ans d'expérience</p>
+                <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#0077b6; border:1px solid rgba(0,119,182,0.2);">
+                  <i class="fas fa-handshake text-xs" style="color:#ffffff; background:#0077b6; padding:3px 4px; border-radius:4px;"></i>
+                  <span>Expert commercial</span>
+                </div>
               </div>
+              <div class="tilt-shine" aria-hidden="true"></div>
             </div>
 
             {/* Directrice Marketing */}
-            <div class="glass-card rounded-2xl p-6 text-center hover-lift">
-              <div class="w-28 h-28 rounded-full mx-auto mb-4 overflow-hidden" style="border:3px solid rgba(0,119,182,0.25); box-shadow:0 4px 20px rgba(0,119,182,0.15);">
+            <div data-tilt class="glass-card rounded-2xl p-6 text-center">
+              <div class="tilt-image w-28 h-28 rounded-full mx-auto mb-4 overflow-hidden" style="border:3px solid rgba(0,119,182,0.25); box-shadow:0 4px 20px rgba(0,119,182,0.15);">
                 <img src="/ines.jpeg" alt="Inès" loading="lazy" width={112} height={112} class="w-full h-full object-cover" />
               </div>
-              <h3 class="font-extrabold text-lg mb-1" style="color:#03045e;">Inès</h3>
-              <p class="text-sm font-semibold mb-1" style="color:#0077b6;">Directrice Marketing</p>
-              <p class="text-xs mb-3" style="color:#64748b;">Stratégie & communication</p>
-              <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#0077b6; border:1px solid rgba(0,119,182,0.2);">
-                <i class="fas fa-bullhorn text-xs" style="color:#ffffff; background:#0077b6; padding:3px 4px; border-radius:4px;"></i>
-                <span>Directrice marketing</span>
+              <div class="tilt-caption">
+                <h3 class="font-extrabold text-lg mb-1" style="color:#03045e;">Inès</h3>
+                <p class="text-sm font-semibold mb-1" style="color:#0077b6;">Directrice Marketing</p>
+                <p class="text-xs mb-3" style="color:#64748b;">Stratégie & communication</p>
+                <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#0077b6; border:1px solid rgba(0,119,182,0.2);">
+                  <i class="fas fa-bullhorn text-xs" style="color:#ffffff; background:#0077b6; padding:3px 4px; border-radius:4px;"></i>
+                  <span>Directrice marketing</span>
+                </div>
               </div>
+              <div class="tilt-shine" aria-hidden="true"></div>
             </div>
 
           </div>

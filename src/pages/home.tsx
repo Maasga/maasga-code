@@ -12,6 +12,40 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
   const displayNote = stats?.avgNote && stats.avgNote > 0 ? `${stats.avgNote.toFixed(1)}/5` : '—'
   const displayReviews = stats?.reviewCount && stats.reviewCount > 0 ? `${stats.reviewCount}` : '—'
 
+  // Split-écran épinglé « Notre Expertise » — 3 expertises révélées au scroll
+  const EXPERTISES = [
+    {
+      icon: 'ph-duotone ph-shopping-cart-simple',
+      iconBg: 'linear-gradient(135deg,var(--accent),var(--accent-cyan))',
+      iconColor: '#ffffff',
+      title: 'Vente Premium',
+      desc: "Des climatiseurs de marques internationales, économes en énergie et adaptés au climat sahélien.",
+      features: ['Inverter (Économie 40%)', 'Garantie 1-3 ans constructeur'],
+      cta: 'Voir le catalogue',
+      href: '/catalogue',
+    },
+    {
+      icon: 'ph-duotone ph-wrench',
+      iconBg: 'rgba(202,240,248,0.14)',
+      iconColor: 'var(--ice)',
+      title: 'Maintenance',
+      desc: "Interventions rapides et programmées pour garantir la longévité de vos appareils. SAV 7j/7.",
+      features: ['Entretien trimestriel', 'Intervention sous 24h'],
+      cta: 'Planifier un entretien',
+      href: '/rendez-vous',
+    },
+    {
+      icon: 'ph-duotone ph-chart-line-up',
+      iconBg: 'linear-gradient(135deg,var(--accent),var(--accent-cyan))',
+      iconColor: '#ffffff',
+      title: 'Suivi de Performance',
+      desc: "Un espace client dédié pour consulter vos contrats, historiques d'interventions et alertes.",
+      features: ['Rapports mensuels', 'Alertes pannes'],
+      cta: 'Espace client',
+      href: '/espace-client',
+    },
+  ]
+
   return (
     <Layout activePage="home" canonicalPath="/" description="MAASGA - N°1 de la climatisation à Ouagadougou, Burkina Faso. Vente, installation et maintenance de climatiseurs. Devis gratuit, techniciens certifiés, SAV 7j/7." jsonLd={JSON.stringify({"@context":"https://schema.org","@type":"LocalBusiness","name":"MAASGA Climatisation","description":"Expert en vente, installation et maintenance de climatiseurs à Ouagadougou","url":"https://maasga-website.pages.dev","telephone":"+22655996418","address":{"@type":"PostalAddress","streetAddress":"Ouagadougou","addressLocality":"Ouagadougou","addressCountry":"BF"},"geo":{"@type":"GeoCoordinates","latitude":12.3714,"longitude":-1.5197},"openingHoursSpecification":{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"opens":"07:30","closes":"18:00"},"priceRange":"$$","image":"https://maasga-website.pages.dev/og-image.png",...(stats?.avgNote && stats.avgNote > 0 && stats?.reviewCount && stats.reviewCount > 0 ? {"aggregateRating":{"@type":"AggregateRating","ratingValue":String(stats.avgNote.toFixed(1)),"reviewCount":String(stats.reviewCount)}} : {})})}>
 
@@ -181,78 +215,107 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
         </div>
       </section>
 
-      {/* ===== NOTRE EXPERTISE ===== */}
-      <section id="services" class="py-24 bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="text-center mb-16" data-reveal>
-            <span class="eyebrow mb-4">Nos engagements</span>
-            <h2 data-split class="display-2 mt-4 mb-4" style="color:var(--navy-900);">Notre Expertise</h2>
-            <div class="w-20 h-1.5 mx-auto rounded-full" style="background:linear-gradient(90deg,var(--accent),var(--accent-cyan));"></div>
-          </div>
-
-          <div class="grid md:grid-cols-3 gap-8 items-stretch" data-stagger>
-            {/* Vente */}
-            <div data-tilt class="surface-elevated p-8 group">
-              <div class="tilt-image w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:rotate-6 transition-transform" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan)); color:#ffffff;">
-                <i class="icon-pulse ph-duotone ph-shopping-cart-simple"></i>
-              </div>
-              <div class="tilt-caption">
-                <h3 class="text-2xl font-extrabold mb-4 font-display" style="color:var(--navy-900);">Vente Premium</h3>
-                <p class="mb-6" style="color:var(--slate-700);">Des climatiseurs de marques internationales, économes en énergie et adaptés au climat sahélien.</p>
-              </div>
-              <div class="tilt-shine" aria-hidden="true"></div>
-              <ul class="text-sm space-y-2 mb-8" style="color:var(--slate-500);">
-                <li><i class="fas fa-check mr-2" style="color:var(--accent);"></i>Inverter (Économie 40%)</li>
-                <li><i class="fas fa-check mr-2" style="color:var(--accent);"></i>Garantie 1-3 ans constructeur</li>
-              </ul>
-              <a href="/catalogue" class="inline-flex items-center font-semibold text-sm group-hover:translate-x-1 transition-transform" style="color:var(--accent);">
-                Voir le catalogue <i class="ph-duotone ph-arrow-right ml-2"></i>
-              </a>
+      {/* ===== NOTRE EXPERTISE — split-écran épinglé, révélation au scroll ===== */}
+      <section id="services" class="expertise-pin bg-white">
+        <div class="expertise-stage">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+            <div class="text-center mb-10 lg:mb-12" data-reveal>
+              <span class="eyebrow mb-4">Nos engagements</span>
+              <h2 data-split class="display-2 mt-4 mb-4" style="color:var(--navy-900);">Notre Expertise</h2>
+              <div class="w-20 h-1.5 mx-auto rounded-full" style="background:linear-gradient(90deg,var(--accent),var(--accent-cyan));"></div>
             </div>
 
-            {/* Maintenance — carte navy centrale */}
-            <div data-tilt class="surface-navy p-8 relative overflow-hidden md:-mt-4 md:mb-[-1rem]">
-              <div class="absolute top-0 right-0 p-4 text-8xl" style="opacity:0.08; color:#ffffff;">
-                <i class="ph-duotone ph-wrench"></i>
+            <div class="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+              {/* GAUCHE — étapes empilées (texte) */}
+              <div class="exp-left order-2 lg:order-1">
+                {EXPERTISES.map((s, i) => (
+                  <div class={`exp-step${i === 0 ? ' is-active' : ''}`} data-step={String(i)}>
+                    <div class="exp-step-icon w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-5" style={`background:${s.iconBg}; color:${s.iconColor};`}>
+                      <i class={s.icon}></i>
+                    </div>
+                    <div class="exp-num">Expertise 0{i + 1} <span style="opacity:0.4;">/ 0{EXPERTISES.length}</span></div>
+                    <h3 class="exp-title font-display font-extrabold mb-4" style="color:var(--navy-900);">{s.title}</h3>
+                    <p class="exp-desc mb-6" style="color:var(--slate-700);">{s.desc}</p>
+                    <ul class="text-sm space-y-2 mb-8" style="color:var(--slate-500);">
+                      {s.features.map(f => (
+                        <li><i class="fas fa-check mr-2" style="color:var(--accent);"></i>{f}</li>
+                      ))}
+                    </ul>
+                    <a href={s.href} class="inline-flex items-center font-semibold group" style="color:var(--accent);">
+                      {s.cta} <i class="ph-duotone ph-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                    </a>
+                  </div>
+                ))}
               </div>
-              <div class="tilt-image w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-6" style="background:rgba(202,240,248,0.14); color:var(--ice);">
-                <i class="icon-pulse ph-duotone ph-wrench"></i>
-              </div>
-              <div class="tilt-caption">
-                <h3 class="text-2xl font-extrabold mb-4 font-display" style="color:#ffffff;">Maintenance</h3>
-                <p class="mb-6" style="color:#cbd5e1;">Interventions rapides et programmées pour garantir la longévité de vos appareils. SAV 7j/7.</p>
-              </div>
-              <div class="tilt-shine" aria-hidden="true"></div>
-              <ul class="text-sm space-y-2 mb-8" style="color:#94a3b8;">
-                <li><i class="fas fa-check mr-2" style="color:var(--ice);"></i>Entretien trimestriel</li>
-                <li><i class="fas fa-check mr-2" style="color:var(--ice);"></i>Intervention sous 24h</li>
-              </ul>
-              <a href="/rendez-vous" class="btn-light block text-center font-bold px-6 py-3 rounded-xl">
-                Planifier un entretien
-              </a>
-            </div>
 
-            {/* Suivi */}
-            <div data-tilt class="surface-elevated p-8 group">
-              <div class="tilt-image w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:rotate-6 transition-transform" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan)); color:#ffffff;">
-                <i class="icon-pulse ph-duotone ph-chart-line-up"></i>
+              {/* DROITE — panneau navy épinglé, visuels empilés qui se révèlent */}
+              <div class="exp-right order-1 lg:order-2">
+                <div class="exp-panel surface-navy">
+                  <div class="exp-panel-wm" aria-hidden="true"><i class="ph-duotone ph-wrench"></i></div>
+                  {EXPERTISES.map((s, i) => (
+                    <div class={`exp-visual${i === 0 ? ' is-active' : ''}`} data-step={String(i)}>
+                      <i class={s.icon}></i>
+                    </div>
+                  ))}
+                </div>
+                <div class="exp-dots">
+                  {EXPERTISES.map((_, i) => (
+                    <span class={`exp-dot${i === 0 ? ' is-active' : ''}`} data-step={String(i)}></span>
+                  ))}
+                </div>
               </div>
-              <div class="tilt-caption">
-                <h3 class="text-2xl font-extrabold mb-4 font-display" style="color:var(--navy-900);">Suivi de Performance</h3>
-                <p class="mb-6" style="color:var(--slate-700);">Un espace client dédié pour consulter vos contrats, historiques d'interventions et alertes.</p>
-              </div>
-              <div class="tilt-shine" aria-hidden="true"></div>
-              <ul class="text-sm space-y-2 mb-8" style="color:var(--slate-500);">
-                <li><i class="fas fa-check mr-2" style="color:var(--accent);"></i>Rapports mensuels</li>
-                <li><i class="fas fa-check mr-2" style="color:var(--accent);"></i>Alertes pannes</li>
-              </ul>
-              <a href="/espace-client" class="inline-flex items-center font-semibold text-sm group-hover:translate-x-1 transition-transform" style="color:var(--accent);">
-                Espace client <i class="ph-duotone ph-arrow-right ml-2"></i>
-              </a>
             </div>
           </div>
         </div>
       </section>
+
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function() {
+          // Nettoyage si le script est réexécuté (routeur PJAX réinjecte les scripts du <main>)
+          if (window.__maasgaExpertiseCleanup) window.__maasgaExpertiseCleanup();
+          var section = document.getElementById('services');
+          if (!section || !section.classList.contains('expertise-pin')) return;
+          var steps = section.querySelectorAll('.exp-step');
+          var visuals = section.querySelectorAll('.exp-visual');
+          var dots = section.querySelectorAll('.exp-dot');
+          var n = steps.length;
+          if (!n) return;
+          var current = -1;
+          function setActive(i) {
+            if (i === current) return;
+            current = i;
+            for (var k = 0; k < steps.length; k++) steps[k].classList.toggle('is-active', k === i);
+            for (var v = 0; v < visuals.length; v++) visuals[v].classList.toggle('is-active', v === i);
+            for (var d = 0; d < dots.length; d++) dots[d].classList.toggle('is-active', d === i);
+          }
+          var ticking = false;
+          function update() {
+            ticking = false;
+            var rect = section.getBoundingClientRect();
+            var vh = window.innerHeight || document.documentElement.clientHeight;
+            var travel = rect.height - vh; // distance de scroll pendant l'épinglage
+            if (travel <= 0) { setActive(0); return; }
+            var scrolled = Math.min(Math.max(-rect.top, 0), travel);
+            var p = scrolled / travel; // 0 → 1
+            var idx = Math.floor(p * n);
+            if (idx > n - 1) idx = n - 1;
+            if (idx < 0) idx = 0;
+            setActive(idx);
+          }
+          function onScroll() {
+            if (!ticking) { ticking = true; window.requestAnimationFrame(update); }
+          }
+          window.addEventListener('scroll', onScroll, { passive: true });
+          window.addEventListener('resize', onScroll);
+          window.__maasgaExpertiseCleanup = function() {
+            window.removeEventListener('scroll', onScroll);
+            window.removeEventListener('resize', onScroll);
+            window.__maasgaExpertiseCleanup = null;
+          };
+          setActive(0);
+          update();
+        })();
+      ` }} />
 
       {/* ===== AVANTAGES ===== */}
       <section class="py-20 px-4 max-w-7xl mx-auto sm:px-6 lg:px-8">

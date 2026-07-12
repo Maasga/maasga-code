@@ -588,17 +588,22 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               gsap.registerPlugin(window.ScrollTrigger);
 
               // Les reveals/cascades sont gérés en CSS+IntersectionObserver (robuste).
-              // GSAP n'ajoute QUE des enrichissements : parallax + CTA magnétiques.
-              if (reduce) return true;
-
-              gsap.utils.toArray(root.querySelectorAll('[data-parallax]')).forEach(function(el) {
-                var amount = parseFloat(el.getAttribute('data-parallax')) || 30;
-                amount = Math.max(-80, Math.min(80, amount));
-                gsap.to(el, {
-                  y: amount, ease: 'none',
-                  scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: 1 }
+              // GSAP n'ajoute QUE des enrichissements. Distinction clé sous reduced-motion :
+              //  - parallax = mouvement AUTOMATIQUE au scroll → désactivé sous reduced-motion.
+              //  - tilt + CTA magnétiques = interactions DIRECTES au pointeur (déclenchées par
+              //    l'utilisateur, pas auto-jouées) → CONSERVÉS même sous reduced-motion, sinon
+              //    l'effet demandé ne se voit jamais chez un utilisateur qui a « réduire les
+              //    animations » activé (cas de l'owner de ce site).
+              if (!reduce) {
+                gsap.utils.toArray(root.querySelectorAll('[data-parallax]')).forEach(function(el) {
+                  var amount = parseFloat(el.getAttribute('data-parallax')) || 30;
+                  amount = Math.max(-80, Math.min(80, amount));
+                  gsap.to(el, {
+                    y: amount, ease: 'none',
+                    scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: 1 }
+                  });
                 });
-              });
+              }
 
               if (finePointer) {
                 root.querySelectorAll('.magnetic').forEach(function(btn) {
@@ -613,36 +618,27 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                   });
                 });
 
-                // Tilt parallax — cartes avec [data-tilt], couches .tilt-image/.tilt-caption/.tilt-shine
+                // Tilt 3D « carte entière » (type Tympanus) — SEULE la carte s'incline (plus
+                // de couches internes qui glissent, plus de reflet). Suivi RÉACTIF de la
+                // souris : lissage court (0.14s) + overwrite:'auto' pour que chaque mouvement
+                // reprenne la main immédiatement (sinon les tweens s'empilent et l'effet
+                // « traîne »). Rebond élastique accentué au départ du curseur.
                 root.querySelectorAll('[data-tilt]').forEach(function(card) {
+                  gsap.set(card, { transformPerspective: 900, transformOrigin: 'center' });
                   var rect = null;
-                  var img = card.querySelector('.tilt-image');
-                  var caption = card.querySelector('.tilt-caption');
-                  var shine = card.querySelector('.tilt-shine');
-                  var layers = [img, caption, shine].filter(Boolean);
+                  card.addEventListener('mouseenter', function() { rect = card.getBoundingClientRect(); });
                   card.addEventListener('mousemove', function(e) {
-                    rect = rect || card.getBoundingClientRect();
+                    if (!rect) rect = card.getBoundingClientRect();
                     var x = (e.clientX - rect.left) / rect.width - 0.5;
                     var y = (e.clientY - rect.top) / rect.height - 0.5;
-                    if (img) {
-                      gsap.to(img, {
-                        rotateY: x * 10, rotateX: -y * 10,
-                        transformPerspective: 800, transformOrigin: 'center',
-                        duration: 0.4, ease: 'power2.out'
-                      });
-                    }
-                    if (caption) {
-                      gsap.to(caption, { x: x * 40, y: y * 40, duration: 0.4, ease: 'power2.out' });
-                    }
-                    if (shine) {
-                      gsap.to(shine, { x: x * 100, y: y * 100, duration: 0.4, ease: 'power2.out' });
-                    }
+                    gsap.to(card, {
+                      rotateY: x * 20, rotateX: -y * 20,
+                      duration: 0.14, ease: 'power2.out', overwrite: 'auto'
+                    });
                   });
                   card.addEventListener('mouseleave', function() {
                     rect = null;
-                    if (layers.length) {
-                      gsap.to(layers, { rotateX: 0, rotateY: 0, x: 0, y: 0, duration: 0.6, ease: 'elastic.out(1, 0.4)' });
-                    }
+                    gsap.to(card, { rotateX: 0, rotateY: 0, duration: 1.05, ease: 'elastic.out(1.3, 0.3)', overwrite: 'auto' });
                   });
                 });
               }
@@ -650,13 +646,23 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             }
             window.__maasgaReinitGsap = initGsap;
 
-            // GSAP chargé en defer : on tente jusqu'à ~3s, sinon le contenu reste visible
-            if (!initGsap(document)) {
+            // GSAP est chargé en <script defer> depuis un CDN : sur un réseau lent le
+            // download peut prendre plusieurs secondes (mesuré ~5s ici). L'ancienne fenêtre
+            // de 3s abandonnait avant que window.gsap soit prêt → le tilt/parallax ne
+            // s'attachaient jamais au 1er chargement (il fallait naviguer pour re-déclencher
+            // l'init). On élargit le poll à ~20s ET on relance au 'load' de la fenêtre (qui
+            // ne se déclenche qu'une fois les scripts defer téléchargés, même très tard).
+            var gsapInited = initGsap(document);
+            if (!gsapInited) {
               var tries = 0;
               var iv = setInterval(function() {
                 tries++;
-                if (initGsap(document) || tries > 60) clearInterval(iv);
+                if (!gsapInited) gsapInited = initGsap(document);
+                if (gsapInited || tries > 400) clearInterval(iv);
               }, 50);
+              window.addEventListener('load', function() {
+                if (!gsapInited) gsapInited = initGsap(document);
+              });
             }
           })();
         `}} />
@@ -787,9 +793,17 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 if (bi) bi.className = 'fas fa-bars text-lg';
               }
               var pathname = href.split('?')[0].split('#')[0];
-              showOverlay(labelForPath(pathname));
+              var supportsVT = typeof document.startViewTransition === 'function';
+              // Le morph View Transitions (sans overlay) est réservé aux navigations
+              // catalogue ↔ fiche produit (/catalogue/:id) — là où une image partage un
+              // view-transition-name. Partout ailleurs on garde l'overlay navy (« preloader »)
+              // à texte glissant, historique du site.
+              function isProductPath(p) { return /^\\/catalogue\\/[0-9]+$/.test(p); }
+              var here = window.location.pathname;
+              // Morph uniquement sur catalogue → fiche produit, et fiche produit → catalogue.
+              // Quitter une fiche vers une AUTRE page (ex: contact) garde l'overlay navy.
+              var useMorph = supportsVT && (isProductPath(pathname) || (isProductPath(here) && pathname === '/catalogue'));
 
-              var minTimer = new Promise(function(resolve) { setTimeout(resolve, MIN_DISPLAY_MS); });
               var controller = new AbortController();
               var timeoutId = setTimeout(function() { controller.abort(); }, FETCH_TIMEOUT_MS);
               var fetchPromise = fetch(href, { credentials: 'same-origin', signal: controller.signal })
@@ -799,19 +813,40 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                   return res.text();
                 });
 
-              Promise.all([fetchPromise, minTimer]).then(function(results) {
-                var ok = swapContent(results[0]);
-                if (!ok) { window.location.href = href; return; }
+              function finishNav(html) {
+                var ok = swapContent(html);
+                if (!ok) { window.location.href = href; return false; }
                 if (!isPopstate) { history.pushState(null, '', href); window.scrollTo(0, 0); }
                 if (typeof window.gtag === 'function') {
                   window.gtag('event', 'page_view', { page_path: pathname, page_title: document.title });
                 }
-                hideOverlay();
-                navigationInProgress = false;
-              }).catch(function() {
-                navigationInProgress = false;
-                window.location.href = href;
-              });
+                return true;
+              }
+
+              if (useMorph) {
+                // Navigation catalogue ↔ fiche produit : le crossfade + le morph de l'image
+                // (view-transition-name partagé) SONT la transition — pas d'overlay navy,
+                // il masquerait le morph.
+                fetchPromise.then(function(html) {
+                  var vt = document.startViewTransition(function() { finishNav(html); });
+                  vt.finished.then(function() { navigationInProgress = false; }, function() { navigationInProgress = false; });
+                }).catch(function() {
+                  navigationInProgress = false;
+                  window.location.href = href;
+                });
+              } else {
+                // Toutes les autres navigations : overlay navy à texte glissant (« preloader ») + swap.
+                showOverlay(labelForPath(pathname));
+                var minTimer = new Promise(function(resolve) { setTimeout(resolve, MIN_DISPLAY_MS); });
+                Promise.all([fetchPromise, minTimer]).then(function(results) {
+                  finishNav(results[0]);
+                  hideOverlay();
+                  navigationInProgress = false;
+                }).catch(function() {
+                  navigationInProgress = false;
+                  window.location.href = href;
+                });
+              }
             }
 
             document.addEventListener('click', function(e) {
@@ -1095,6 +1130,37 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               delete modalEl.__focusTrapHandler;
             }
             window.__focusTrapStack = window.__focusTrapStack.filter(function(m) { return m !== modalEl; });
+          };
+
+          // Alerte réappro stock (utilisée par les cartes catalogue et la page produit)
+          window.submitStockAlert = function(productId) {
+            var phoneEl = document.getElementById('stock-phone-' + productId) || document.getElementById('modal-stock-phone');
+            var phone = phoneEl ? phoneEl.value.trim() : '';
+            if (!phone || phone.length < 8) {
+              alert('Veuillez saisir un numéro de téléphone valide.');
+              return;
+            }
+            var fd = new FormData();
+            fd.append('product_id', String(productId));
+            fd.append('phone', phone);
+            fetch('/api/stock-alert', { method: 'POST', body: fd })
+              .then(function(r) { return r.json(); })
+              .then(function(data) {
+                if (data.ok) {
+                  var safeMsg = (data.message || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+                  var container = document.getElementById('stock-alert-' + productId);
+                  if (container) {
+                    container.innerHTML = '<div class="text-xs text-center py-2 rounded-lg" style="background:rgba(16,185,129,0.1); color:#34d399; border:1px solid rgba(16,185,129,0.2);"><i class="fas fa-check-circle mr-1"></i>' + safeMsg + '</div>';
+                  }
+                  var modalForm = document.getElementById('modal-stock-form');
+                  if (modalForm) {
+                    modalForm.parentElement.innerHTML = '<div style="text-align:center;padding:12px;border-radius:12px;background:rgba(16,185,129,0.1);color:#34d399;border:1px solid rgba(16,185,129,0.2);font-size:0.85rem;"><i class="fas fa-check-circle" style="margin-right:6px;"></i>' + safeMsg + '</div>';
+                  }
+                } else {
+                  alert(data.error || 'Erreur, réessayez.');
+                }
+              })
+              .catch(function() { alert('Erreur réseau.'); });
           };
         ` }} />
 

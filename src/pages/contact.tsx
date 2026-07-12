@@ -42,7 +42,7 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
           {/* Infos de contact */}
           <div class="space-y-6 reveal">
 
-            <div class="glass-card rounded-2xl p-6 hover-lift">
+            <div data-tilt class="glass-card rounded-2xl p-6">
               <h3 class="font-bold text-white text-lg mb-5 flex items-center space-x-2">
                 <i class="fas fa-info-circle" style="color:#38bdf8;"></i>
                 <span>Nos coordonnées</span>
@@ -94,11 +94,12 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
                   </div>
                 </div>
               </div>
+              <div class="tilt-shine" aria-hidden="true"></div>
             </div>
 
             {/* Action rapide WhatsApp */}
             <a href="https://wa.me/22655996418?text=Bonjour%20MAASGA%2C%20je%20souhaite%20avoir%20un%20renseignement%20sur%20la%20climatisation." target="_blank" rel="noopener noreferrer"
-              class="block glass-card rounded-2xl p-5 hover:-translate-y-1 transition-all duration-300 hover-lift">
+              data-tilt class="block glass-card rounded-2xl p-5 transition-all duration-300">
               <div class="flex items-center space-x-4">
                 <div class="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center flex-shrink-0">
                   <i class="fab fa-whatsapp text-white text-2xl"></i>
@@ -109,11 +110,12 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
                 </div>
                 <i class="fas fa-arrow-right ml-auto" style="color:#64748b;"></i>
               </div>
+              <div class="tilt-shine" aria-hidden="true"></div>
             </a>
 
             {/* Prendre RDV */}
             <a href="/rendez-vous"
-              class="block btn-primary rounded-2xl p-5 text-white hover:-translate-y-1 transition-all duration-300">
+              data-tilt class="block btn-primary rounded-2xl p-5 text-white transition-all duration-300">
               <div class="flex items-center space-x-4">
                 <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
                   <i class="fas fa-calendar-check text-white text-xl"></i>
@@ -124,10 +126,11 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
                 </div>
                 <i class="fas fa-arrow-right text-white/70 ml-auto"></i>
               </div>
+              <div class="tilt-shine" aria-hidden="true"></div>
             </a>
 
             {/* Zones d'intervention */}
-            <div class="glass-card rounded-2xl p-6 hover-lift">
+            <div data-tilt class="glass-card rounded-2xl p-6">
               <h4 class="font-bold text-white mb-3 flex items-center space-x-2">
                 <i class="fas fa-map" style="color:#38bdf8;"></i>
                 <span>Zones d'intervention</span>
@@ -138,6 +141,7 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
                 ))}
                 <span class="text-xs px-2 py-1" style="color:#64748b;">+ environs</span>
               </div>
+              <div class="tilt-shine" aria-hidden="true"></div>
             </div>
           </div>
 

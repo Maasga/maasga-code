@@ -48,9 +48,9 @@ export const SimulateurPage = ({
             </div>
             
             {/* Produit sélectionné */}
-            <div class="rounded-xl p-5 mb-4 hover-lift" style="background:var(--bg-card); border:1px solid rgba(148,180,220,0.12);">
+            <div data-tilt class="rounded-xl p-5 mb-4" style="background:var(--bg-card); border:1px solid rgba(148,180,220,0.12);">
               <div class="flex items-center space-x-4">
-                <div class="w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(56,189,248,0.1);">
+                <div class="tilt-image w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(56,189,248,0.1);">
                   <div class="text-3xl">❄️</div>
                 </div>
                 <div class="flex-1">
@@ -63,6 +63,7 @@ export const SimulateurPage = ({
                   <div class="text-sm font-semibold" style="color:#38bdf8;">{productBtu === 9000 ? '1' : productBtu === 12000 ? '1,5' : productBtu === 18000 ? '2' : productBtu === 24000 ? '3' : '5'} CV</div>
                 </div>
               </div>
+              <div class="tilt-shine" aria-hidden="true"></div>
             </div>
 
             <div class="text-sm text-center rounded-lg p-3 mb-6" style="color:#94a3b8; background:rgba(56,189,248,0.08);">
@@ -319,7 +320,7 @@ export const SimulateurPage = ({
             </div>
 
             {/* Guide BTU */}
-            <div class="glass-card rounded-2xl p-6 reveal">
+            <div data-tilt class="glass-card rounded-2xl p-6 reveal">
               <h4 class="font-bold text-white mb-4 flex items-center space-x-2">
                 <i class="fas fa-book text-cyan-400"></i>
                 <span>Guide rapide BTU</span>
@@ -345,17 +346,21 @@ export const SimulateurPage = ({
                 <i class="fas fa-lightbulb mr-1"></i>
                 En climat tropical (Ouagadougou), il est recommandé de majorer de 10 à 15% la puissance calculée.
               </div>
+              <div class="tilt-shine" aria-hidden="true"></div>
             </div>
 
             {/* CTA RDV */}
-            <div class="bg-gradient-to-br from-primary-700 to-ice-700 text-white rounded-2xl p-6 text-center reveal">
-              <i class="fas fa-phone-alt text-3xl mb-3 opacity-90"></i>
-              <h4 class="font-bold text-lg mb-2">Besoin d'un avis expert ?</h4>
-              <p class="text-sm mb-4" style="color:#111827;">Nos techniciens se déplacent gratuitement pour dimensionner votre projet.</p>
-              <a href="/rendez-vous" class="bg-white text-primary-700 font-bold px-6 py-3 rounded-xl inline-flex items-center space-x-2 hover:bg-blue-50 transition-colors shadow-md">
-                <i class="fas fa-calendar-check"></i>
-                <span>Prendre rendez-vous</span>
-              </a>
+            <div data-tilt class="bg-gradient-to-br from-primary-700 to-ice-700 text-white rounded-2xl p-6 text-center reveal">
+              <i class="tilt-image fas fa-phone-alt text-3xl mb-3 opacity-90"></i>
+              <div class="tilt-caption">
+                <h4 class="font-bold text-lg mb-2">Besoin d'un avis expert ?</h4>
+                <p class="text-sm mb-4" style="color:#111827;">Nos techniciens se déplacent gratuitement pour dimensionner votre projet.</p>
+                <a href="/rendez-vous" class="bg-white text-primary-700 font-bold px-6 py-3 rounded-xl inline-flex items-center space-x-2 hover:bg-blue-50 transition-colors shadow-md">
+                  <i class="fas fa-calendar-check"></i>
+                  <span>Prendre rendez-vous</span>
+                </a>
+              </div>
+              <div class="tilt-shine" aria-hidden="true"></div>
             </div>
           </div>
         </div>

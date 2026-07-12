@@ -351,7 +351,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
           {/* ===== SIDEBAR INFO ===== */}
           <div class="space-y-5">
             {/* Processus */}
-            <div class="glass-card rounded-2xl p-6 reveal">
+            <div data-tilt class="glass-card rounded-2xl p-6 reveal">
               <h3 class="font-bold text-white mb-5 flex items-center space-x-2">
                 <i class="fas fa-route text-cyan-400"></i>
                 <span>Notre processus</span>
@@ -373,10 +373,11 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                   </div>
                 ))}
               </div>
+              <div class="tilt-shine" aria-hidden="true"></div>
             </div>
 
             {/* Contact direct */}
-            <div class="bg-gradient-to-br from-primary-700 to-ice-600 text-white rounded-2xl p-6 reveal">
+            <div data-tilt class="bg-gradient-to-br from-primary-700 to-ice-600 text-white rounded-2xl p-6 reveal">
               <h4 class="font-bold mb-4 flex items-center space-x-2">
                 <i class="fas fa-headset"></i>
                 <span>Contact direct</span>
@@ -400,10 +401,11 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
               <div class="mt-4 text-xs opacity-70 text-center">
                 Lundi–Dimanche · 8h00–18h00
               </div>
+              <div class="tilt-shine" aria-hidden="true"></div>
             </div>
 
             {/* Garanties */}
-            <div class="glass-card rounded-2xl p-6 reveal">
+            <div data-tilt class="glass-card rounded-2xl p-6 reveal">
               <h4 class="font-bold text-white mb-4">Nos engagements</h4>
               <div class="space-y-2">
                 {[
@@ -419,6 +421,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                   </div>
                 ))}
               </div>
+              <div class="tilt-shine" aria-hidden="true"></div>
             </div>
           </div>
         </div>

@@ -118,12 +118,12 @@ export const RealisationsPage = ({ realisations = [] }: { realisations?: any[] }
 
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="real-grid">
           {typesDeProjet.map(r => (
-            <div class={`real-card glass-card rounded-2xl overflow-hidden hover-lift reveal`} data-type={r.type}>
-              <div class={`relative h-40 flex items-center justify-center bg-gradient-to-br ${r.color}`} style="border-bottom:1px solid rgba(56,189,248,0.08);">
+            <div data-tilt class={`real-card glass-card rounded-2xl overflow-hidden reveal`} data-type={r.type}>
+              <div class={`tilt-image relative h-40 flex items-center justify-center bg-gradient-to-br ${r.color}`} style="border-bottom:1px solid rgba(56,189,248,0.08);">
                 <i class={`fas ${r.icon} text-5xl`} style={`color:${r.accent}; opacity:0.6;`}></i>
                 <span class="absolute top-3 left-3 text-xs font-semibold px-3 py-1 rounded-full" style={`background:rgba(11,17,32,0.8); color:${r.accent}; border:1px solid ${r.accent}33;`}>{r.type}</span>
               </div>
-              <div class="p-5">
+              <div class="tilt-caption p-5">
                 <h3 class="font-bold text-white mb-2 text-base leading-snug">{r.titre}</h3>
                 <p class="text-xs mb-4 leading-relaxed" style="color:#8ba3c0;">{r.description}</p>
                 <div class="space-y-1.5 mb-4">
@@ -139,6 +139,7 @@ export const RealisationsPage = ({ realisations = [] }: { realisations?: any[] }
                   <span>Demander un devis</span>
                 </a>
               </div>
+              <div class="tilt-shine" aria-hidden="true"></div>
             </div>
           ))}
         </div>
@@ -149,15 +150,15 @@ export const RealisationsPage = ({ realisations = [] }: { realisations?: any[] }
           <h2 class="text-2xl font-bold text-white mb-8 text-center">Nos dernières réalisations</h2>
           <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {realisations.map((r: any) => (
-              <div class="glass-card rounded-2xl overflow-hidden hover-lift">
+              <div data-tilt class="glass-card rounded-2xl overflow-hidden">
                 {r.image_url ? (
-                  <img src={r.image_url} alt={r.title} loading="lazy" class="w-full h-48 object-cover" />
+                  <img src={r.image_url} alt={r.title} loading="lazy" class="tilt-image w-full h-48 object-cover" />
                 ) : (
-                  <div class="w-full h-48 flex items-center justify-center" style="background:rgba(56,189,248,0.07); border-bottom:1px solid rgba(56,189,248,0.08);">
+                  <div class="tilt-image w-full h-48 flex items-center justify-center" style="background:rgba(56,189,248,0.07); border-bottom:1px solid rgba(56,189,248,0.08);">
                     <i class="fas fa-snowflake text-4xl" style="color:#38bdf8; opacity:0.4;"></i>
                   </div>
                 )}
-                <div class="p-5">
+                <div class="tilt-caption p-5">
                   {r.is_featured ? <span class="inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-2" style="background:rgba(251,191,36,0.15); color:#fbbf24;">⭐ À la une</span> : null}
                   <h3 class="font-bold text-white mb-1 text-sm leading-snug">{r.title}</h3>
                   {r.description && <p class="text-xs mb-2 leading-relaxed" style="color:#8ba3c0;">{r.description}</p>}
@@ -166,25 +167,27 @@ export const RealisationsPage = ({ realisations = [] }: { realisations?: any[] }
                     {r.quartier && <span class="text-xs" style="color:#64748b;"><i class="fas fa-map-marker-alt mr-1"></i>{r.quartier}</span>}
                   </div>
                 </div>
+                <div class="tilt-shine" aria-hidden="true"></div>
               </div>
             ))}
           </div>
         </div>
         ) : (
-        <div class="mt-14 rounded-3xl p-8 text-center reveal" style="background:rgba(56,189,248,0.04); border:1px solid rgba(56,189,248,0.1);">
-          <i class="fas fa-camera text-3xl mb-3" style="color:#38bdf8; opacity:0.5;"></i>
+        <div data-tilt class="mt-14 rounded-3xl p-8 text-center reveal" style="background:rgba(56,189,248,0.04); border:1px solid rgba(56,189,248,0.1);">
+          <i class="tilt-image fas fa-camera text-3xl mb-3" style="color:#38bdf8; opacity:0.5;"></i>
           <h3 class="text-lg font-bold mb-2 text-white">Galerie photos en préparation</h3>
           <p class="text-sm mb-4 max-w-lg mx-auto" style="color:#8ba3c0;">Nous préparons une galerie de nos installations réelles. En attendant, consultez les avis de nos clients.</p>
           <a href="/avis" class="inline-flex items-center space-x-2 font-semibold text-sm" style="color:#38bdf8;">
             <span>Voir les avis clients</span>
             <i class="fas fa-arrow-right"></i>
           </a>
+          <div class="tilt-shine" aria-hidden="true"></div>
         </div>
         )}
 
         {/* CTA */}
-        <div class="mt-8 rounded-3xl p-8 text-center reveal" style="background:linear-gradient(135deg,rgba(56,189,248,0.06),rgba(139,92,246,0.06)); border:1px solid rgba(56,189,248,0.15);">
-          <div class="text-4xl mb-4">❄️</div>
+        <div data-tilt class="mt-8 rounded-3xl p-8 text-center reveal" style="background:linear-gradient(135deg,rgba(56,189,248,0.06),rgba(139,92,246,0.06)); border:1px solid rgba(56,189,248,0.15);">
+          <div class="tilt-image text-4xl mb-4">❄️</div>
           <h2 class="text-2xl font-bold mb-3 text-white">Votre projet de climatisation ?</h2>
           <p class="text-sm mb-6 max-w-lg mx-auto" style="color:#8ba3c0;">Visite technique gratuite, devis PDF sous 24h, installation par nos techniciens certifiés.</p>
           <div class="flex flex-col sm:flex-row gap-3 justify-center">
@@ -197,6 +200,7 @@ export const RealisationsPage = ({ realisations = [] }: { realisations?: any[] }
               <span>Voir le catalogue</span>
             </a>
           </div>
+          <div class="tilt-shine" aria-hidden="true"></div>
         </div>
       </div>
 

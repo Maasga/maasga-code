@@ -343,20 +343,89 @@
 .hover-glow { transition: box-shadow 0.3s ease; }
 .hover-glow:hover { box-shadow: 0 0 20px rgba(0,119,182,0.2); }
 
-/* ─── Tilt parallax layers (image/caption/shine) ─── */
+/* ─── Tilt 3D « carte entière » (type Tympanus) ───
+   Seule la carte [data-tilt] s'incline au survol (rotateX/rotateY via GSAP, perspective
+   portée par transformPerspective). Feedback de survol accentué : bordure + anneau accent
+   cyan + ombre portée profonde, en transition douce. */
 [data-tilt] {
   position: relative;
   overflow: hidden;
+  will-change: transform;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  transition: box-shadow 0.35s var(--ease-out-expo), border-color 0.35s var(--ease-out-expo);
+}
+[data-tilt]:hover {
+  border-color: rgba(0,180,216,0.6) !important;
+  box-shadow: 0 0 0 2px rgba(0,180,216,0.4), 0 28px 60px -12px rgba(3,105,161,0.45) !important;
 }
 
-.tilt-shine {
-  position: absolute;
-  top: -60%;
-  left: -60%;
-  width: 220%;
-  height: 220%;
-  pointer-events: none;
-  background: linear-gradient(45deg, transparent 35%, rgba(0,180,216,0.16) 50%, transparent 65%);
+/* Reflet retiré à la demande — masqué partout (l'élément peut subsister dans le markup). */
+.tilt-shine { display: none !important; }
+
+/* ─── « Notre Expertise » — split-écran épinglé (sticky) + révélation au scroll ─── */
+.expertise-pin { position: relative; }
+.exp-num {
+  font-size: 0.8rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 0.75rem;
+}
+.exp-title { font-size: clamp(1.75rem, 3.5vw, 2.75rem); line-height: 1.05; }
+.exp-desc { font-size: 1.075rem; line-height: 1.6; max-width: 34rem; }
+.exp-step-icon { flex: 0 0 auto; }
+
+/* Panneau navy à droite (grande carte épinglée) */
+.exp-right { display: flex; flex-direction: column; align-items: center; }
+.exp-panel {
+  position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 1.75rem;
+  overflow: hidden; display: grid; place-items: center;
+}
+.exp-panel-wm {
+  position: absolute; right: -0.5rem; bottom: -1rem; font-size: 12rem; line-height: 1;
+  color: #ffffff; opacity: 0.05; pointer-events: none;
+}
+.exp-visual {
+  grid-area: 1 / 1; display: flex; align-items: center; justify-content: center;
+  opacity: 0; transform: scale(0.82) rotate(-8deg);
+  transition: opacity 0.55s var(--ease-out-expo), transform 0.55s var(--ease-out-expo);
+}
+.exp-visual i { font-size: clamp(4rem, 9vw, 7rem); color: var(--ice); }
+.exp-visual.is-active { opacity: 1; transform: none; }
+
+/* Points de progression */
+.exp-dots { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
+.exp-dot {
+  width: 8px; height: 8px; border-radius: 999px; background: rgba(3,105,161,0.22);
+  transition: width 0.4s var(--ease-out-expo), background 0.4s var(--ease-out-expo);
+}
+.exp-dot.is-active { width: 26px; background: var(--accent); }
+
+/* ── Desktop (lg+) : épinglage sticky + étapes empilées en cross-fade ── */
+@media (min-width: 1024px) {
+  .expertise-pin { height: 320vh; }
+  .expertise-stage {
+    position: sticky; top: 0; min-height: 100vh; display: flex; align-items: center;
+    padding: 3rem 0;
+  }
+  .exp-left { display: grid; }
+  .exp-step {
+    grid-area: 1 / 1;
+    opacity: 0; transform: translateY(28px);
+    transition: opacity 0.55s var(--ease-out-expo), transform 0.55s var(--ease-out-expo);
+    pointer-events: none;
+  }
+  .exp-step.is-active { opacity: 1; transform: none; pointer-events: auto; }
+  .exp-step-icon { display: none; } /* l'icône est portée par le grand panneau navy */
+}
+
+/* ── Mobile / tablette : liste verticale classique (pas d'épinglage) ── */
+@media (max-width: 1023px) {
+  .exp-right { display: none; }
+  .exp-step {
+    opacity: 1 !important; transform: none !important; pointer-events: auto;
+    padding-bottom: 2.5rem; margin-bottom: 2.5rem;
+    border-bottom: 1px solid rgba(3,105,161,0.1);
+  }
+  .exp-step:last-child { border-bottom: 0; margin-bottom: 0; }
 }
 
 /* ─── Icon pulse (cartes services) ─── */
@@ -499,21 +568,33 @@ html.js-ready [data-hero].in > [data-tilt] .tilt-shine {
   html.js-ready [data-stagger] > *,
   html.js-ready [data-hero] > * {
     opacity: 1 !important;
+  }
+  /* On neutralise le transform des reveals SAUF sur les cartes [data-tilt] : leur tilt
+     au survol est une interaction directe conservée même sous reduced-motion (voir
+     Layout.tsx), et un "transform: none !important" ici écraserait le transform GSAP. */
+  html.js-ready [data-reveal]:not([data-tilt]),
+  html.js-ready [data-stagger] > *:not([data-tilt]),
+  html.js-ready [data-hero] > *:not([data-tilt]) {
     transform: none !important;
   }
   .float, .animate-pulse-slow, .shimmer, .animate-bounce { animation: none !important; }
 
-  /* Sous reduced-motion, le lift (translateY) des cartes est neutralisé par le
-     "transform: none !important" ci-dessus, et le tilt GSAP est coupé → le
-     survol des cartes n'a presque aucun retour visuel. On rétablit un feedback
-     NET mais SANS mouvement : bordure accent + anneau + ombre appuyée, plus une
-     icône avivée (filter, non-mouvement, autorisé sous reduced-motion). */
+  /* Feedback de survol supplémentaire (statique) qui complète le tilt : bordure
+     accent + anneau + ombre appuyée + icône avivée. */
   .surface-elevated:hover,
-  .surface-navy:hover {
+  .surface-navy:hover,
+  [data-tilt]:hover {
     border-color: rgba(3,105,161,0.55) !important;
     box-shadow: 0 0 0 2px rgba(3,105,161,0.35), 0 18px 40px rgba(3,105,161,0.20) !important;
   }
   [data-tilt]:hover .tilt-image { filter: brightness(1.12) saturate(1.15); }
+
+  /* View Transitions natives : navigation conservée, animation neutralisée */
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.01ms !important;
+  }
 }
 
 /* ─── SMOOTH SCROLL ─── */

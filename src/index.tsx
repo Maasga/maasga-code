@@ -5,6 +5,7 @@ import { setCookie, getCookie, deleteCookie } from 'hono/cookie'
 import type { D1Database } from '@cloudflare/workers-types'
 import { HomePage } from './pages/home'
 import { CataloguePage } from './pages/catalogue'
+import { ProductDetailPage } from './pages/produit'
 import { SimulateurPage } from './pages/simulateur'
 import { RendezVousPage } from './pages/rendez-vous'
 import { AvisPage } from './pages/avis'
@@ -448,6 +449,15 @@ app.get('/catalogue', (c) => {
   const product = c.req.query('product')
   const page = Math.max(1, parseInt(c.req.query('page') || '1') || 1)
   return c.html(<CataloguePage filters={{ brand, btu, inverter, available, product }} page={page} />)
+})
+
+// Fiche produit dédiée — morph View Transitions depuis la carte catalogue
+app.get('/catalogue/:id', (c) => {
+  const id = parseInt(c.req.param('id'))
+  if (!id || isNaN(id)) return c.redirect('/catalogue?error=produit_introuvable')
+  const product = products.find(p => p.id === id)
+  if (!product) return c.redirect('/catalogue?error=produit_introuvable')
+  return c.html(<ProductDetailPage product={product} />)
 })
 
 app.get('/simulateur', (c) => {

@@ -88,7 +88,7 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
             <h2 class="text-xl font-bold text-white mb-6">Tous les avis ({approvedReviews.length})</h2>
             <div class="space-y-5 reveal">
               {approvedReviews.map(r => (
-                <div class="glass-card rounded-2xl p-6 hover:-translate-y-0.5 transition-all hover-lift">
+                <div data-tilt class="glass-card rounded-2xl p-6 transition-all">
                   <div class="flex items-start justify-between mb-4">
                     <div class="flex items-center space-x-3">
                       <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-ice-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
@@ -113,6 +113,7 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
                     <i class="fas fa-check-circle text-blue-500 text-xs"></i>
                     <span class="text-xs text-blue-500 font-medium">Avis vérifié</span>
                   </div>
+                  <div class="tilt-shine" aria-hidden="true"></div>
                 </div>
               ))}
             </div>
@@ -121,7 +122,7 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
           {/* ===== SIDEBAR ===== */}
           <div class="space-y-6">
             {/* Distribution notes */}
-            <div class="glass-card rounded-2xl p-6 reveal">
+            <div data-tilt class="glass-card rounded-2xl p-6 reveal">
               <h3 class="font-bold text-white mb-5">Distribution des notes</h3>
               <div class="space-y-3">
                 {noteCount.map(n => (
@@ -138,6 +139,7 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
                   </div>
                 ))}
               </div>
+              <div class="tilt-shine" aria-hidden="true"></div>
             </div>
 
             {/* Formulaire avis */}
