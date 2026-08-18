@@ -237,10 +237,6 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
                       if (pending.quartier) { var el = document.getElementById('order-quartier'); if(el) el.value = pending.quartier; }
                       if (pending.email) { var el = document.getElementById('order-email'); if(el) el.value = pending.email; }
                       if (pending.notes) { var el = document.getElementById('order-notes'); if(el) el.value = pending.notes; }
-                      if (pending.paymentMethod) {
-                        var radio = document.querySelector('input[name="order-payment"][value="' + pending.paymentMethod + '"]');
-                        if (radio) radio.checked = true;
-                      }
                       showToast('Votre commande précédente a été restaurée. Vous pouvez la finaliser.', 'success');
                     }, 300);
                   }
@@ -255,10 +251,6 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
                       if (pending.quartier) { var el = document.getElementById('order-quartier'); if(el) el.value = pending.quartier; }
                       if (pending.email) { var el = document.getElementById('order-email'); if(el) el.value = pending.email; }
                       if (pending.notes) { var el = document.getElementById('order-notes'); if(el) el.value = pending.notes; }
-                      if (pending.paymentMethod) {
-                        var radio = document.querySelector('input[name="order-payment"][value="' + pending.paymentMethod + '"]');
-                        if (radio) radio.checked = true;
-                      }
                       showToast('Votre commande précédente a été restaurée. Vous pouvez la finaliser.', 'success');
                     }, 300);
                   }
@@ -301,9 +293,6 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
             btn.style.color = 'white';
           }, 2000);
         }
-
-        // ===== PANNEAUX DYNAMIQUES PAIEMENT (modal commande) =====
-                }
 
         // ===== GESTION DU MODAL PANIER =====
         function openCartModal() {
