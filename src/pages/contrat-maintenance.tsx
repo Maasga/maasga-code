@@ -233,7 +233,7 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
     </section>
 
     {/* Formulaire de demande — MODAL */}
-    <div id="maintenance-modal" class="hidden fixed inset-0 z-50 flex items-start justify-center p-4 pt-6" style="background:rgba(0,0,0,0.6); backdrop-filter:blur(6px);">
+    <div id="maintenance-modal" data-lenis-prevent class="hidden fixed inset-0 z-50 flex items-start justify-center p-4 pt-6" style="background:rgba(0,0,0,0.6); backdrop-filter:blur(6px);">
       <div class="w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden" style="background:#ffffff; max-height:92vh; overflow-y:auto;">
         {/* Modal Header */}
         <div class="flex items-center justify-between px-6 py-4 sticky top-0 z-10" style="background:#f8fafc; border-bottom:2px solid #e2e8f0;">
@@ -310,177 +310,27 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
               </select>
             </div>
 
-            {/* Paiement en ligne (visible seulement si contrat) */}
-            <div id="payment-field" style="display:none;">
-              <label class="block text-sm font-semibold mb-3" style="color:#03045e;">
-                <i class="fas fa-wallet mr-1" style="color:#0077b6;"></i>Mode de paiement
-              </label>
-
-              {/* Payment method grid */}
-              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3" id="payment-methods-grid">
-                {/* Confirmer par telephone */}
-                <label class="cursor-pointer">
-                  <input type="radio" name="payment_method" value="a_confirmer" class="hidden peer" checked />
-                  <div class="peer-checked:border-blue-500 peer-checked:bg-blue-50 border-2 rounded-xl p-3 text-center transition-all hover:border-blue-300" style="border-color:#e2e8f0;">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2" style="background:rgba(0,119,182,0.08);">
-                      <i class="fas fa-phone-alt" style="color:#0077b6;"></i>
-                    </div>
-                    <div class="text-xs font-bold" style="color:#03045e;">Téléphone (Whatsapp)</div>
-                    <div class="text-[10px] mt-0.5" style="color:#94a3b8;">Un conseiller appelle</div>
-                  </div>
-                </label>
-                {/* LigdiCash */}
-                <label class="cursor-pointer">
-                  <input type="radio" name="payment_method" value="ligdicash" class="hidden peer" />
-                  <div class="peer-checked:border-green-500 peer-checked:bg-green-50 border-2 rounded-xl p-3 text-center transition-all hover:border-green-400" style="border-color:#e2e8f0;">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2" style="background:linear-gradient(135deg,#00b4d8,#0077b6);">
-                      <i class="fas fa-lock" style="color:#fff;"></i>
-                    </div>
-                    <div class="text-xs font-bold" style="color:#03045e;">LigdiCash</div>
-                    <div class="text-[10px] mt-0.5" style="color:#94a3b8;">Paiement sécurisé</div>
-                  </div>
-                </label>
-                {/* Wave */}
-                <label class="cursor-pointer">
-                  <input type="radio" name="payment_method" value="wave" class="hidden peer" />
-                  <div class="peer-checked:border-blue-500 peer-checked:bg-blue-50 border-2 rounded-xl p-3 text-center transition-all hover:border-blue-300" style="border-color:#e2e8f0;">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2" style="background:#1a6ef5;">
-                      <i class="fas fa-bolt" style="color:#fff;"></i>
-                    </div>
-                    <div class="text-xs font-bold" style="color:#03045e;">Wave</div>
-                    <div class="text-[10px] mt-0.5" style="color:#94a3b8;">Paiement instantané</div>
-                  </div>
-                </label>
-                {/* Carte bancaire */}
-                <label class="cursor-pointer">
-                  <input type="radio" name="payment_method" value="carte_bancaire" class="hidden peer" />
-                  <div class="peer-checked:border-slate-700 peer-checked:bg-slate-50 border-2 rounded-xl p-3 text-center transition-all hover:border-slate-400" style="border-color:#e2e8f0;">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2" style="background:#1e293b;">
-                      <i class="fas fa-credit-card" style="color:#fff;"></i>
-                    </div>
-                    <div class="text-xs font-bold" style="color:#03045e;">Carte bancaire</div>
-                    <div class="text-[10px] mt-0.5" style="color:#94a3b8;">Visa / Mastercard</div>
-                  </div>
-                </label>
-              </div>
-
-              {/* ══════ Dynamic payment detail panels ══════ */}
-
-              {/* Confirmer par telephone — detail */}
-              <div id="pay-detail-a_confirmer" class="pay-detail rounded-xl p-4 mt-2" style="background:rgba(0,119,182,0.03); border:1px solid rgba(0,119,182,0.1);">
-                <div class="flex items-center gap-2 mb-2">
-                  <i class="fas fa-info-circle text-sm" style="color:#0077b6;"></i>
-                  <span class="text-sm font-bold" style="color:#03045e;">Confirmation téléphonique</span>
+            {/* Notice contact WhatsApp & Email */}
+            <div id="payment-info" class="rounded-2xl p-4" style="background:linear-gradient(135deg,rgba(0,119,182,0.06),rgba(37,211,102,0.04)); border:1.5px solid rgba(0,119,182,0.15);">
+              <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center mt-0.5" style="background:linear-gradient(135deg,#0077b6,#00b4d8);">
+                  <i class="fas fa-headset" style="color:#fff; font-size:1rem;"></i>
                 </div>
-                <p class="text-xs leading-relaxed" style="color:#64748b;">
-                  Un conseiller MAASGA vous contactera sous 2h pour confirmer votre souscription et convenir du mode de paiement.
-                </p>
-              </div>
-
-              {/* LigdiCash — detail */}
-              <div id="pay-detail-ligdicash" class="pay-detail rounded-xl p-4 mt-2" style="display:none; background:rgba(0,180,216,0.03); border:1px solid rgba(0,119,182,0.2);">
-                <div class="flex items-center gap-2 mb-3">
-                  <div class="w-6 h-6 rounded-md flex items-center justify-center" style="background:linear-gradient(135deg,#00b4d8,#0077b6);">
-                    <i class="fas fa-lock" style="color:#fff; font-size:0.65rem;"></i>
-                  </div>
-                  <span class="text-sm font-bold" style="color:#03045e;">LigdiCash — Paiement sécurisé</span>
-                </div>
-                <div class="flex items-start gap-3 p-3 rounded-lg mb-2" style="background:rgba(0,119,182,0.06);">
-                  <div class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center mt-0.5" style="background:linear-gradient(135deg,#00b4d8,#0077b6);">
-                    <i class="fas fa-external-link-alt" style="color:#fff;"></i>
-                  </div>
-                  <div>
-                    <div class="text-xs font-bold mb-1" style="color:#0077b6;">Vous serez redirigé vers LigdiCash</div>
-                    <div class="text-[10px] leading-relaxed" style="color:#64748b;">
-                      LigdiCash est une plateforme de paiement sécurisée. Vous pourrez payer via <strong>Orange Money</strong>, <strong>Moov Money</strong> ou tout autre moyen accepté sur la plateforme.
-                    </div>
-                  </div>
-                </div>
-                <div class="flex items-center gap-2 text-[10px]" style="color:#64748b;">
-                  <i class="fas fa-shield-alt" style="color:#22c55e;"></i>
-                  <span>Transaction chiffrée — Données sécurisées</span>
-                </div>
-              </div>
-
-              {/* Wave — detail */}
-              <div id="pay-detail-wave" class="pay-detail rounded-xl p-4 mt-2" style="display:none; background:rgba(26,110,245,0.03); border:1px solid rgba(26,110,245,0.15);">
-                <div class="flex items-center gap-2 mb-3">
-                  <div class="w-6 h-6 rounded-md flex items-center justify-center" style="background:#1a6ef5;">
-                    <i class="fas fa-bolt" style="color:#fff; font-size:0.65rem;"></i>
-                  </div>
-                  <span class="text-sm font-bold" style="color:#03045e;">Wave</span>
-                </div>
-                <div class="space-y-3">
-                  <div>
-                    <label class="block text-xs font-semibold mb-1" style="color:#334155;">Numéro Wave</label>
-                    <div class="flex rounded-xl overflow-hidden" style="border:1.5px solid rgba(26,110,245,0.25);">
-                      <div class="flex items-center px-3 text-xs font-bold" style="background:rgba(26,110,245,0.06); color:#1a6ef5; border-right:1px solid rgba(26,110,245,0.15);">+226</div>
-                      <input type="tel" name="wave_phone" placeholder="XX XX XX XX" class="flex-1 px-3 py-2.5 text-sm outline-none" style="background:#f5f8ff; color:#03045e;" />
-                    </div>
-                  </div>
-                  <div class="grid grid-cols-2 gap-3">
-                    <div class="p-3 rounded-lg text-center" style="background:rgba(26,110,245,0.06);">
-                      <div class="w-16 h-16 mx-auto rounded-xl flex items-center justify-center mb-2" style="background:#1a6ef5;">
-                        <i class="fas fa-qrcode text-2xl" style="color:#fff;"></i>
-                      </div>
-                      <div class="text-[10px] font-bold" style="color:#1a6ef5;">QR Code</div>
-                      <div class="text-[10px]" style="color:#64748b;">Scanner pour payer</div>
-                    </div>
-                    <div class="p-3 rounded-lg text-center" style="background:rgba(26,110,245,0.06);">
-                      <div class="w-16 h-16 mx-auto rounded-xl flex items-center justify-center mb-2" style="background:rgba(26,110,245,0.1);">
-                        <i class="fas fa-mobile-alt text-2xl" style="color:#1a6ef5;"></i>
-                      </div>
-                      <div class="text-[10px] font-bold" style="color:#1a6ef5;">Notification</div>
-                      <div class="text-[10px]" style="color:#64748b;">Valider sur l'app</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Carte bancaire — detail */}
-              <div id="pay-detail-carte_bancaire" class="pay-detail rounded-xl p-4 mt-2" style="display:none; background:rgba(30,41,59,0.02); border:1px solid rgba(30,41,59,0.12);">
-                <div class="flex items-center gap-2 mb-3">
-                  <div class="w-6 h-6 rounded-md flex items-center justify-center" style="background:#1e293b;">
-                    <i class="fas fa-credit-card" style="color:#fff; font-size:0.65rem;"></i>
-                  </div>
-                  <span class="text-sm font-bold" style="color:#03045e;">Carte bancaire</span>
-                  <div class="flex items-center gap-1 ml-auto">
-                    <i class="fab fa-cc-visa text-lg" style="color:#1a1f71;"></i>
-                    <i class="fab fa-cc-mastercard text-lg" style="color:#eb001b;"></i>
-                  </div>
-                </div>
-                <div class="space-y-3">
-                  <div>
-                    <label class="block text-xs font-semibold mb-1" style="color:#334155;">Numéro de carte</label>
-                    <div class="relative">
-                      <input type="text" name="card_number" placeholder="0000 0000 0000 0000" maxlength={19} inputmode="numeric" autocomplete="cc-number"
-                        class="w-full rounded-xl px-4 py-2.5 text-sm outline-none pr-12" style="border:1.5px solid rgba(30,41,59,0.2); background:#f8fafc; color:#03045e; letter-spacing:0.1em;" />
-                      <i class="fas fa-lock absolute right-4 top-1/2 -translate-y-1/2 text-xs" style="color:#94a3b8;"></i>
-                    </div>
-                  </div>
-                  <div class="grid grid-cols-2 gap-3">
-                    <div>
-                      <label class="block text-xs font-semibold mb-1" style="color:#334155;">Expiration</label>
-                      <input type="text" name="card_expiry" placeholder="MM / AA" maxlength={7} inputmode="numeric" autocomplete="cc-exp"
-                        class="w-full rounded-xl px-4 py-2.5 text-sm outline-none" style="border:1.5px solid rgba(30,41,59,0.2); background:#f8fafc; color:#03045e;" />
-                    </div>
-                    <div>
-                      <label class="block text-xs font-semibold mb-1" style="color:#334155;">CVV</label>
-                      <div class="relative">
-                        <input type="text" name="card_cvv" placeholder="123" maxlength={4} inputmode="numeric" autocomplete="cc-csc"
-                          class="w-full rounded-xl px-4 py-2.5 text-sm outline-none" style="border:1.5px solid rgba(30,41,59,0.2); background:#f8fafc; color:#03045e;" />
-                        <i class="fas fa-question-circle absolute right-3 top-1/2 -translate-y-1/2 text-xs" style="color:#94a3b8;" title="Code à 3 chiffres au dos de la carte"></i>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <label class="block text-xs font-semibold mb-1" style="color:#334155;">Titulaire de la carte</label>
-                    <input type="text" name="card_holder" placeholder="NOM COMPLET" autocomplete="cc-name"
-                      class="w-full rounded-xl px-4 py-2.5 text-sm outline-none uppercase" style="border:1.5px solid rgba(30,41,59,0.2); background:#f8fafc; color:#03045e;" />
-                  </div>
-                  <div class="flex items-center gap-2 p-2.5 rounded-lg" style="background:rgba(22,163,74,0.06);">
-                    <i class="fas fa-shield-alt text-xs" style="color:#16a34a;"></i>
-                    <span class="text-[10px]" style="color:#16a34a;">Paiement sécurisé — chiffrement SSL 256 bits</span>
+                <div>
+                  <div class="text-sm font-bold mb-1" style="color:#03045e;">Comment ça fonctionne ?</div>
+                  <p class="text-xs leading-relaxed mb-3" style="color:#475569;">
+                    Après validation de votre souscription, <strong style="color:#0077b6;">un conseiller MAASGA vous contactera directement</strong> par <span style="color:#25d366; font-weight:700;"><i class="fab fa-whatsapp"></i> WhatsApp</span> et par <span style="color:#0077b6; font-weight:700;"><i class="fas fa-envelope"></i> e-mail</span> afin de finaliser les modalités de votre contrat de maintenance.
+                  </p>
+                  <div class="flex flex-wrap gap-2">
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold" style="background:rgba(37,211,102,0.1); color:#16a34a;">
+                      <i class="fab fa-whatsapp"></i> Contact WhatsApp
+                    </span>
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold" style="background:rgba(0,119,182,0.08); color:#0077b6;">
+                      <i class="fas fa-envelope"></i> Confirmation par e-mail
+                    </span>
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold" style="background:rgba(234,179,8,0.1); color:#d97706;">
+                      <i class="fas fa-clock"></i> Réponse sous 2h
+                    </span>
                   </div>
                 </div>
               </div>
@@ -568,9 +418,28 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
 
       // Open modal with plan pre-selected
       function openMaintenanceModal(plan) {
+        fetch('/api/session-check', { credentials: 'same-origin' })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.loggedIn) {
+              _doOpenMaintenanceModal(plan);
+            } else {
+              window.location.href = '/espace-client?redirect=contrat-maintenance&error=' + encodeURIComponent('Veuillez vous connecter pour choisir une offre de contrat de maintenance.');
+            }
+          })
+          .catch(function() {
+            window.location.href = '/espace-client?redirect=contrat-maintenance';
+          });
+      }
+
+      function _doOpenMaintenanceModal(plan) {
         var modal = document.getElementById('maintenance-modal');
+        if (!modal) return;
         modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
+        
+        // Disable body scroll and Lenis
+        document.body.classList.add('modal-open');
+        if (window.__lenis) window.__lenis.stop();
 
         // Auto-select "contrat" type
         var contratRadio = document.querySelector('input[name="request_type"][value="contrat"]');
@@ -591,8 +460,12 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
 
       function closeMaintenanceModal() {
         var modal = document.getElementById('maintenance-modal');
+        if (!modal) return;
         modal.classList.add('hidden');
-        document.body.style.overflow = '';
+        
+        // Re-enable body scroll and Lenis
+        document.body.classList.remove('modal-open');
+        if (window.__lenis) window.__lenis.start();
       }
 
       // Close on backdrop click
@@ -610,7 +483,7 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
         r.addEventListener('change', function() {
           var isContrat = this.value === 'contrat';
           document.getElementById('plan-field').style.display = isContrat ? 'block' : 'none';
-          document.getElementById('payment-field').style.display = isContrat ? 'block' : 'none';
+          document.getElementById('payment-info').style.display = isContrat ? 'block' : 'none';
           // Update banner visibility
           var banner = document.getElementById('selected-plan-banner');
           if (!isContrat && banner) banner.classList.add('hidden');
@@ -618,122 +491,25 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
       });
 
       // ═══ Payment method dynamic panels ═══
-      function showPaymentDetail(method) {
-        document.querySelectorAll('.pay-detail').forEach(function(el) { el.style.display = 'none'; });
-        var panel = document.getElementById('pay-detail-' + method);
-        if (panel) {
-          panel.style.display = 'block';
-          panel.style.animation = 'fadeSlideIn 0.25s ease forwards';
-        }
-      }
-      // Initial state
-      showPaymentDetail('a_confirmer');
-      // Listen to payment method changes
-      document.querySelectorAll('input[name="payment_method"]').forEach(function(r) {
-        r.addEventListener('change', function() { showPaymentDetail(this.value); });
-      });
 
-      // Card number formatting: auto-space every 4 digits
-      var cardInput = document.querySelector('input[name="card_number"]');
-      if (cardInput) {
-        cardInput.addEventListener('input', function(e) {
-          var v = this.value.replace(/\\D/g,'').substring(0,16);
-          var formatted = v.replace(/(\\d{4})(?=\\d)/g, '$1 ');
-          this.value = formatted;
-        });
-      }
-      // Card expiry formatting: MM / YY
-      var expiryInput = document.querySelector('input[name="card_expiry"]');
-      if (expiryInput) {
-        expiryInput.addEventListener('input', function(e) {
-          var v = this.value.replace(/\\D/g,'').substring(0,4);
-          if (v.length >= 3) v = v.substring(0,2) + ' / ' + v.substring(2);
-          this.value = v;
-        });
-      }
-      // CVV: digits only
-      var cvvInput = document.querySelector('input[name="card_cvv"]');
-      if (cvvInput) {
-        cvvInput.addEventListener('input', function() {
-          this.value = this.value.replace(/\\D/g,'').substring(0,4);
-        });
-      }
+
+
       
       // Pre-select plan (legacy, kept for compatibility)
       function selectPlan(plan) {
         openMaintenanceModal(plan);
       }
+      window.openMaintenanceModal = openMaintenanceModal;
+      window.closeMaintenanceModal = closeMaintenanceModal;
+      window.selectPlan = selectPlan;
       
-      // Plan prices for payment
-      var planPrices = { trimestriel: 30000, semestriel: 55000, annuel: 100000 };
-
-      // Enhanced submit with payment integration
-      document.querySelector('#submit-maintenance')?.closest('form')?.addEventListener('submit', async function(e) {
+      // Simple submit — payment handled via WhatsApp/email follow-up
+      document.querySelector('#submit-maintenance')?.closest('form')?.addEventListener('submit', function(e) {
         var btn = document.getElementById('submit-maintenance');
-        var requestType = document.querySelector('input[name="request_type"]:checked');
-        var paymentMethod = document.querySelector('input[name="payment_method"]:checked');
-        
-        // If contrat + online payment selected, check login first
-        if (requestType && requestType.value === 'contrat' && paymentMethod && paymentMethod.value !== 'a_confirmer') {
-          e.preventDefault();
+        if (btn) {
           btn.disabled = true;
-          btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i>Vérification...';
-          
-          try {
-            // Check session
-            var sessionCheck = await fetch('/api/session-check');
-            var sessionData = await sessionCheck.json();
-            if (!sessionData.loggedIn) {
-              btn.disabled = false;
-              btn.innerHTML = '<i class="fas fa-paper-plane"></i><span>Envoyer ma demande</span>';
-              if (typeof showToast === 'function') showToast('Veuillez vous connecter avant de payer.', 'warning');
-              setTimeout(function() { window.location.href = '/espace-client?redirect=contrat-maintenance'; }, 1500);
-              return;
-            }
-
-            // Submit the form first
-            var formData = new FormData(e.target);
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i>Envoi en cours...';
-            var submitRes = await fetch('/api/maintenance/request', { method: 'POST', body: formData });
-            
-            if (submitRes.ok) {
-              var submitData = await submitRes.json().catch(function() { return {}; });
-              var planType = document.querySelector('select[name="plan_type"]')?.value;
-              var amount = planPrices[planType] || 0;
-              
-              if (amount > 0) {
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i>Redirection paiement...';
-                var payRes = await fetch('/api/payment/initiate', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    payment_type: 'maintenance',
-                    maintenance_request_id: submitData.requestId || null,
-                    amount: amount,
-                    method: paymentMethod.value,
-                    description: 'Contrat maintenance MAASGA - ' + (planType || 'standard')
-                  })
-                });
-                var payData = await payRes.json().catch(function() { return {}; });
-                if (payData.redirect_url) {
-                  window.location.href = payData.redirect_url;
-                  return;
-                }
-              }
-            }
-            // Fallback: redirect to success
-            window.location.href = '/contrat-maintenance?success=1';
-          } catch(err) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-paper-plane"></i><span>Envoyer ma demande</span>';
-            if (typeof showToast === 'function') showToast('Erreur réseau. Réessayez.', 'error');
-          }
-          return;
+          btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i><span>Envoi en cours...</span>';
         }
-
-        // Default submit animation (no online payment)
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i>Envoi en cours...';
       });
 
       // Auto-open modal if success/error query params present

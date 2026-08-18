@@ -28,7 +28,7 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
       </button>
 
       {/* ===== MODAL PANIER ===== */}
-      <div id="cart-modal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style="background:rgba(0,0,0,0.8); backdrop-filter:blur(6px);" role="dialog" aria-modal="true" aria-label="Panier">
+      <div id="cart-modal" data-lenis-prevent class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style="background:rgba(0,0,0,0.8); backdrop-filter:blur(6px);" role="dialog" aria-modal="true" aria-label="Panier">
         <div class="w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden" style="background:#ffffff; border:1px solid rgba(59,130,246,0.2); max-height:90vh; display:flex; flex-direction:column;">
           <div class="flex items-center justify-between px-6 py-4 flex-shrink-0" style="background:rgba(59,130,246,0.05); border-bottom:1px solid rgba(59,130,246,0.1);">
             <h3 class="font-bold text-slate-800 text-lg flex items-center space-x-2">
@@ -69,7 +69,7 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
       </div>
 
       {/* Modal Commande / Checkout */}
-      <div id="order-modal" class="hidden fixed inset-0 z-50 flex items-end sm:items-start justify-center sm:pt-6 p-0 sm:p-4" style="background:rgba(0,0,0,0.6); backdrop-filter:blur(4px);" role="dialog" aria-modal="true" aria-label="Passer commande">
+      <div id="order-modal" data-lenis-prevent class="hidden fixed inset-0 z-50 flex items-end sm:items-start justify-center sm:pt-6 p-0 sm:p-4" style="background:rgba(0,0,0,0.6); backdrop-filter:blur(4px);" role="dialog" aria-modal="true" aria-label="Passer commande">
         <div class="w-full max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden" style="background:#ffffff; max-height:95vh; display:flex; flex-direction:column;">
           {/* Header blanc */}
           <div class="flex items-center justify-between px-6 py-4 flex-shrink-0" style="background:#f8fafc; border-bottom:2px solid #e2e8f0;">
@@ -141,166 +141,27 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
               </div>
             </div>
 
-            {/* Méthodes de paiement */}
-            <div>
-              <label class="block text-sm font-semibold mb-3" style="color:#03045e;">
-                <i class="fas fa-wallet mr-1" style="color:#0077b6;"></i>Mode de paiement
-              </label>
-
-              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
-                <label class="cursor-pointer">
-                  <input type="radio" name="order-payment" value="a_confirmer" class="hidden peer" checked />
-                  <div class="peer-checked:border-blue-500 peer-checked:bg-blue-50 border-2 rounded-xl p-3 text-center transition-all hover:border-blue-300" style="border-color:#e2e8f0;">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2" style="background:rgba(0,119,182,0.08);">
-                      <i class="fas fa-phone-alt" style="color:#0077b6;"></i>
-                    </div>
-                    <div class="text-xs font-bold" style="color:#03045e;">Téléphone</div>
-                    <div class="text-[10px] mt-0.5" style="color:#94a3b8;">Un conseiller appelle</div>
-                  </div>
-                </label>
-                <label class="cursor-pointer">
-                  <input type="radio" name="order-payment" value="ligdicash" class="hidden peer" />
-                  <div class="peer-checked:border-green-500 peer-checked:bg-green-50 border-2 rounded-xl p-3 text-center transition-all hover:border-green-400" style="border-color:#e2e8f0;">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2" style="background:linear-gradient(135deg,#00b4d8,#0077b6);">
-                      <i class="fas fa-lock" style="color:#fff;"></i>
-                    </div>
-                    <div class="text-xs font-bold" style="color:#03045e;">LigdiCash</div>
-                    <div class="text-[10px] mt-0.5" style="color:#94a3b8;">Paiement sécurisé</div>
-                  </div>
-                </label>
-                <label class="cursor-pointer">
-                  <input type="radio" name="order-payment" value="wave" class="hidden peer" />
-                  <div class="peer-checked:border-blue-500 peer-checked:bg-blue-50 border-2 rounded-xl p-3 text-center transition-all hover:border-blue-300" style="border-color:#e2e8f0;">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2" style="background:#1a6ef5;">
-                      <i class="fas fa-bolt" style="color:#fff;"></i>
-                    </div>
-                    <div class="text-xs font-bold" style="color:#03045e;">Wave</div>
-                    <div class="text-[10px] mt-0.5" style="color:#94a3b8;">Paiement instantané</div>
-                  </div>
-                </label>
-                <label class="cursor-pointer">
-                  <input type="radio" name="order-payment" value="carte_bancaire" class="hidden peer" />
-                  <div class="peer-checked:border-slate-700 peer-checked:bg-slate-50 border-2 rounded-xl p-3 text-center transition-all hover:border-slate-400" style="border-color:#e2e8f0;">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2" style="background:#1e293b;">
-                      <i class="fas fa-credit-card" style="color:#fff;"></i>
-                    </div>
-                    <div class="text-xs font-bold" style="color:#03045e;">Carte bancaire</div>
-                    <div class="text-[10px] mt-0.5" style="color:#94a3b8;">Visa / Mastercard</div>
-                  </div>
-                </label>
-              </div>
-
-              <div id="order-pay-detail-a_confirmer" class="order-pay-detail rounded-xl p-4 mt-2" style="background:rgba(0,119,182,0.03); border:1px solid rgba(0,119,182,0.1);">
-                <div class="flex items-center gap-2 mb-2">
-                  <i class="fas fa-info-circle text-sm" style="color:#0077b6;"></i>
-                  <span class="text-sm font-bold" style="color:#03045e;">Confirmation téléphonique</span>
+            {/* Notice contact WhatsApp & Email */}
+            <div id="order-contact-notice" class="rounded-2xl p-4" style="background:linear-gradient(135deg,rgba(0,119,182,0.06),rgba(37,211,102,0.04)); border:1.5px solid rgba(0,119,182,0.15);">
+              <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center mt-0.5" style="background:linear-gradient(135deg,#0077b6,#00b4d8);">
+                  <i class="fas fa-headset" style="color:#fff; font-size:1rem;"></i>
                 </div>
-                <p class="text-xs leading-relaxed" style="color:#64748b;">
-                  Un conseiller MAASGA vous contactera sous 2h pour confirmer votre commande et convenir du mode de paiement.
-                </p>
-              </div>
-
-              <div id="order-pay-detail-ligdicash" class="order-pay-detail rounded-xl p-4 mt-2" style="display:none; background:rgba(0,180,216,0.03); border:1px solid rgba(0,119,182,0.2);">
-                <div class="flex items-center gap-2 mb-3">
-                  <div class="w-6 h-6 rounded-md flex items-center justify-center" style="background:linear-gradient(135deg,#00b4d8,#0077b6);">
-                    <i class="fas fa-lock" style="color:#fff; font-size:0.65rem;"></i>
-                  </div>
-                  <span class="text-sm font-bold" style="color:#03045e;">LigdiCash — Paiement sécurisé</span>
-                </div>
-                <div class="flex items-start gap-3 p-3 rounded-lg mb-2" style="background:rgba(0,119,182,0.06);">
-                  <div class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center mt-0.5" style="background:linear-gradient(135deg,#00b4d8,#0077b6);">
-                    <i class="fas fa-external-link-alt" style="color:#fff;"></i>
-                  </div>
-                  <div>
-                    <div class="text-xs font-bold mb-1" style="color:#0077b6;">Vous serez redirigé vers LigdiCash</div>
-                    <div class="text-[10px] leading-relaxed" style="color:#64748b;">
-                      LigdiCash est une plateforme de paiement sécurisée. Vous pourrez payer via <strong>Orange Money</strong>, <strong>Moov Money</strong> ou tout autre moyen accepté sur la plateforme.
-                    </div>
-                  </div>
-                </div>
-                <div class="flex items-center gap-2 text-[10px]" style="color:#64748b;">
-                  <i class="fas fa-shield-alt" style="color:#22c55e;"></i>
-                  <span>Transaction chiffrée — Données sécurisées</span>
-                </div>
-              </div>
-
-              <div id="order-pay-detail-wave" class="order-pay-detail rounded-xl p-4 mt-2" style="display:none; background:rgba(26,110,245,0.03); border:1px solid rgba(26,110,245,0.15);">
-                <div class="flex items-center gap-2 mb-3">
-                  <div class="w-6 h-6 rounded-md flex items-center justify-center" style="background:#1a6ef5;">
-                    <i class="fas fa-bolt" style="color:#fff; font-size:0.65rem;"></i>
-                  </div>
-                  <span class="text-sm font-bold" style="color:#03045e;">Wave</span>
-                </div>
-                <div class="space-y-3">
-                  <div>
-                    <label class="block text-xs font-semibold mb-1" style="color:#334155;">Numéro Wave</label>
-                    <div class="flex rounded-xl overflow-hidden" style="border:1.5px solid rgba(26,110,245,0.25);">
-                      <div class="flex items-center px-3 text-xs font-bold" style="background:rgba(26,110,245,0.06); color:#1a6ef5; border-right:1px solid rgba(26,110,245,0.15);">+226</div>
-                      <input type="tel" id="order-wave-phone" placeholder="XX XX XX XX" class="flex-1 px-3 py-2.5 text-sm outline-none" style="background:#f5f8ff; color:#03045e;" />
-                    </div>
-                  </div>
-                  <div class="grid grid-cols-2 gap-3">
-                    <div class="p-3 rounded-lg text-center" style="background:rgba(26,110,245,0.06);">
-                      <div class="w-16 h-16 mx-auto rounded-xl flex items-center justify-center mb-2" style="background:#1a6ef5;">
-                        <i class="fas fa-qrcode text-2xl" style="color:#fff;"></i>
-                      </div>
-                      <div class="text-[10px] font-bold" style="color:#1a6ef5;">QR Code</div>
-                      <div class="text-[10px]" style="color:#64748b;">Scanner pour payer</div>
-                    </div>
-                    <div class="p-3 rounded-lg text-center" style="background:rgba(26,110,245,0.06);">
-                      <div class="w-16 h-16 mx-auto rounded-xl flex items-center justify-center mb-2" style="background:rgba(26,110,245,0.1);">
-                        <i class="fas fa-mobile-alt text-2xl" style="color:#1a6ef5;"></i>
-                      </div>
-                      <div class="text-[10px] font-bold" style="color:#1a6ef5;">Notification</div>
-                      <div class="text-[10px]" style="color:#64748b;">Valider sur l'app</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div id="order-pay-detail-carte_bancaire" class="order-pay-detail rounded-xl p-4 mt-2" style="display:none; background:rgba(30,41,59,0.02); border:1px solid rgba(30,41,59,0.12);">
-                <div class="flex items-center gap-2 mb-3">
-                  <div class="w-6 h-6 rounded-md flex items-center justify-center" style="background:#1e293b;">
-                    <i class="fas fa-credit-card" style="color:#fff; font-size:0.65rem;"></i>
-                  </div>
-                  <span class="text-sm font-bold" style="color:#03045e;">Carte bancaire</span>
-                  <div class="flex items-center gap-1 ml-auto">
-                    <i class="fab fa-cc-visa text-lg" style="color:#1a1f71;"></i>
-                    <i class="fab fa-cc-mastercard text-lg" style="color:#eb001b;"></i>
-                  </div>
-                </div>
-                <div class="space-y-3">
-                  <div>
-                    <label class="block text-xs font-semibold mb-1" style="color:#334155;">Numéro de carte</label>
-                    <div class="relative">
-                      <input type="text" id="order-card-number" placeholder="0000 0000 0000 0000" maxlength={19} inputmode="numeric" autocomplete="cc-number"
-                        class="w-full rounded-xl px-4 py-2.5 text-sm outline-none pr-12" style="border:1.5px solid rgba(30,41,59,0.2); background:#f8fafc; color:#03045e; letter-spacing:0.1em;" />
-                      <i class="fas fa-lock absolute right-4 top-1/2 -translate-y-1/2 text-xs" style="color:#94a3b8;"></i>
-                    </div>
-                  </div>
-                  <div class="grid grid-cols-2 gap-3">
-                    <div>
-                      <label class="block text-xs font-semibold mb-1" style="color:#334155;">Expiration</label>
-                      <input type="text" id="order-card-expiry" placeholder="MM / AA" maxlength={7} inputmode="numeric" autocomplete="cc-exp"
-                        class="w-full rounded-xl px-4 py-2.5 text-sm outline-none" style="border:1.5px solid rgba(30,41,59,0.2); background:#f8fafc; color:#03045e;" />
-                    </div>
-                    <div>
-                      <label class="block text-xs font-semibold mb-1" style="color:#334155;">CVV</label>
-                      <div class="relative">
-                        <input type="text" id="order-card-cvv" placeholder="123" maxlength={4} inputmode="numeric" autocomplete="cc-csc"
-                          class="w-full rounded-xl px-4 py-2.5 text-sm outline-none" style="border:1.5px solid rgba(30,41,59,0.2); background:#f8fafc; color:#03045e;" />
-                        <i class="fas fa-question-circle absolute right-3 top-1/2 -translate-y-1/2 text-xs" style="color:#94a3b8;" title="Code à 3 chiffres au dos de la carte"></i>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <label class="block text-xs font-semibold mb-1" style="color:#334155;">Titulaire de la carte</label>
-                    <input type="text" id="order-card-holder" placeholder="NOM COMPLET" autocomplete="cc-name"
-                      class="w-full rounded-xl px-4 py-2.5 text-sm outline-none uppercase" style="border:1.5px solid rgba(30,41,59,0.2); background:#f8fafc; color:#03045e;" />
-                  </div>
-                  <div class="flex items-center gap-2 p-2.5 rounded-lg" style="background:rgba(22,163,74,0.06);">
-                    <i class="fas fa-shield-alt text-xs" style="color:#16a34a;"></i>
-                    <span class="text-[10px]" style="color:#16a34a;">Paiement sécurisé — chiffrement SSL 256 bits</span>
+                <div>
+                  <div class="text-sm font-bold mb-1" style="color:#03045e;">Comment ça fonctionne ?</div>
+                  <p class="text-xs leading-relaxed mb-3" style="color:#475569;">
+                    Après validation de votre commande, <strong style="color:#0077b6;">un conseiller MAASGA vous contactera directement</strong> par <span style="color:#25d366; font-weight:700;"><i class="fab fa-whatsapp"></i> WhatsApp</span> et par <span style="color:#0077b6; font-weight:700;"><i class="fas fa-envelope"></i> e-mail</span> afin de finaliser les modalités de paiement et de livraison.
+                  </p>
+                  <div class="flex flex-wrap gap-2">
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold" style="background:rgba(37,211,102,0.1); color:#16a34a;">
+                      <i class="fab fa-whatsapp"></i> Contact WhatsApp
+                    </span>
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold" style="background:rgba(0,119,182,0.08); color:#0077b6;">
+                      <i class="fas fa-envelope"></i> Confirmation par e-mail
+                    </span>
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold" style="background:rgba(234,179,8,0.1); color:#d97706;">
+                      <i class="fas fa-clock"></i> Réponse sous 2h
+                    </span>
                   </div>
                 </div>
               </div>
@@ -320,7 +181,7 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
             </div>
             <h4 class="font-bold text-lg mb-2" style="color:#03045e;">Commande confirmée !</h4>
             <p class="text-sm mb-1" style="color:#8ba3c0;">Merci pour votre achat.</p>
-            <p class="text-sm" style="color:#8ba3c0;">Votre commande est en cours de traitement. Vous recevrez un appel sous <strong style="color:#38bdf8;">2h</strong> pour planifier la livraison et l'installation.</p>
+            <p class="text-sm mb-3" style="color:#8ba3c0;">Votre commande est enregistrée. Un conseiller MAASGA vous contactera sous <strong style="color:#25d366;">2h</strong> par <strong style="color:#25d366;"><i class="fab fa-whatsapp"></i> WhatsApp</strong> et par <strong style="color:#0077b6;"><i class="fas fa-envelope"></i> e-mail</strong> pour finaliser les modalités de paiement et de livraison.</p>
 
             <div id="create-account-section" style="margin-top:20px; text-align:left;">
               <div style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.15); border-radius:14px; padding:16px;">
@@ -442,35 +303,22 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
         }
 
         // ===== PANNEAUX DYNAMIQUES PAIEMENT (modal commande) =====
-        function showOrderPayDetail(method) {
-          document.querySelectorAll('.order-pay-detail').forEach(function(el) { el.style.display = 'none'; });
-          var panel = document.getElementById('order-pay-detail-' + method);
-          if (panel) {
-            panel.style.display = 'block';
-            panel.style.animation = 'fadeSlideIn 0.25s ease forwards';
-          }
-        }
-        showOrderPayDetail('a_confirmer');
-        document.querySelectorAll('input[name="order-payment"]').forEach(function(r) {
-          r.addEventListener('change', function() { showOrderPayDetail(this.value); });
-        });
-        var _ocn = document.getElementById('order-card-number');
-        if (_ocn) _ocn.addEventListener('input', function() { var v=this.value.replace(/\\D/g,'').substring(0,16); this.value=v.replace(/(\\d{4})(?=\\d)/g,'$1 '); });
-        var _oce = document.getElementById('order-card-expiry');
-        if (_oce) _oce.addEventListener('input', function() { var v=this.value.replace(/\\D/g,'').substring(0,4); if(v.length>=3) v=v.substring(0,2)+' / '+v.substring(2); this.value=v; });
-        var _ocv = document.getElementById('order-card-cvv');
-        if (_ocv) _ocv.addEventListener('input', function() { this.value=this.value.replace(/\\D/g,'').substring(0,4); });
+                }
 
         // ===== GESTION DU MODAL PANIER =====
         function openCartModal() {
           renderCartModal();
           var cm = document.getElementById('cart-modal');
           cm.classList.remove('hidden');
+          document.body.classList.add('modal-open');
+          if (window.__lenis) window.__lenis.stop();
           if (window.trapFocus) window.trapFocus(cm);
         }
         function closeCartModal() {
           var cm = document.getElementById('cart-modal');
           cm.classList.add('hidden');
+          document.body.classList.remove('modal-open');
+          if (window.__lenis) window.__lenis.start();
           if (window.releaseFocus) window.releaseFocus(cm);
         }
         var _cartModalEl = document.getElementById('cart-modal');
@@ -560,8 +408,10 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
         function validateCart() {
           const cart = JSON.parse(localStorage.getItem('maasga_cart') || '[]');
           if (cart.length === 0) return;
-          closeCartModal();
-          openCartOrderModal();
+          checkLoginAndProceed(function() {
+            closeCartModal();
+            _doOpenCartOrderModal();
+          }, { type: 'cart' });
         }
 
         // ===== GESTION MODAL COMMANDE =====
@@ -603,6 +453,12 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
         }
 
         function openOrderModal(productId) {
+          checkLoginAndProceed(function() {
+            _doOpenOrderModal(productId);
+          }, { type: 'single', productId: productId });
+        }
+
+        function _doOpenOrderModal(productId) {
           const prod = window.__CAT_PRODUCTS__.find(p => p.id === productId);
           window.__ORDER_CONTEXT__ = { type: 'single', productId };
           const box = document.getElementById('order-summary-box');
@@ -620,10 +476,18 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
           prefillOrderForm();
           var om = document.getElementById('order-modal');
           om.classList.remove('hidden');
+          document.body.classList.add('modal-open');
+          if (window.__lenis) window.__lenis.stop();
           if (window.trapFocus) window.trapFocus(om);
         }
 
         function openCartOrderModal() {
+          checkLoginAndProceed(function() {
+            _doOpenCartOrderModal();
+          }, { type: 'cart' });
+        }
+
+        function _doOpenCartOrderModal() {
           const cart = JSON.parse(localStorage.getItem('maasga_cart') || '[]');
           window.__ORDER_CONTEXT__ = { type: 'cart', items: cart };
           const box = document.getElementById('order-summary-box');
@@ -648,12 +512,16 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
           prefillOrderForm();
           var om2 = document.getElementById('order-modal');
           om2.classList.remove('hidden');
+          document.body.classList.add('modal-open');
+          if (window.__lenis) window.__lenis.stop();
           if (window.trapFocus) window.trapFocus(om2);
         }
 
         function closeOrderModal() {
           var om = document.getElementById('order-modal');
           om.classList.add('hidden');
+          document.body.classList.remove('modal-open');
+          if (window.__lenis) window.__lenis.start();
           if (window.releaseFocus) window.releaseFocus(om);
           resetOrderModal();
         }
@@ -685,6 +553,28 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
 
         var __SESSION_DATA__ = null;
         var __SESSION_CHECKED__ = false;
+
+        function checkLoginAndProceed(callback, context) {
+          fetch('/api/session-check', { credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              if (data.loggedIn) {
+                callback();
+              } else {
+                try {
+                  localStorage.setItem('maasga_pending_order', JSON.stringify({
+                    context: context,
+                    timestamp: Date.now()
+                  }));
+                } catch(e) {}
+                var target = window.location.pathname + window.location.search;
+                window.location.href = '/espace-client?redirect=' + encodeURIComponent(target);
+              }
+            })
+            .catch(function() {
+              window.location.href = '/espace-client?redirect=' + encodeURIComponent(window.location.pathname);
+            });
+        }
 
         async function checkSessionAndUpdateUI() {
           if (__SESSION_CHECKED__) return __SESSION_DATA__;
@@ -745,31 +635,11 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
           const quartier = document.getElementById('order-quartier').value.trim();
           const email = document.getElementById('order-email').value.trim();
           const notes = document.getElementById('order-notes').value.trim();
-          const paymentRadio = document.querySelector('input[name="order-payment"]:checked');
-          const paymentMethod = paymentRadio ? paymentRadio.value : null;
+          const paymentMethod = 'a_confirmer';
 
           if (!name || !phone) {
             showToast('Merci de renseigner votre nom et votre téléphone.', 'warning');
             return;
-          }
-
-          if (paymentMethod && paymentMethod !== 'a_confirmer') {
-            try {
-              const sessionData = __SESSION_CHECKED__ && __SESSION_DATA__ ? __SESSION_DATA__ : await checkSessionAndUpdateUI();
-              if (!sessionData || !sessionData.loggedIn) {
-                try {
-                  const pendingOrder = {
-                    name, phone, quartier, email, notes, paymentMethod,
-                    context: window.__ORDER_CONTEXT__ || {},
-                    timestamp: Date.now()
-                  };
-                  localStorage.setItem('maasga_pending_order', JSON.stringify(pendingOrder));
-                } catch(e) {}
-                showToast('Veuillez vous connecter avant de procéder au paiement.', 'warning');
-                setTimeout(() => { window.location.href = '/espace-client?redirect=${redirectTarget}'; }, 1500);
-                return;
-              }
-            } catch(e) {}
           }
 
           const btn = document.getElementById('order-submit-btn');
@@ -814,29 +684,6 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
               if (ctx.type === 'cart') {
                 localStorage.removeItem('maasga_cart');
                 updateCartBadge();
-              }
-
-              if (paymentMethod && paymentMethod !== 'a_confirmer' && totalAmount > 0) {
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Redirection paiement…';
-                try {
-                  const payRes = await fetch('/api/payment/initiate', {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      payment_type: 'order',
-                      order_id: orderData.orderId || null,
-                      amount: totalAmount,
-                      method: paymentMethod,
-                      description: 'Commande MAASGA - ' + (ctx.type === 'cart' ? 'Panier' : 'Produit')
-                    })
-                  });
-                  const payData = await payRes.json().catch(() => ({}));
-                  if (payData.redirect_url) {
-                    window.location.href = payData.redirect_url;
-                    return;
-                  }
-                } catch(pe) {}
               }
 
               document.getElementById('order-form-footer').classList.add('hidden');
