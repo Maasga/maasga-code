@@ -1,4 +1,4 @@
-import { Hono } from 'hono'
+﻿import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { serveStatic } from 'hono/cloudflare-workers'
 import { setCookie, getCookie, deleteCookie } from 'hono/cookie'
@@ -12,7 +12,7 @@ import { AvisPage } from './pages/avis'
 import { AProposPage } from './pages/a-propos'
 import { ContactPage } from './pages/contact'
 import { EspaceClientPage } from './pages/espace-client'
-import { AdminPage, AdminProduitsPage, AdminRDVPage, AdminClientsPage, AdminCommandesPage, AdminAvisPage, AdminParametresPage, AdminDevisListPage, AdminDevisNewPage, AdminDevisDetailPage, AdminPaiementsPage, AdminMaintenancePage, AdminMessagesPage, AdminRealisationsPage, AdminSAVPage, AdminSAVDetailPage, AdminAuditLogPage, AdminNotificationsPage } from './pages/admin'
+import { AdminPage, AdminProduitsPage, AdminRDVPage, AdminClientsPage, AdminCommandesPage, AdminAvisPage, AdminParametresPage, AdminDevisListPage, AdminDevisNewPage, AdminDevisDetailPage, AdminMaintenancePage, AdminMessagesPage, AdminRealisationsPage, AdminSAVPage, AdminSAVDetailPage, AdminAuditLogPage, AdminNotificationsPage } from './pages/admin'
 import { RealisationsPage } from './pages/realisations'
 import { ContratMaintenancePage } from './pages/contrat-maintenance'
 import { appointments, reviews, orders, clients, setMaintenanceDueCount } from './data/store'
@@ -94,7 +94,7 @@ app.use(async (c, next) => {
   c.res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)')
   c.res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
   // CSP: allow inline styles/scripts for SSR JSX, Google Maps embeds, Font Awesome CDN, Google Analytics
-  c.res.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' data: https:; frame-src https://www.google.com; connect-src 'self' https://app.ligdicash.com https://www.google-analytics.com https://analytics.google.com https://www.google.com https://cdn.jsdelivr.net;")
+  c.res.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' data: https:; frame-src https://www.google.com; connect-src 'self' https://app.ligdicash.com https://www.google-analytics.com https://analytics.google.com https://www.google.com https://cdn.jsdelivr.net;")
   // Cache control per route type
   const path = new URL(c.req.url).pathname
   if (path.startsWith('/api/')) {
@@ -234,6 +234,8 @@ app.use(async (c, next) => {
     if (path === '/api/payment/callback') return next()
     if (path === '/api/telegram/webhook') return next()
     if (path === '/api/products' && c.req.header('Authorization')?.startsWith('Bearer ')) return next()
+    // Mobile app routes: no browser origin, authenticated via Bearer token
+    if (path.startsWith('/api/mobile/') || path === '/api/auth/google/mobile') return next()
     if (!csrfCheck(c)) {
       console.warn(`[CSRF] Blocked ${c.req.method} ${path} from origin: ${c.req.header('Origin') || 'none'}`)
       const csrfIp = c.req.header('cf-connecting-ip') || 'unknown'
@@ -250,7 +252,7 @@ const adminAuth = async (c: any, next: any) => {
     secret = getAdminSecret(c.env)
   } catch (e: any) {
     console.error('[SECURITY] ' + e.message)
-    return c.text('Configuration serveur incomplète. Contactez l\'administrateur.', 503)
+    return c.text("Configuration serveur incomplète. Contactez l'administrateur.", 503)
   }
   const cookie = c.req.header('Cookie') || ''
   const match = cookie.match(/maasga_admin=([^;]+)/)
@@ -521,10 +523,15 @@ app.get('/realisations', async (c) => {
   return c.html(<RealisationsPage realisations={realisationsList} />)
 })
 
-app.get('/contrat-maintenance', (c) => {
+app.get('/contrat-maintenance', async (c) => {
+  const sessionToken = getCookie(c, 'maasga_session') || ''
+  const session = sessionToken ? getSession(sessionToken) : null
+  if (!session) {
+    return c.redirect('/espace-client?redirect=contrat-maintenance&error=' + encodeURIComponent('Veuillez vous connecter pour souscrire un contrat de maintenance.'))
+  }
   const success = c.req.query('success') === '1'
   const error = c.req.query('error')
-  return c.html(<ContratMaintenancePage success={success} error={error} />)
+  return c.html(<ContratMaintenancePage success={success} error={error} clientName={session.name} clientPhone={session.phone} />)
 })
 
 app.get('/contact', (c) => {
@@ -605,31 +612,6 @@ async function ensureMaintenanceTables(db: any) {
   try { await db.prepare('ALTER TABLE maintenance_requests ADD COLUMN plan_type TEXT').run() } catch(_) { /* column already exists */ }
 }
 
-
-// Ensure payments table
-async function ensurePaymentTables(db: any) {
-  try {
-    await db.prepare(`CREATE TABLE IF NOT EXISTS payments (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      client_id INTEGER,
-      client_name TEXT,
-      client_phone TEXT,
-      order_id INTEGER,
-      maintenance_request_id INTEGER,
-      payment_type TEXT NOT NULL DEFAULT 'order' CHECK(payment_type IN ('order','maintenance_contract','maintenance_request')),
-      amount INTEGER NOT NULL,
-      currency TEXT NOT NULL DEFAULT 'XOF',
-      method TEXT CHECK(method IN ('ligdicash','carte','orange_money','moov_money','wave','cash')),
-      provider_ref TEXT,
-      provider_status TEXT,
-      status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','processing','completed','failed','cancelled','refunded')),
-      metadata TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    )`).run()
-  } catch(_) {}
-}
-  
 
 // Ensure contact_messages table
 async function ensureContactMessages(db: any) {
@@ -783,7 +765,6 @@ async function renderDashboard(c: any, clientId: number) {
   const db = c.env.DB
   if (!_tablesChecked) {
     await ensureMaintenanceTables(db)
-    await ensurePaymentTables(db)
     await ensureActivityLog(db)
     _tablesChecked = true
   }
@@ -791,7 +772,6 @@ async function renderDashboard(c: any, clientId: number) {
     'SELECT id, name, phone, email, quartier, created_at FROM clients WHERE id = ?'
   ).bind(clientId).first() as any
   if (!client) {
-    // Clear invalid session cookie to prevent redirect loop
     return new Response(null, {
       status: 302,
       headers: {
@@ -801,7 +781,6 @@ async function renderDashboard(c: any, clientId: number) {
     })
   }
   // Rétroactivement lier les commandes créées avec ce téléphone mais sans client_id
-  // Gère les variantes de format : "55996418", "+22655996418", "0022655996418"
   if (client.phone) {
     try {
       const rawPhone = client.phone.replace(/\D/g, '')
@@ -810,18 +789,16 @@ async function renderDashboard(c: any, clientId: number) {
         .bind(clientId, client.phone, `%${last8}`).run()
     } catch(_) {}
   }
-  // Batch all dashboard queries for performance — wrapped in try/catch for resilience
   let orders: any[] = [], rdvs: any[] = [], maintenanceContracts: any[] = []
   let maintenanceVisits: any[] = [], maintenanceRequests: any[] = []
-  let clientPayments: any[] = [], activityLog: any[] = []
+  let activityLog: any[] = []
   try {
-    const [ordersRes, rdvsRes, contractsRes, visitsRes, requestsRes, paymentsRes, activityRes] = await db.batch([
-      db.prepare('SELECT o.id, o.type, o.status, o.notes, o.total_price, o.delivered_at, o.installed_at, o.created_at, p.name as product_name, p.btu, p.brand, p.image FROM orders o LEFT JOIN products p ON o.product_id = p.id WHERE (o.client_phone = ? OR o.client_id = ?) GROUP BY o.id ORDER BY o.created_at DESC').bind(client.phone, clientId),
+    const [ordersRes, rdvsRes, contractsRes, visitsRes, requestsRes, activityRes] = await db.batch([
+      db.prepare('SELECT o.id, o.type, o.status, o.notes, o.total_price, o.admin_notes, o.created_at, p.name as product_name, p.btu, p.brand, p.image FROM orders o LEFT JOIN products p ON o.product_id = p.id WHERE (o.client_phone = ? OR o.client_id = ?) GROUP BY o.id ORDER BY o.created_at DESC').bind(client.phone, clientId),
       db.prepare('SELECT id, date, heure_debut, heure_fin, type, status, quartier, notes, created_at FROM appointments WHERE phone = ? ORDER BY date DESC').bind(client.phone),
       db.prepare('SELECT id, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date, notes, order_id FROM maintenance_contracts WHERE (client_phone = ? OR (client_id IS NOT NULL AND client_id = ?)) GROUP BY id ORDER BY created_at DESC').bind(client.phone, clientId),
       db.prepare('SELECT id, contract_id, visit_type, visit_date, status, technician, description, actions_performed, notes FROM maintenance_visits WHERE (client_phone = ? OR (client_id IS NOT NULL AND client_id = ?)) GROUP BY id ORDER BY visit_date DESC').bind(client.phone, clientId),
       db.prepare('SELECT id, request_type, description, preferred_date, equipment_type, plan_type, status, created_at FROM maintenance_requests WHERE phone = ? ORDER BY created_at DESC').bind(client.phone),
-      db.prepare('SELECT id, payment_type, amount, method, status, provider_ref, order_id, created_at FROM payments WHERE client_phone = ? ORDER BY created_at DESC').bind(client.phone),
       db.prepare('SELECT id, action, category, details, created_at FROM user_activity_log WHERE client_id = ? ORDER BY created_at DESC LIMIT 50').bind(clientId)
     ])
     orders = ordersRes.results || []
@@ -829,24 +806,10 @@ async function renderDashboard(c: any, clientId: number) {
     maintenanceContracts = contractsRes.results || []
     maintenanceVisits = visitsRes.results || []
     maintenanceRequests = requestsRes.results || []
-    clientPayments = paymentsRes.results || []
     activityLog = activityRes.results || []
-
-    // Auto-sync : passe les commandes encore à 'pending' dont le paiement est 'completed' → 'paid'
-    for (const p of clientPayments.filter((p: any) => p.status === 'completed' && p.order_id)) {
-      const ord = (orders as any[]).find((o: any) => o.id === p.order_id && o.status === 'pending')
-      if (ord) {
-        try {
-          await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?')
-            .bind('paid', new Date().toISOString(), ord.id).run()
-          ord.status = 'paid'
-        } catch(_) {}
-      }
-    }
   } catch (batchErr) {
     console.error('Dashboard batch query error:', batchErr)
-    // Fallback: run core queries individually so dashboard still renders
-    try { orders = (await db.prepare('SELECT o.id, o.type, o.status, o.notes, o.total_price, o.delivered_at, o.installed_at, o.created_at, p.name as product_name, p.btu, p.brand, p.image FROM orders o LEFT JOIN products p ON o.product_id = p.id WHERE (o.client_phone = ? OR o.client_id = ?) GROUP BY o.id ORDER BY o.created_at DESC').bind(client.phone, clientId).all()).results || [] } catch(_) {}
+    try { orders = (await db.prepare('SELECT o.id, o.type, o.status, o.notes, o.total_price, o.admin_notes, o.created_at, p.name as product_name, p.btu, p.brand, p.image FROM orders o LEFT JOIN products p ON o.product_id = p.id WHERE (o.client_phone = ? OR o.client_id = ?) GROUP BY o.id ORDER BY o.created_at DESC').bind(client.phone, clientId).all()).results || [] } catch(_) {}
     try { rdvs = (await db.prepare('SELECT id, date, heure_debut, heure_fin, type, status, quartier, notes, created_at FROM appointments WHERE phone = ? ORDER BY date DESC').bind(client.phone).all()).results || [] } catch(_) {}
     try { activityLog = (await db.prepare('SELECT id, action, category, details, created_at FROM user_activity_log WHERE client_id = ? ORDER BY created_at DESC LIMIT 50').bind(clientId).all()).results || [] } catch(_) {}
   }
@@ -862,7 +825,6 @@ async function renderDashboard(c: any, clientId: number) {
     clientMaintenanceContracts={maintenanceContracts as any[]}
     clientMaintenanceVisits={maintenanceVisits as any[]}
     clientMaintenanceRequests={maintenanceRequests as any[]}
-    clientPayments={clientPayments as any[]}
     clientActivityLog={activityLog as any[]}
   />)
 }
@@ -1341,9 +1303,9 @@ const CLIENT_RESET_CODE_MAX_AGE = 15 * 60 * 1000 // 15 minutes
 // Ensure password_reset_codes table has email column
 async function ensureResetCodesTable(db: any) {
   try {
-    await db.prepare('CREATE TABLE IF NOT EXISTS password_reset_codes (token TEXT PRIMARY KEY, code TEXT NOT NULL, phone TEXT NOT NULL DEFAULT \'\', email TEXT NOT NULL DEFAULT \'\', created_at INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0)').run()
+    await db.prepare(`CREATE TABLE IF NOT EXISTS password_reset_codes (token TEXT PRIMARY KEY, code TEXT NOT NULL, phone TEXT NOT NULL DEFAULT '', email TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0)`).run()
     // Add email column if missing (migration-safe)
-    try { await db.prepare('ALTER TABLE password_reset_codes ADD COLUMN email TEXT NOT NULL DEFAULT \'\'').run() } catch (_) { /* already exists */ }
+    try { await db.prepare(`ALTER TABLE password_reset_codes ADD COLUMN email TEXT NOT NULL DEFAULT ''`).run() } catch (_) { /* already exists */ }
   } catch(_) {}
 }
 
@@ -1511,7 +1473,7 @@ app.post('/api/client/request-reset-email', async (c) => {
   // Send code via email (Brevo)
   const emailSent = await sendPasswordResetEmail(c.env, email, client.name || '', code)
   if (!emailSent) {
-    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Erreur lors de l\'envoi de l\'email. Essayez avec votre numéro de téléphone.'))
+    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent("Erreur lors de l\'envoi de l'email. Essayez avec votre numéro de téléphone."))
   }
 
   // Mask email for display: s***@g***.com
@@ -1861,7 +1823,7 @@ app.get('/api/auth/google/callback', async (c) => {
   }
 
   if (!code) {
-    return errorRedirect('Aucun code d\'autorisation reçu de Google.')
+    return errorRedirect("Aucun code d'autorisation reçu de Google.")
   }
 
   // State validation — require both state and cookie to be present and matching (CSRF protection)
@@ -2030,195 +1992,49 @@ app.post('/api/client/update-profile', async (c) => {
 })
 
 // ============================================================
-// PAYMENT API (LigdiCash)
+// CONFIRMATION COMMANDE — Nouveau flux contact commercial
+// Le client confirme sa commande → MAASGA le contacte par email/WhatsApp
+// Pas de paiement en ligne : tout se fait directement avec l'équipe
 // ============================================================
 
-app.post('/api/payment/initiate', async (c) => {
+app.post('/api/order/confirm', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
 
-  // Require login
   const sessionToken = getCookie(c, 'maasga_session') || ''
-  const session = sessionToken ? await getSession(c.env.DB, sessionToken) : null
-  if (!session) {
-    return c.json({ error: 'Veuillez vous connecter avant de payer.', redirect: '/espace-client' }, 401)
-  }
+  const session = sessionToken ? await getSession(db, sessionToken) : null
 
   const body = await c.req.json().catch(() => null) || await c.req.parseBody()
-  const paymentType = (body as any)?.payment_type || 'order'
-  const amount = parseInt((body as any)?.amount || '0')
-  const orderId = parseInt((body as any)?.order_id || '0') || null
-  const maintenanceRequestId = parseInt((body as any)?.maintenance_request_id || '0') || null
-  const method = (body as any)?.method || 'ligdicash'
+  const orderId = parseInt((body as any)?.order_id || '0')
+  if (!orderId) return c.json({ error: 'ID commande manquant' }, 400)
 
-  if (!amount || amount < 100) {
-    return c.json({ error: 'Montant invalide' }, 400)
-  }
+  // Vérifier que la commande appartient au client connecté (ou pas de session = accès public)
+  const order = session
+    ? await db.prepare('SELECT * FROM orders WHERE id = ? AND (client_id = ? OR client_phone = (SELECT phone FROM clients WHERE id = ?))').bind(orderId, session.clientId, session.clientId).first() as any
+    : await db.prepare('SELECT * FROM orders WHERE id = ?').bind(orderId).first() as any
 
-  const client = await db.prepare('SELECT id, name, phone, email FROM clients WHERE id = ?').bind(session.clientId).first() as any
-  if (!client) return c.json({ error: 'Client introuvable' }, 404)
+  if (!order) return c.json({ error: 'Commande introuvable' }, 404)
+  if (order.status !== 'en_attente') return c.json({ error: 'Cette commande a déjà été traitée' }, 400)
 
-  await ensurePaymentTables(db)
-
-  // Create payment record
-  await db.prepare(
-    `INSERT INTO payments (client_id, client_name, client_phone, order_id, maintenance_request_id, payment_type, amount, method, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`
-  ).bind(session.clientId, client.name, client.phone, orderId, maintenanceRequestId, paymentType, amount, method).run()
-
-  const payment = await db.prepare('SELECT id FROM payments WHERE client_id = ? ORDER BY id DESC LIMIT 1').bind(session.clientId).first() as any
-
-  // Log activity
-  await logActivity(db, {
-    clientId: session.clientId,
-    clientPhone: client.phone,
-    action: `Paiement initié — ${amount.toLocaleString()} FCFA (${paymentType})`,
-    category: 'payment',
-    details: JSON.stringify({ paymentId: payment?.id, method, orderId, maintenanceRequestId }),
-    ip: c.req.header('cf-connecting-ip') || ''
-  })
-
-  // Paiement réel LigdiCash uniquement si PAYMENT_LIVE=true est explicitement défini en prod
-  // Par défaut (tests), tout paiement est simulé instantanément
-  const isLivePayment = c.env.PAYMENT_LIVE === 'true'
-  const apiKey = c.env.LIGDICASH_API_KEY
-  const authToken = c.env.LIGDICASH_AUTH_TOKEN
-
-  if (isLivePayment && apiKey && authToken && !apiKey.startsWith('VOTRE')) {
-    try {
-      // LigdiCash API call
-      const callbackUrl = new URL('/api/payment/callback', c.req.url).toString()
-      const returnUrl = new URL('/espace-client', c.req.url).toString()
-      const lgdRes = await fetch('https://app.ligdicash.com/pay/v01/redirect/checkout-invoice/create', {
-        method: 'POST',
-        headers: {
-          'Apikey': apiKey,
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          commande: {
-            invoice: { items: [{ name: `Paiement MAASGA #${payment?.id || 0}`, description: paymentType === 'order' ? 'Commande climatiseur' : 'Contrat maintenance', quantity: 1, unit_price: amount }], total_amount: amount, devise: 'XOF', description: `Paiement MAASGA - ${paymentType}` },
-            store: { name: 'MAASGA', website_url: new URL('/', c.req.url).toString() },
-            actions: { cancel_url: returnUrl, return_url: returnUrl, callback_url: callbackUrl },
-            custom_data: { payment_id: String(payment?.id || 0), client_id: String(session.clientId) }
-          }
-        })
-      })
-      const lgdData = await lgdRes.json() as any
-      if (lgdData.response_code === '00' && lgdData.response_text) {
-        await db.prepare('UPDATE payments SET provider_ref = ?, provider_status = ?, status = ?, updated_at = ? WHERE id = ?')
-          .bind(lgdData.token || '', 'initiated', 'processing', new Date().toISOString(), payment?.id).run()
-        return c.json({ success: true, redirect_url: lgdData.response_text, payment_id: payment?.id })
-      }
-    } catch (e) {
-      console.error('LigdiCash API error:', e)
-    }
-  }
-
-  // Simulation automatique : paiement validé instantanément (mode test ou LigdiCash non activé)
   const now = new Date().toISOString()
-  try {
-    await db.prepare('UPDATE payments SET status = ?, provider_status = ?, updated_at = ? WHERE id = ?')
-      .bind('completed', 'simulated', now, payment?.id).run()
-  } catch(e) { console.error('Erreur simulation payment update:', e) }
+  await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').bind('en_attente', now, orderId).run()
 
-  // Mark the linked order as paid
-  if (orderId) {
-    try {
-      await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').bind('paid', now, orderId).run()
-      const memOrder = orders.find((o: any) => o.id === orderId)
-      if (memOrder) memOrder.status = 'paid' as any
-    } catch(e) { console.error('Erreur mise à jour statut commande après paiement simulé:', e) }
+  // Notifier l'admin immédiatement
+  await notifyAdmin(c.env, 'order',
+    `🛒 Nouvelle commande confirmée #${orderId} — ${order.client_name} (${order.client_phone})${order.total_price ? ` — ${Number(order.total_price).toLocaleString()} FCFA` : ''} — À contacter !`
+  )
+
+  if (session) {
+    await logActivity(db, {
+      clientId: session.clientId,
+      clientPhone: order.client_phone,
+      action: `Commande #${orderId} confirmée — en attente de contact MAASGA`,
+      category: 'order',
+      ip: c.req.header('cf-connecting-ip') || ''
+    })
   }
 
-  await logActivity(db, {
-    clientId: session.clientId,
-    clientPhone: client.phone,
-    action: `Paiement validé (simulé) — ${amount.toLocaleString()} FCFA`,
-    category: 'payment',
-    details: JSON.stringify({ paymentId: payment?.id, method, orderId, simulated: true }),
-    ip: c.req.header('cf-connecting-ip') || ''
-  })
-  await notifyAdmin(c.env, 'payment', `${client.phone} — ${amount.toLocaleString()} FCFA (${paymentType}) ✅ [simulé]`)
-
-  return c.json({
-    success: true,
-    payment_id: payment?.id,
-    redirect_url: '/espace-client?payment=success',
-    simulated: true
-  })
-})
-
-app.post('/api/payment/callback', async (c) => {
-  const db = c.env.DB
-  if (!db) return c.json({ ok: false }, 503)
-
-  // Rate limit: 10 callbacks per IP per minute
-  const cbIp = c.req.header('cf-connecting-ip') || 'unknown'
-  const cbRl = rateLimit(`payment-callback:${cbIp}`, 10, 60 * 1000)
-  if (!cbRl.allowed) {
-    logSecurityEvent(db, { event: 'payment_rate_limit', severity: 'warn', ip: cbIp, details: 'Payment callback rate limited' })
-    return c.json({ ok: false, error: 'rate limited' }, 429)
-  }
-
-  try {
-    // Fail-closed: reject if LIGDICASH_AUTH_TOKEN is not configured
-    const authToken = c.env.LIGDICASH_AUTH_TOKEN
-    if (!authToken) {
-      console.error('[PAYMENT] LIGDICASH_AUTH_TOKEN not configured — rejecting callback')
-      logSecurityEvent(db, { event: 'payment_no_token', severity: 'critical', ip: cbIp, details: 'LIGDICASH_AUTH_TOKEN not configured' })
-      return c.json({ ok: false, error: 'payment webhook not configured' }, 503)
-    }
-    const webhookToken = c.req.header('Authorization') || c.req.header('X-Webhook-Token') || ''
-    const expectedBearer = `Bearer ${authToken}`
-    if (webhookToken !== expectedBearer) {
-      console.warn('[PAYMENT] Webhook rejected — invalid token from IP:', cbIp)
-      logSecurityEvent(db, { event: 'payment_invalid_token', severity: 'critical', ip: cbIp, details: `Invalid webhook token from ${cbIp}` })
-      return c.json({ ok: false, error: 'unauthorized' }, 401)
-    }
-
-    const body = await c.req.json() as any
-    const paymentId = parseInt(body?.custom_data?.payment_id || '0')
-    const status = body?.status || body?.response_code
-
-    if (!paymentId) return c.json({ ok: false }, 400)
-
-    await ensurePaymentTables(db)
-    const providerStatus = String(status)
-    const newStatus = (providerStatus === 'completed' || providerStatus === '00') ? 'completed' : (providerStatus === 'failed' ? 'failed' : 'processing')
-
-    await db.prepare(
-      'UPDATE payments SET provider_status = ?, status = ?, updated_at = ? WHERE id = ?'
-    ).bind(providerStatus, newStatus, new Date().toISOString(), paymentId).run()
-
-    if (newStatus === 'completed') {
-      const payment = await db.prepare('SELECT client_id, client_phone, amount, payment_type, order_id FROM payments WHERE id = ?').bind(paymentId).first() as any
-      if (payment) {
-        // Mettre à jour le statut de la commande liée → 'paid'
-        if (payment.order_id) {
-          try {
-            await db.prepare('UPDATE orders SET status = ? WHERE id = ?').bind('paid', payment.order_id).run()
-            // Mettre à jour aussi en mémoire
-            const memOrder = orders.find((o: any) => o.id === payment.order_id)
-            if (memOrder) memOrder.status = 'paid' as any
-          } catch(e) { console.error('Erreur mise à jour statut commande après paiement:', e) }
-        }
-        await logActivity(db, {
-          clientId: payment.client_id,
-          clientPhone: payment.client_phone,
-          action: `Paiement confirmé — ${payment.amount?.toLocaleString()} FCFA (${payment.payment_type})`,
-          category: 'payment',
-          details: JSON.stringify({ paymentId, status: newStatus, orderId: payment.order_id })
-        })
-        await notifyAdmin(c.env, 'payment', `${payment.client_phone} — ${payment.amount?.toLocaleString()} FCFA (${payment.payment_type}) ✅`)
-      }
-    }
-    return c.json({ ok: true })
-  } catch (e) {
-    console.error('Payment callback error:', e)
-    return c.json({ ok: false }, 500)
-  }
+  return c.json({ success: true, message: "Commande confirmée ! L'équipe MAASGA vous contactera par email ou WhatsApp sous 24h." })
 })
 
 app.get('/espace-client', async (c) => {
@@ -2671,10 +2487,10 @@ app.post('/api/maintenance/request', async (c) => {
           visitDates.push(vd.toISOString().split('T')[0])
         }
 
-        // Create the maintenance contract
+        // Create the maintenance contract in PENDING status — must be validated by admin
         await db.prepare(
           `INSERT INTO maintenance_contracts (client_id, client_name, client_phone, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, 0, ?)`
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'en_attente', ?, 0, ?)`
         ).bind(
           clientId,
           escapeHtml(name),
@@ -2693,24 +2509,8 @@ app.post('/api/maintenance/request', async (c) => {
         ).bind(escapeHtml(phone), planType, startDate).first() as any
         const contractId = newContract?.id || null
 
-        // Pre-schedule all maintenance visits
-        if (contractId) {
-          // Ensure client_id is valid (table requires NOT NULL)
-          const effectiveClientId = clientId || 0
-          for (const vDate of visitDates) {
-            await db.prepare(
-              `INSERT INTO maintenance_visits (contract_id, client_id, client_name, client_phone, visit_type, visit_date, status, description)
-               VALUES (?, ?, ?, ?, 'preventive', ?, 'planifiee', ?)`
-            ).bind(
-              contractId,
-              effectiveClientId,
-              escapeHtml(name),
-              escapeHtml(phone),
-              vDate,
-              `Visite préventive — Contrat ${planType}`
-            ).run()
-          }
-        }
+        // Visits will be scheduled when admin validates the contract
+        // (no visits pre-created while contract is pending)
 
         // Log activity if client exists
         if (clientId) {
@@ -2723,8 +2523,16 @@ app.post('/api/maintenance/request', async (c) => {
       }
     } catch (error) {
       console.error('Erreur maintenance request:', error)
-      return c.redirect('/contrat-maintenance?error=' + encodeURIComponent('Erreur lors de l\'envoi. Veuillez réessayer.'))
+      return c.redirect('/contrat-maintenance?error=' + encodeURIComponent("Erreur lors de l'envoi. Veuillez réessayer."))
     }
+  }
+
+  // Notifier l'admin de la nouvelle souscription de maintenance
+  try {
+    const productName = planType ? ` (Plan ${planType})` : "";
+    await notifyAdmin(c.env, 'maintenance', `Nouvelle demande/souscription de maintenance par ${name}${productName}. Tél: ${phone}`);
+  } catch(ne) {
+    console.error('Failed to notify admin on maintenance:', ne);
   }
 
   // Maintenance request received — logged in D1
@@ -2775,11 +2583,7 @@ app.get('/api/order/invoice/:id', async (c) => {
       : null
 
     let payment: any = null
-    try {
-      payment = await db.prepare(
-        "SELECT amount, method, status, provider_ref, created_at FROM payments WHERE payment_type = 'order' AND (order_id = ? OR (client_phone = ? AND amount = ?)) ORDER BY created_at DESC LIMIT 1"
-      ).bind(orderId, order.client_phone || '', order.total_price || 0).first()
-    } catch (_) {}
+    // Pas de paiement en ligne — le paiement se fait directement avec l'équipe MAASGA
 
     let allDevis: any[] = []
     try {
@@ -2812,9 +2616,8 @@ app.get('/api/order/invoice/:id', async (c) => {
     const invoiceNum = 'MAASGA-CMD-' + String(orderId).padStart(5, '0')
     const orderDate = order.created_at ? fmtDateLong(order.created_at) : invoiceDate
 
-    const STATUS_LABEL: Record<string,string> = { pending:'En attente', paid:'Payée', livre:'Livrée', validation_terrain:'Validation terrain', devis_en_attente:'Devis envoyé', devis_valide:'Devis accepté', installed:'Installée', cancelled:'Annulée', refunded:'Remboursée' }
-    const STATUS_COLOR: Record<string,string> = { pending:'background:rgba(217,119,6,0.1);color:#d97706', paid:'background:rgba(59,130,246,0.1);color:#3b82f6', livre:'background:rgba(14,165,233,0.1);color:#0ea5e9', validation_terrain:'background:rgba(168,85,247,0.1);color:#a855f7', devis_en_attente:'background:rgba(245,158,11,0.1);color:#f59e0b', devis_valide:'background:rgba(16,185,129,0.1);color:#10b981', installed:'background:rgba(22,163,74,0.1);color:#16a34a', cancelled:'background:rgba(239,68,68,0.1);color:#ef4444', refunded:'background:rgba(124,58,237,0.1);color:#7c3aed' }
-    const PAY_METHOD: Record<string,string> = { orange_money:'Orange Money', moov_money:'Moov Money', wave:'Wave', carte_bancaire:'Carte bancaire', ligdicash:'LigdiCash', cash:'Espèces', a_confirmer:'À confirmer' }
+    const STATUS_LABEL: Record<string,string> = { en_attente:'En attente', contacte:'Contacté', confirme:'Confirmée', en_livraison:'En livraison', livre:'Livrée & installée', annule:'Annulée' }
+    const STATUS_COLOR: Record<string,string> = { en_attente:'background:rgba(217,119,6,0.1);color:#d97706', contacte:'background:rgba(59,130,246,0.1);color:#3b82f6', confirme:'background:rgba(16,185,129,0.1);color:#10b981', en_livraison:'background:rgba(14,165,233,0.1);color:#0ea5e9', livre:'background:rgba(22,163,74,0.1);color:#16a34a', annule:'background:rgba(239,68,68,0.1);color:#ef4444' }
     const DEVIS_STATUS: Record<string,string> = { pending:'En attente', sent:'Envoyé', validated:'Accepté', refused:'Refusé', expired:'Expiré' }
     const DEVIS_COLOR: Record<string,string> = { pending:'background:rgba(217,119,6,0.1);color:#d97706', sent:'background:rgba(59,130,246,0.1);color:#3b82f6', validated:'background:rgba(22,163,74,0.1);color:#16a34a', refused:'background:rgba(239,68,68,0.1);color:#ef4444', expired:'background:rgba(148,163,184,0.1);color:#94a3b8' }
 
@@ -2888,25 +2691,12 @@ app.get('/api/order/invoice/:id', async (c) => {
     }
     summaryRows += '<div class="row total"><span>Total</span><span>' + fmtNum(totalFinal) + ' FCFA</span></div>'
 
-    // Build payment section
-    let paymentSection = ''
-    if (payment) {
-      const payStatus = payment.status === 'completed' ? 'Confirmé' : payment.status === 'pending' ? 'En attente' : (payment.status || 'Inconnu')
-      const payMethod = PAY_METHOD[payment.method] || payment.method || 'Non spécifié'
-      const payDate = payment.created_at ? fmtDate(payment.created_at) : ''
-      const payRef = payment.provider_ref ? ' · Réf: ' + payment.provider_ref : ''
-      paymentSection = '<div class="payment-info" style="background:#f0fdf4;border:1px solid rgba(22,163,74,0.15);">'
-      paymentSection += '<div class="pay-icon" style="background:rgba(22,163,74,0.1);color:#16a34a;">&#10003;</div>'
-      paymentSection += '<div><div style="font-size:14px;font-weight:700;color:#16a34a;">Paiement ' + payStatus + '</div>'
-      paymentSection += '<div style="font-size:12px;color:#64748b;">' + payMethod + (payDate ? ' · ' + payDate : '') + payRef + '</div></div>'
-      paymentSection += '</div>'
-    } else {
-      paymentSection = '<div class="payment-info" style="background:#fffbeb;border:1px solid rgba(217,119,6,0.15);">'
-      paymentSection += '<div class="pay-icon" style="background:rgba(217,119,6,0.1);color:#d97706;">&#8987;</div>'
-      paymentSection += '<div><div style="font-size:14px;font-weight:700;color:#d97706;">Paiement en attente</div>'
-      paymentSection += '<div style="font-size:12px;color:#64748b;">Le paiement sera confirmé après vérification par notre équipe.</div></div>'
-      paymentSection += '</div>'
-    }
+    // Modalité de paiement — flux contact commercial (pas de paiement en ligne)
+    const paymentSection = '<div class="payment-info" style="background:#f0f9ff;border:1px solid rgba(0,119,182,0.2);">' +
+      '<div class="pay-icon" style="background:rgba(0,119,182,0.1);color:#0077b6;">📞</div>' +
+      '<div><div style="font-size:14px;font-weight:700;color:#0077b6;">Paiement à l\'installation</div>' +
+      '<div style="font-size:12px;color:#64748b;">Le paiement et les modalités sont arrangés directement avec l\'équipe MAASGA par email ou WhatsApp.</div></div>' +
+      '</div>'
 
     // Build notes section
     const notesSection = order.notes
@@ -2920,9 +2710,9 @@ app.get('/api/order/invoice/:id', async (c) => {
       '<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n' +
       '<title>Facture ' + invoiceNum + ' \u2014 MAASGA</title>\n' +
       '<style>\n' +
-      '@import url(\'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap\');\n' +
+      "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');\n" +
       '*{margin:0;padding:0;box-sizing:border-box}\n' +
-      'body{font-family:\'Inter\',sans-serif;background:#f8fafc;color:#1e293b}\n' +
+      "body{font-family:'Inter',sans-serif;background:#f8fafc;color:#1e293b}\n" +
       '.invoice-container{max-width:800px;margin:20px auto;background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden}\n' +
       '.header{background:linear-gradient(135deg,#03045e,#0077b6);color:#fff;padding:40px;display:flex;justify-content:space-between;align-items:flex-start}\n' +
       '.inv-num{font-size:18px;font-weight:700;margin-bottom:6px}\n' +
@@ -3034,15 +2824,13 @@ app.get('/api/maintenance/invoice/:id', async (c) => {
   ).bind(contractId).all()
   const visitRows = visits?.results || []
 
-  // Fetch related payment if any
-  const payment = await db.prepare(
-    'SELECT amount, method, status, provider_ref, created_at FROM payments WHERE maintenance_request_id = ? OR (client_phone = ? AND payment_type = \'maintenance_contract\') ORDER BY created_at DESC LIMIT 1'
-  ).bind(contractId, client.phone).first() as any
+  // Pas de paiement en ligne — le paiement se fait directement avec l'équipe MAASGA
+  const payment: any = null
+  const payMethodLabels: Record<string, string> = {}
 
-  const planLabels: Record<string, string> = { trimestriel: 'Trimestriel (3 mois)', semestriel: 'Semestriel (6 mois)', annuel: 'Annuel Premium (12 mois)' }
-  const statusLabels: Record<string, string> = { active: 'Actif', expired: 'Expiré', cancelled: 'Annulé' }
+  const planLabels: Record<string, string> = { trimestriel: 'Trimestriel (3 mois)', semestriel: 'Semestriel (6 mois)', annuel: 'Annuel Premium (12 mois)', sav_gratuit: 'SAV Gratuit' }
+  const statusLabels: Record<string, string> = { en_attente: 'En attente', contacte: 'Contacté', actif: 'Actif', expire: 'Expiré', annule: 'Annulé' }
   const visitStatusLabels: Record<string, string> = { planifiee: 'Planifiée', confirmee: 'Confirmée', effectuee: 'Effectuée', annulee: 'Annulée' }
-  const payMethodLabels: Record<string, string> = { orange_money: 'Orange Money', moov_money: 'Moov Money', wave: 'Wave', carte_bancaire: 'Carte bancaire', a_confirmer: 'À confirmer', cash: 'Espèces' }
 
   const invoiceDate = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
   const invoiceNum = `MAASGA-MC-${String(contractId).padStart(5, '0')}`
@@ -3263,7 +3051,7 @@ app.post('/api/order/create', async (c) => {
       client_email: str(body['client_email']).trim() ? escapeHtml(str(body['client_email']).trim()) : null,
       quartier: (str(body['quartier']) || str(body['client_address'])).trim() ? escapeHtml((str(body['quartier']) || str(body['client_address'])).trim()) : null,
       type: normalizedType,
-      status: 'pending' as const,
+      status: 'en_attente' as const,
       notes: str(body['notes']).trim() ? escapeHtml(str(body['notes']).trim()) : null,
       total_price: body['total_price'] ? parseFloat(str(body['total_price'])) : 0,
       installation_price: body['installation_price'] ? parseFloat(str(body['installation_price'])) : 50000
@@ -3556,11 +3344,11 @@ app.post('/api/order/cancel-installation', async (c) => {
   if (!order) return c.json({ error: 'Commande introuvable' }, 404)
 
   const cancellableStatuses = ['validation_terrain', 'devis_en_attente', 'devis_valide', 'devis_refuse']
-  if (!cancellableStatuses.includes(order.status)) return c.json({ error: 'L\'installation ne peut pas être annulée à ce stade' }, 400)
+  if (!cancellableStatuses.includes(order.status)) return c.json({ error: "L'installation ne peut pas être annulée à ce stade" }, 400)
 
   const now = new Date().toISOString()
   // Revert to 'livre' — the client keeps the product but cancels installation
-  await db.prepare('UPDATE orders SET status = ?, notes = COALESCE(notes, \'\') || ? , updated_at = ? WHERE id = ?')
+  await db.prepare("UPDATE orders SET status = ?, notes = COALESCE(notes, '') || ? , updated_at = ? WHERE id = ?")
     .bind('livre', ' | Installation annulée par client le ' + now, now, orderId).run()
 
   const memOrder = orders.find(o => o.id === orderId)
@@ -3599,17 +3387,13 @@ app.post('/api/order/cancel-order', async (c) => {
   if (!cancellableStatuses.includes(order.status)) return c.json({ error: 'Cette commande ne peut plus être annulée' }, 400)
 
   const now = new Date().toISOString()
-  await db.prepare('UPDATE orders SET status = ?, notes = COALESCE(notes, \'\') || ?, updated_at = ? WHERE id = ?')
+  await db.prepare(`UPDATE orders SET status = ?, notes = COALESCE(notes, '') || ?, updated_at = ? WHERE id = ?`)
     .bind('cancelled', ' | Annulée par client le ' + now + (reason ? ' — ' + reason : ''), now, orderId).run()
 
   const memOrder = orders.find(o => o.id === orderId)
   if (memOrder) memOrder.status = 'cancelled' as any
 
-  // Mark any associated payments for refund
-  try {
-    await db.prepare('UPDATE payments SET status = ?, updated_at = ? WHERE order_id = ? AND status = ?')
-      .bind('refunded', now, orderId, 'completed').run()
-  } catch(e) { /* ignore */ }
+  // Pas de paiement en ligne — rien à rembourser automatiquement
 
   await logActivity(db, {
     clientId: session.clientId,
@@ -3712,7 +3496,7 @@ app.post('/api/admin/order/create-devis', adminAuth, async (c) => {
   const totalAmount = climatiseurPrix + mainOeuvrePrix + accTotal
 
   // Build legacy title/description for backward compat
-  const title = 'Devis d\'installation'
+  const title = "Devis d'installation"
 
   try {
     await db.prepare(
@@ -3886,6 +3670,14 @@ const refreshAdminCache = async (c: any, next: any) => {
         dbProducts.forEach((p: any) => products.push(p))
       }
 
+            // ---------- Notifications ----------
+      try {
+        notifications.length = 0
+        const notifRows = await db.prepare('SELECT * FROM admin_notifications ORDER BY id DESC LIMIT 100').all()
+        const dbNotifs = notifRows.results || []
+        dbNotifs.forEach((n: any) => notifications.push(n))
+      } catch(e) { console.error('Notifications load cache error:', e) }
+
       // ---------- Maintenance due visits count ----------
       try {
         const today = new Date().toISOString().split('T')[0]
@@ -3934,7 +3726,7 @@ const AdminLoginPage = ({ error }: { error?: string } = {}) => (
               <span class="text-sm text-red-700 font-medium">
                 {error === '1' ? 'Identifiant ou mot de passe incorrect.' :
                  error === 'logged_out' ? 'Session terminée avec succès.' :
-                 error === 'no_init' ? 'Aucun mot de passe admin configuré. Contactez l\'administrateur.' :
+                 error === 'no_init' ? "Aucun mot de passe admin configuré. Contactez l'administrateur." :
                  'Erreur de connexion.'}
               </span>
             </div>
@@ -4276,68 +4068,7 @@ app.get('/admin/clients', adminAuth, refreshAdminCache, (c) => {
 })
 
 app.get('/admin/commandes', adminAuth, refreshAdminCache, async (c) => {
-  const db = c.env.DB
-  let payments: any[] = []
-  if (db) {
-    try {
-      await ensurePaymentTables(db)
-      const rows = await db.prepare('SELECT id, order_id, amount, method, status, provider_ref, created_at FROM payments WHERE order_id IS NOT NULL ORDER BY id DESC').all()
-      payments = (rows.results || []) as any[]
-    } catch(_) {}
-  }
-  return c.html(<AdminCommandesPage payments={payments} />)
-})
-
-// ============================================================
-// ADMIN PAIEMENTS
-// ============================================================
-
-app.get('/admin/paiements', adminAuth, async (c) => {
-  const db = c.env.DB
-  let payments: any[] = []
-  let stats = { total: 0, pending: 0, completed: 0, failed: 0, revenue: 0 }
-  if (db) {
-    try {
-      await ensurePaymentTables(db)
-      const statusFilter = c.req.query('status')
-      let rows
-      if (statusFilter) {
-        // Parameterized query — never interpolate user input into SQL
-        const allowedStatuses = ['pending', 'processing', 'completed', 'failed', 'cancelled', 'refunded']
-        if (!allowedStatuses.includes(statusFilter)) {
-          return c.redirect('/admin/paiements')
-        }
-        rows = await db.prepare('SELECT * FROM payments WHERE status = ? ORDER BY id DESC LIMIT 200').bind(statusFilter).all()
-      } else {
-        rows = await db.prepare('SELECT * FROM payments ORDER BY id DESC LIMIT 200').all()
-      }
-      payments = (rows.results || []) as any[]
-      const allRows = await db.prepare('SELECT status, amount FROM payments').all()
-      const all = (allRows.results || []) as any[]
-      stats.total = all.length
-      stats.pending = all.filter((r: any) => r.status === 'pending' || r.status === 'processing').length
-      stats.completed = all.filter((r: any) => r.status === 'completed').length
-      stats.failed = all.filter((r: any) => r.status === 'failed' || r.status === 'cancelled').length
-      stats.revenue = all.filter((r: any) => r.status === 'completed').reduce((s: number, r: any) => s + (r.amount || 0), 0)
-    } catch(e) { console.error('Admin payments load error:', e) }
-  }
-  return c.html(<AdminPaiementsPage payments={payments} stats={stats} />)
-})
-
-app.post('/admin/paiements/update-status', adminAuth, async (c) => {
-  const db = c.env.DB
-  if (!db) return c.redirect('/admin/paiements')
-  const body = await c.req.parseBody()
-  const paymentId = parseInt(body['payment_id'] as string || '0')
-  const status = (body['status'] as string || '').trim()
-  // 'completed' est exclu : la validation se fait automatiquement via webhook ou simulation, jamais manuellement par l'admin
-  const ALLOWED_PAYMENT_STATUSES = ['failed', 'refunded', 'cancelled']
-  if (paymentId && status && ALLOWED_PAYMENT_STATUSES.includes(status)) {
-    try {
-      await db.prepare('UPDATE payments SET status = ?, updated_at = datetime("now") WHERE id = ?').bind(status, paymentId).run()
-    } catch(e) { console.error('Payment status update error:', e) }
-  }
-  return c.redirect('/admin/paiements')
+  return c.html(<AdminCommandesPage />)
 })
 
 // ============================================================
@@ -4390,13 +4121,13 @@ app.post('/admin/maintenance/update-visit', adminAuth, async (c) => {
   const ALLOWED_VISIT_STATUSES = ['planifiee', 'confirmee', 'effectuee', 'annulee']
   if (visitId && status && ALLOWED_VISIT_STATUSES.includes(status)) {
     try {
-      await db.prepare('UPDATE maintenance_visits SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').bind(status, visitId).run()
+      await db.prepare(`UPDATE maintenance_visits SET status = ?, updated_at = datetime('now') WHERE id = ?`).bind(status, visitId).run()
       // If cancelled or effectuee, update contract completed_visits count
       if (status === 'effectuee' || status === 'annulee') {
         const visit = await db.prepare('SELECT contract_id FROM maintenance_visits WHERE id = ?').bind(visitId).first() as any
         if (visit?.contract_id) {
           const countRes = await db.prepare("SELECT COUNT(*) as cnt FROM maintenance_visits WHERE contract_id = ? AND status = 'effectuee'").bind(visit.contract_id).first() as any
-          await db.prepare('UPDATE maintenance_contracts SET completed_visits = ?, updated_at = datetime(\'now\') WHERE id = ?').bind(countRes?.cnt || 0, visit.contract_id).run()
+          await db.prepare(`UPDATE maintenance_contracts SET completed_visits = ?, updated_at = datetime('now') WHERE id = ?`).bind(countRes?.cnt || 0, visit.contract_id).run()
         }
       }
     } catch(e) { console.error('Visit status update error:', e) }
@@ -4429,12 +4160,102 @@ app.post('/admin/maintenance/validate-visit', adminAuth, async (c) => {
         const completedCount = countRes?.cnt || 0
         // Update completed_visits and recalculate next_visit_date
         const nextVisit = await db.prepare("SELECT visit_date FROM maintenance_visits WHERE contract_id = ? AND status = 'planifiee' ORDER BY visit_date ASC LIMIT 1").bind(visit.contract_id).first() as any
-        await db.prepare('UPDATE maintenance_contracts SET completed_visits = ?, next_visit_date = ?, updated_at = datetime(\'now\') WHERE id = ?')
+        await db.prepare(`UPDATE maintenance_contracts SET completed_visits = ?, next_visit_date = ?, updated_at = datetime('now') WHERE id = ?`)
           .bind(completedCount, nextVisit?.visit_date || null, visit.contract_id).run()
       }
     } catch(e) { console.error('Visit validation error:', e) }
   }
   return c.redirect('/admin/maintenance')
+})
+
+// ── Valider un contrat de maintenance (pending → active) ──
+app.post('/api/admin/maintenance/validate-contract', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'DB unavailable' }, 503)
+  const body = await c.req.json().catch(() => ({})) as any
+  const contractId = parseInt(body.contract_id || '0')
+  if (!contractId) return c.json({ error: 'contract_id requis' }, 400)
+
+  try {
+    const contract = await db.prepare('SELECT * FROM maintenance_contracts WHERE id = ?').bind(contractId).first() as any
+    if (!contract) return c.json({ error: 'Contrat introuvable' }, 404)
+
+    // Activer le contrat
+    await db.prepare("UPDATE maintenance_contracts SET status = 'actif', updated_at = datetime('now') WHERE id = ?").bind(contractId).run()
+
+    // Planifier les visites
+    const planConfig: Record<string, { months: number; visits: number }> = {
+      trimestriel: { months: 12, visits: 3 },
+      semestriel: { months: 12, visits: 2 },
+      annuel: { months: 12, visits: 1 }
+    }
+    const cfg = planConfig[contract.plan_type]
+    if (cfg) {
+      const startDate = contract.start_date || new Date().toISOString().split('T')[0]
+      const intervalMonths = Math.floor(cfg.months / cfg.visits)
+      for (let i = 1; i <= cfg.visits; i++) {
+        const vd = new Date(startDate)
+        vd.setMonth(vd.getMonth() + (intervalMonths * i))
+        await db.prepare(
+          `INSERT INTO maintenance_visits (contract_id, client_id, client_name, client_phone, visit_type, visit_date, status, description)
+           VALUES (?, ?, ?, ?, 'preventive', ?, 'planifiee', ?)`
+        ).bind(
+          contractId,
+          contract.client_id || 0,
+          contract.client_name,
+          contract.client_phone,
+          vd.toISOString().split('T')[0],
+          `Visite préventive — Contrat ${contract.plan_type}`
+        ).run()
+      }
+      // Mettre à jour la prochaine visite
+      const firstVisit = new Date(startDate)
+      firstVisit.setMonth(firstVisit.getMonth() + intervalMonths)
+      await db.prepare("UPDATE maintenance_contracts SET next_visit_date = ? WHERE id = ?").bind(firstVisit.toISOString().split('T')[0], contractId).run()
+    }
+
+    // Notification admin
+    await notifyAdmin(c.env as any, 'maintenance', `Contrat #${contractId} (${contract.plan_type}) VALIDÉ — ${contract.client_name} (${contract.client_phone})`)
+
+    // Log SMS WhatsApp pour le client
+    await sendSmsWithLog(c.env, db, contract.client_phone,
+      `Bonjour ${contract.client_name}, votre contrat de maintenance MAASGA (${contract.plan_type}) a été validé ! Les dates d'intervention seront confirmées sous peu. Merci de votre confiance.`
+    )
+
+    return c.json({ success: true, message: 'Contrat activé et visites planifiées' })
+  } catch (e) {
+    console.error('validate-contract error:', e)
+    return c.json({ error: 'Erreur serveur' }, 500)
+  }
+})
+
+// ── Refuser un contrat de maintenance (pending → cancelled) ──
+app.post('/api/admin/maintenance/refuse-contract', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'DB unavailable' }, 503)
+  const body = await c.req.json().catch(() => ({})) as any
+  const contractId = parseInt(body.contract_id || '0')
+  const reason = (body.reason || '').trim()
+  if (!contractId) return c.json({ error: 'contract_id requis' }, 400)
+
+  try {
+    const contract = await db.prepare('SELECT * FROM maintenance_contracts WHERE id = ?').bind(contractId).first() as any
+    if (!contract) return c.json({ error: 'Contrat introuvable' }, 404)
+
+    await db.prepare("UPDATE maintenance_contracts SET status = 'annule', notes = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(reason ? `Refusé : ${reason}` : 'Refusé par admin', contractId).run()
+
+    await notifyAdmin(c.env as any, 'maintenance', `Contrat #${contractId} (${contract.plan_type}) REFUSÉ — ${contract.client_name}`)
+
+    await sendSmsWithLog(c.env, db, contract.client_phone,
+      `Bonjour ${contract.client_name}, votre demande de contrat de maintenance MAASGA (${contract.plan_type}) ne peut pas être traitée pour le moment. Contactez-nous au +226 55 99 64 18 pour plus d'informations.`
+    )
+
+    return c.json({ success: true, message: 'Contrat refusé' })
+  } catch (e) {
+    console.error('refuse-contract error:', e)
+    return c.json({ error: 'Erreur serveur' }, 500)
+  }
 })
 
 app.get('/admin/avis', adminAuth, async (c) => {
@@ -4554,7 +4375,7 @@ app.post('/api/admin/realisations/add', adminAuth, async (c) => {
     if (!title) return c.redirect('/admin/realisations?error=title_required')
 
     await db.prepare(
-      'INSERT INTO realisations (title, description, category, client_name, quartier, image_url, date_realisation, is_featured, is_visible, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, datetime(\'now\'), datetime(\'now\'))'
+      `INSERT INTO realisations (title, description, category, client_name, quartier, image_url, date_realisation, is_featured, is_visible, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))`
     ).bind(title, description || null, category, clientName || null, quartier || null, imageUrl || null, dateReal || null, isFeatured).run()
     return c.redirect('/admin/realisations?success=added')
   } catch(e) {
@@ -4584,7 +4405,7 @@ app.post('/api/admin/realisations/update', adminAuth, async (c) => {
     if (!title) return c.redirect('/admin/realisations?error=title_required')
 
     await db.prepare(
-      'UPDATE realisations SET title=?, description=?, category=?, client_name=?, quartier=?, image_url=?, date_realisation=?, is_featured=?, is_visible=?, updated_at=datetime(\'now\') WHERE id=?'
+      `UPDATE realisations SET title=?, description=?, category=?, client_name=?, quartier=?, image_url=?, date_realisation=?, is_featured=?, is_visible=?, updated_at=datetime('now') WHERE id=?`
     ).bind(title, description || null, category, clientName || null, quartier || null, imageUrl || null, dateReal || null, isFeatured, isVisible, id).run()
     return c.redirect('/admin/realisations?success=updated')
   } catch(e) {
@@ -4654,17 +4475,6 @@ app.get('/api/admin/export/rdv', adminAuth, async (c) => {
 })
 
 // Export paiements CSV
-app.get('/api/admin/export/payments', adminAuth, async (c) => {
-  const db = c.env.DB
-  if (!db) return c.text('DB non disponible', 503)
-  const rows = (await db.prepare('SELECT * FROM payments ORDER BY created_at DESC').all())?.results || []
-  const headers = ['ID', 'Type', 'Order ID', 'Client tel', 'Montant', 'Methode', 'Statut', 'Ref. provider', 'Cree le']
-  const csvRows = [headers.join(',')]
-  ;(rows as any[]).forEach((p: any) => {
-    csvRows.push([p.id, p.payment_type, p.order_id, p.client_phone, p.amount, p.method, p.status, p.provider_ref, p.created_at].map(csvEscape).join(','))
-  })
-  return new Response(csvRows.join('\n'), { headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="paiements_${new Date().toISOString().split('T')[0]}.csv"` } })
-})
 
 // Export clients CSV (server-side, replaces client-side JS export)
 app.get('/api/admin/export/clients', adminAuth, async (c) => {
@@ -4738,7 +4548,7 @@ app.post('/api/admin/sav/update-status', adminAuth, async (c) => {
   const status = body['status'] as string
   const resolution_notes = (body['resolution_notes'] as string || '').trim()
   const resolved_at = (status === 'resolu' || status === 'ferme') ? new Date().toISOString() : null
-  await db.prepare('UPDATE sav_tickets SET status = ?, resolution_notes = ?, resolved_at = COALESCE(?, resolved_at), updated_at = datetime(\'now\') WHERE id = ?').bind(status, resolution_notes, resolved_at, id).run()
+  await db.prepare(`UPDATE sav_tickets SET status = ?, resolution_notes = ?, resolved_at = COALESCE(?, resolved_at), updated_at = datetime('now') WHERE id = ?`).bind(status, resolution_notes, resolved_at, id).run()
   return c.redirect(`/admin/sav/${id}?success=statut_modifie`)
 })
 
@@ -4750,8 +4560,8 @@ app.post('/api/admin/sav/message', adminAuth, async (c) => {
   const ticket_id = body['ticket_id'] as string
   const message = (body['message'] as string || '').trim()
   if (!message) return c.redirect(`/admin/sav/${ticket_id}?error=message_vide`)
-  await db.prepare('INSERT INTO sav_ticket_messages (ticket_id, sender_type, sender_name, message) VALUES (?, \'admin\', \'Admin\', ?)').bind(ticket_id, message).run()
-  await db.prepare('UPDATE sav_tickets SET updated_at = datetime(\'now\') WHERE id = ?').bind(ticket_id).run()
+  await db.prepare(`INSERT INTO sav_ticket_messages (ticket_id, sender_type, sender_name, message) VALUES (?, 'admin', 'Admin', ?)`).bind(ticket_id, message).run()
+  await db.prepare(`UPDATE sav_tickets SET updated_at = datetime('now') WHERE id = ?`).bind(ticket_id).run()
   return c.redirect(`/admin/sav/${ticket_id}`)
 })
 
@@ -4872,7 +4682,7 @@ app.get('/api/admin/stock/low', adminAuth, async (c) => {
 app.get('/api/admin/backup', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB non disponible' }, 503)
-  const tables = ['products', 'clients', 'appointments', 'orders', 'reviews', 'payments', 'contact_messages', 'maintenance_contracts', 'sav_tickets', 'sav_ticket_messages', 'stock_movements', 'site_settings', 'user_activity_log', 'notifications', 'realisations']
+  const tables = ['products', 'clients', 'appointments', 'orders', 'reviews', 'contact_messages', 'maintenance_contracts', 'sav_tickets', 'sav_ticket_messages', 'stock_movements', 'site_settings', 'user_activity_log', 'realisations']
   const backup: Record<string, any[]> = {}
   for (const table of tables) {
     try {
@@ -4982,7 +4792,7 @@ app.post('/api/admin/site-settings', adminAuth, async (c) => {
   const fields = ['phone', 'email', 'address', 'hours', 'company_name', 'whatsapp', 'facebook', 'instagram', 'slogan']
   for (const key of fields) {
     const val = (body[key] as string || '').trim()
-    await db.prepare('INSERT OR REPLACE INTO site_settings (key, value, updated_at) VALUES (?, ?, datetime(\'now\'))').bind(key, val).run()
+    await db.prepare(`INSERT OR REPLACE INTO site_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))`).bind(key, val).run()
   }
   return c.redirect('/admin/parametres?success=settings')
 })
@@ -5325,7 +5135,7 @@ function buildClientDevisHTML(d: any): string {
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
       ${[
         ['🔧', 'Techniciens certifiés', 'Équipe qualifiée'],
-        ['🛡️', 'Garantie installation', '12 mois pièces et main d\'œuvre'],
+        ['🛡️', 'Garantie installation', "12 mois pièces et main d'œuvre"],
         ['📞', 'SAV rapide', 'Intervention sous 48h'],
         ['💯', 'Satisfaction garantie', 'Ou intervention gratuite']
       ].map(([icon, title, sub]) => `
@@ -5460,7 +5270,7 @@ app.post('/api/admin/devis/create', adminAuth, async (c) => {
       if (linkedOrder) {
         const orderDevisStatus = isSendAction ? 'sent' : 'pending'
         // Upsert: if already exists update it, otherwise insert
-        const existing = await db.prepare('SELECT id FROM order_devis WHERE order_id = ? AND status NOT IN (\'validated\',\'refused\') ORDER BY id DESC').bind(orderId).first() as any
+        const existing = await db.prepare(`SELECT id FROM order_devis WHERE order_id = ? AND status NOT IN ('validated','refused') ORDER BY id DESC`).bind(orderId).first() as any
         if (existing) {
           await db.prepare(`UPDATE order_devis SET client_name=?,client_phone=?,client_email=?,total_amount=?,status=?,climatiseur_nom=?,climatiseur_prix=?,main_oeuvre_prix=?,fournitures=?,message_client=?,updated_at=? WHERE id=?`)
             .bind(
@@ -5487,7 +5297,7 @@ app.post('/api/admin/devis/create', adminAuth, async (c) => {
               String(body['client_name'] || linkedOrder.client_name),
               String(body['client_phone'] || linkedOrder.client_phone),
               String(body['client_email'] || linkedOrder.client_email || ''),
-              'Devis d\'installation',
+              "Devis d'installation",
               totalHt,
               orderDevisStatus,
               body['produit_nom'] || null,
@@ -5578,7 +5388,7 @@ app.post('/api/admin/devis/create', adminAuth, async (c) => {
             if (!emailResp.ok) emailErrMsg = `Erreur envoi (${emailResp.status})`
           } catch(emailEx: any) {
             console.error('send_email devis error:', emailEx)
-            emailErrMsg = 'Erreur lors de l\'envoi de l\'email'
+            emailErrMsg = "Erreur lors de l'envoi de l'email"
           }
         }
       }
@@ -6038,7 +5848,7 @@ function buildDevisPDF(d: any): string {
   <!-- CONDITIONS -->
   <div class="conditions">
     <div class="conditions-title">📋 Conditions générales</div>
-    • Ce devis est valable ${expiryStr ? 'jusqu\'au ' + expiryStr : '30 jours à compter de la date d\'émission'}.<br>
+    • Ce devis est valable ${expiryStr ? `jusqu'au ` + expiryStr : `30 jours à compter de la date d'émission`}.<br>
     • Aucun paiement n'est requis avant accord du client et visite technique sur site.<br>
     • Le montant définitif peut être ajusté si les conditions réelles diffèrent du dimensionnement initial.<br>
     • TVA non applicable (régime simplifié).<br>
@@ -7085,21 +6895,104 @@ app.post('/api/admin/client/update', adminAuth, async (c) => {
 app.post('/api/admin/client/delete', adminAuth, async (c) => {
   const body = await c.req.parseBody()
   const id = parseInt(body['id'] as string)
-  const idx = clients.findIndex(cl => cl.id === id)
-  if (idx !== -1) clients.splice(idx, 1)
+  if (isNaN(id)) return c.redirect('/admin/clients?error=invalid_id')
 
-  // Supprimer en D1 aussi
   const db = c.env.DB
+
+  // Récupérer les infos du client avant suppression (pour Firebase UID)
+  let firebaseUid: string | null = null
+  let clientPhone: string | null = null
   if (db) {
     try {
-      await db.prepare('DELETE FROM clients WHERE id = ?').bind(id).run()
-    } catch (error) {
-      console.error('Erreur D1 client delete:', error)
+      const cl = await db.prepare('SELECT firebase_uid, phone FROM clients WHERE id = ?').bind(id).first() as any
+      if (cl) {
+        firebaseUid = cl.firebase_uid || null
+        clientPhone = cl.phone || null
+      }
+    } catch (_) {}
+  }
+
+  // 1. Supprimer le compte Firebase Auth si uid connu (REST API Firebase Admin)
+  if (firebaseUid && c.env.FIREBASE_PROJECT_ID && c.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    try {
+      const serviceAccount = JSON.parse(c.env.FIREBASE_SERVICE_ACCOUNT_KEY as string)
+      const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+          assertion: await createFirebaseJWT(serviceAccount)
+        }).toString()
+      })
+      const tokenData = await tokenRes.json() as any
+      if (tokenData.access_token) {
+        await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${c.env.FIREBASE_PROJECT_ID}/accounts:delete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tokenData.access_token}` },
+          body: JSON.stringify({ localId: firebaseUid })
+        })
+      }
+    } catch (e) {
+      console.error('Firebase delete error (non-bloquant):', e)
     }
   }
 
-  return c.redirect('/admin/clients?success=1')
+  if (db) {
+    try {
+      // 2. Cascade : supprimer toutes les données liées
+      await db.prepare('DELETE FROM client_sessions WHERE client_id = ?').bind(id).run()
+      await db.prepare('DELETE FROM user_activity_log WHERE client_id = ?').bind(id).run()
+
+      // Supprimer via téléphone si connu
+      if (clientPhone) {
+        await db.prepare('DELETE FROM appointments WHERE phone = ?').bind(clientPhone).run()
+        await db.prepare('DELETE FROM orders WHERE client_phone = ?').bind(clientPhone).run()
+        await db.prepare('DELETE FROM maintenance_requests WHERE phone = ?').bind(clientPhone).run()
+        const contracts = await db.prepare('SELECT id FROM maintenance_contracts WHERE client_phone = ?').bind(clientPhone).all()
+        if (contracts.results?.length) {
+          for (const contract of contracts.results as any[]) {
+            await db.prepare('DELETE FROM maintenance_visits WHERE contract_id = ?').bind(contract.id).run()
+          }
+          await db.prepare('DELETE FROM maintenance_contracts WHERE client_phone = ?').bind(clientPhone).run()
+        }
+        await db.prepare('DELETE FROM sav_tickets WHERE client_phone = ?').bind(clientPhone).run()
+        // Pas de table payments à anonymiser
+      }
+
+      // 3. Supprimer le client lui-même
+      await db.prepare('DELETE FROM clients WHERE id = ?').bind(id).run()
+    } catch (error) {
+      console.error('Erreur D1 client delete cascade:', error)
+    }
+  }
+
+  // 4. Supprimer du store mémoire
+  const idx = clients.findIndex(cl => cl.id === id)
+  if (idx !== -1) clients.splice(idx, 1)
+
+  return c.redirect('/admin/clients?deleted=1')
 })
+
+// Helper JWT Firebase Admin
+async function createFirebaseJWT(serviceAccount: any): Promise<string> {
+  const now = Math.floor(Date.now() / 1000)
+  const header = btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
+  const payload = btoa(JSON.stringify({
+    iss: serviceAccount.client_email,
+    sub: serviceAccount.client_email,
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600,
+    scope: 'https://www.googleapis.com/auth/firebase'
+  })).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
+  const signingInput = `${header}.${payload}`
+  const keyData = serviceAccount.private_key.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\n/g, '')
+  const binaryKey = Uint8Array.from(atob(keyData), c => c.charCodeAt(0))
+  const cryptoKey = await crypto.subtle.importKey('pkcs8', binaryKey, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign'])
+  const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', cryptoKey, new TextEncoder().encode(signingInput))
+  const sigB64 = btoa(String.fromCharCode(...new Uint8Array(signature))).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
+  return `${signingInput}.${sigB64}`
+}
 
 // ============================================================
 // API RDV - CRUD COMPLET
@@ -7201,25 +7094,27 @@ app.post('/api/admin/commande/update-statut', adminAuth, async (c) => {
   const body = await c.req.parseBody()
   const id = parseInt(body['id'] as string)
   const status = body['status'] as string
-  const allowedStatuses = ['pending', 'paid', 'livre', 'validation_terrain', 'devis_en_attente', 'devis_valide', 'devis_refuse', 'installed', 'cancelled', 'refunded']
+  const adminNotes = ((body['admin_notes'] as string) || '').trim()
+
+  // Nouveaux statuts simplifiés (flux contact commercial)
+  const allowedStatuses = ['en_attente', 'contacte', 'confirme', 'en_livraison', 'livre', 'annule']
   if (!allowedStatuses.includes(status)) {
     return c.json({ error: 'Statut invalide' }, 400)
   }
+
   const order = orders.find(o => o.id === id)
+  if (order) order.status = status as any
 
-  if (order) {
-    order.status = status as any
-  }
-
-  // Mettre à jour en D1
   const db = c.env.DB
   if (db) {
     const now = new Date().toISOString()
     try {
       if (status === 'livre') {
-        await db.prepare('UPDATE orders SET status = ?, delivered_at = ?, updated_at = ? WHERE id = ?').bind(status, now, now, id).run()
-      } else if (status === 'installed') {
-        await db.prepare('UPDATE orders SET status = ?, installed_at = ?, installation_confirmed_by = ?, updated_at = ? WHERE id = ?').bind(status, now, 'admin', now, id).run()
+        await db.prepare('UPDATE orders SET status = ?, delivered_at = ?, installed_at = ?, updated_at = ? WHERE id = ?')
+          .bind(status, now, now, now, id).run()
+      } else if (adminNotes) {
+        await db.prepare('UPDATE orders SET status = ?, admin_notes = ?, updated_at = ? WHERE id = ?')
+          .bind(status, adminNotes, now, id).run()
       } else {
         await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').bind(status, now, id).run()
       }
@@ -7227,8 +7122,8 @@ app.post('/api/admin/commande/update-statut', adminAuth, async (c) => {
       console.error('Erreur D1 commande update:', error)
     }
 
-    // Auto-create SAV gratuit when order is marked as installed
-    if (status === 'installed') {
+    // Auto-create SAV gratuit when order is marked as livre (livré + installé)
+    if (status === 'livre') {
       try {
         const orderRow = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(id).first() as any
         if (orderRow) {
@@ -7241,37 +7136,58 @@ app.post('/api/admin/commande/update-statut', adminAuth, async (c) => {
           const endDate = new Date(twelveMonths)
           endDate.setMonth(endDate.getMonth() + 1)
 
-          await db.prepare(
-            `INSERT INTO maintenance_contracts (client_id, client_name, client_phone, order_id, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date, notes)
-             VALUES (?, ?, ?, ?, 'sav_gratuit', 0, ?, ?, 'active', 2, 0, ?, ?)`
-          ).bind(
-            orderRow.client_id || null,
-            orderRow.client_name,
-            orderRow.client_phone,
-            id,
-            now,
-            endDate.toISOString().split('T')[0],
-            sixMonths.toISOString().split('T')[0],
-            `SAV gratuit - Commande #${id} - 2 visites (6 et 12 mois après installation)`
-          ).run()
+          // Vérifier si un SAV gratuit existe déjà pour cette commande
+          const existingSav = await db.prepare("SELECT id FROM maintenance_contracts WHERE order_id = ? AND plan_type = 'sav_gratuit'").bind(id).first()
+          if (!existingSav) {
+            await db.prepare(
+              `INSERT INTO maintenance_contracts (client_id, client_name, client_phone, order_id, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date, notes)
+               VALUES (?, ?, ?, ?, 'sav_gratuit', 0, ?, ?, 'actif', 2, 0, ?, ?)`
+            ).bind(
+              orderRow.client_id || null,
+              orderRow.client_name,
+              orderRow.client_phone,
+              id,
+              now.split('T')[0],
+              endDate.toISOString().split('T')[0],
+              sixMonths.toISOString().split('T')[0],
+              `SAV gratuit - Commande #${id} - 2 visites (6 et 12 mois après installation)`
+            ).run()
 
-          const contract = await db.prepare('SELECT id FROM maintenance_contracts WHERE order_id = ? ORDER BY id DESC LIMIT 1').bind(id).first() as any
-          if (contract) {
-            await db.prepare(
-              `INSERT INTO maintenance_visits (contract_id, client_id, client_name, client_phone, visit_type, visit_date, status, description)
-               VALUES (?, ?, ?, ?, 'preventive', ?, 'planifiee', 'Visite SAV gratuit - 6 mois après installation')`
-            ).bind(contract.id, orderRow.client_id || 0, orderRow.client_name, orderRow.client_phone, sixMonths.toISOString().split('T')[0]).run()
-            await db.prepare(
-              `INSERT INTO maintenance_visits (contract_id, client_id, client_name, client_phone, visit_type, visit_date, status, description)
-               VALUES (?, ?, ?, ?, 'preventive', ?, 'planifiee', 'Visite SAV gratuit - 12 mois après installation')`
-            ).bind(contract.id, orderRow.client_id || 0, orderRow.client_name, orderRow.client_phone, twelveMonths.toISOString().split('T')[0]).run()
+            const contract = await db.prepare('SELECT id FROM maintenance_contracts WHERE order_id = ? ORDER BY id DESC LIMIT 1').bind(id).first() as any
+            if (contract) {
+              await db.prepare(
+                `INSERT INTO maintenance_visits (contract_id, client_id, client_name, client_phone, visit_type, visit_date, status, description)
+                 VALUES (?, ?, ?, ?, 'preventive', ?, 'planifiee', 'Visite SAV gratuit - 6 mois après installation')`
+              ).bind(contract.id, orderRow.client_id || 0, orderRow.client_name, orderRow.client_phone, sixMonths.toISOString().split('T')[0]).run()
+              await db.prepare(
+                `INSERT INTO maintenance_visits (contract_id, client_id, client_name, client_phone, visit_type, visit_date, status, description)
+                 VALUES (?, ?, ?, ?, 'preventive', ?, 'planifiee', 'Visite SAV gratuit - 12 mois après installation')`
+              ).bind(contract.id, orderRow.client_id || 0, orderRow.client_name, orderRow.client_phone, twelveMonths.toISOString().split('T')[0]).run()
+            }
+            await notifyAdmin(c.env, 'maintenance', `SAV gratuit créé pour commande #${id} — ${orderRow.client_name} (${orderRow.client_phone}) — 2 visites planifiées`)
           }
-
-          await notifyAdmin(c.env, 'maintenance', `SAV gratuit créé pour commande #${id} — ${orderRow.client_name} (${orderRow.client_phone}) — 2 visites planifiées`)
         }
       } catch (e) {
         console.error('Erreur création SAV gratuit:', e)
       }
+    }
+
+    // Notification WhatsApp client selon le statut
+    const STATUS_CLIENT_MSG: Record<string, string> = {
+      contacte:     `Bonjour, c'est l'équipe MAASGA ! Nous avons bien reçu votre commande #${id} et nous vous contactons pour finaliser les détails. Répondez à ce message ou appelez le +226 55 99 64 18.`,
+      confirme:     `Votre commande MAASGA #${id} est confirmée ! Nous préparons votre livraison et installation. Nous vous tiendrons informé(e).`,
+      en_livraison: `Bonne nouvelle ! Votre commande MAASGA #${id} est en cours de livraison. Notre équipe vous contactera pour convenir de l'heure d'installation.`,
+      livre:        `🎉 Votre climatiseur (commande #${id}) a été livré et installé avec succès. Merci de votre confiance chez MAASGA ! Votre SAV gratuit est activé.`,
+      annule:       `Votre commande MAASGA #${id} a été annulée. Contactez-nous au +226 55 99 64 18 pour plus d'informations.`,
+    }
+    const clientMsg = STATUS_CLIENT_MSG[status]
+    if (clientMsg) {
+      try {
+        const orderForNotif = order || await db.prepare('SELECT client_name, client_phone FROM orders WHERE id = ?').bind(id).first() as any
+        if (orderForNotif?.client_phone) {
+          await sendSmsWithLog(c.env, db, orderForNotif.client_phone, clientMsg)
+        }
+      } catch(e) { console.error('Notification client order error:', e) }
     }
   }
 
@@ -7494,7 +7410,7 @@ async function handleScheduled(env: HonoEnv['Bindings']) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: env.TELEGRAM_CHAT_ID,
-            text: `🔔 *RAPPEL MAINTENANCE — ${label}*\n\n👤 Client: ${clientName}\n📱 Tél: ${visit.client_phone || '—'}\n📅 Date: ${visit.visit_date}\n📋 Contrat: ${planType}\n\n${isToday ? '⚠️ La visite est prévue AUJOURD\'HUI !' : '📌 La visite est prévue DEMAIN.'}`,
+            text: `🔔 *RAPPEL MAINTENANCE — ${label}*\n\n👤 Client: ${clientName}\n📱 Tél: ${visit.client_phone || '—'}\n📅 Date: ${visit.visit_date}\n📋 Contrat: ${planType}\n\n${isToday ? "⚠️ La visite est prévue AUJOURD\'HUI !" : '📌 La visite est prévue DEMAIN.'}`,
             parse_mode: 'Markdown'
           })
         })
@@ -7959,7 +7875,7 @@ app.post('/api/telegram/webhook', async (c) => {
         let txt = `📆 *Prochains rendez-vous*\n\n`
         const buttons: any[] = []
         for (const r of rows.results as any[]) {
-          const dateStr = r.date === today ? '📍 AUJOURD\'HUI' : `📅 ${r.date}`
+          const dateStr = r.date === today ? "📍 AUJOURD'HUI" : `📅 ${r.date}`
           const horaire = r.heure_debut ? `${r.heure_debut}–${r.heure_fin || '18:00'}` : '—'
           const stIcon = r.status === 'confirmed' ? '✅' : r.status === 'done' ? '☑️' : '⏳'
           txt += `${stIcon} #${r.id} — *${r.name}*\n   ${dateStr} | ${horaire}\n   📱 ${r.phone} | 📍 ${r.quartier || '—'}\n\n`
@@ -8186,24 +8102,9 @@ app.post('/api/telegram/webhook', async (c) => {
         break
       }
 
-      // ---- /paiements ----
+      // ---- /paiements → redirigé vers commandes ----
       case '/paiements': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
-        const rows = await db.prepare(
-          `SELECT id, client_name, client_phone, amount, method, status, payment_type, created_at
-           FROM payments ORDER BY created_at DESC LIMIT 12`
-        ).all()
-        if (!rows.results?.length) { await reply('Aucun paiement enregistré.'); break }
-        const total = (rows.results as any[]).filter((r:any)=>r.status==='completed').reduce((s:number,r:any)=>s+(r.amount||0),0)
-        let txt = `💳 *Paiements récents*
-📊 Total confirmé: *${total.toLocaleString()} FCFA*
-
-`
-        for (const r of rows.results as any[]) {
-          const icon = r.status==='completed'?'✅':r.status==='pending'?'⏳':r.status==='failed'?'❌':'🔄'
-          txt += `${icon} #${r.id} — *${r.client_name||'?'}*\n   ${(r.amount||0).toLocaleString()} FCFA | ${r.method||'—'} | ${r.payment_type||'—'}\n\n`
-        }
-        await reply(txt, { inline_keyboard: [[{ text: '🔄 Actualiser', callback_data: 'show:payments' }]] })
+        await reply('💡 Le système de paiement en ligne a été remplacé par un flux contact direct.\nConsultez les commandes avec /commandes.')
         break
       }
 
@@ -8234,7 +8135,7 @@ app.post('/api/telegram/webhook', async (c) => {
         const rows = await db.prepare(
           `SELECT id, client_name, rating, comment, service, created_at FROM reviews WHERE approved=0 ORDER BY created_at DESC LIMIT 10`
         ).all()
-        if (!rows.results?.length) { await reply('✅ Aucun avis en attente d\'approbation.'); break }
+        if (!rows.results?.length) { await reply("✅ Aucun avis en attente d'approbation."); break }
         let txt = `⭐ *Avis en attente*\n\n`
         const buttons: any[] = []
         for (const r of rows.results as any[]) {
@@ -8305,7 +8206,7 @@ app.post('/api/telegram/webhook', async (c) => {
       // ---- /backup ----
       case '/backup': {
         if (!db) { await reply('❌ Base de données indisponible'); break }
-        const backupTables = ['products', 'clients', 'appointments', 'orders', 'reviews', 'payments', 'contact_messages', 'maintenance_contracts', 'sav_tickets', 'site_settings']
+        const backupTables = ['products', 'clients', 'appointments', 'orders', 'reviews', 'contact_messages', 'maintenance_contracts', 'sav_tickets', 'site_settings']
         const counts: string[] = []
         let totalRows = 0
         for (const table of backupTables) {
@@ -8345,48 +8246,130 @@ app.post('/api/telegram/webhook', async (c) => {
 })
 
 // ============================================================
-// API MOBILE — JSON + Bearer tokens (Expo/React Native)
+// API MOBILE — Firebase Auth JWT verification (JWKS)
 // ============================================================
 
-const DEFAULT_MOBILE_ADMIN_HASH_INPUT = 'maasga2025'
+const FIREBASE_PROJECT_ID = 'maasga-83b35'
+const FIREBASE_JWKS_URL = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'
 
-// Simple one-way SHA-256 hash (no salt, same as mobile webapp)
-async function simpleSHA256(password: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password))
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+// Cache JWKS in memory for the lifetime of the isolate (auto-refreshed on key miss)
+let _jwksCache: { keys: any[]; fetchedAt: number } | null = null
+const JWKS_CACHE_TTL_MS = 3600_000 // 1 heure
+
+async function getFirebasePublicKeys(): Promise<any[]> {
+  const now = Date.now()
+  if (_jwksCache && now - _jwksCache.fetchedAt < JWKS_CACHE_TTL_MS) {
+    return _jwksCache.keys
+  }
+  const res = await fetch(FIREBASE_JWKS_URL)
+  if (!res.ok) throw new Error('Impossible de récupérer les clés JWKS Firebase')
+  const data = await res.json() as { keys: any[] }
+  _jwksCache = { keys: data.keys, fetchedAt: now }
+  return data.keys
 }
 
-// Generate mobile Bearer token
-function generateMobileToken(payload: { id: number; name: string; role: string; phone?: string; email?: string }): string {
-  const data = btoa(JSON.stringify(payload))
-  const rand = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('')
-  return `${data}.${rand}`
+function base64urlToUint8Array(b64url: string): Uint8Array {
+  const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/')
+  const padded = b64.padEnd(b64.length + (4 - (b64.length % 4)) % 4, '=')
+  const binary = atob(padded)
+  return new Uint8Array([...binary].map(c => c.charCodeAt(0)))
 }
 
-// Mobile auth middleware (Bearer token)
+async function importJwkPublicKey(jwk: any): Promise<CryptoKey> {
+  return crypto.subtle.importKey(
+    'jwk',
+    jwk,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['verify'],
+  )
+}
+
+/**
+ * Vérifie un Firebase ID token (JWT RS256).
+ * Retourne le payload décodé si valide, sinon lance une exception.
+ */
+async function verifyFirebaseToken(idToken: string): Promise<Record<string, any>> {
+  const parts = idToken.split('.')
+  if (parts.length !== 3) throw new Error('JWT malformé')
+
+  const [headerB64, payloadB64, signatureB64] = parts
+
+  // Décoder le header pour trouver le kid
+  const header = JSON.parse(atob(headerB64.replace(/-/g, '+').replace(/_/g, '/')))
+  if (header.alg !== 'RS256') throw new Error('Algorithme JWT non supporté')
+
+  // Décoder le payload
+  const payload = JSON.parse(
+    new TextDecoder().decode(base64urlToUint8Array(payloadB64))
+  ) as Record<string, any>
+
+  // Vérifier les claims standard
+  const now = Math.floor(Date.now() / 1000)
+  if (payload.exp && payload.exp < now) throw new Error('Token expiré')
+  if (payload.iat && payload.iat > now + 300) throw new Error('Token émis dans le futur')
+  if (payload.aud !== FIREBASE_PROJECT_ID) throw new Error('Audience invalide')
+  if (payload.iss !== `https://securetoken.google.com/${FIREBASE_PROJECT_ID}`) throw new Error('Émetteur invalide')
+  if (!payload.sub) throw new Error('Subject manquant')
+
+  // Trouver la clé publique correspondant au kid
+  const keys = await getFirebasePublicKeys()
+  const jwk = keys.find((k: any) => k.kid === header.kid)
+  if (!jwk) {
+    // kid inconnu → invalider le cache et réessayer une fois
+    _jwksCache = null
+    const freshKeys = await getFirebasePublicKeys()
+    const freshJwk = freshKeys.find((k: any) => k.kid === header.kid)
+    if (!freshJwk) throw new Error('Clé publique introuvable pour ce token')
+    const key = await importJwkPublicKey(freshJwk)
+    const sig = base64urlToUint8Array(signatureB64)
+    const data = new TextEncoder().encode(`${headerB64}.${payloadB64}`)
+    const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, sig, data)
+    if (!valid) throw new Error('Signature JWT invalide')
+    return payload
+  }
+
+  const key = await importJwkPublicKey(jwk)
+  const sig = base64urlToUint8Array(signatureB64)
+  const data = new TextEncoder().encode(`${headerB64}.${payloadB64}`)
+  const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, sig, data)
+  if (!valid) throw new Error('Signature JWT invalide')
+
+  return payload
+}
+
+// ─── Middleware auth mobile (Firebase JWT) ────────────────────────────────────
 const mobileAuth = async (c: any, next: any) => {
   const auth = c.req.header('Authorization') || ''
-  const token = auth.replace('Bearer ', '')
+  const token = auth.replace('Bearer ', '').trim()
   if (!token) return c.json({ error: 'Token manquant' }, 401)
   try {
-    const payload = JSON.parse(atob(token.split('.')[0] || '{}'))
-    if (!payload.id && !payload.role) return c.json({ error: 'Token invalide' }, 401)
-    c.set('mobileUser', payload)
+    const payload = await verifyFirebaseToken(token)
+    // Stocker uid + email dans le contexte de la requête
+    c.set('mobileUser', {
+      uid: payload.sub,
+      email: payload.email || '',
+      name: payload.name || '',
+      role: 'client',
+    })
     return next()
-  } catch {
-    return c.json({ error: 'Token invalide' }, 401)
+  } catch (e: any) {
+    console.warn('[mobileAuth] Token invalide:', e.message)
+    return c.json({ error: 'Token invalide ou expiré' }, 401)
   }
 }
 
-// Mobile admin auth middleware
+// ─── Middleware admin mobile (vérifie le claim custom "role":"admin") ─────────
 const mobileAdminAuth = async (c: any, next: any) => {
   const auth = c.req.header('Authorization') || ''
-  const token = auth.replace('Bearer ', '')
+  const token = auth.replace('Bearer ', '').trim()
   if (!token) return c.json({ error: 'Token manquant' }, 401)
   try {
-    const payload = JSON.parse(atob(token.split('.')[0] || '{}'))
-    if (payload.role !== 'admin') return c.json({ error: 'Accès admin requis' }, 403)
-    c.set('mobileUser', payload)
+    const payload = await verifyFirebaseToken(token)
+    // Le rôle admin est stocké dans les custom claims Firebase
+    const isAdmin = payload['role'] === 'admin' || payload['https://maasga.app/role'] === 'admin'
+    if (!isAdmin) return c.json({ error: 'Accès admin requis' }, 403)
+    c.set('mobileUser', { uid: payload.sub, email: payload.email || '', name: payload.name || '', role: 'admin' })
     return next()
   } catch {
     return c.json({ error: 'Token invalide' }, 401)
@@ -8394,124 +8377,164 @@ const mobileAdminAuth = async (c: any, next: any) => {
 }
 
 // ── POST /api/mobile/login ────────────────────────────────────
-app.post('/api/mobile/login', async (c) => {
-  const body = await c.req.json()
-  const identifier = (body.identifier || '').trim()
-  const password = (body.password || '').trim()
-  if (!identifier || !password) return c.json({ error: 'Identifiants manquants' }, 400)
-
+// Firebase Auth gère la connexion côté client.
+// Cette route permet de synchroniser le profil Firebase dans D1.
+app.post('/api/mobile/login', mobileAuth, async (c) => {
+  const user = c.get('mobileUser')
   const db = c.env.DB
-  let validAdminUsername = DEFAULT_ADMIN_USERNAME
-  let validAdminHash = ''
-
   if (db) {
     try {
-      const hashRow = await db.prepare('SELECT value FROM admin_settings WHERE key = ?').bind('admin_password_hash').first() as any
-      if (hashRow?.value && !hashRow.value.startsWith('pbkdf2:')) validAdminHash = hashRow.value
-      const userRow = await db.prepare('SELECT value FROM admin_settings WHERE key = ?').bind('admin_username').first() as any
-      if (userRow?.value) validAdminUsername = userRow.value
-    } catch (_) {}
-  }
-  if (!validAdminHash) validAdminHash = await simpleSHA256(DEFAULT_MOBILE_ADMIN_HASH_INPUT)
+      // Upsert le client dans D1 à partir du profil Firebase
+      const existing = await db.prepare(
+        'SELECT id FROM clients WHERE firebase_uid = ? OR email = ?'
+      ).bind(user.uid, user.email || '__none__').first() as any
 
-  const submittedHash = await simpleSHA256(password)
-  if (identifier === validAdminUsername && submittedHash === validAdminHash) {
-    const token = generateMobileToken({ id: 0, name: 'Admin', role: 'admin' })
-    return c.json({ token, role: 'admin', user: { id: 0, name: 'Admin', role: 'admin' } })
-  }
-
-  if (db) {
-    try {
-      const cleanId = identifier.replace(/\s/g, '')
-      const withPrefix = cleanId.startsWith('+226') ? cleanId : ('+226' + cleanId)
-      const withoutPrefix = cleanId.startsWith('+226') ? cleanId.slice(4) : cleanId
-      const client = await db.prepare(
-        'SELECT id, name, phone, email, quartier, password_hash FROM clients WHERE phone = ? OR phone = ? OR phone = ? OR email = ?'
-      ).bind(cleanId, withPrefix, withoutPrefix, identifier).first() as any
-
-      if (client && client.password_hash && client.password_hash !== 'pending') {
-        if (submittedHash === client.password_hash) {
-          const token = generateMobileToken({ id: client.id, name: client.name, role: 'client', phone: client.phone, email: client.email })
-          return c.json({ token, role: 'client', user: { id: client.id, name: client.name, phone: client.phone, email: client.email, quartier: client.quartier, role: 'client' } })
-        }
-        return c.json({ error: 'Mot de passe incorrect' }, 401)
+      if (!existing) {
+        const now = new Date().toISOString()
+        await db.prepare(
+          'INSERT OR IGNORE INTO clients (firebase_uid, name, email, created_at, updated_at) VALUES (?, ?, ?, ?, ?)'
+        ).bind(user.uid, user.name || '', user.email || '', now, now).run()
+      } else if (!existing.firebase_uid) {
+        // Lier un compte existant (inscrit via le site) au uid Firebase
+        await db.prepare('UPDATE clients SET firebase_uid = ?, updated_at = ? WHERE id = ?')
+          .bind(user.uid, new Date().toISOString(), existing.id).run()
       }
-
-      if (client && (!client.password_hash || client.password_hash === 'pending')) {
-        await db.prepare('UPDATE clients SET password_hash = ?, updated_at = ? WHERE id = ?')
-          .bind(submittedHash, new Date().toISOString(), client.id).run()
-        const token = generateMobileToken({ id: client.id, name: client.name, role: 'client', phone: client.phone, email: client.email })
-        return c.json({ token, role: 'client', user: { id: client.id, name: client.name, phone: client.phone, email: client.email, quartier: client.quartier, role: 'client' } })
-      }
-    } catch (e) { console.error('Mobile login D1 error:', e) }
+    } catch (e) { console.error('Mobile login sync error:', e) }
   }
-
-  return c.json({ error: 'Identifiants incorrects' }, 401)
+  return c.json({ success: true, uid: user.uid, role: user.role })
 })
 
 // ── POST /api/mobile/register ─────────────────────────────────
-app.post('/api/mobile/register', async (c) => {
-  const body = await c.req.json()
-  const name = (body.name || '').trim()
-  const phone = (body.phone || '').trim()
-  const email = (body.email || '').trim()
+// Firebase Auth gère l'inscription côté client.
+// Cette route synchronise les données supplémentaires (phone, quartier) dans D1.
+app.post('/api/mobile/register', mobileAuth, async (c) => {
+  const user = c.get('mobileUser')
+  const body = await c.req.json().catch(() => ({})) as any
+  const phone = (body.phone || '').trim().replace(/\s/g, '')
   const quartier = (body.quartier || '').trim()
-  const password = (body.password || '').trim()
-
-  if (!name || !phone) return c.json({ error: 'Nom et téléphone obligatoires' }, 400)
-  if (password.length < 6) return c.json({ error: 'Le mot de passe doit faire au moins 6 caractères' }, 400)
+  const name = (body.name || user.name || '').trim()
 
   const db = c.env.DB
-  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  if (db) {
+    try {
+      const fullPhone = phone ? (phone.startsWith('+226') ? phone : '+226' + phone) : null
+      const existing = await db.prepare(
+        'SELECT id FROM clients WHERE firebase_uid = ?'
+      ).bind(user.uid).first() as any
 
-  try {
-    const fullPhone = phone.startsWith('+226') ? phone.replace(/\s/g, '') : '+226' + phone.replace(/\s/g, '')
-    const existing = await db.prepare(
-      'SELECT id, password_hash FROM clients WHERE phone = ? OR phone = ?'
-    ).bind(phone, fullPhone).first() as any
-
-    if (existing && existing.password_hash && existing.password_hash !== 'pending') {
-      return c.json({ error: 'Un compte existe déjà avec ce numéro. Connectez-vous.' }, 409)
-    }
-
-    const password_hash = await simpleSHA256(password)
-    const now = new Date().toISOString()
-    let clientId: number
-
-    if (existing) {
-      await db.prepare('UPDATE clients SET password_hash = ?, name = ?, email = ?, quartier = ?, updated_at = ? WHERE id = ?')
-        .bind(password_hash, name, email || null, quartier || null, now, existing.id).run()
-      clientId = existing.id
-    } else {
-      await db.prepare(
-        'INSERT INTO clients (name, phone, email, quartier, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).bind(name, fullPhone, email || null, quartier || null, password_hash, now, now).run()
-      const inserted = await db.prepare('SELECT id FROM clients WHERE phone = ?').bind(fullPhone).first() as any
-      clientId = inserted?.id
-    }
-
-    if (!clientId) return c.json({ error: 'Erreur création compte' }, 500)
-
-    const token = generateMobileToken({ id: clientId, name, role: 'client', phone: fullPhone, email })
-    return c.json({ token, role: 'client', user: { id: clientId, name, phone: fullPhone, email, quartier, role: 'client' } })
-  } catch (e) {
-    console.error('Mobile register error:', e)
-    return c.json({ error: 'Erreur inscription' }, 500)
+      const now = new Date().toISOString()
+      if (existing) {
+        await db.prepare(
+          `UPDATE clients SET name = ?, phone = COALESCE(NULLIF(?, ''), phone), quartier = COALESCE(NULLIF(?, ''), quartier), updated_at = ? WHERE firebase_uid = ?`
+        ).bind(name, fullPhone || '', quartier, now, user.uid).run()
+      } else {
+        await db.prepare(
+          'INSERT INTO clients (firebase_uid, name, email, phone, quartier, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        ).bind(user.uid, name, user.email || '', fullPhone, quartier || null, now, now).run()
+      }
+    } catch (e) { console.error('Mobile register sync error:', e) }
   }
+  return c.json({ success: true, uid: user.uid })
 })
 
 // ── GET /api/mobile/profile ───────────────────────────────────
 app.get('/api/mobile/profile', mobileAuth, async (c) => {
   const user = c.get('mobileUser')
-  if (user.role === 'admin') return c.json({ id: 0, name: 'Admin', role: 'admin' })
   const db = c.env.DB
-  if (!db) return c.json({ error: 'DB indisponible' }, 503)
-  const client = await db.prepare('SELECT id, name, phone, email, quartier, created_at FROM clients WHERE id = ?').bind(user.id).first()
-  if (!client) return c.json({ error: 'Client introuvable' }, 404)
-  return c.json({ ...client, role: 'client' })
+  if (db) {
+    try {
+      const client = await db.prepare(
+        'SELECT id, name, phone, email, quartier, created_at FROM clients WHERE firebase_uid = ?'
+      ).bind(user.uid).first() as any
+      if (client) return c.json({ ...client, uid: user.uid, role: user.role })
+    } catch (_) {}
+  }
+  // Fallback : retourner les infos du token Firebase
+  return c.json({ uid: user.uid, name: user.name, email: user.email, role: user.role })
 })
 
-// ── GET /api/mobile/products ──────────────────────────────────
+// ── GET /api/mobile/client-dashboard ─────────────────────────
+app.get('/api/mobile/client-dashboard', mobileAuth, async (c) => {
+  const user = c.get('mobileUser')
+  const db = c.env.DB
+
+  let client: any = { name: user.name, email: user.email, phone: '', quartier: '', created_at: new Date().toISOString() }
+  let orders: any[] = []
+  let rdvs: any[] = []
+  let maintenanceContracts: any[] = []
+  let freeMaintenances: any[] = []
+  let payments: any[] = []
+
+  if (db) {
+    try {
+      // Récupérer le profil client depuis D1 via firebase_uid OU email
+      const clientRow = await db.prepare(
+        'SELECT id, name, phone, email, quartier, created_at FROM clients WHERE firebase_uid = ? OR email = ? LIMIT 1'
+      ).bind(user.uid, user.email || '__none__').first() as any
+
+      if (clientRow) {
+        client = clientRow
+
+        // Commandes
+        const ordersResult = await db.prepare(
+          'SELECT * FROM orders WHERE client_id = ? OR client_phone = ? ORDER BY created_at DESC LIMIT 20'
+        ).bind(clientRow.id, clientRow.phone || '').all()
+        orders = (ordersResult.results || []) as any[]
+
+        // Rendez-vous
+        const rdvsResult = await db.prepare(
+          'SELECT * FROM appointments WHERE phone = ? OR phone = ? ORDER BY created_at DESC LIMIT 20'
+        ).bind(clientRow.phone || '', (clientRow.phone || '').replace('+226', '') || '').all()
+        rdvs = (rdvsResult.results || []) as any[]
+
+        // Contrats maintenance
+        const contractsResult = await db.prepare(
+          'SELECT * FROM maintenance_contracts WHERE client_id = ? ORDER BY created_at DESC'
+        ).bind(clientRow.id).all()
+        maintenanceContracts = (contractsResult.results || []) as any[]
+
+        // Maintenances gratuites (3 incluses avec chaque installation)
+        const freeResult = await db.prepare(
+          'SELECT mv.*, a.name as tech FROM maintenance_visits mv LEFT JOIN appointments a ON mv.appointment_id = a.id WHERE mv.client_id = ? AND mv.plan_type = ? ORDER BY mv.scheduled_date ASC LIMIT 3'
+        ).bind(clientRow.id, 'gratuit').all()
+        freeMaintenances = (freeResult.results || []) as any[]
+      }
+    } catch (e) {
+      console.error('client-dashboard error:', e)
+    }
+  }
+
+  return c.json({
+    client: {
+      id: client.id || 0,
+      name: client.name || user.name || '',
+      phone: client.phone || '',
+      email: client.email || user.email || '',
+      quartier: client.quartier || '',
+      photoUrl: null,
+      created_at: client.created_at || new Date().toISOString(),
+    },
+    orders,
+    rdvs,
+    maintenanceContracts,
+    freeMaintenances,
+    payments,
+  })
+})
+
+// ── POST /api/mobile/order/:id/devis-action ───────────────────
+app.post('/api/mobile/order/:id/devis-action', mobileAuth, async (c) => {
+  const orderId = c.req.param('id')
+  const body = await c.req.json().catch(() => ({})) as any
+  const action = body.action // 'accept' | 'refuse'
+  const reason = body.reason || ''
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'DB indisponible' }, 503)
+  const newStatus = action === 'accept' ? 'confirmed' : 'cancelled'
+  await db.prepare(`UPDATE orders SET status = ?, notes = COALESCE(NULLIF(?, ''), notes), updated_at = ? WHERE id = ?`)
+    .bind(newStatus, reason, new Date().toISOString(), orderId).run()
+  return c.json({ success: true })
+})
 app.get('/api/mobile/products', async (c) => {
   const db = c.env.DB
   let list: any[] = [...products]
@@ -8593,7 +8616,7 @@ app.post('/api/mobile/rdv', mobileAuth, async (c) => {
       return c.json({ success: true, id: Date.now() })
     } catch (e) { console.error('Mobile rdv error:', e) }
   }
-  const newRdv = { id: appointments.length + 1, name, phone, quartier, date, heure_debut: '08:00', heure_fin: '18:00', type, notes, latitude: null, longitude: null, adresse_precise: '', status: 'pending' as const, created_at: new Date().toISOString() }
+  const newRdv = { id: appointments.length + 1, name, phone, quartier, date, heure_debut: '08:00', heure_fin: '18:00', type, notes, latitude: null, longitude: null, adresse_precise: '', status: 'en_attente' as const, created_at: new Date().toISOString() }
   appointments.push(newRdv)
   return c.json({ success: true, id: newRdv.id })
 })

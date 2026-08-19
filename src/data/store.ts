@@ -48,7 +48,8 @@ export interface Order {
   client_email?: string | null
   quartier: string | null
   type: 'devis' | 'installation' | 'vente' | 'commande'
-  status: 'pending' | 'paid' | 'en_livraison' | 'livre' | 'validation_terrain' | 'devis_en_attente' | 'devis_valide' | 'devis_refuse' | 'validated' | 'installing' | 'installed' | 'cancelled' | 'refunded'
+  // Statuts simplifiés : flux contact commercial (pas de paiement en ligne)
+  status: 'en_attente' | 'contacte' | 'confirme' | 'en_livraison' | 'livre' | 'annule'
   notes?: string | null
   total_price?: number
   installation_price?: number
@@ -70,3 +71,5 @@ export const clients: Client[] = []
 // Compteur de visites maintenance à faire (date échue, statut planifiee)
 export let maintenanceDueCount = 0
 export function setMaintenanceDueCount(n: number) { maintenanceDueCount = n }
+
+export const notifications: any[] = []

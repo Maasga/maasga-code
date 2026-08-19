@@ -1,5 +1,5 @@
 ﻿import { products } from '../data/products'
-import { reviews, appointments, orders, clients, maintenanceDueCount } from '../data/store'
+import { reviews, appointments, orders, clients, maintenanceDueCount, notifications } from '../data/store'
 
 // ============================================================
 // LAYOUT ADMIN
@@ -140,6 +140,16 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
               {n.key === 'maintenance' && maintenanceDueCount > 0 && (
                 <span class="ml-auto text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold" style="background:#f59e0b;">
                   {maintenanceDueCount}
+                </span>
+              )}
+              {n.key === 'commandes' && orders.filter(o => o.status === 'en_attente').length > 0 && (
+                <span class="ml-auto bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  {orders.filter(o => o.status === 'en_attente').length}
+                </span>
+              )}
+              {n.key === 'notifications' && notifications.filter(notif => !notif.read).length > 0 && (
+                <span class="ml-auto bg-cyan-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  {notifications.filter(notif => !notif.read).length}
                 </span>
               )}
             </a>
@@ -485,7 +495,7 @@ export const AdminPage = () => {
     : '-'
   // CA réel basé sur les commandes (paid + validated + installed)
   const estimatedCA = orders
-    .filter(o => ['paid', 'validated', 'en_livraison', 'installed'].includes(o.status))
+    .filter(o => ['confirme', 'en_livraison', 'livre'].includes(o.status))
     .reduce((s, o) => s + (o.total_price || 0), 0)
 
   // Stats cette semaine
@@ -728,7 +738,7 @@ export const AdminPage = () => {
           const label = d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' })
           const monthOrders = orders.filter(o => {
             if (!o.created_at) return false
-            return o.created_at.startsWith(yearMonth) && ['paid', 'validated', 'en_livraison', 'installed'].includes(o.status)
+            return o.created_at.startsWith(yearMonth) && ['confirme', 'en_livraison', 'livre'].includes(o.status)
           })
           monthlyData.push({ month: yearMonth, label, revenue: monthOrders.reduce((s, o) => s + (o.total_price || 0), 0), count: monthOrders.length })
         }
@@ -739,7 +749,7 @@ export const AdminPage = () => {
 
         // Top products by revenue
         const productRevenue: Record<number, { name: string; revenue: number; count: number }> = {}
-        orders.filter(o => ['paid', 'validated', 'en_livraison', 'installed'].includes(o.status)).forEach(o => {
+        orders.filter(o => ['confirme', 'en_livraison', 'livre'].includes(o.status)).forEach(o => {
           if (o.product_id) {
             if (!productRevenue[o.product_id]) {
               const p = products.find(p => p.id === o.product_id)
@@ -3067,27 +3077,20 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
 
   // KPIs
   const totalOrders = orders.length
-  const paidOrders = orders.filter(o => o.status === 'paid' || paymentsByOrder[o.id]?.status === 'completed').length
+  const paidOrders = orders.filter(o => o.status === 'confirme' || o.status === 'en_livraison' || o.status === 'livre').length
   const installedOrders = orders.filter(o => o.status === 'installed').length
-  const pendingOnline = onlineOrders.filter(o => o.status === 'pending').length
+  const pendingOnline = onlineOrders.filter(o => o.status === 'en_attente').length
   const estimatedCA = orders.reduce((sum, o) => sum + (o.total_price || 0), 0)
 
   // Helper: label et couleur du statut
   const statusInfo = (status: string, hasPayment: boolean) => {
     const map: Record<string, { label: string; color: string; bg: string }> = {
-      'pending': { label: hasPayment ? '⏳ En attente paiement' : '⏳ En attente', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
-      'paid': { label: '✅ Payée', color: '#34d399', bg: 'rgba(52,211,153,0.12)' },
+      'en_attente': { label: '⏳ En attente', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
+      'contacte': { label: '💬 Client contacté', color: '#60a5fa', bg: 'rgba(59,130,246,0.12)' },
+      'confirme': { label: '✅ Confirmée', color: '#34d399', bg: 'rgba(52,211,153,0.12)' },
       'en_livraison': { label: '🚚 En livraison', color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' },
-      'livre': { label: '📦 Livrée', color: '#2dd4bf', bg: 'rgba(45,212,191,0.12)' },
-      'validation_terrain': { label: '🗺️ Validation terrain', color: '#f97316', bg: 'rgba(249,115,22,0.12)' },
-      'devis_en_attente': { label: '📋 Devis en attente', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
-      'devis_valide': { label: '✔ Devis validé', color: '#059669', bg: 'rgba(5,150,105,0.12)' },
-      'devis_refuse': { label: '✖ Devis refusé', color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
-      'validated': { label: '✔ Validée', color: '#38bdf8', bg: 'rgba(56,189,248,0.12)' },
-      'installing': { label: '🔧 En installation', color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)' },
-      'installed': { label: '🏠 Installée', color: '#34d399', bg: 'rgba(52,211,153,0.12)' },
-      'cancelled': { label: '❌ Annulée', color: '#f87171', bg: 'rgba(248,113,113,0.12)' },
-      'refunded': { label: '💸 Remboursée', color: '#7c3aed', bg: 'rgba(124,58,237,0.12)' }
+      'livre': { label: '🏠 Livrée & Installée', color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
+      'annule': { label: '❌ Annulée', color: '#f87171', bg: 'rgba(248,113,113,0.12)' }
     }
     return map[status] || { label: status, color: '#94a3b8', bg: 'rgba(148,163,184,0.1)' }
   }
@@ -3224,21 +3227,13 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
                       {/* Status dropdown — contextual next steps only */}
                       <select data-order-id={String(o.id)} name={`status-${o.id}`} onchange={`updateOrderStatus(${o.id}, this.value)`} class="text-xs border px-2 py-1.5 rounded-lg font-medium cursor-pointer" style="background:rgba(59,130,246,0.1); border-color:rgba(59,130,246,0.25); color:#60a5fa;">
                         <option value={o.status} selected>
-                          {({ pending:'⏳ En attente', paid:'💳 Payée', en_livraison:'🚚 En livraison', livre:'📦 Livrée', validation_terrain:'🔍 Validation terrain', devis_en_attente:'📋 Devis en attente', devis_valide:'✅ Devis validé', devis_refuse:'❌ Devis refusé', installing:'🔧 Installation', installed:'✅ Installée', cancelled:'🚫 Annulée', validated:'✅ Validée', refunded:'💶 Remboursée' } as Record<string,string>)[o.status] || o.status}
+                          {({ en_attente:'⏳ En attente', contacte:'💬 Client contacté', confirme:'✅ Confirmée', en_livraison:'🚚 En livraison', livre:'🏠 Livrée & Installée', annule:'❌ Annulée' } as Record<string,string>)[o.status] || o.status}
                         </option>
-                        {o.status === 'pending' && <option value="paid">→ Marquer payée</option>}
-                        {o.status === 'paid' && <option value="en_livraison">→ Envoyer en livraison</option>}
-                        {o.status === 'en_livraison' && <option value="livre">→ Marquer livrée</option>}
-                        {o.status === 'livre' && <option value="validation_terrain">→ Planifier visite terrain</option>}
-                        {o.status === 'livre' && <option value="installed">→ Marquer installée</option>}
-                        {o.status === 'validation_terrain' && <option value="devis_en_attente">→ Envoyer devis</option>}
-                        {o.status === 'validation_terrain' && <option value="installed">→ Marquer installée</option>}
-                        {o.status === 'devis_en_attente' && <option value="devis_valide">→ Devis accepté</option>}
-                        {o.status === 'devis_en_attente' && <option value="devis_refuse">→ Devis refusé</option>}
-                        {o.status === 'devis_valide' && <option value="installing">→ Lancer installation</option>}
-                        {o.status === 'devis_refuse' && <option value="devis_en_attente">→ Renvoyer devis</option>}
-                        {o.status === 'installing' && <option value="installed">→ Installation terminée</option>}
-                        {!['installed', 'cancelled', 'refunded'].includes(o.status) && <option value="cancelled">⛔ Annuler</option>}
+                        {o.status === 'en_attente' && <option value="contacte">→ Marquer contacté</option>}
+                        {o.status === 'contacte' && <option value="confirme">→ Marquer confirmée</option>}
+                        {o.status === 'confirme' && <option value="en_livraison">→ Envoyer en livraison</option>}
+                        {o.status === 'en_livraison' && <option value="livre">→ Marquer livrée & installée</option>}
+                        {o.status !== 'livre' && o.status !== 'annule' && <option value="annule">⛔ Annuler</option>}
                       </select>
                       {/* Créer devis pour cette commande */}
                       {(o.status === 'livre' || o.status === 'validation_terrain' || o.status === 'paid') && (

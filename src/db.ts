@@ -107,7 +107,7 @@ export async function createOrder(db: D1Database, data: any) {
       data.client_email || null,
       data.quartier || null,
       data.type || 'vente',
-      data.status || 'pending',
+      data.status || 'en_attente',
       data.notes || null,
       data.total_price || 0,
       data.installation_price || 50000,
