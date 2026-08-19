@@ -4172,7 +4172,7 @@ app.post('/admin/maintenance/validate-visit', adminAuth, async (c) => {
 app.post('/api/admin/maintenance/validate-contract', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB unavailable' }, 503)
-  const body = await c.req.json().catch(() => ({})) as any
+  const body = await c.req.json().catch(() => null) || await c.req.parseBody()
   const contractId = parseInt(body.contract_id || '0')
   if (!contractId) return c.json({ error: 'contract_id requis' }, 400)
 
@@ -4222,7 +4222,12 @@ app.post('/api/admin/maintenance/validate-contract', adminAuth, async (c) => {
       `Bonjour ${contract.client_name}, votre contrat de maintenance MAASGA (${contract.plan_type}) a été validé ! Les dates d'intervention seront confirmées sous peu. Merci de votre confiance.`
     )
 
-    return c.json({ success: true, message: 'Contrat activé et visites planifiées' })
+    const isJson = c.req.header('content-type')?.includes('application/json')
+    if (isJson) {
+      return c.json({ success: true, message: 'Contrat activé et visites planifiées' })
+    } else {
+      return c.redirect('/admin/maintenance?success=contract_validated')
+    }
   } catch (e) {
     console.error('validate-contract error:', e)
     return c.json({ error: 'Erreur serveur' }, 500)
@@ -4233,7 +4238,7 @@ app.post('/api/admin/maintenance/validate-contract', adminAuth, async (c) => {
 app.post('/api/admin/maintenance/refuse-contract', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB unavailable' }, 503)
-  const body = await c.req.json().catch(() => ({})) as any
+  const body = await c.req.json().catch(() => null) || await c.req.parseBody()
   const contractId = parseInt(body.contract_id || '0')
   const reason = (body.reason || '').trim()
   if (!contractId) return c.json({ error: 'contract_id requis' }, 400)
@@ -4251,9 +4256,44 @@ app.post('/api/admin/maintenance/refuse-contract', adminAuth, async (c) => {
       `Bonjour ${contract.client_name}, votre demande de contrat de maintenance MAASGA (${contract.plan_type}) ne peut pas être traitée pour le moment. Contactez-nous au +226 55 99 64 18 pour plus d'informations.`
     )
 
-    return c.json({ success: true, message: 'Contrat refusé' })
+    const isJson = c.req.header('content-type')?.includes('application/json')
+    if (isJson) {
+      return c.json({ success: true, message: 'Contrat refusé' })
+    } else {
+      return c.redirect('/admin/maintenance?success=contract_refused')
+    }
   } catch (e) {
     console.error('refuse-contract error:', e)
+    return c.json({ error: 'Erreur serveur' }, 500)
+  }
+})
+
+// ── Supprimer définitivement un contrat de maintenance et ses visites ──
+app.post('/api/admin/maintenance/delete-contract', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'DB unavailable' }, 503)
+  const body = await c.req.json().catch(() => null) || await c.req.parseBody()
+  const contractId = parseInt(body.contract_id || '0')
+  if (!contractId) return c.json({ error: 'contract_id requis' }, 400)
+
+  try {
+    // Supprimer les visites associées d'abord
+    await db.prepare("DELETE FROM maintenance_visits WHERE contract_id = ?").bind(contractId).run()
+    
+    // Supprimer le contrat
+    await db.prepare("DELETE FROM maintenance_contracts WHERE id = ?").bind(contractId).run()
+
+    // Notification admin
+    await notifyAdmin(c.env as any, 'maintenance', `Contrat #${contractId} SUPPRIMÉ définitivement par admin`)
+
+    const isJson = c.req.header('content-type')?.includes('application/json')
+    if (isJson) {
+      return c.json({ success: true, message: 'Contrat et visites supprimés définitivement' })
+    } else {
+      return c.redirect('/admin/maintenance?success=contract_deleted')
+    }
+  } catch (e) {
+    console.error('delete-contract error:', e)
     return c.json({ error: 'Erreur serveur' }, 500)
   }
 })

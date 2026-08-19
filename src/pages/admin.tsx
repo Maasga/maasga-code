@@ -4890,7 +4890,13 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
               <tbody data-paginate="10">
                 {contracts.map((c: any) => {
                   const planLabels: Record<string,string> = { trimestriel: 'Trimestriel (3/an)', semestriel: 'Semestriel (2/an)', annuel: 'Annuel (1/an)' }
-                  const statusBadge: Record<string,{l:string;c:string}> = { active: {l:'Actif',c:'badge-confirmed'}, expired: {l:'Expiré',c:'badge-done'}, cancelled: {l:'Annulé',c:'badge-cancelled'} }
+                  const statusBadge: Record<string,{l:string;c:string}> = {
+                    en_attente: {l:'En attente',c:'badge-pending'},
+                    contacte: {l:'Client contacté',c:'badge-pending'},
+                    actif: {l:'Actif',c:'badge-confirmed'},
+                    expire: {l:'Expiré',c:'badge-done'},
+                    annule: {l:'Annulé',c:'badge-cancelled'}
+                  }
                   const sb = statusBadge[c.status] || {l:c.status,c:'badge-pending'}
                   const contractVisits = visits.filter((v: any) => v.contract_id === c.id)
                   const completedCount = contractVisits.filter((v: any) => v.status === 'effectuee').length
@@ -4923,10 +4929,34 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                         {upcomingCount > 0 && <div class="text-xs mt-0.5" style="color:#f59e0b;"><i class="fas fa-clock mr-1"></i>{upcomingCount} à venir</div>}
                       </td>
                       <td class="px-5 py-3"><span class={`text-xs font-bold px-2.5 py-1 rounded-full ${sb.c}`}>{sb.l}</span></td>
-                      <td class="px-5 py-3 hidden sm:table-cell">
-                        <a href={`/admin/devis/new?contract_id=${c.id}`} class="text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors whitespace-nowrap" style="background:rgba(52,211,153,0.1);color:#34d399;border:1px solid rgba(52,211,153,0.2);">
-                          <i class="fas fa-file-invoice-dollar mr-1"></i>Devis
-                        </a>
+                      <td class="px-5 py-3 hidden sm:table-cell" onclick="event.stopPropagation()">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                          {c.status === 'en_attente' && (
+                            <form method="post" action="/api/admin/maintenance/validate-contract" style="display:inline;">
+                              <input type="hidden" name="contract_id" value={String(c.id)} />
+                              <button type="submit" class="text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors text-green-400" style="background:rgba(52,211,153,0.15); border:1px solid rgba(52,211,153,0.3);">
+                                <i class="fas fa-check mr-1"></i>Activer
+                              </button>
+                            </form>
+                          )}
+                          {c.status !== 'annule' && (
+                            <form method="post" action="/api/admin/maintenance/refuse-contract" style="display:inline;" onsubmit="return confirm('Annuler ce contrat ?')">
+                              <input type="hidden" name="contract_id" value={String(c.id)} />
+                              <button type="submit" class="text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors text-red-400" style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3);">
+                                <i class="fas fa-ban mr-1"></i>Annuler
+                              </button>
+                            </form>
+                          )}
+                          <form method="post" action="/api/admin/maintenance/delete-contract" style="display:inline;" onsubmit="return confirm('Supprimer définitivement ce contrat et toutes ses visites ?')">
+                            <input type="hidden" name="contract_id" value={String(c.id)} />
+                            <button type="submit" class="text-xs px-2 py-1.5 rounded-lg font-medium transition-colors" style="background:rgba(239,68,68,0.2); color:#f87171;">
+                              <i class="fas fa-trash"></i>
+                            </button>
+                          </form>
+                          <a href={`/admin/devis/new?contract_id=${c.id}`} class="text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors whitespace-nowrap" style="background:rgba(14,165,233,0.1);color:#0ea5e9;border:1px solid rgba(14,165,233,0.2);">
+                            <i class="fas fa-file-invoice-dollar mr-1"></i>Devis
+                          </a>
+                        </div>
                       </td>
                     </tr>
                     {/* Expandable visits detail row */}
