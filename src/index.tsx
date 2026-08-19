@@ -4075,7 +4075,7 @@ app.get('/admin/commandes', adminAuth, refreshAdminCache, async (c) => {
 // ADMIN MAINTENANCE
 // ============================================================
 
-app.get('/admin/maintenance', adminAuth, async (c) => {
+app.get('/admin/maintenance', adminAuth, refreshAdminCache, async (c) => {
   const db = c.env.DB
   let contracts: any[] = []
   let requests: any[] = []
@@ -4172,7 +4172,15 @@ app.post('/admin/maintenance/validate-visit', adminAuth, async (c) => {
 app.post('/api/admin/maintenance/validate-contract', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB unavailable' }, 503)
-  const body = await c.req.json().catch(() => null) || await c.req.parseBody()
+  let body: any = {}
+  const contentType = c.req.header('content-type') || ''
+  try {
+    if (contentType.includes('application/json')) {
+      body = await c.req.json().catch(() => ({}))
+    } else {
+      body = await c.req.parseBody().catch(() => ({}))
+    }
+  } catch(e) {}
   const contractId = parseInt(body.contract_id || '0')
   if (!contractId) return c.json({ error: 'contract_id requis' }, 400)
 
@@ -4238,7 +4246,15 @@ app.post('/api/admin/maintenance/validate-contract', adminAuth, async (c) => {
 app.post('/api/admin/maintenance/refuse-contract', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB unavailable' }, 503)
-  const body = await c.req.json().catch(() => null) || await c.req.parseBody()
+  let body: any = {}
+  const contentType = c.req.header('content-type') || ''
+  try {
+    if (contentType.includes('application/json')) {
+      body = await c.req.json().catch(() => ({}))
+    } else {
+      body = await c.req.parseBody().catch(() => ({}))
+    }
+  } catch(e) {}
   const contractId = parseInt(body.contract_id || '0')
   const reason = (body.reason || '').trim()
   if (!contractId) return c.json({ error: 'contract_id requis' }, 400)
@@ -4272,7 +4288,15 @@ app.post('/api/admin/maintenance/refuse-contract', adminAuth, async (c) => {
 app.post('/api/admin/maintenance/delete-contract', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB unavailable' }, 503)
-  const body = await c.req.json().catch(() => null) || await c.req.parseBody()
+  let body: any = {}
+  const contentType = c.req.header('content-type') || ''
+  try {
+    if (contentType.includes('application/json')) {
+      body = await c.req.json().catch(() => ({}))
+    } else {
+      body = await c.req.parseBody().catch(() => ({}))
+    }
+  } catch(e) {}
   const contractId = parseInt(body.contract_id || '0')
   if (!contractId) return c.json({ error: 'contract_id requis' }, 400)
 
@@ -4298,7 +4322,7 @@ app.post('/api/admin/maintenance/delete-contract', adminAuth, async (c) => {
   }
 })
 
-app.get('/admin/avis', adminAuth, async (c) => {
+app.get('/admin/avis', adminAuth, refreshAdminCache, async (c) => {
   const db = c.env.DB
   let allReviews: any[] = []
   if (db) {
@@ -4322,7 +4346,7 @@ app.get('/admin/avis', adminAuth, async (c) => {
 // ADMIN MESSAGES (Contact form submissions)
 // ============================================================
 
-app.get('/admin/messages', adminAuth, async (c) => {
+app.get('/admin/messages', adminAuth, refreshAdminCache, async (c) => {
   const db = c.env.DB
   let messages: any[] = []
   let unreadCount = 0
@@ -4382,7 +4406,7 @@ app.post('/api/admin/messages/:id/delete', adminAuth, async (c) => {
 // ADMIN RÉALISATIONS — CRUD
 // ============================================================
 
-app.get('/admin/realisations', adminAuth, async (c) => {
+app.get('/admin/realisations', adminAuth, refreshAdminCache, async (c) => {
   const db = c.env.DB
   let realisationsList: any[] = []
   if (db) {
