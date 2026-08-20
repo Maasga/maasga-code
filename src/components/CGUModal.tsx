@@ -3,7 +3,7 @@ import { CGU_TEXT } from '../data/cgu'
 
 export const CGUModal = () => {
   return (
-    <div id="cgu-modal" class="fixed inset-0 bg-black/80 backdrop-blur z-[999] hidden flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="cgu-title">
+    <div id="cgu-modal" data-lenis-prevent class="fixed inset-0 bg-black/80 backdrop-blur z-[999] hidden flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="cgu-title">
       <div class="bg-gradient-to-b from-slate-900 to-slate-800 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl border border-cyan-500/30">
         
         {/* Header */}

@@ -202,6 +202,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
           .mobile-menu.open { display:block; opacity:1; transform:translateY(0); animation:menuSlideIn 0.25s ease forwards; }
           @keyframes menuSlideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
           .mobile-nav-active { background:rgba(0,119,182,0.08); color:#0077b6; font-weight:700; }
+          body.modal-open { overflow: hidden !important; height: 100vh !important; }
         `}</style>
 
         {/* Skip to content — accessibility */}

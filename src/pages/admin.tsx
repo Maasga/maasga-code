@@ -3522,8 +3522,9 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
       </div>
     </div>
 
+    <script id="appointments-data-cmd" type="application/json" dangerouslySetInnerHTML={{ __html: JSON.stringify(appointments) }} />
     <script dangerouslySetInnerHTML={{ __html: `
-      const appointmentsDataCmd = ${JSON.stringify(appointments)};
+      const appointmentsDataCmd = JSON.parse(document.getElementById('appointments-data-cmd').textContent || '[]');
       let currentAppointmentCmd = null;
 
       function clickClientRow(appointmentId) {
@@ -3624,10 +3625,8 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
               var row = document.querySelector('tr[data-order-id="' + orderId + '"]');
               if (row) {
                 var badge = row.querySelector('.status-badge');
-                var statusLabels = { pending:'En attente', paid:'Payée', en_livraison:'En livraison', livre:'Livrée',
-                  validation_terrain:'Visite terrain', devis_en_attente:'Devis en attente', devis_valide:'Devis validé',
-                  devis_refuse:'Devis refusé', validated:'Validée', installing:'En installation',
-                  installed:'Installée', cancelled:'Annulée', refunded:'Remboursée' };
+                var statusLabels = { en_attente:'En attente', contacte:'Client contacté', confirme:'Confirmée',
+                  en_livraison:'En livraison', livre:'Livrée & Installée', annule:'Annulée' };
                 if (badge) badge.textContent = statusLabels[newStatus] || newStatus;
               }
             } else {

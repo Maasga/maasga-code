@@ -7,8 +7,6 @@ export type HonoEnv = {
     ADMIN_INITIAL_PASSWORD?: string
     GOOGLE_CLIENT_ID?: string
     GOOGLE_CLIENT_SECRET?: string
-    LIGDICASH_API_KEY?: string
-    LIGDICASH_AUTH_TOKEN?: string
     TELEGRAM_BOT_TOKEN?: string
     TELEGRAM_CHAT_ID?: string
     ADMIN_EMAIL?: string
