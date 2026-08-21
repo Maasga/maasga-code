@@ -100,6 +100,12 @@ CREATE TABLE appointments_v3 (
   latitude REAL,
   longitude REAL,
   adresse_precise TEXT,
+  -- Ajoutée par 0029/0030, dont les fichiers manquent au dépôt (la prod les a
+  -- bien enregistrées). On la redéclare pour ne pas la perdre à la
+  -- reconstruction, mais on ne la référence PAS dans le SELECT de copie :
+  -- une base reconstruite depuis git seule ne l'a pas et la migration
+  -- échouerait. La table est vide en production, donc rien à copier.
+  technician TEXT DEFAULT NULL,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'done', 'cancelled')),
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
