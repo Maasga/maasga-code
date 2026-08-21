@@ -23,6 +23,8 @@ import { createAppointment, updateAppointmentStatus, createOrder, createReview, 
 import type { HonoEnv } from './types'
 import { escapeHtml, sanitizeText, isValidEmail, isValidPhone, normalizePhone, validateImageMagicBytes } from './utils/helpers'
 import { sendSmsWithLog, notifyAdmin, logActivity, logSecurityEvent, sendTelegramMessage, ensureActivityLog, ensureNotificationsTable } from './utils/notifications'
+import { analyserClasseur, cleProduit, MAX_LIGNES_PAR_LOT } from './utils/importProduits'
+import type { ChampCible, ChampsProduit, ProduitDerive } from './utils/importProduits'
 
 // App Hono — types et utilitaires importés depuis ./types et ./utils/
 
@@ -6497,79 +6499,101 @@ app.post('/api/admin/produit/add', adminAuth, async (c) => {
   return c.redirect('/admin/produits?success=1')
 })
 
-// Valeurs acceptées pour l'import en masse (doivent matcher les listes déroulantes du fichier Excel modèle)
-const IMPORT_CATEGORIES_VALIDES = ['Mural/Split', 'Cassette', 'Gainable', 'Colonne', 'Multi-split', 'Rooftop', 'Industriel']
-const IMPORT_MARQUES_VALIDES = ['Airwell', 'LG', 'Sharp', 'Nasco', 'Mona', 'Solstar', 'Boreal', 'Roch']
-const IMPORT_CLASSES_VALIDES = ['A', 'A+', 'A++', 'A+++']
+// ============================================================
+// IMPORT EN MASSE DE PRODUITS DEPUIS UN TABLEUR
+//
+// Un seul endpoint, deux modes, servis par le meme moteur
+// (src/utils/importProduits.ts) :
+//   - 'analyse'   : n'ecrit rien, renvoie ce que le systeme a compris de chaque
+//                   ligne (valeurs derivees, origine de chaque champ, alertes,
+//                   doublons). Alimente l'apercu.
+//   - 'execution' : re-derive depuis les memes donnees brutes, applique les
+//                   corrections de l'admin, revalide, puis ecrit.
+//
+// L'apercu montre donc litteralement ce qui sera enregistre. La version
+// precedente dupliquait la validation cote navigateur et cote serveur, avec deux
+// copies des referentiels vouees a diverger — et exigeait un fichier modele qui
+// n'existe pas dans le depot.
+// ============================================================
 
-interface LigneImportProduit {
-  nom?: string
-  categorie?: string
-  marque?: string
-  modele?: string
-  puissanceBtu?: number
-  prixFcfa?: number
-  prixGrossisteFcfa?: number
-  stockInitial?: number
-  classeEnergie?: string
-  surfaceMin?: number
-  surfaceMax?: number
-  inverter?: boolean
-  disponible?: boolean
-  description?: string
-  mentions?: string[]
+type ModeImport = 'analyse' | 'execution'
+type StrategieDoublon = 'maj' | 'ignorer' | 'creer'
+
+interface CorpsImportProduits {
+  mode?: ModeImport
+  feuille?: string
+  lignes?: any[][]
+  mapping?: Record<string, ChampCible | null>
+  corrections?: Record<string, Record<string, unknown>>
+  indexEntete?: number
+  decalageLigne?: number
+  strategieDoublon?: StrategieDoublon
 }
 
-interface ErreurLigneImport {
-  ligne: number
-  champ: string
-  message: string
+// Champ du moteur -> colonne SQL.
+//
+// `image`, `imageUrl` et `image_url` sont volontairement absents de cette liste :
+// les visuels sont hors perimetre de l'import, donc une photo ajoutee a la main
+// doit survivre a tout re-import. C'est l'un des deux modes de defaillance
+// dangereux d'un upsert ; l'autre est traite par `apporteValeur` plus bas.
+const COLONNES_IMPORT: Array<[keyof ChampsProduit, string]> = [
+  ['nom', 'name'],
+  ['marque', 'brand'],
+  ['modele', 'model'],
+  ['categorie', 'category'],
+  ['puissanceBtu', 'btu'],
+  ['prixFcfa', 'price'],
+  ['prixGrossisteFcfa', 'price_wholesale'],
+  ['stockInitial', 'stock'],
+  ['classeEnergie', 'energy_class'],
+  ['surfaceMin', 'surface_min'],
+  ['surfaceMax', 'surface_max'],
+  ['inverter', 'inverter'],
+  ['disponible', 'available'],
+  ['description', 'description'],
+  ['mentions', 'features'],
+  ['refrigerant', 'refrigerant'],
+  ['compresseur', 'compressor'],
+  ['garantie', 'warranty']
+]
+
+function valeurSqlImport(champ: keyof ChampsProduit, champs: ChampsProduit): any {
+  const valeur = champs[champ]
+  if (champ === 'mentions') return Array.isArray(valeur) && valeur.length > 0 ? JSON.stringify(valeur) : null
+  if (champ === 'inverter' || champ === 'disponible') return valeur ? 1 : 0
+  if (typeof valeur === 'string') return valeur.trim() ? valeur : null
+  return valeur === undefined ? null : valeur
 }
 
-function validerLigneImportProduit(l: LigneImportProduit, index: number): ErreurLigneImport[] {
-  const erreurs: ErreurLigneImport[] = []
-  const ligne = index + 1
-  if (!l.nom || !l.nom.trim()) {
-    erreurs.push({ ligne, champ: 'nom', message: 'Nom du produit manquant.' })
-  }
-  if (!l.categorie || !IMPORT_CATEGORIES_VALIDES.includes(l.categorie)) {
-    erreurs.push({ ligne, champ: 'categorie', message: `Catégorie invalide ou manquante (${IMPORT_CATEGORIES_VALIDES.join(', ')}).` })
-  }
-  if (!l.marque || !IMPORT_MARQUES_VALIDES.includes(l.marque)) {
-    erreurs.push({ ligne, champ: 'marque', message: `Marque invalide ou manquante (${IMPORT_MARQUES_VALIDES.join(', ')}).` })
-  }
-  if (!l.puissanceBtu || l.puissanceBtu <= 0) {
-    erreurs.push({ ligne, champ: 'puissanceBtu', message: 'Puissance BTU invalide.' })
-  }
-  if (!l.prixFcfa || l.prixFcfa <= 0) {
-    erreurs.push({ ligne, champ: 'prixFcfa', message: 'Prix FCFA invalide.' })
-  }
-  if (l.stockInitial === undefined || l.stockInitial === null || l.stockInitial < 0) {
-    erreurs.push({ ligne, champ: 'stockInitial', message: 'Stock initial invalide.' })
-  }
-  if (l.classeEnergie && !IMPORT_CLASSES_VALIDES.includes(l.classeEnergie)) {
-    erreurs.push({ ligne, champ: 'classeEnergie', message: `Classe énergie invalide (${IMPORT_CLASSES_VALIDES.join(', ')}).` })
-  }
-  return erreurs
+// Regle de non-ecrasement, appliquee au seul UPDATE : une colonne n'est touchee
+// que si l'import apporte reellement quelque chose.
+//   - origine 'fichier' ou 'deduit' -> la valeur vient du tableau importe, elle ecrit ;
+//   - origine 'defaut' -> valeur de repli ('A++', 'Mural/Split', garantie
+//     standard, stock 0). Elle n'ecrase jamais une saisie manuelle : sans cela,
+//     une liste de tarifs ne portant que des prix remettrait a zero le stock et
+//     effacerait descriptions et caracteristiques du catalogue.
+function apporteValeur(champ: keyof ChampsProduit, produit: ProduitDerive): boolean {
+  const origine = produit.origines[champ]
+  if (origine !== 'fichier' && origine !== 'deduit') return false
+  return valeurSqlImport(champ, produit.champs) !== null
 }
 
-// API Admin - Import en masse de produits depuis un fichier Excel (parsé côté client)
 app.post('/api/admin/produits/import', adminAuth, async (c) => {
-  const body = await c.req.json<{ lignes: LigneImportProduit[] }>().catch(() => null)
-  const lignes = body?.lignes ?? []
-
-  if (lignes.length === 0) {
-    return c.json({ succes: false, message: 'Aucune ligne à importer.' }, 400)
-  }
-  if (lignes.length > 500) {
-    return c.json({ succes: false, message: 'Maximum 500 lignes par import. Découpe ton fichier.' }, 400)
+  const body = await c.req.json<CorpsImportProduits>().catch(() => null)
+  if (!body || typeof body !== 'object') {
+    return c.json({ succes: false, message: 'Corps de requête illisible.' }, 400)
   }
 
-  // 1) Validation complète AVANT toute écriture en base
-  const toutesErreurs: ErreurLigneImport[] = []
-  lignes.forEach((l, i) => toutesErreurs.push(...validerLigneImportProduit(l, i)))
-  if (toutesErreurs.length > 0) {
-    return c.json({ succes: false, erreurs: toutesErreurs }, 422)
+  const mode: ModeImport = body.mode === 'execution' ? 'execution' : 'analyse'
+  const lignesBrutes = Array.isArray(body.lignes) ? body.lignes : []
+  if (lignesBrutes.length === 0) {
+    return c.json({ succes: false, message: 'Aucune ligne reçue.' }, 400)
+  }
+  // Marge au-dessus du plafond : l'UI renvoie les lignes d'en-tête avec chaque
+  // lot pour que la détection reste serveur. Le vrai plafond porte sur les
+  // lignes de données, vérifié après analyse.
+  if (lignesBrutes.length > MAX_LIGNES_PAR_LOT + 20) {
+    return c.json({ succes: false, message: `Maximum ${MAX_LIGNES_PAR_LOT} lignes par lot.` }, 400)
   }
 
   const db = c.env.DB
@@ -6577,69 +6601,196 @@ app.post('/api/admin/produits/import', adminAuth, async (c) => {
     return c.json({ succes: false, message: 'Base de données indisponible.' }, 500)
   }
 
-  const now = new Date().toISOString()
-  const stmt = db.prepare(`
-    INSERT INTO products (
-      name, brand, model, btu, price, price_wholesale, stock, surface_min, surface_max,
-      energy_class, description, inverter, available, category, warranty, features,
-      image, imageUrl, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `)
-
-  const batch = lignes.map((l) => {
-    const name = sanitizeText(l.nom, 200)
-    const brand = sanitizeText(l.marque, 120)
-    const model = sanitizeText(l.modele, 120)
-    const description = sanitizeText(l.description, 3000)
-    const features = Array.isArray(l.mentions) && l.mentions.length > 0 ? JSON.stringify(l.mentions) : null
-    const available = l.disponible !== false
-    return stmt.bind(
-      name, brand, model || null, l.puissanceBtu, l.prixFcfa,
-      l.prixGrossisteFcfa || null, l.stockInitial, l.surfaceMin || null, l.surfaceMax || null,
-      l.classeEnergie || 'A++', description || null, l.inverter ? 1 : 0, available ? 1 : 0,
-      l.categorie, '1 an constructeur', features, '❄️', null, now, now
-    )
+  const analyse = analyserClasseur(lignesBrutes, {
+    mapping: body.mapping && typeof body.mapping === 'object' ? body.mapping : undefined,
+    corrections: body.corrections && typeof body.corrections === 'object' ? body.corrections : undefined,
+    indexEntete: typeof body.indexEntete === 'number' ? body.indexEntete : undefined,
+    decalageLigne: typeof body.decalageLigne === 'number' && body.decalageLigne > 0 ? Math.floor(body.decalageLigne) : 0
   })
 
+  if (analyse.nbLignesDonnees > MAX_LIGNES_PAR_LOT) {
+    return c.json({ succes: false, message: `Maximum ${MAX_LIGNES_PAR_LOT} lignes de données par lot.` }, 400)
+  }
+
+  // Rapprochement des doublons : une seule lecture du catalogue, puis une Map en
+  // mémoire — pas une requête par ligne.
+  const existants = new Map<string, { id: number; nom: string }>()
   try {
-    const resultats = await db.batch(batch)
-    resultats.forEach((r: any, i) => {
-      const id = r?.meta?.last_row_id
-      if (!id) return
-      const l = lignes[i]
-      products.push({
-        id,
-        name: sanitizeText(l.nom, 200),
-        brand: sanitizeText(l.marque, 120),
-        model: sanitizeText(l.modele, 120),
-        btu: l.puissanceBtu,
-        price: l.prixFcfa,
-        price_install: 0,
-        stock: l.stockInitial,
-        surface_min: l.surfaceMin || 10,
-        surface_max: l.surfaceMax || 25,
-        energy_class: l.classeEnergie || 'A++',
-        description: (l.description || '').trim(),
-        inverter: !!l.inverter,
-        available: l.disponible !== false,
-        image: '❄️',
-        imageUrl: '',
-        features: l.mentions || [],
-        warranty: '1 an constructeur',
-        category: l.categorie,
-        price_wholesale: l.prixGrossisteFcfa || null
-      } as any)
+    const res = await db.prepare('SELECT id, name, brand, model, btu FROM products').all()
+    for (const r of ((res as any)?.results || []) as any[]) {
+      const cle = cleProduit(r.brand, r.btu, r.model, r.name)
+      if (!existants.has(cle)) existants.set(cle, { id: Number(r.id), nom: String(r.name || '') })
+    }
+  } catch (err) {
+    console.error('Erreur lecture du catalogue pour import:', err)
+    return c.json({ succes: false, message: 'Lecture du catalogue impossible.' }, 500)
+  }
+
+  const strategie: StrategieDoublon =
+    body.strategieDoublon === 'ignorer' || body.strategieDoublon === 'creer' ? body.strategieDoublon : 'maj'
+
+  // Rapprochement, plus détection des doublons internes au fichier : deux lignes
+  // identiques dans le même tableau ne doivent pas créer deux fiches.
+  const vues = new Set<string>()
+  const preparees = analyse.produits.map((produit) => {
+    const cle = cleProduit(produit.champs.marque, produit.champs.puissanceBtu, produit.champs.modele, produit.champs.nom)
+    const existant = existants.get(cle) || null
+    const doublonFichier = vues.has(cle)
+    vues.add(cle)
+    return { produit, existant, doublonFichier }
+  })
+
+  if (mode === 'analyse') {
+    let aCreer = 0
+    let aMettreAJour = 0
+    let enErreur = 0
+    const produits = preparees.map(({ produit, existant, doublonFichier }) => {
+      const bloque = produit.erreurs.length > 0
+      if (bloque) enErreur++
+      else if (doublonFichier) enErreur++
+      else if (existant) aMettreAJour++
+      else aCreer++
+      return {
+        ligne: produit.ligne,
+        champs: produit.champs,
+        origines: produit.origines,
+        alertes: doublonFichier
+          ? produit.alertes.concat('Ligne déjà présente plus haut dans le fichier : elle sera ignorée.')
+          : produit.alertes,
+        erreurs: produit.erreurs,
+        doublon: existant ? { id: existant.id, nom: existant.nom } : null
+      }
     })
-    await notifyAdmin((c as any).env, 'product', `Import en masse : ${resultats.length} produit(s) ajouté(s).`)
     return c.json({
       succes: true,
-      importes: resultats.length,
-      message: `${resultats.length} produit(s) importé(s). Pense à ajouter les photos depuis chaque fiche produit.`
+      mode: 'analyse',
+      feuille: sanitizeText(body.feuille, 120) || null,
+      indexEntete: analyse.indexEntete,
+      nbLignesDonnees: analyse.nbLignesDonnees,
+      colonnes: analyse.colonnes,
+      avertissements: analyse.avertissements,
+      produits,
+      resume: { total: produits.length, aCreer, aMettreAJour, enErreur }
     })
+  }
+
+  // ---------- mode execution ----------
+
+  const maintenant = new Date().toISOString()
+  const nomsColonnes = COLONNES_IMPORT.map(([, colonne]) => colonne)
+  const sqlInsert = `INSERT INTO products (${nomsColonnes.join(', ')}, image, created_at, updated_at)
+    VALUES (${nomsColonnes.map(() => '?').join(', ')}, ?, ?, ?)`
+  const stmtInsert = db.prepare(sqlInsert)
+
+  const batch: any[] = []
+  const erreurs: Array<{ ligne: number; messages: string[] }> = []
+  const ignorees: Array<{ ligne: number; raison: string }> = []
+  let crees = 0
+  let misAJour = 0
+
+  for (const { produit, existant, doublonFichier } of preparees) {
+    if (produit.erreurs.length > 0) {
+      erreurs.push({ ligne: produit.ligne, messages: produit.erreurs })
+      continue
+    }
+    if (doublonFichier) {
+      ignorees.push({ ligne: produit.ligne, raison: 'Doublon dans le fichier importé.' })
+      continue
+    }
+
+    if (existant && strategie === 'ignorer') {
+      ignorees.push({ ligne: produit.ligne, raison: `Déjà au catalogue (fiche #${existant.id}), conservée telle quelle.` })
+      continue
+    }
+
+    if (existant && strategie === 'maj') {
+      const colonnes: string[] = []
+      const valeurs: any[] = []
+      for (const [champ, colonne] of COLONNES_IMPORT) {
+        if (!apporteValeur(champ, produit)) continue
+        colonnes.push(`${colonne} = ?`)
+        valeurs.push(valeurSqlImport(champ, produit.champs))
+      }
+      if (colonnes.length === 0) {
+        ignorees.push({ ligne: produit.ligne, raison: `Fiche #${existant.id} inchangée : le fichier n'apporte aucune valeur.` })
+        continue
+      }
+      colonnes.push('updated_at = ?')
+      valeurs.push(maintenant)
+      valeurs.push(existant.id)
+      batch.push(db.prepare(`UPDATE products SET ${colonnes.join(', ')} WHERE id = ?`).bind(...valeurs))
+      misAJour++
+      continue
+    }
+
+    // Création : les valeurs de repli ont ici toute leur place, c'est ce qui
+    // permet à un simple libellé + prix de produire une fiche complète.
+    const valeurs = COLONNES_IMPORT.map(([champ]) => valeurSqlImport(champ, produit.champs))
+    batch.push(stmtInsert.bind(...valeurs, '❄️', maintenant, maintenant))
+    crees++
+  }
+
+  if (batch.length === 0) {
+    return c.json({
+      succes: false,
+      mode: 'execution',
+      message: erreurs.length > 0
+        ? 'Aucune ligne exploitable : rien n\'a été enregistré.'
+        : 'Rien à enregistrer : toutes les lignes étaient déjà au catalogue.',
+      crees: 0,
+      misAJour: 0,
+      ignorees,
+      erreurs,
+      avertissements: analyse.avertissements
+    }, erreurs.length > 0 ? 422 : 200)
+  }
+
+  try {
+    // db.batch est transactionnel côté D1 : tout ou rien.
+    await db.batch(batch)
   } catch (err) {
     console.error('Erreur import produits:', err)
-    return c.json({ succes: false, message: "Erreur serveur pendant l'insertion. Rien n'a été enregistré." }, 500)
+    return c.json({ succes: false, message: "Erreur serveur pendant l'écriture. Rien n'a été enregistré." }, 500)
   }
+
+  // Un upsert ne peut pas être reflété par un products.push (il dupliquerait les
+  // fiches mises à jour en mémoire) : on invalide le cache, refreshAdminCache
+  // rechargera depuis D1 au prochain GET.
+  _d1LoadPromise = null
+
+  const ip = c.req.header('cf-connecting-ip') || 'unknown'
+  await logAdminAudit(db, {
+    action: 'import_produits',
+    detail: JSON.stringify({
+      feuille: sanitizeText(body.feuille, 120) || null,
+      lignes: analyse.nbLignesDonnees,
+      crees,
+      maj: misAJour,
+      ignores: ignorees.length,
+      erreurs: erreurs.length
+    }),
+    ip,
+    userAgent: c.req.header('User-Agent') || ''
+  })
+
+  const parts: string[] = []
+  if (crees > 0) parts.push(`${crees} créé(s)`)
+  if (misAJour > 0) parts.push(`${misAJour} mis à jour`)
+  if (ignorees.length > 0) parts.push(`${ignorees.length} ignoré(s)`)
+  if (erreurs.length > 0) parts.push(`${erreurs.length} en erreur`)
+
+  await notifyAdmin((c as any).env, 'product', `Import en masse : ${parts.join(', ')}.`)
+
+  return c.json({
+    succes: true,
+    mode: 'execution',
+    crees,
+    misAJour,
+    ignorees,
+    erreurs,
+    avertissements: analyse.avertissements,
+    message: `Import terminé : ${parts.join(', ')}.` + (crees > 0 ? ' Pense à ajouter les photos depuis chaque fiche produit.' : '')
+  })
 })
 
 // API Admin - Modifier un produit

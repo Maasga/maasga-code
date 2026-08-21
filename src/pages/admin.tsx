@@ -1,5 +1,9 @@
 ﻿import { products } from '../data/products'
 import { reviews, appointments, orders, clients, maintenanceDueCount, notifications } from '../data/store'
+// Référentiels de l'import produits, injectés dans le <script> de la modale plutôt
+// que recopiés côté navigateur : l'ancienne UI dupliquait les listes de marques,
+// catégories et classes, vouées à diverger de celles du serveur.
+import { LIBELLES_CHAMPS, COLONNES_MODELE, CATEGORIES, MAX_LIGNES_PAR_LOT } from '../utils/importProduits'
 
 // ============================================================
 // HELPERS SÉCURITÉ
@@ -1900,10 +1904,10 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
       }
     `}} />
 
-    {/* Import en masse — Produits (Excel) */}
+    {/* Import en masse — Produits (tableur quelconque) */}
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <div id="modal-import-masse" class="hidden fixed inset-0 bg-black/60 z-50 items-center justify-center p-4">
-      <div class="w-full max-w-3xl rounded-2xl p-6 shadow-2xl max-h-[85vh] overflow-y-auto" style="background:#111827; border:1px solid rgba(168,85,247,0.15);">
+      <div class="w-full max-w-6xl rounded-2xl p-6 shadow-2xl max-h-[88vh] overflow-y-auto" style="background:#111827; border:1px solid rgba(168,85,247,0.15);">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-white flex items-center gap-2">
             <span class="h-2 w-2 rounded-full bg-purple-400"></span>
@@ -1912,203 +1916,679 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
           <button id="btn-fermer-import-masse" class="text-gray-400 hover:text-white text-xl">&times;</button>
         </div>
 
-        <div id="zone-depot" class="rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition-colors" style="border-color:rgba(168,85,247,0.3);">
-          <p class="text-gray-300 text-sm mb-1">Glisse ton fichier <span class="text-white font-medium">.xlsx</span> ici, ou clique pour parcourir</p>
-          <p class="text-gray-500 text-xs">Utilise le modèle "modele_import_produits_MAASGA.xlsx" pour être sûr que les colonnes matchent</p>
-          <input id="input-fichier" type="file" accept=".xlsx,.xls" class="hidden" />
-        </div>
+        <ol class="flex flex-wrap items-center gap-2 mb-5 text-xs">
+          <li data-puce="1" class="px-3 py-1 rounded-full">1. Fichier</li>
+          <li data-puce="2" class="px-3 py-1 rounded-full">2. Correspondance</li>
+          <li data-puce="3" class="px-3 py-1 rounded-full">3. Aperçu</li>
+          <li data-puce="4" class="px-3 py-1 rounded-full">4. Résultat</li>
+        </ol>
 
-        <div id="zone-apercu" class="hidden mt-5">
-          <div id="resume-import" class="mb-3 text-sm"></div>
-          <div class="max-h-72 overflow-auto rounded-xl" style="border:1px solid rgba(148,163,184,0.15);">
+        {/* Étape 1 — fichier */}
+        <section data-etape="1">
+          <div id="zone-depot" class="rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition-colors" style="border-color:rgba(168,85,247,0.3);">
+            <p class="text-gray-300 text-sm mb-1">Glisse ton fichier <span class="text-white font-medium">.xlsx</span>, <span class="text-white font-medium">.xls</span> ou <span class="text-white font-medium">.csv</span> ici, ou clique pour parcourir</p>
+            <p class="text-gray-500 text-xs">N'importe quel tableau fournisseur convient : les colonnes sont reconnues automatiquement, aucun format n'est imposé.</p>
+            <input id="input-fichier" type="file" accept=".xlsx,.xls,.csv" class="hidden" />
+          </div>
+          <div class="mt-3 flex items-center justify-between gap-3 flex-wrap">
+            <button id="btn-modele" type="button" class="text-xs text-purple-300 hover:text-purple-200 underline">Télécharger un modèle (simple commodité)</button>
+            <div id="choix-feuille" class="hidden text-xs text-gray-400 flex items-center gap-2">
+              <label for="select-feuille">Feuille :</label>
+              <select id="select-feuille" class="rounded-lg px-2 py-1 text-xs text-white" style="background:#0b1220; border:1px solid rgba(148,163,184,0.2);"></select>
+            </div>
+          </div>
+          <div id="etat-lecture" class="hidden mt-4 rounded-xl p-3 text-xs"></div>
+        </section>
+
+        {/* Étape 2 — correspondance des colonnes */}
+        <section data-etape="2" class="hidden">
+          <div class="flex items-start justify-between gap-3 flex-wrap mb-3">
+            <p class="text-xs text-gray-400 max-w-md">Voici ce que le système a compris de chaque colonne. Corrige si besoin — toute modification relance l'analyse.</p>
+            <div class="text-xs text-gray-400 flex items-center gap-2">
+              <label for="input-entete">Ligne d'en-tête :</label>
+              <input id="input-entete" type="number" min="0" class="w-20 rounded-lg px-2 py-1 text-xs text-white" style="background:#0b1220; border:1px solid rgba(148,163,184,0.2);" />
+              <span class="text-gray-600">0 = aucune</span>
+            </div>
+          </div>
+          <div class="max-h-80 overflow-auto rounded-xl" style="border:1px solid rgba(148,163,184,0.15);">
             <table class="w-full text-xs text-left">
-              <thead class="text-gray-500 sticky top-0" style="background:rgba(15,23,42,0.9);">
+              <thead class="text-gray-500 sticky top-0" style="background:rgba(15,23,42,0.95);">
                 <tr>
-                  <th class="px-3 py-2">#</th>
+                  <th class="px-3 py-2">Colonne du fichier</th>
+                  <th class="px-3 py-2">Exemples</th>
+                  <th class="px-3 py-2">Champ MAASGA</th>
+                  <th class="px-3 py-2">Détection</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-mapping" class="divide-y divide-gray-700/30 text-gray-200"></tbody>
+            </table>
+          </div>
+          <div id="alertes-analyse" class="mt-3 space-y-1 text-xs"></div>
+          <div class="mt-4 flex items-center justify-end gap-3">
+            <button id="btn-retour-1" class="rounded-xl px-4 py-2 text-sm text-gray-300 hover:text-white">Retour</button>
+            <button id="btn-vers-apercu" class="rounded-xl bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500">Voir l'aperçu</button>
+          </div>
+        </section>
+
+        {/* Étape 3 — aperçu enrichi */}
+        <section data-etape="3" class="hidden">
+          <div id="resume-import" class="mb-3 text-sm"></div>
+          <div class="flex items-center justify-between gap-3 flex-wrap mb-3 text-xs text-gray-400">
+            <div class="flex items-center gap-3 flex-wrap">
+              <span class="text-gray-500">Origine de chaque valeur :</span>
+              <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full inline-block" style="background:#94a3b8;"></span>fichier</span>
+              <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full inline-block" style="background:#60a5fa;"></span>déduit</span>
+              <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full inline-block" style="background:#475569;"></span>défaut</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <label for="select-strategie">Produit déjà au catalogue :</label>
+              <select id="select-strategie" class="rounded-lg px-2 py-1 text-xs text-white" style="background:#0b1220; border:1px solid rgba(148,163,184,0.2);">
+                <option value="maj">Mettre à jour la fiche</option>
+                <option value="ignorer">Laisser inchangée</option>
+                <option value="creer">Créer une fiche de plus</option>
+              </select>
+            </div>
+          </div>
+          <div class="max-h-80 overflow-auto rounded-xl" style="border:1px solid rgba(148,163,184,0.15);">
+            <table class="w-full text-xs text-left whitespace-nowrap">
+              <thead class="text-gray-500 sticky top-0" style="background:rgba(15,23,42,0.95);">
+                <tr>
+                  <th class="px-3 py-2">Ligne</th>
                   <th class="px-3 py-2">Nom</th>
                   <th class="px-3 py-2">Marque</th>
+                  <th class="px-3 py-2">Catégorie</th>
                   <th class="px-3 py-2">BTU</th>
                   <th class="px-3 py-2">Prix FCFA</th>
                   <th class="px-3 py-2">Stock</th>
-                  <th class="px-3 py-2">Statut</th>
+                  <th class="px-3 py-2">Surfaces m²</th>
+                  <th class="px-3 py-2">Classe</th>
+                  <th class="px-3 py-2">Inverter</th>
+                  <th class="px-3 py-2">État</th>
                 </tr>
               </thead>
               <tbody id="tbody-apercu" class="divide-y divide-gray-700/30 text-gray-200"></tbody>
             </table>
           </div>
-
-          <div class="mt-4 flex items-center justify-end gap-3">
-            <button id="btn-annuler-import" class="rounded-xl px-4 py-2 text-sm text-gray-300 hover:text-white">Annuler</button>
-            <button id="btn-confirmer-import" class="rounded-xl bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed">
-              Confirmer l'import
-            </button>
+          <div id="barre-progression" class="hidden mt-3">
+            <div class="h-1.5 w-full rounded-full overflow-hidden" style="background:rgba(148,163,184,0.15);">
+              <div id="jauge-progression" class="h-1.5 rounded-full bg-purple-500 transition-all" style="width:0%"></div>
+            </div>
+            <p id="texte-progression" class="mt-1 text-xs text-gray-400"></p>
           </div>
-        </div>
+          <div class="mt-4 flex items-center justify-end gap-3">
+            <button id="btn-retour-2" class="rounded-xl px-4 py-2 text-sm text-gray-300 hover:text-white">Retour</button>
+            <button id="btn-confirmer-import" class="rounded-xl bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed">Confirmer l'import</button>
+          </div>
+        </section>
 
-        <div id="zone-resultat" class="hidden mt-5 rounded-xl p-4 text-sm"></div>
+        {/* Étape 4 — résultat */}
+        <section data-etape="4" class="hidden">
+          <div id="zone-resultat" class="rounded-xl p-4 text-sm"></div>
+          <div id="detail-resultat" class="mt-3 max-h-64 overflow-auto text-xs text-gray-300 space-y-1"></div>
+          <div class="mt-4 flex items-center justify-end gap-3">
+            <button id="btn-nouvel-import" class="rounded-xl px-4 py-2 text-sm text-gray-300 hover:text-white">Importer un autre fichier</button>
+            <button id="btn-terminer-import" class="rounded-xl bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500">Terminer</button>
+          </div>
+        </section>
       </div>
     </div>
     <script dangerouslySetInnerHTML={{__html: `
       (function () {
-        ${CLIENT_ESC_HELPER}
-        const CATEGORIES_VALIDES = ["Mural/Split", "Cassette", "Gainable", "Colonne", "Multi-split", "Rooftop", "Industriel"];
-        const MARQUES_VALIDES = ["Airwell", "LG", "Sharp", "Nasco", "Mona", "Solstar", "Boreal", "Roch"];
-        const CLASSES_VALIDES = ["A", "A+", "A++", "A+++"];
+        // Aucun _esc ici : toutes les cellules sont construites avec
+        // createElement + textContent, jamais par concatenation de HTML — le
+        // contenu d'un tableur fournisseur est une entree non fiable.
+        // Referentiels injectes depuis le moteur serveur (src/utils/importProduits.ts) :
+        // aucune copie cote navigateur, donc aucune divergence possible.
+        var LIBELLES_CHAMPS = ${jsonForScript(LIBELLES_CHAMPS)};
+        var COLONNES_MODELE = ${jsonForScript(COLONNES_MODELE)};
+        var CATEGORIES = ${jsonForScript(CATEGORIES)};
+        var MAX_LOT = ${jsonForScript(MAX_LIGNES_PAR_LOT)};
+        var COULEURS_ORIGINE = { fichier: '#94a3b8', deduit: '#60a5fa', defaut: '#475569' };
+        var TITRES_ORIGINE = {
+          fichier: 'Valeur lue dans le fichier',
+          deduit: 'Déduit du libellé',
+          defaut: 'Valeur par défaut (aucune donnée dans le fichier)'
+        };
 
-        const modal = document.getElementById("modal-import-masse");
-        const btnOuvrir = document.getElementById("btn-ouvrir-import-masse");
-        const btnFermer = document.getElementById("btn-fermer-import-masse");
-        const zoneDepot = document.getElementById("zone-depot");
-        const inputFichier = document.getElementById("input-fichier");
-        const zoneApercu = document.getElementById("zone-apercu");
-        const resumeImport = document.getElementById("resume-import");
-        const tbodyApercu = document.getElementById("tbody-apercu");
-        const btnAnnuler = document.getElementById("btn-annuler-import");
-        const btnConfirmer = document.getElementById("btn-confirmer-import");
-        const zoneResultat = document.getElementById("zone-resultat");
+        var modal = document.getElementById('modal-import-masse');
+        var btnOuvrir = document.getElementById('btn-ouvrir-import-masse');
         if (!modal || !btnOuvrir) return;
 
-        let lignesParsees = [];
+        var zoneDepot = document.getElementById('zone-depot');
+        var inputFichier = document.getElementById('input-fichier');
+        var choixFeuille = document.getElementById('choix-feuille');
+        var selectFeuille = document.getElementById('select-feuille');
+        var etatLecture = document.getElementById('etat-lecture');
+        var inputEntete = document.getElementById('input-entete');
+        var tbodyMapping = document.getElementById('tbody-mapping');
+        var alertesAnalyse = document.getElementById('alertes-analyse');
+        var resumeImport = document.getElementById('resume-import');
+        var selectStrategie = document.getElementById('select-strategie');
+        var tbodyApercu = document.getElementById('tbody-apercu');
+        var barreProgression = document.getElementById('barre-progression');
+        var jaugeProgression = document.getElementById('jauge-progression');
+        var texteProgression = document.getElementById('texte-progression');
+        var btnConfirmer = document.getElementById('btn-confirmer-import');
+        var zoneResultat = document.getElementById('zone-resultat');
+        var detailResultat = document.getElementById('detail-resultat');
 
-        function ouvrirModal() {
-          modal.classList.remove("hidden");
-          modal.classList.add("flex");
-        }
-        function fermerModal() {
-          modal.classList.add("hidden");
-          modal.classList.remove("flex");
-          resetEtat();
-        }
-        function resetEtat() {
-          lignesParsees = [];
-          zoneApercu.classList.add("hidden");
-          zoneResultat.classList.add("hidden");
-          zoneDepot.classList.remove("hidden");
-          tbodyApercu.innerHTML = "";
-          inputFichier.value = "";
-        }
+        var classeur = null;
+        var etat = neutre();
 
-        btnOuvrir.addEventListener("click", ouvrirModal);
-        btnFermer.addEventListener("click", fermerModal);
-        btnAnnuler.addEventListener("click", resetEtat);
-        zoneDepot.addEventListener("click", function () { inputFichier.click(); });
-        zoneDepot.addEventListener("dragover", function (e) { e.preventDefault(); zoneDepot.style.borderColor = "rgba(168,85,247,0.6)"; });
-        zoneDepot.addEventListener("dragleave", function () { zoneDepot.style.borderColor = "rgba(168,85,247,0.3)"; });
-        zoneDepot.addEventListener("drop", function (e) {
-          e.preventDefault();
-          zoneDepot.style.borderColor = "rgba(168,85,247,0.3)";
-          if (e.dataTransfer.files.length) traiterFichier(e.dataTransfer.files[0]);
-        });
-        inputFichier.addEventListener("change", function (e) {
-          if (e.target.files.length) traiterFichier(e.target.files[0]);
-        });
-
-        function traiterFichier(fichier) {
-          const reader = new FileReader();
-          reader.onload = function (e) {
-            const wb = XLSX.read(e.target.result, { type: "array" });
-            const feuille = wb.Sheets["Produits"] || wb.Sheets[wb.SheetNames[0]];
-            const donnees = XLSX.utils.sheet_to_json(feuille, { defval: "" });
-            lignesParsees = donnees.map(mapperLigne).filter(function (l) { return l.nom !== ""; });
-            afficherApercu();
+        function neutre() {
+          return {
+            lignes: [], feuille: '', indexEntete: null, detection: [], mapping: {},
+            corrections: {}, produits: [], avertissements: [], resume: null, occupe: false
           };
+        }
+
+        // ---------- navigation ----------
+
+        function montrerEtape(n) {
+          var sections = modal.querySelectorAll('[data-etape]');
+          for (var i = 0; i < sections.length; i++) {
+            sections[i].classList.toggle('hidden', sections[i].getAttribute('data-etape') !== String(n));
+          }
+          var puces = modal.querySelectorAll('[data-puce]');
+          for (var j = 0; j < puces.length; j++) {
+            var num = Number(puces[j].getAttribute('data-puce'));
+            var actif = num === n;
+            var fait = num < n;
+            puces[j].style.background = actif ? 'rgba(168,85,247,0.18)' : (fait ? 'rgba(16,185,129,0.12)' : 'rgba(148,163,184,0.08)');
+            puces[j].style.color = actif ? '#d8b4fe' : (fait ? '#6ee7b7' : '#94a3b8');
+          }
+        }
+
+        function ouvrirModal() { modal.classList.remove('hidden'); modal.classList.add('flex'); montrerEtape(1); }
+        function fermerModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+
+        function reinitialiser() {
+          classeur = null;
+          etat = neutre();
+          inputFichier.value = '';
+          choixFeuille.classList.add('hidden');
+          etatLecture.classList.add('hidden');
+          tbodyMapping.textContent = '';
+          tbodyApercu.textContent = '';
+          alertesAnalyse.textContent = '';
+          resumeImport.textContent = '';
+          detailResultat.textContent = '';
+          barreProgression.classList.add('hidden');
+          montrerEtape(1);
+        }
+
+        function message(cible, texte, ton) {
+          var fonds = {
+            info: 'background:rgba(96,165,250,0.1); border:1px solid rgba(96,165,250,0.3); color:#93c5fd;',
+            ok: 'background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); color:#6ee7b7;',
+            erreur: 'background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#fca5a5;'
+          };
+          cible.classList.remove('hidden');
+          cible.style.cssText = fonds[ton] || fonds.info;
+          cible.textContent = texte;
+        }
+
+        // ---------- lecture du fichier ----------
+
+        function lireFichier(fichier) {
+          var reader = new FileReader();
+          reader.onload = function (e) {
+            try {
+              classeur = XLSX.read(e.target.result, { type: 'array' });
+            } catch (err) {
+              message(etatLecture, 'Fichier illisible : ce n\\'est pas un tableur exploitable.', 'erreur');
+              return;
+            }
+            if (!classeur.SheetNames || !classeur.SheetNames.length) {
+              message(etatLecture, 'Ce fichier ne contient aucune feuille.', 'erreur');
+              return;
+            }
+            selectFeuille.textContent = '';
+            classeur.SheetNames.forEach(function (nom) {
+              var opt = document.createElement('option');
+              opt.value = nom;
+              opt.textContent = nom;
+              selectFeuille.appendChild(opt);
+            });
+            choixFeuille.classList.toggle('hidden', classeur.SheetNames.length < 2);
+            chargerFeuille(classeur.SheetNames[0]);
+          };
+          reader.onerror = function () { message(etatLecture, 'Lecture du fichier impossible.', 'erreur'); };
           reader.readAsArrayBuffer(fichier);
         }
 
-        function mapperLigne(row) {
-          function val(cle) { return row[cle] !== undefined ? String(row[cle]).trim() : ""; }
-          return {
-            nom: val("Nom du produit*"),
-            categorie: val("Categorie*"),
-            marque: val("Marque*"),
-            modele: val("Modele / Reference"),
-            puissanceBtu: Number(val("Puissance BTU*")) || null,
-            prixFcfa: Number(val("Prix FCFA*")) || null,
-            prixGrossisteFcfa: Number(val("Prix Grossiste FCFA")) || null,
-            stockInitial: val("Stock initial*") !== "" ? Number(val("Stock initial*")) : null,
-            classeEnergie: val("Classe energie"),
-            surfaceMin: Number(val("Surface min m2")) || null,
-            surfaceMax: Number(val("Surface max m2")) || null,
-            inverter: val("Technologie Inverter").toLowerCase() === "oui",
-            disponible: val("Disponible a la vente").toLowerCase() !== "non",
-            description: val("Description"),
-            mentions: val("Mentions / Fonctionnalites (separees par ;)").split(";").map(function (m) { return m.trim(); }).filter(Boolean)
-          };
+        // sheet_to_json en mode header:1 -> tableau de tableaux. Volontairement brut :
+        // la détection d'en-tête et tout l'enrichissement restent côté serveur.
+        function chargerFeuille(nom) {
+          var feuille = classeur.Sheets[nom];
+          if (!feuille) return;
+          etat = neutre();
+          etat.feuille = nom;
+          etat.lignes = XLSX.utils.sheet_to_json(feuille, { header: 1, defval: '' });
+          if (!etat.lignes.length) {
+            message(etatLecture, 'La feuille "' + nom + '" est vide.', 'erreur');
+            return;
+          }
+          selectFeuille.value = nom;
+          analyser();
         }
 
-        function validerLigneClient(l) {
-          const erreurs = [];
-          if (!l.nom) erreurs.push("nom manquant");
-          if (!CATEGORIES_VALIDES.includes(l.categorie)) erreurs.push("catégorie invalide");
-          if (!MARQUES_VALIDES.includes(l.marque)) erreurs.push("marque invalide");
-          if (!l.puissanceBtu) erreurs.push("BTU invalide");
-          if (!l.prixFcfa) erreurs.push("prix invalide");
-          if (l.stockInitial === null) erreurs.push("stock invalide");
-          if (l.classeEnergie && !CLASSES_VALIDES.includes(l.classeEnergie)) erreurs.push("classe d'énergie invalide");
-          return erreurs;
+        // ---------- analyse (serveur) ----------
+
+        function poster(charge) {
+          return fetch('/api/admin/produits/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(charge)
+          }).then(function (r) { return r.json().catch(function () { return { succes: false, message: 'Réponse serveur illisible.' }; }); });
         }
 
-        function afficherApercu() {
-          zoneDepot.classList.add("hidden");
-          zoneApercu.classList.remove("hidden");
-          tbodyApercu.innerHTML = "";
+        // Découpage en lots. L'en-tête est renvoyée avec chaque lot pour que le
+        // serveur garde la main sur la détection, et decalageLigne conserve les
+        // numéros de ligne du tableur d'origine — donc les clés de corrections.
+        function lots() {
+          var idx = etat.indexEntete === null ? -1 : etat.indexEntete;
+          var entete = idx >= 0 ? etat.lignes.slice(0, idx + 1) : [];
+          var donnees = etat.lignes.slice(idx >= 0 ? idx + 1 : 0);
+          var sortie = [];
+          for (var i = 0; i < donnees.length; i += MAX_LOT) {
+            sortie.push({ lignes: entete.concat(donnees.slice(i, i + MAX_LOT)), decalageLigne: i });
+          }
+          if (!sortie.length) sortie.push({ lignes: etat.lignes.slice(0), decalageLigne: 0 });
+          return sortie;
+        }
 
-          let nbErreurs = 0;
-          lignesParsees.forEach(function (l, i) {
-            const erreurs = validerLigneClient(l);
-            if (erreurs.length) nbErreurs++;
-            const tr = document.createElement("tr");
-            tr.innerHTML =
-              '<td class="px-3 py-2">' + (i + 1) + '</td>' +
-              '<td class="px-3 py-2">' + _esc(l.nom || "-") + '</td>' +
-              '<td class="px-3 py-2">' + _esc(l.marque || "-") + '</td>' +
-              '<td class="px-3 py-2">' + _esc(l.puissanceBtu != null ? l.puissanceBtu : "-") + '</td>' +
-              '<td class="px-3 py-2">' + _esc(l.prixFcfa ? l.prixFcfa.toLocaleString("fr-FR") : "-") + '</td>' +
-              '<td class="px-3 py-2">' + _esc(l.stockInitial != null ? l.stockInitial : "-") + '</td>' +
-              '<td class="px-3 py-2">' + (erreurs.length
-                ? '<span class="text-red-400" title="' + _esc(erreurs.join(", ")) + '">' + erreurs.length + ' erreur(s)</span>'
-                : '<span class="text-emerald-400">OK</span>') + '</td>';
+        function analyser() {
+          if (etat.occupe || !etat.lignes.length) return Promise.resolve();
+          etat.occupe = true;
+          message(etatLecture, 'Analyse du fichier…', 'info');
+
+          // Passe de découverte : elle seule détecte la ligne d'en-tête et propose
+          // un mapping. Les lots suivants reçoivent ce mapping explicitement, pour
+          // que tous les lots interprètent les colonnes de la même façon.
+          var decouverte = etat.indexEntete !== null
+            ? Promise.resolve(null)
+            : poster({ mode: 'analyse', feuille: etat.feuille, lignes: etat.lignes.slice(0, 120) });
+
+          return decouverte.then(function (rep) {
+            if (rep) {
+              if (!rep.succes) throw new Error(rep.message || 'Analyse impossible.');
+              etat.indexEntete = rep.indexEntete;
+              etat.detection = rep.colonnes || [];
+              etat.mapping = {};
+              etat.detection.forEach(function (col) { etat.mapping[String(col.index)] = col.champ; });
+            }
+            var tranches = lots();
+            var produits = [];
+            var resume = { total: 0, aCreer: 0, aMettreAJour: 0, enErreur: 0 };
+            var avertissements = [];
+            var chaine = Promise.resolve();
+            tranches.forEach(function (tranche, i) {
+              chaine = chaine.then(function () {
+                return poster({
+                  mode: 'analyse',
+                  feuille: etat.feuille,
+                  lignes: tranche.lignes,
+                  decalageLigne: tranche.decalageLigne,
+                  indexEntete: etat.indexEntete,
+                  mapping: etat.mapping,
+                  corrections: etat.corrections
+                }).then(function (r) {
+                  if (!r.succes) throw new Error(r.message || 'Analyse impossible.');
+                  produits = produits.concat(r.produits || []);
+                  if (r.resume) {
+                    resume.total += r.resume.total; resume.aCreer += r.resume.aCreer;
+                    resume.aMettreAJour += r.resume.aMettreAJour; resume.enErreur += r.resume.enErreur;
+                  }
+                  if (i === 0) avertissements = r.avertissements || [];
+                });
+              });
+            });
+            return chaine.then(function () {
+              etat.produits = produits;
+              etat.resume = resume;
+              etat.avertissements = avertissements;
+              rendreLecture();
+              rendreMapping();
+              rendreApercu();
+              montrerEtape(2);
+            });
+          }).catch(function (err) {
+            message(etatLecture, (err && err.message) || 'Analyse impossible.', 'erreur');
+            montrerEtape(1);
+          }).then(function () { etat.occupe = false; });
+        }
+
+        function rendreLecture() {
+          var bouts = ['Feuille "' + etat.feuille + '"'];
+          bouts.push(etat.indexEntete >= 0 ? 'en-tête ligne ' + (etat.indexEntete + 1) : 'aucune en-tête détectée');
+          bouts.push(etat.produits.length + ' ligne(s) de données');
+          message(etatLecture, bouts.join(' · '), 'ok');
+          inputEntete.value = String(etat.indexEntete >= 0 ? etat.indexEntete + 1 : 0);
+        }
+
+        // ---------- étape 2 : correspondance ----------
+
+        function rendreMapping() {
+          tbodyMapping.textContent = '';
+          etat.detection.forEach(function (col) {
+            var tr = document.createElement('tr');
+            tr.appendChild(cellule(col.entete || '(colonne ' + (col.index + 1) + ')', 'px-3 py-2 text-white'));
+            tr.appendChild(cellule((col.echantillon || []).join(' · ') || '—', 'px-3 py-2 text-gray-400'));
+
+            var tdSelect = document.createElement('td');
+            tdSelect.className = 'px-3 py-2';
+            var select = document.createElement('select');
+            select.className = 'rounded-lg px-2 py-1 text-xs text-white';
+            select.style.cssText = 'background:#0b1220; border:1px solid rgba(148,163,184,0.2);';
+            var vide = document.createElement('option');
+            vide.value = '';
+            vide.textContent = 'Ignorer cette colonne';
+            select.appendChild(vide);
+            LIBELLES_CHAMPS.forEach(function (paire) {
+              var opt = document.createElement('option');
+              opt.value = paire[0];
+              opt.textContent = paire[1];
+              select.appendChild(opt);
+            });
+            var choisi = etat.mapping[String(col.index)];
+            select.value = choisi ? choisi : '';
+            select.addEventListener('change', function () {
+              etat.mapping[String(col.index)] = select.value || null;
+              analyser();
+            });
+            tdSelect.appendChild(select);
+            tr.appendChild(tdSelect);
+
+            var impose = (etat.mapping[String(col.index)] || null) !== (col.champ || null);
+            var libelles = { exacte: 'intitulé reconnu', approchee: 'intitulé proche', contenu: 'déduit du contenu', aucune: 'non reconnue' };
+            var couleurs = { exacte: '#6ee7b7', approchee: '#93c5fd', contenu: '#fcd34d', aucune: '#94a3b8' };
+            var tdConf = document.createElement('td');
+            tdConf.className = 'px-3 py-2';
+            var span = document.createElement('span');
+            span.textContent = impose ? 'choix manuel' : (libelles[col.confiance] || col.confiance);
+            span.style.color = impose ? '#d8b4fe' : (couleurs[col.confiance] || '#94a3b8');
+            tdConf.appendChild(span);
+            tr.appendChild(tdConf);
+
+            tbodyMapping.appendChild(tr);
+          });
+
+          alertesAnalyse.textContent = '';
+          etat.avertissements.forEach(function (a) {
+            var p = document.createElement('p');
+            p.className = 'text-amber-300';
+            p.textContent = '· ' + a;
+            alertesAnalyse.appendChild(p);
+          });
+        }
+
+        // ---------- étape 3 : aperçu enrichi ----------
+
+        function cellule(texte, classes) {
+          var td = document.createElement('td');
+          td.className = classes || 'px-3 py-2';
+          td.textContent = texte === null || texte === undefined || texte === '' ? '—' : String(texte);
+          return td;
+        }
+
+        function pastille(origine) {
+          var point = document.createElement('span');
+          point.className = 'h-1.5 w-1.5 rounded-full inline-block ml-1 align-middle';
+          point.style.background = COULEURS_ORIGINE[origine] || 'transparent';
+          point.title = TITRES_ORIGINE[origine] || '';
+          return point;
+        }
+
+        // Cellule éditable : la correction est envoyée au serveur dans
+        // « corrections » et relance l'analyse, donc l'aperçu reste exactement ce
+        // qui sera écrit.
+        function celluleEditable(produit, champ, type) {
+          var td = document.createElement('td');
+          td.className = 'px-3 py-2';
+          var valeur = produit.champs[champ];
+          var controle;
+          if (champ === 'categorie') {
+            controle = document.createElement('select');
+            var connues = CATEGORIES.slice(0);
+            if (valeur && connues.indexOf(valeur) === -1) connues.push(valeur);
+            connues.forEach(function (cat) {
+              var opt = document.createElement('option');
+              opt.value = cat;
+              opt.textContent = cat;
+              controle.appendChild(opt);
+            });
+            controle.value = valeur || '';
+          } else {
+            controle = document.createElement('input');
+            controle.type = type || 'text';
+            controle.value = valeur === null || valeur === undefined ? '' : String(valeur);
+          }
+          controle.className = 'rounded-lg px-2 py-1 text-xs text-white ' + (type === 'number' ? 'w-24' : 'w-44');
+          controle.style.cssText = 'background:#0b1220; border:1px solid rgba(148,163,184,0.2);';
+          controle.addEventListener('change', function () {
+            var cle = String(produit.ligne);
+            if (!etat.corrections[cle]) etat.corrections[cle] = {};
+            etat.corrections[cle][champ] = controle.value;
+            analyser();
+          });
+          td.appendChild(controle);
+          td.appendChild(pastille(produit.origines[champ]));
+          return td;
+        }
+
+        function rendreApercu() {
+          tbodyApercu.textContent = '';
+          etat.produits.forEach(function (p) {
+            var tr = document.createElement('tr');
+            if (p.erreurs && p.erreurs.length) tr.style.background = 'rgba(239,68,68,0.06)';
+
+            tr.appendChild(cellule(p.ligne, 'px-3 py-2 text-gray-500'));
+            tr.appendChild(celluleEditable(p, 'nom', 'text'));
+            tr.appendChild(celluleEditable(p, 'marque', 'text'));
+            tr.appendChild(celluleEditable(p, 'categorie', 'text'));
+            tr.appendChild(celluleEditable(p, 'puissanceBtu', 'number'));
+            tr.appendChild(celluleEditable(p, 'prixFcfa', 'number'));
+            tr.appendChild(celluleEditable(p, 'stockInitial', 'number'));
+
+            var tdSurf = cellule(p.champs.surfaceMin + ' – ' + p.champs.surfaceMax, 'px-3 py-2');
+            tdSurf.appendChild(pastille(p.origines.surfaceMin));
+            tr.appendChild(tdSurf);
+
+            var tdClasse = cellule(p.champs.classeEnergie, 'px-3 py-2');
+            tdClasse.appendChild(pastille(p.origines.classeEnergie));
+            tr.appendChild(tdClasse);
+
+            var tdInv = cellule(p.champs.inverter ? 'oui' : 'non', 'px-3 py-2');
+            tdInv.appendChild(pastille(p.origines.inverter));
+            tr.appendChild(tdInv);
+
+            var tdEtat = document.createElement('td');
+            tdEtat.className = 'px-3 py-2 space-y-1';
+            if (p.erreurs && p.erreurs.length) {
+              tdEtat.appendChild(etiquette(p.erreurs.length + ' erreur(s)', '#fca5a5', 'rgba(239,68,68,0.12)', p.erreurs.join(' · ')));
+            } else if (p.doublon) {
+              tdEtat.appendChild(etiquette('mise à jour #' + p.doublon.id, '#d8b4fe', 'rgba(168,85,247,0.14)', 'Déjà au catalogue : ' + p.doublon.nom));
+            } else {
+              tdEtat.appendChild(etiquette('nouveau', '#6ee7b7', 'rgba(16,185,129,0.12)', 'Sera créé'));
+            }
+            if (p.alertes && p.alertes.length) {
+              tdEtat.appendChild(etiquette('à vérifier', '#fcd34d', 'rgba(251,191,36,0.12)', p.alertes.join(' · ')));
+            }
+            tr.appendChild(tdEtat);
+
             tbodyApercu.appendChild(tr);
           });
 
-          resumeImport.innerHTML = nbErreurs
-            ? '<span class="text-red-400">' + nbErreurs + ' ligne(s) à corriger avant import — corrige ton fichier Excel et redépose-le.</span>'
-            : '<span class="text-emerald-400">' + lignesParsees.length + ' produit(s) prêt(s) à importer.</span>';
-
-          btnConfirmer.disabled = nbErreurs > 0;
+          var r = etat.resume || { total: 0, aCreer: 0, aMettreAJour: 0, enErreur: 0 };
+          resumeImport.textContent = '';
+          var phrase = document.createElement('span');
+          phrase.className = r.enErreur > 0 ? 'text-amber-300' : 'text-emerald-300';
+          phrase.textContent = r.aCreer + ' à créer · ' + r.aMettreAJour + ' à mettre à jour'
+            + (r.enErreur > 0 ? ' · ' + r.enErreur + ' ligne(s) non importable(s), ignorée(s)' : '');
+          resumeImport.appendChild(phrase);
+          btnConfirmer.disabled = (r.aCreer + r.aMettreAJour) === 0;
         }
 
-        btnConfirmer.addEventListener("click", function () {
+        function etiquette(texte, couleur, fond, titre) {
+          var span = document.createElement('span');
+          span.className = 'inline-block rounded-full px-2 py-0.5';
+          span.style.cssText = 'color:' + couleur + '; background:' + fond + ';';
+          span.textContent = texte;
+          if (titre) span.title = titre;
+          return span;
+        }
+
+        // ---------- exécution ----------
+
+        function executer() {
+          if (etat.occupe) return;
+          etat.occupe = true;
           btnConfirmer.disabled = true;
-          btnConfirmer.textContent = "Import en cours...";
-          fetch("/api/admin/produits/import", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ lignes: lignesParsees })
-          }).then(function (r) { return r.json(); }).then(function (data) {
-            zoneApercu.classList.add("hidden");
-            zoneResultat.classList.remove("hidden");
-            if (data.succes) {
-              zoneResultat.className = "mt-5 rounded-xl p-4 text-sm";
-              zoneResultat.style.cssText = "background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); color:#6ee7b7;";
-              zoneResultat.textContent = data.message || (data.importes + " produit(s) importé(s) avec succès.");
-              setTimeout(function () { window.location.reload(); }, 1500);
-            } else {
-              zoneResultat.className = "mt-5 rounded-xl p-4 text-sm";
-              zoneResultat.style.cssText = "background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#fca5a5;";
-              zoneResultat.textContent = data.message || "Échec de l'import. Vérifie ton fichier.";
-            }
-          }).catch(function () {
-            zoneApercu.classList.add("hidden");
-            zoneResultat.classList.remove("hidden");
-            zoneResultat.className = "mt-5 rounded-xl p-4 text-sm";
-            zoneResultat.style.cssText = "background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#fca5a5;";
-            zoneResultat.textContent = "Erreur réseau pendant l'import. Réessaie.";
-          }).finally(function () {
-            btnConfirmer.disabled = false;
-            btnConfirmer.textContent = "Confirmer l'import";
+          var tranches = lots();
+          var total = { crees: 0, misAJour: 0, ignorees: [], erreurs: [] };
+          var echec = null;
+          barreProgression.classList.toggle('hidden', tranches.length < 2);
+
+          var chaine = Promise.resolve();
+          tranches.forEach(function (tranche, i) {
+            chaine = chaine.then(function () {
+              if (echec) return;
+              texteProgression.textContent = 'Lot ' + (i + 1) + ' sur ' + tranches.length + '…';
+              jaugeProgression.style.width = Math.round((i / tranches.length) * 100) + '%';
+              return poster({
+                mode: 'execution',
+                feuille: etat.feuille,
+                lignes: tranche.lignes,
+                decalageLigne: tranche.decalageLigne,
+                indexEntete: etat.indexEntete,
+                mapping: etat.mapping,
+                corrections: etat.corrections,
+                strategieDoublon: selectStrategie.value
+              }).then(function (r) {
+                total.crees += r.crees || 0;
+                total.misAJour += r.misAJour || 0;
+                total.ignorees = total.ignorees.concat(r.ignorees || []);
+                total.erreurs = total.erreurs.concat(r.erreurs || []);
+                // Un lot refusé n'écrit rien : on arrête plutôt que d'importer à moitié
+                // sans le dire. Les lots déjà écrits sont rapportés tels quels.
+                if (!r.succes && (r.crees || 0) + (r.misAJour || 0) === 0 && tranches.length > 1) {
+                  echec = r.message || 'Lot ' + (i + 1) + ' refusé.';
+                } else if (!r.succes && tranches.length === 1) {
+                  echec = r.message || 'Import refusé.';
+                }
+              });
+            });
           });
+
+          chaine.then(function () {
+            jaugeProgression.style.width = '100%';
+            afficherResultat(total, echec);
+          }).catch(function () {
+            afficherResultat(total, 'Erreur réseau pendant l\\'import.');
+          }).then(function () {
+            etat.occupe = false;
+            btnConfirmer.disabled = false;
+          });
+        }
+
+        function afficherResultat(total, echec) {
+          montrerEtape(4);
+          var parts = [];
+          if (total.crees) parts.push(total.crees + ' créé(s)');
+          if (total.misAJour) parts.push(total.misAJour + ' mis à jour');
+          if (total.ignorees.length) parts.push(total.ignorees.length + ' ignoré(s)');
+          if (total.erreurs.length) parts.push(total.erreurs.length + ' en erreur');
+          var ecrit = total.crees + total.misAJour;
+          message(zoneResultat, echec ? echec : 'Import terminé : ' + (parts.join(', ') || 'rien à écrire') + '.', echec ? 'erreur' : (ecrit ? 'ok' : 'info'));
+
+          detailResultat.textContent = '';
+          total.erreurs.forEach(function (e) {
+            var p = document.createElement('p');
+            p.className = 'text-red-300';
+            p.textContent = 'Ligne ' + e.ligne + ' : ' + (e.messages || []).join(' · ');
+            detailResultat.appendChild(p);
+          });
+          total.ignorees.forEach(function (o) {
+            var p = document.createElement('p');
+            p.className = 'text-gray-400';
+            p.textContent = 'Ligne ' + o.ligne + ' : ' + o.raison;
+            detailResultat.appendChild(p);
+          });
+          if (ecrit > 0) {
+            var p = document.createElement('p');
+            p.className = 'text-gray-400 mt-2';
+            p.textContent = 'Les photos restent à ajouter depuis chaque fiche produit.';
+            detailResultat.appendChild(p);
+          }
+        }
+
+        // ---------- modèle facultatif ----------
+
+        // Généré à partir des mêmes intitulés que ceux reconnus par le serveur : le
+        // modèle reste donc synchronisé par construction, contrairement au fichier
+        // .xlsx auquel l'ancienne interface renvoyait et qui n'existait pas.
+        function telechargerModele() {
+          var entetes = COLONNES_MODELE.map(function (c) { return c[0]; });
+          var exemple = COLONNES_MODELE.map(function (c) { return c[1]; });
+          var feuille = XLSX.utils.aoa_to_sheet([entetes, exemple]);
+          var wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, feuille, 'Produits');
+          XLSX.writeFile(wb, 'modele_import_produits_MAASGA.xlsx');
+        }
+
+        // ---------- branchements ----------
+
+        btnOuvrir.addEventListener('click', ouvrirModal);
+        document.getElementById('btn-fermer-import-masse').addEventListener('click', fermerModal);
+        document.getElementById('btn-modele').addEventListener('click', telechargerModele);
+        document.getElementById('btn-retour-1').addEventListener('click', function () { montrerEtape(1); });
+        document.getElementById('btn-vers-apercu').addEventListener('click', function () { montrerEtape(3); });
+        document.getElementById('btn-retour-2').addEventListener('click', function () { montrerEtape(2); });
+        document.getElementById('btn-nouvel-import').addEventListener('click', reinitialiser);
+        document.getElementById('btn-terminer-import').addEventListener('click', function () {
+          fermerModal();
+          window.location.reload();
         });
+        btnConfirmer.addEventListener('click', executer);
+        selectFeuille.addEventListener('change', function () { chargerFeuille(selectFeuille.value); });
+
+        // L'admin peut corriger une détection d'en-tête ratée : 0 = fichier sans en-tête.
+        inputEntete.addEventListener('change', function () {
+          var saisi = parseInt(inputEntete.value, 10);
+          if (isNaN(saisi) || saisi < 0) saisi = 0;
+          etat.indexEntete = saisi === 0 ? -1 : saisi - 1;
+          etat.detection = [];
+          etat.mapping = {};
+          etat.corrections = {};
+          // Nouvelle passe de découverte avec l'en-tête imposée.
+          var impose = etat.indexEntete;
+          etat.indexEntete = null;
+          poster({ mode: 'analyse', feuille: etat.feuille, lignes: etat.lignes.slice(0, 120), indexEntete: impose })
+            .then(function (rep) {
+              if (!rep.succes) throw new Error(rep.message || 'Analyse impossible.');
+              etat.indexEntete = impose;
+              etat.detection = rep.colonnes || [];
+              etat.mapping = {};
+              etat.detection.forEach(function (col) { etat.mapping[String(col.index)] = col.champ; });
+              return analyser();
+            })
+            .catch(function (err) { message(etatLecture, (err && err.message) || 'Analyse impossible.', 'erreur'); });
+        });
+
+        zoneDepot.addEventListener('click', function () { inputFichier.click(); });
+        zoneDepot.addEventListener('dragover', function (e) { e.preventDefault(); zoneDepot.style.borderColor = 'rgba(168,85,247,0.6)'; });
+        zoneDepot.addEventListener('dragleave', function () { zoneDepot.style.borderColor = 'rgba(168,85,247,0.3)'; });
+        zoneDepot.addEventListener('drop', function (e) {
+          e.preventDefault();
+          zoneDepot.style.borderColor = 'rgba(168,85,247,0.3)';
+          if (e.dataTransfer.files.length) lireFichier(e.dataTransfer.files[0]);
+        });
+        inputFichier.addEventListener('change', function (e) {
+          if (e.target.files.length) lireFichier(e.target.files[0]);
+        });
+
+        montrerEtape(1);
       })();
     `}} />
   </AdminLayout>
