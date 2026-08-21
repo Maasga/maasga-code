@@ -10,10 +10,10 @@
 --    ORDRE IMPORTANT : &amp; doit être traité EN DERNIER, sinon « &amp;lt; »
 --    devient « &lt; » puis « < » (double décodage).
 --
---    Seules les colonnes définies dans les migrations versionnées sont traitées.
---    Les colonnes ajoutées hors migration (order_devis.climatiseur_nom, .motif,
---    .message_client, .fournitures) sont volontairement laissées de côté : une
---    référence à une colonne absente ferait échouer toute la migration.
+--    Seules les tables et colonnes garanties par les migrations versionnées sont
+--    traitées. Toute référence à une table ou une colonne absente interrompt la
+--    migration entière, et la production porte 0029→0033 dont les fichiers
+--    manquent au dépôt : voir la note sur « devis » plus bas.
 --
 -- 2. appointments.status accepte « cancelled »
 --    Le code écrit status='cancelled' (annulation d'un RDV côté admin et côté
@@ -74,12 +74,17 @@ UPDATE products SET
   description = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(description, ''), '&#39;', ''''), '&quot;', '"'), '&lt;', '<'), '&gt;', '>'), '&amp;', '&')
 WHERE name LIKE '%&%' OR brand LIKE '%&%' OR model LIKE '%&%' OR description LIKE '%&%';
 
-UPDATE order_devis SET
-  client_name           = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(client_name,  '&#39;', ''''), '&quot;', '"'), '&lt;', '<'), '&gt;', '>'), '&amp;', '&'),
-  client_phone          = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(client_phone, '&#39;', ''''), '&quot;', '"'), '&lt;', '<'), '&gt;', '>'), '&amp;', '&'),
-  client_email          = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(client_email, ''),          '&#39;', ''''), '&quot;', '"'), '&lt;', '<'), '&gt;', '>'), '&amp;', '&'),
-  client_response_notes = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(client_response_notes, ''), '&#39;', ''''), '&quot;', '"'), '&lt;', '<'), '&gt;', '>'), '&amp;', '&')
-WHERE client_name LIKE '%&%' OR client_phone LIKE '%&%' OR client_email LIKE '%&%' OR client_response_notes LIKE '%&%';
+-- order_devis / devis : volontairement absente de cette migration.
+-- La table a été renommée et remaniée par 0033_merge_devis_tables.sql, dont le
+-- fichier manque au dépôt : la production expose « devis » (avec
+-- client_quartier / produit_nom / message_client / notes_internes) tandis qu'une
+-- base reconstruite depuis git seule expose « order_devis » (avec
+-- client_response_notes). Aucune des deux formes ne peut être référencée ici
+-- sans faire échouer l'autre — un UPDATE sur une table absente interrompt toute
+-- la migration, ce qui est exactement ce qui s'est produit au premier essai.
+-- Le décodage des lignes historiques de « devis » est donc traité hors migration,
+-- par une requête ciblée sur la production. Le code stocke désormais du texte
+-- brut, donc les nouvelles lignes sont correctes dans les deux cas.
 
 -- ============================================================
 -- 2. appointments.status : ajout de « cancelled »
