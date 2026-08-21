@@ -2,6 +2,48 @@
 import { reviews, appointments, orders, clients, maintenanceDueCount, notifications } from '../data/store'
 
 // ============================================================
+// HELPERS SÉCURITÉ
+// ============================================================
+
+// Sérialise une valeur pour intégration dans un bloc <script>.
+// JSON.stringify échappe les guillemets mais PAS `<`, donc un `</script>` présent
+// dans une donnée utilisateur fermerait la balise et permettrait l'injection HTML.
+// On neutralise aussi U+2028/U+2029, qui sont des fins de ligne pour le parseur JS.
+const SCRIPT_UNSAFE_CHARS = /[<>\u2028\u2029]/g
+const SCRIPT_CHAR_ESCAPES: Record<string, string> = {
+  '<': '\\u003c',
+  '>': '\\u003e',
+  '\u2028': '\\u2028',
+  '\u2029': '\\u2029',
+}
+const jsonForScript = (v: any): string =>
+  JSON.stringify(v).replace(SCRIPT_UNSAFE_CHARS, (ch) => SCRIPT_CHAR_ESCAPES[ch])
+
+// Échappe une valeur destinée à un littéral JS entre apostrophes placé dans un
+// attribut HTML (onclick="...maFonction('ICI')..."). Le navigateur décode les
+// entités HTML AVANT de parser le JS, donc l'échappement HTML de JSX ne protège
+// pas le littéral : il faut neutraliser \ ' et les fins de ligne nous-mêmes.
+const JS_LITERAL_UNSAFE = /[\\'\r\n\u2028\u2029]/g
+const JS_LITERAL_ESCAPES: Record<string, string> = {
+  '\\': '\\\\',
+  "'": "\\'",
+  '\r': '\\r',
+  '\n': '\\n',
+  '\u2028': '\\u2028',
+  '\u2029': '\\u2029',
+}
+const jsAttr = (v: any): string =>
+  (v === null || v === undefined ? '' : String(v)).replace(JS_LITERAL_UNSAFE, (ch) => JS_LITERAL_ESCAPES[ch])
+
+// Échappeur HTML côté client, à injecter dans les blocs <script> qui construisent
+// du HTML par concaténation. Volontairement autonome (aucune dépendance à l'ordre
+// d'exécution des scripts) et préfixé `_` pour ne pas entrer en conflit avec le
+// `esc()` du AdminLayout, qui est déclaré après le contenu des pages.
+const CLIENT_ESC_HELPER = `
+        function _esc(s) { var d = document.createElement('div'); d.textContent = (s === null || s === undefined) ? '' : String(s); return d.innerHTML; }
+`
+
+// ============================================================
 // LAYOUT ADMIN
 // ============================================================
 
@@ -170,10 +212,12 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
             <i class="fas fa-external-link-alt w-5 text-center"></i>
             <span>Voir le site public</span>
           </a>
-          <a href="/api/admin/logout" class="nav-item text-xs text-red-300 hover:text-red-200">
-            <i class="fas fa-sign-out-alt w-5 text-center"></i>
-            <span>Déconnexion</span>
-          </a>
+          <form method="post" action="/api/admin/logout">
+            <button type="submit" class="nav-item text-xs text-red-300 hover:text-red-200 w-full">
+              <i class="fas fa-sign-out-alt w-5 text-center"></i>
+              <span>Déconnexion</span>
+            </button>
+          </form>
         </div>
       </aside>
 
@@ -653,10 +697,12 @@ export const AdminPage = () => {
               <div><div class="text-sm font-medium text-gray-200">Paramètres du site</div><div class="text-xs text-gray-500">Mot de passe, configuration</div></div>
               <i class="fas fa-chevron-right text-xs text-gray-600 ml-auto"></i>
             </a>
-            <a href="/api/admin/logout" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-red-900/10 transition-colors">
-              <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(239,68,68,0.1);"><i class="fas fa-sign-out-alt text-red-400 text-sm"></i></div>
-              <div><div class="text-sm font-medium text-red-400">Déconnexion</div><div class="text-xs text-gray-500">Fermer la session admin</div></div>
-            </a>
+            <form method="post" action="/api/admin/logout">
+              <button type="submit" class="w-full text-left flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-red-900/10 transition-colors">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(239,68,68,0.1);"><i class="fas fa-sign-out-alt text-red-400 text-sm"></i></div>
+                <div><div class="text-sm font-medium text-red-400">Déconnexion</div><div class="text-xs text-gray-500">Fermer la session admin</div></div>
+              </button>
+            </form>
           </div>
         </div>
       </div>
@@ -789,7 +835,7 @@ export const AdminPage = () => {
             <div class="rounded-xl p-4" style="background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.2);">
               <div class="text-xs text-gray-400 font-semibold mb-1">CA total (6 mois)</div>
               <div class="text-xl font-bold text-purple-400">{estimatedCA.toLocaleString()} F</div>
-              <div class="text-xs text-gray-500 mt-1">{orders.filter(o => ['paid','validated','en_livraison','installed'].includes(o.status)).length} commandes</div>
+              <div class="text-xs text-gray-500 mt-1">{orders.filter(o => ['confirme','en_livraison','livre'].includes(o.status)).length} commandes</div>
             </div>
             <div class="rounded-xl p-4" style="background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.2);">
               <div class="text-xs text-gray-400 font-semibold mb-1">Moyenne mensuelle</div>
@@ -1020,6 +1066,7 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
       </div>
     </div>
     <script dangerouslySetInnerHTML={{__html: `
+      ${CLIENT_ESC_HELPER}
       function toggleStockHistory() {
         var el = document.getElementById('stock-history');
         if (el.classList.contains('hidden')) {
@@ -1040,13 +1087,13 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
             var typeColors = {entree:'#34d399',sortie:'#f87171',ajustement:'#fbbf24',vente:'#f87171',retour:'#60a5fa'};
             var typeLabels = {entree:'Entrée',sortie:'Sortie',ajustement:'Ajust.',vente:'Vente',retour:'Retour'};
             html += '<tr class="border-t border-gray-800/50">'
-              + '<td class="py-2 px-3 text-gray-400">'+(m.created_at||'').substring(0,16)+'</td>'
-              + '<td class="py-2 px-3 text-white">'+(m.product_name||'#'+m.product_id)+'</td>'
-              + '<td class="py-2 px-3"><span style="color:'+(typeColors[m.movement_type]||'#94a3b8')+'">'+(typeLabels[m.movement_type]||m.movement_type)+'</span></td>'
-              + '<td class="py-2 px-3 font-mono '+(m.quantity>0?'text-green-400':'text-red-400')+'">'+(m.quantity>0?'+':'')+m.quantity+'</td>'
-              + '<td class="py-2 px-3 text-gray-500">'+m.stock_before+'</td>'
-              + '<td class="py-2 px-3 text-white font-semibold">'+m.stock_after+'</td>'
-              + '<td class="py-2 px-3 text-gray-400">'+(m.reason||'-')+'</td>'
+              + '<td class="py-2 px-3 text-gray-400">'+_esc((m.created_at||'').substring(0,16))+'</td>'
+              + '<td class="py-2 px-3 text-white">'+_esc(m.product_name||'#'+m.product_id)+'</td>'
+              + '<td class="py-2 px-3"><span style="color:'+(typeColors[m.movement_type]||'#94a3b8')+'">'+_esc(typeLabels[m.movement_type]||m.movement_type)+'</span></td>'
+              + '<td class="py-2 px-3 font-mono '+(m.quantity>0?'text-green-400':'text-red-400')+'">'+(m.quantity>0?'+':'')+_esc(m.quantity)+'</td>'
+              + '<td class="py-2 px-3 text-gray-500">'+_esc(m.stock_before)+'</td>'
+              + '<td class="py-2 px-3 text-white font-semibold">'+_esc(m.stock_after)+'</td>'
+              + '<td class="py-2 px-3 text-gray-400">'+_esc(m.reason||'-')+'</td>'
               + '</tr>';
           });
           html += '</tbody></table>';
@@ -1543,6 +1590,7 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
     </div>
 
     <script dangerouslySetInnerHTML={{ __html: `
+      ${CLIENT_ESC_HELPER}
       function editProductFromData(btn) {
         try {
           var p = JSON.parse(btn.getAttribute('data-product'));
@@ -1584,7 +1632,7 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
         const container = document.getElementById(containerId);
         container.innerHTML = features.map((f, i) => 
           \`<span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full flex items-center space-x-1">
-            <span>\${f}</span>
+            <span>\${_esc(f)}</span>
             <button type="button" onclick="removeFeature('\${containerId}', \${i})" class="hover:text-red-600 font-bold">&times;</button>
           </span>\`
         ).join('');
@@ -1837,8 +1885,8 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
           thumb.style.background = '#0a1628';
           thumb.innerHTML = \`
             \${item.type === 'image' 
-              ? '<img src="' + item.url + '" class="w-full h-full object-cover" />'
-              : '<video src="' + item.url + '" class="w-full h-full object-cover" style="background:#000;"></video>'
+              ? '<img src="' + _esc(item.url) + '" class="w-full h-full object-cover" />'
+              : '<video src="' + _esc(item.url) + '" class="w-full h-full object-cover" style="background:#000;"></video>'
             }
             <button type="button" onclick="removeMediaEdit(\${idx})" 
               class="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs">
@@ -1902,6 +1950,7 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
     </div>
     <script dangerouslySetInnerHTML={{__html: `
       (function () {
+        ${CLIENT_ESC_HELPER}
         const CATEGORIES_VALIDES = ["Mural/Split", "Cassette", "Gainable", "Colonne", "Multi-split", "Rooftop", "Industriel"];
         const MARQUES_VALIDES = ["Airwell", "LG", "Sharp", "Nasco", "Mona", "Solstar", "Boreal", "Roch"];
         const CLASSES_VALIDES = ["A", "A+", "A++", "A+++"];
@@ -2011,13 +2060,13 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
             const tr = document.createElement("tr");
             tr.innerHTML =
               '<td class="px-3 py-2">' + (i + 1) + '</td>' +
-              '<td class="px-3 py-2">' + (l.nom || "-") + '</td>' +
-              '<td class="px-3 py-2">' + (l.marque || "-") + '</td>' +
-              '<td class="px-3 py-2">' + (l.puissanceBtu != null ? l.puissanceBtu : "-") + '</td>' +
-              '<td class="px-3 py-2">' + (l.prixFcfa ? l.prixFcfa.toLocaleString("fr-FR") : "-") + '</td>' +
-              '<td class="px-3 py-2">' + (l.stockInitial != null ? l.stockInitial : "-") + '</td>' +
+              '<td class="px-3 py-2">' + _esc(l.nom || "-") + '</td>' +
+              '<td class="px-3 py-2">' + _esc(l.marque || "-") + '</td>' +
+              '<td class="px-3 py-2">' + _esc(l.puissanceBtu != null ? l.puissanceBtu : "-") + '</td>' +
+              '<td class="px-3 py-2">' + _esc(l.prixFcfa ? l.prixFcfa.toLocaleString("fr-FR") : "-") + '</td>' +
+              '<td class="px-3 py-2">' + _esc(l.stockInitial != null ? l.stockInitial : "-") + '</td>' +
               '<td class="px-3 py-2">' + (erreurs.length
-                ? '<span class="text-red-400" title="' + erreurs.join(", ") + '">' + erreurs.length + ' erreur(s)</span>'
+                ? '<span class="text-red-400" title="' + _esc(erreurs.join(", ")) + '">' + erreurs.length + ' erreur(s)</span>'
                 : '<span class="text-emerald-400">OK</span>') + '</td>';
             tbodyApercu.appendChild(tr);
           });
@@ -2372,10 +2421,11 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
       </div>
 
       <script dangerouslySetInnerHTML={{ __html: `
+        ${CLIENT_ESC_HELPER}
         // Calendar state
-        var calRDVs = ${JSON.stringify(filtered.map(a => ({ id: a.id, name: a.name, phone: a.phone, quartier: a.quartier, date: a.date, heure_debut: a.heure_debut, heure_fin: a.heure_fin, status: a.status, type: a.type, notes: a.notes })))};
+        var calRDVs = ${jsonForScript(filtered.map(a => ({ id: a.id, name: a.name, phone: a.phone, quartier: a.quartier, date: a.date, heure_debut: a.heure_debut, heure_fin: a.heure_fin, status: a.status, type: a.type, notes: a.notes })))};
         // Full RDV data map (id -> rdv) for detail popup
-        var _rdvMap = ${JSON.stringify(Object.fromEntries(filtered.map(a => [a.id, a])))};
+        var _rdvMap = ${jsonForScript(Object.fromEntries(filtered.map(a => [a.id, a])))};
         function showRdvDetailById(id) { var a = _rdvMap[id]; if (a) showRdvDetail(a); }
         var calMonth = new Date().getMonth();
         var calYear = new Date().getFullYear();
@@ -2471,9 +2521,9 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
               var statusColor = r.status === 'pending' ? 'color:#fbbf24' : r.status === 'confirmed' ? 'color:#34d399' : 'color:#60a5fa';
               var statusLabel = r.status === 'pending' ? 'En attente' : r.status === 'confirmed' ? 'Confirmé' : 'Effectué';
               return '<div class="flex items-center justify-between p-3 rounded-xl" style="background:rgba(15,23,42,0.5); border:1px solid rgba(148,163,184,0.1);">' +
-                '<div><span class="font-semibold text-white text-sm">' + r.name + '</span>' +
-                '<span class="text-xs text-gray-500 ml-2">' + (r.heure_debut || '') + (r.heure_fin ? '–' + r.heure_fin : '') + '</span>' +
-                '<div class="text-xs text-gray-500 mt-0.5"><i class="fas fa-map-marker-alt mr-1"></i>' + (r.quartier || '') + ' · ' + ({devis:'Devis',installation:'Installation',entretien:'Entretien',depannage:'Dépannage'}[r.type] || r.type) + '</div></div>' +
+                '<div><span class="font-semibold text-white text-sm">' + _esc(r.name) + '</span>' +
+                '<span class="text-xs text-gray-500 ml-2">' + _esc(r.heure_debut || '') + (r.heure_fin ? '–' + _esc(r.heure_fin) : '') + '</span>' +
+                '<div class="text-xs text-gray-500 mt-0.5"><i class="fas fa-map-marker-alt mr-1"></i>' + _esc(r.quartier || '') + ' · ' + _esc({devis:'Devis',installation:'Installation',entretien:'Entretien',depannage:'Dépannage'}[r.type] || r.type) + '</div></div>' +
                 '<span class="text-xs font-bold" style="' + statusColor + '">' + statusLabel + '</span></div>';
             }).join('');
           }
@@ -2529,15 +2579,15 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
                 '<div class="grid grid-cols-2 gap-2 text-xs">' +
                   '<div class="rounded-lg p-2" style="background:rgba(15,23,42,0.6);">' +
                     '<div class="text-gray-500 mb-0.5"><i class="fas fa-user mr-1"></i>Nom</div>' +
-                    '<div class="font-semibold text-gray-200">' + (cl.name || '-') + '</div>' +
+                    '<div class="font-semibold text-gray-200">' + _esc(cl.name || '-') + '</div>' +
                   '</div>' +
                   '<div class="rounded-lg p-2" style="background:rgba(15,23,42,0.6);">' +
                     '<div class="text-gray-500 mb-0.5"><i class="fas fa-envelope mr-1"></i>Email</div>' +
-                    '<div class="font-semibold text-gray-200 truncate">' + (cl.email || 'Non renseigné') + '</div>' +
+                    '<div class="font-semibold text-gray-200 truncate">' + _esc(cl.email || 'Non renseigné') + '</div>' +
                   '</div>' +
                   '<div class="rounded-lg p-2" style="background:rgba(15,23,42,0.6);">' +
                     '<div class="text-gray-500 mb-0.5"><i class="fas fa-home mr-1"></i>Adresse</div>' +
-                    '<div class="font-semibold text-gray-200">' + (cl.address || cl.quartier || '-') + '</div>' +
+                    '<div class="font-semibold text-gray-200">' + _esc(cl.address || cl.quartier || '-') + '</div>' +
                   '</div>' +
                   '<div class="rounded-lg p-2" style="background:rgba(15,23,42,0.6);">' +
                     '<div class="text-gray-500 mb-0.5"><i class="fas fa-calendar-alt mr-1"></i>Client depuis</div>' +
@@ -2643,7 +2693,7 @@ export const AdminClientsPage = () => {
                 }
                 const src = srcMap[client.type_demande] || { label: client.type_demande || 'Manuel', style: 'background:rgba(148,163,184,0.1); color:#94a3b8;' }
                 return (
-                <tr class="client-row hover:bg-cyan-900/10 transition-colors cursor-pointer" onclick={`showClientDetail(this)`} data-client={JSON.stringify(client).replace(/</g, '\u003c')} data-search={`${client.name} ${client.phone} ${client.email || ''} ${client.quartier || ''} ${client.type_demande || ''}`.toLowerCase()}>
+                <tr class="client-row hover:bg-cyan-900/10 transition-colors cursor-pointer" onclick={`showClientDetail(this)`} data-client={jsonForScript(client)} data-search={`${client.name} ${client.phone} ${client.email || ''} ${client.quartier || ''} ${client.type_demande || ''}`.toLowerCase()}>
                   <td class="py-4 px-4">
                     <div class="flex items-center space-x-3">
                       <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background:rgba(59,130,246,0.15);">
@@ -2674,7 +2724,7 @@ export const AdminClientsPage = () => {
                         <i class="fab fa-whatsapp text-xs"></i>
                       </a>
                       <button 
-                        onclick={`event.stopPropagation();editClient(${client.id}, '${client.name.replace(/'/g, "\\'")}', '${client.email}', '${client.phone}', '${client.quartier}')`}
+                        onclick={`event.stopPropagation();editClient(${Number(client.id)}, '${jsAttr(client.name)}', '${jsAttr(client.email)}', '${jsAttr(client.phone)}', '${jsAttr(client.quartier)}')`}
                         class="text-orange-400 hover:text-orange-300 p-1.5 rounded-lg transition-colors" title="Modifier">
                         <i class="fas fa-edit text-xs"></i>
                       </button>
@@ -2887,6 +2937,7 @@ export const AdminClientsPage = () => {
       </div>
 
       <script dangerouslySetInnerHTML={{ __html: `
+        ${CLIENT_ESC_HELPER}
         function editClient(id, name, email, phone, quartier) {
           document.getElementById('edit-client-id').value = id;
           document.getElementById('edit-client-name').value = name;
@@ -2924,17 +2975,17 @@ export const AdminClientsPage = () => {
             loader.classList.add('hidden');
             content.classList.remove('hidden');
             var planLabels = { trimestriel: 'Trimestriel', semestriel: 'Semestriel', annuel: 'Annuel' };
-            var statusColors = { active: '#34d399', expired: '#f87171', cancelled: '#94a3b8', planifiee: '#fbbf24', realisee: '#34d399', annulee: '#f87171' };
+            var statusColors = { en_attente: '#fbbf24', contacte: '#60a5fa', actif: '#34d399', expire: '#f87171', annule: '#94a3b8', planifiee: '#fbbf24', confirmee: '#60a5fa', effectuee: '#34d399', annulee: '#f87171' };
             // Contracts
             var c = document.getElementById('cd-contracts');
             document.getElementById('cd-contracts-count').textContent = d.contracts.length;
             c.innerHTML = d.contracts.length ? d.contracts.map(function(x) {
               return '<div class="rounded-xl p-3 text-xs flex items-center justify-between" style="background:rgba(15,23,42,0.6);border:1px solid rgba(56,189,248,0.1);">'
-                + '<div><span class="font-semibold text-gray-200">' + (planLabels[x.plan_type] || x.plan_type) + '</span>'
-                + '<span class="ml-2 text-gray-500">' + (x.start_date||'') + ' → ' + (x.end_date||'') + '</span>'
-                + '<span class="ml-2 text-gray-400">' + x.completed_visits + '/' + x.total_visits + ' visites</span></div>'
+                + '<div><span class="font-semibold text-gray-200">' + _esc(planLabels[x.plan_type] || x.plan_type) + '</span>'
+                + '<span class="ml-2 text-gray-500">' + _esc(x.start_date||'') + ' → ' + _esc(x.end_date||'') + '</span>'
+                + '<span class="ml-2 text-gray-400">' + _esc(x.completed_visits) + '/' + _esc(x.total_visits) + ' visites</span></div>'
                 + '<span class="px-2 py-0.5 rounded-full font-bold" style="background:rgba(52,211,153,0.1);color:' + (statusColors[x.status]||'#94a3b8') + ';">'
-                + ((x.status==='active')?'Actif':(x.status==='expired')?'Expiré':'Annulé') + '</span></div>';
+                + ({ en_attente:'En attente', contacte:'Contacté', actif:'Actif', expire:'Expiré', annule:'Annulé' }[x.status] || x.status) + '</span></div>';
             }).join('') : '<p class="text-xs text-gray-600 py-2">Aucun contrat</p>';
             // Visits
             var v = document.getElementById('cd-visits');
@@ -2942,8 +2993,8 @@ export const AdminClientsPage = () => {
             v.innerHTML = d.visits.length ? d.visits.map(function(x) {
               return '<div class="rounded-xl p-3 text-xs flex items-center justify-between" style="background:rgba(15,23,42,0.6);border:1px solid rgba(52,211,153,0.08);">'
                 + '<div><span class="font-semibold text-gray-200">' + (x.visit_type==='preventive'?'Préventive':'Corrective') + '</span>'
-                + '<span class="ml-2 text-gray-500">' + (x.visit_date||'') + '</span>'
-                + (x.technician ? '<span class="ml-2 text-gray-500">— ' + x.technician + '</span>' : '') + '</div>'
+                + '<span class="ml-2 text-gray-500">' + _esc(x.visit_date||'') + '</span>'
+                + (x.technician ? '<span class="ml-2 text-gray-500">— ' + _esc(x.technician) + '</span>' : '') + '</div>'
                 + '<span class="px-2 py-0.5 rounded-full font-bold" style="background:rgba(251,191,36,0.1);color:' + (statusColors[x.status]||'#94a3b8') + ';">'
                 + ((x.status==='planifiee')?'Planifiée':(x.status==='realisee')?'Réalisée':'Annulée') + '</span></div>';
             }).join('') : '<p class="text-xs text-gray-600 py-2">Aucune visite</p>';
@@ -2952,9 +3003,9 @@ export const AdminClientsPage = () => {
             document.getElementById('cd-rdvs-count').textContent = d.rdvs.length;
             r.innerHTML = d.rdvs.length ? d.rdvs.map(function(x) {
               return '<div class="rounded-xl p-3 text-xs flex items-center justify-between" style="background:rgba(15,23,42,0.6);border:1px solid rgba(251,191,36,0.08);">'
-                + '<div><span class="font-semibold text-gray-200">' + (x.type||'RDV') + '</span>'
-                + '<span class="ml-2 text-gray-500">' + (x.date||'') + (x.heure_debut?' à '+x.heure_debut:'') + '</span></div>'
-                + '<span class="text-xs" style="color:#fbbf24;">' + (x.status||'') + '</span></div>';
+                + '<div><span class="font-semibold text-gray-200">' + _esc(x.type||'RDV') + '</span>'
+                + '<span class="ml-2 text-gray-500">' + _esc(x.date||'') + (x.heure_debut?' à '+_esc(x.heure_debut):'') + '</span></div>'
+                + '<span class="text-xs" style="color:#fbbf24;">' + _esc(x.status||'') + '</span></div>';
             }).join('') : '<p class="text-xs text-gray-600 py-2">Aucun rendez-vous</p>';
             // Devis
             var dv = document.getElementById('cd-devis');
@@ -2962,10 +3013,10 @@ export const AdminClientsPage = () => {
             dv.innerHTML = d.devis.length ? d.devis.map(function(x) {
               var sc = {draft:'#94a3b8',sent:'#38bdf8',accepted:'#34d399',rejected:'#f87171',expired:'#f59e0b'};
               return '<div class="rounded-xl p-3 text-xs flex items-center justify-between" style="background:rgba(15,23,42,0.6);border:1px solid rgba(167,139,250,0.08);">'
-                + '<div><span class="font-semibold text-gray-200">' + (x.numero||'#'+x.id) + '</span>'
-                + '<span class="ml-2 text-gray-500">' + (x.produit_nom||'') + '</span>'
+                + '<div><span class="font-semibold text-gray-200">' + _esc(x.numero||'#'+x.id) + '</span>'
+                + '<span class="ml-2 text-gray-500">' + _esc(x.produit_nom||'') + '</span>'
                 + '<span class="ml-2 text-gray-400">' + (x.total_ht?(parseInt(x.total_ht).toLocaleString('fr-FR')+' F'):'') + '</span></div>'
-                + '<span class="px-2 py-0.5 rounded-full font-bold text-xs" style="background:rgba(167,139,250,0.1);color:' + (sc[x.status]||'#94a3b8') + ';">' + (x.status||'') + '</span></div>';
+                + '<span class="px-2 py-0.5 rounded-full font-bold text-xs" style="background:rgba(167,139,250,0.1);color:' + (sc[x.status]||'#94a3b8') + ';">' + _esc(x.status||'') + '</span></div>';
             }).join('') : '<p class="text-xs text-gray-600 py-2">Aucun devis</p>';
             // SAV
             var s = document.getElementById('cd-sav');
@@ -2974,9 +3025,9 @@ export const AdminClientsPage = () => {
               var pc = {haute:'#f87171',normale:'#fbbf24',basse:'#94a3b8'};
               return '<div class="rounded-xl p-3 text-xs" style="background:rgba(15,23,42,0.6);border:1px solid rgba(251,146,60,0.08);">'
                 + '<div class="flex items-center justify-between mb-1">'
-                + '<span class="font-semibold text-gray-200">' + (x.ticket_ref||'#'+x.id) + '</span>'
-                + '<span class="px-2 py-0.5 rounded-full font-bold" style="background:rgba(251,146,60,0.1);color:' + (pc[x.priority]||'#94a3b8') + ';">' + (x.priority||'') + '</span></div>'
-                + '<p class="text-gray-400">' + (x.subject||'') + '</p></div>';
+                + '<span class="font-semibold text-gray-200">' + _esc(x.ticket_ref||'#'+x.id) + '</span>'
+                + '<span class="px-2 py-0.5 rounded-full font-bold" style="background:rgba(251,146,60,0.1);color:' + (pc[x.priority]||'#94a3b8') + ';">' + _esc(x.priority||'') + '</span></div>'
+                + '<p class="text-gray-400">' + _esc(x.subject||'') + '</p></div>';
             }).join('') : '<p class="text-xs text-gray-600 py-2">Aucun ticket SAV</p>';
           }).catch(function() {
             loader.classList.add('hidden');
@@ -2994,7 +3045,7 @@ export const AdminClientsPage = () => {
           var srcColors = { devis:'color:#38bdf8;', installation:'color:#34d399;', commande:'color:#a78bfa;', contact:'color:#fbbf24;', connexion:'color:#f472b6;' };
           document.getElementById('client-detail-avatar').textContent = (c.name || '?').charAt(0).toUpperCase();
           document.getElementById('client-detail-name').textContent = c.name || '-';
-          document.getElementById('client-detail-source').innerHTML = '<span class="text-xs font-semibold px-2 py-0.5 rounded-full" style="background:rgba(56,189,248,0.1);' + (srcColors[c.type_demande] || 'color:#94a3b8;') + '">' + (srcLabels[c.type_demande] || c.type_demande || 'Manuel') + '</span>';
+          document.getElementById('client-detail-source').innerHTML = '<span class="text-xs font-semibold px-2 py-0.5 rounded-full" style="background:rgba(56,189,248,0.1);' + (srcColors[c.type_demande] || 'color:#94a3b8;') + '">' + _esc(srcLabels[c.type_demande] || c.type_demande || 'Manuel') + '</span>';
           document.getElementById('client-detail-phone').textContent = c.phone || '-';
           document.getElementById('client-detail-email').textContent = c.email || '-';
           document.getElementById('client-detail-quartier').textContent = c.quartier || '-';
@@ -3042,10 +3093,10 @@ export const AdminClientsPage = () => {
               var mins = Math.max(0, Math.round((15*60*1000 - (Date.now() - c.created_at)) / 60000));
               var contact = c.phone || c.email || '-';
               return '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 rounded-lg" style="background:rgba(251,191,36,0.05); border:1px solid rgba(251,191,36,0.1);">'
-                + '<div class="flex-1"><span class="font-mono text-amber-300 font-bold text-lg mr-3">' + c.code + '</span>'
-                + '<span class="text-gray-400 text-xs">' + contact + '</span>'
+                + '<div class="flex-1"><span class="font-mono text-amber-300 font-bold text-lg mr-3">' + _esc(c.code) + '</span>'
+                + '<span class="text-gray-400 text-xs">' + _esc(contact) + '</span>'
                 + '<span class="text-gray-600 text-xs ml-2">(' + mins + ' min restantes)</span></div>'
-                + '<button onclick="sendResetCodeWA(\\'' + c.token + '\\')" class="text-xs px-3 py-1.5 rounded-lg font-semibold" style="background:#25d366; color:white;"><i class="fab fa-whatsapp mr-1"></i>Envoyer via WhatsApp</button>'
+                + '<button onclick="sendResetCodeWA(\\'' + _esc(encodeURIComponent(c.token)) + '\\')" class="text-xs px-3 py-1.5 rounded-lg font-semibold" style="background:#25d366; color:white;"><i class="fab fa-whatsapp mr-1"></i>Envoyer via WhatsApp</button>'
                 + '</div>';
             }).join('');
           }).catch(function() {});
@@ -3078,7 +3129,7 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
   // KPIs
   const totalOrders = orders.length
   const paidOrders = orders.filter(o => o.status === 'confirme' || o.status === 'en_livraison' || o.status === 'livre').length
-  const installedOrders = orders.filter(o => o.status === 'installed').length
+  const installedOrders = orders.filter(o => o.status === 'livre').length
   const pendingOnline = onlineOrders.filter(o => o.status === 'en_attente').length
   const estimatedCA = orders.reduce((sum, o) => sum + (o.total_price || 0), 0)
 
@@ -3236,8 +3287,8 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
                         {o.status !== 'livre' && o.status !== 'annule' && <option value="annule">⛔ Annuler</option>}
                       </select>
                       {/* Créer devis pour cette commande */}
-                      {(o.status === 'livre' || o.status === 'validation_terrain' || o.status === 'paid') && (
-                        <button onclick={`openDevisModal(${o.id}, '${o.client_name.replace(/'/g, "\\'")}', '${o.client_phone}')`} class="text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors whitespace-nowrap" style="background:rgba(245,158,11,0.12); color:#f59e0b; border:1px solid rgba(245,158,11,0.2);">
+                      {['confirme', 'en_livraison', 'livre'].includes(o.status) && (
+                        <button onclick={`openDevisModal(${Number(o.id)}, '${jsAttr(o.client_name)}', '${jsAttr(o.client_phone)}')`} class="text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors whitespace-nowrap" style="background:rgba(245,158,11,0.12); color:#f59e0b; border:1px solid rgba(245,158,11,0.2);">
                           <i class="fas fa-file-invoice-dollar mr-1"></i>Créer devis
                         </button>
                       )}
@@ -3325,16 +3376,17 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
                       </a>
                     )}
                     <select name={`status-${o.id}`} onchange={`updateOrderStatus(${o.id}, this.value)`} class="text-xs border px-2 py-1.5 rounded-lg font-medium cursor-pointer" style="background:rgba(59,130,246,0.1); border-color:rgba(59,130,246,0.25); color:#60a5fa;">
-                      <option value="validation_terrain" selected={o.status === 'validation_terrain'}>Validation terrain</option>
-                      <option value="validated" selected={o.status === 'validated'}>Validée</option>
-                      <option value="devis_en_attente" selected={o.status === 'devis_en_attente'}>Devis en attente</option>
-                      <option value="devis_valide" selected={o.status === 'devis_valide'}>Devis validé</option>
-                      <option value="installing" selected={o.status === 'installing'}>En installation</option>
-                      <option value="installed" selected={o.status === 'installed'}>Installée</option>
-                      <option value="cancelled" selected={o.status === 'cancelled'}>Annulée</option>
+                      <option value={o.status} selected>
+                        {({ en_attente:'⏳ En attente', contacte:'💬 Client contacté', confirme:'✅ Confirmée', en_livraison:'🚚 En livraison', livre:'🏠 Livrée & Installée', annule:'❌ Annulée' } as Record<string,string>)[o.status] || o.status}
+                      </option>
+                      {o.status === 'en_attente' && <option value="contacte">→ Marquer contacté</option>}
+                      {o.status === 'contacte' && <option value="confirme">→ Marquer confirmée</option>}
+                      {o.status === 'confirme' && <option value="en_livraison">→ Envoyer en livraison</option>}
+                      {o.status === 'en_livraison' && <option value="livre">→ Marquer livrée & installée</option>}
+                      {o.status !== 'livre' && o.status !== 'annule' && <option value="annule">⛔ Annuler</option>}
                     </select>
-                    {(o.status === 'validated' || o.status === 'validation_terrain') && (
-                      <button onclick={`openDevisModal(${o.id}, '${o.client_name.replace(/'/g, "\\'")}', '${o.client_phone}')`} class="text-xs px-2.5 py-1.5 rounded-lg font-medium whitespace-nowrap" style="background:rgba(245,158,11,0.12); color:#f59e0b; border:1px solid rgba(245,158,11,0.2);">
+                    {['confirme', 'en_livraison', 'livre'].includes(o.status) && (
+                      <button onclick={`openDevisModal(${Number(o.id)}, '${jsAttr(o.client_name)}', '${jsAttr(o.client_phone)}')`} class="text-xs px-2.5 py-1.5 rounded-lg font-medium whitespace-nowrap" style="background:rgba(245,158,11,0.12); color:#f59e0b; border:1px solid rgba(245,158,11,0.2);">
                         <i class="fas fa-file-invoice-dollar mr-1"></i>Devis
                       </button>
                     )}
@@ -3429,7 +3481,7 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
         { label: "Commandes en ligne", val: onlineOrders.length, icon: "fa-shopping-cart", bg: "rgba(52,211,153,0.1)", border: "rgba(52,211,153,0.2)", iconColor: "text-green-400" },
         { label: "Commandes terrain", val: terrainOrders.length, icon: "fa-map-marked-alt", bg: "rgba(59,130,246,0.1)", border: "rgba(59,130,246,0.2)", iconColor: "text-blue-400" },
         { label: "RDV en attente", val: pendingAppointments.length, icon: "fa-hourglass-half", bg: "rgba(234,179,8,0.1)", border: "rgba(234,179,8,0.2)", iconColor: "text-yellow-400" },
-        { label: "Installations faites", val: orders.filter(o => o.status === 'installed').length, icon: "fa-check-circle", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.2)", iconColor: "text-green-400" }
+        { label: "Installations faites", val: orders.filter(o => o.status === 'livre').length, icon: "fa-check-circle", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.2)", iconColor: "text-green-400" }
       ].map(s => (
         <div class="rounded-xl p-4 text-center card-shadow" style={`background:${s.bg}; border:1px solid ${s.border};`}>
           <i class={`fas ${s.icon} ${s.iconColor} text-xl mb-2`}></i>
@@ -3522,8 +3574,9 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
       </div>
     </div>
 
-    <script id="appointments-data-cmd" type="application/json" dangerouslySetInnerHTML={{ __html: JSON.stringify(appointments) }} />
+    <script id="appointments-data-cmd" type="application/json" dangerouslySetInnerHTML={{ __html: jsonForScript(appointments) }} />
     <script dangerouslySetInnerHTML={{ __html: `
+      ${CLIENT_ESC_HELPER}
       const appointmentsDataCmd = JSON.parse(document.getElementById('appointments-data-cmd').textContent || '[]');
       let currentAppointmentCmd = null;
 
@@ -3648,11 +3701,11 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
         modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;';
         modal.innerHTML = '<div style="background:#1e293b;border-radius:16px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;border:1px solid rgba(59,130,246,0.2);">'
           + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
-          + '<h3 style="font-size:16px;font-weight:700;color:white;">Créer un devis — Commande #' + orderId + '</h3>'
+          + '<h3 style="font-size:16px;font-weight:700;color:white;">Créer un devis — Commande #' + _esc(orderId) + '</h3>'
           + '<button onclick="document.getElementById(\'devis-create-modal\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8;">&times;</button></div>'
-          + '<p style="font-size:12px;color:#94a3b8;margin-bottom:16px;">Client: ' + clientName + ' (' + clientPhone + ')</p>'
+          + '<p style="font-size:12px;color:#94a3b8;margin-bottom:16px;">Client: ' + _esc(clientName) + ' (' + _esc(clientPhone) + ')</p>'
           + '<form method="POST" action="/api/admin/order/create-devis">'
-          + '<input type="hidden" name="order_id" value="' + orderId + '">'
+          + '<input type="hidden" name="order_id" value="' + _esc(orderId) + '">'
           + '<div style="margin-bottom:12px;"><label style="font-size:12px;font-weight:600;color:#cbd5e1;display:block;margin-bottom:4px;">Titre du devis</label>'
           + '<input type="text" name="title" value="Devis installation climatiseur" required style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid rgba(59,130,246,0.25);background:rgba(15,23,42,0.6);color:white;font-size:13px;"></div>'
           + '<div style="margin-bottom:12px;"><label style="font-size:12px;font-weight:600;color:#cbd5e1;display:block;margin-bottom:4px;">Description</label>'
@@ -4032,9 +4085,11 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
                 <div class="font-semibold text-red-300 text-sm">Déconnexion forcée</div>
                 <div class="text-xs text-gray-400 mt-0.5">Invalider la session admin en cours</div>
               </div>
-              <a href="/api/admin/logout" class="text-xs px-4 py-2 rounded-xl font-semibold whitespace-nowrap flex-shrink-0 text-center" style="background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3);">
-                <i class="fas fa-sign-out-alt mr-1"></i>Déconnecter
-              </a>
+              <form method="post" action="/api/admin/logout" class="flex-shrink-0">
+                <button type="submit" class="text-xs px-4 py-2 rounded-xl font-semibold whitespace-nowrap text-center" style="background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3);">
+                  <i class="fas fa-sign-out-alt mr-1"></i>Déconnecter
+                </button>
+              </form>
             </div>
           </div>
         </div>
@@ -4044,25 +4099,27 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
 
     <script dangerouslySetInnerHTML={{ __html: `
       function confirmReset() {
-        if (confirm('ATTENTION : Cette action va supprimer toutes les données (RDV, commandes, clients, avis, produits).\\nVoulez-vous continuer ?')) {
-          if (confirm('Dernière confirmation : Supprimer définitivement toutes les données ?')) {
-            fetch('/api/admin/reset-db', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ confirm: 'REINITIALISER' })
-            })
-            .then(r => r.json())
-            .then(data => {
-              if (data.success) {
-                showToast(data.message || 'Base de données réinitialisée.', 'success');
-                setTimeout(() => window.location.reload(), 1500);
-              } else {
-                showToast(data.error || 'Erreur lors de la réinitialisation.', 'error');
-              }
-            })
-            .catch(() => showToast('Erreur réseau.', 'error'));
+        if (!confirm('ATTENTION : Cette action va supprimer toutes les données (RDV, commandes, clients, avis, produits).\\nVoulez-vous continuer ?')) return;
+        if (!confirm('Dernière confirmation : Supprimer définitivement toutes les données ?')) return;
+        // Le serveur exige le mot de passe admin : le cookie de session seul ne
+        // doit pas suffire à vider la base (action irréversible).
+        var pwd = prompt('Saisissez le mot de passe admin pour confirmer la réinitialisation :');
+        if (!pwd) return;
+        fetch('/api/admin/reset-db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ confirm: 'REINITIALISER', password: pwd })
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            showToast(data.message || 'Base de données réinitialisée.', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+          } else {
+            showToast(data.error || 'Erreur lors de la réinitialisation.', 'error');
           }
-        }
+        })
+        .catch(() => showToast('Erreur réseau.', 'error'));
       }
     ` }} />
   </AdminLayout>
@@ -4766,7 +4823,7 @@ export const AdminPaiementsPage = ({ payments = [], stats }: { payments: any[]; 
 // ============================================================
 
 export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [] }: { contracts: any[]; requests: any[]; visits: any[] }) => {
-  const activeContracts = contracts.filter((c: any) => c.status === 'active').length
+  const activeContracts = contracts.filter((c: any) => c.status === 'actif').length
   const totalRequests = requests.length
   const pendingRequests = requests.filter((r: any) => r.status === 'pending').length
   const totalVisits = visits.length
@@ -4822,7 +4879,7 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                           </div>
                         </div>
                       </div>
-                      <button type="button" class="text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex-shrink-0" style="background:rgba(52,211,153,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.3);" onclick={`openValidationModal(${v.id}, '${(v.client_name || '').replace(/'/g, "\\'")}', '${v.visit_date}', ${v.contract_id || 0})`}>
+                      <button type="button" class="text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex-shrink-0" style="background:rgba(52,211,153,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.3);" onclick={`openValidationModal(${Number(v.id)}, '${jsAttr(v.client_name)}', '${jsAttr(v.visit_date)}', ${Number(v.contract_id) || 0})`}>
                         <i class="fas fa-check mr-1"></i>Valider
                       </button>
                     </div>
@@ -4986,7 +5043,7 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                                           {isDue ? (dLeft === 0 ? "Aujourd'hui" : `${Math.abs(dLeft)}j retard`) : `J-${dLeft}`}
                                         </span>
                                         {isDue && (
-                                          <button type="button" class="text-xs font-bold px-2 py-1 rounded-lg" style="background:rgba(52,211,153,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.3);" onclick={`openValidationModal(${v.id}, '${(v.client_name || c.client_name || '').replace(/'/g, "\\'")}', '${v.visit_date}', ${c.id})`}>
+                                          <button type="button" class="text-xs font-bold px-2 py-1 rounded-lg" style="background:rgba(52,211,153,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.3);" onclick={`openValidationModal(${Number(v.id)}, '${jsAttr(v.client_name || c.client_name)}', '${jsAttr(v.visit_date)}', ${Number(c.id)})`}>
                                             <i class="fas fa-check mr-1"></i>Valider
                                           </button>
                                         )}
@@ -5103,7 +5160,7 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                       <td class="px-5 py-3">
                         {(v.status === 'planifiee' || v.status === 'confirmee') && (
                           <div class="flex gap-1">
-                            <button type="button" class="p-2 rounded-lg hover:bg-green-500/20 transition-colors" title="Valider l'entretien" onclick={`openValidationModal(${v.id}, '${(v.client_name || '').replace(/'/g, "\\'")}', '${v.visit_date}', ${v.contract_id || 0})`}>
+                            <button type="button" class="p-2 rounded-lg hover:bg-green-500/20 transition-colors" title="Valider l'entretien" onclick={`openValidationModal(${Number(v.id)}, '${jsAttr(v.client_name)}', '${jsAttr(v.visit_date)}', ${Number(v.contract_id) || 0})`}>
                               <i class="fas fa-check-circle text-sm" style="color:#34d399;"></i>
                             </button>
                             <form method="post" action="/admin/maintenance/update-visit" style="display:inline;">
@@ -5258,12 +5315,13 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
     </div>
 
     <script dangerouslySetInnerHTML={{ __html: `
+      ${CLIENT_ESC_HELPER}
       function openValidationModal(visitId, clientName, visitDate, contractId) {
         document.getElementById('modal-visit-id').value = visitId;
         var d = visitDate ? new Date(visitDate).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' }) : '—';
-        document.getElementById('modal-visit-info').innerHTML = 
-          '<div class="text-sm text-white font-semibold">' + (clientName || 'Client') + '</div>' +
-          '<div class="text-xs" style="color:#94a3b8;">Visite #' + visitId + ' · Prévue le ' + d + (contractId ? ' · Contrat #' + contractId : '') + '</div>';
+        document.getElementById('modal-visit-info').innerHTML =
+          '<div class="text-sm text-white font-semibold">' + _esc(clientName || 'Client') + '</div>' +
+          '<div class="text-xs" style="color:#94a3b8;">Visite #' + _esc(visitId) + ' · Prévue le ' + _esc(d) + (contractId ? ' · Contrat #' + _esc(contractId) : '') + '</div>';
         document.getElementById('validation-modal').classList.remove('hidden');
       }
       function closeValidationModal() {
@@ -5418,7 +5476,7 @@ const categoryLabels: Record<string, string> = {
   chambre_froide: 'Chambre froide',
   maintenance: 'Maintenance',
   commercial: 'Commercial',
-  residentiel: 'R\u00e9sidentiel'
+  residentiel: 'Résidentiel'
 }
 
 export const AdminRealisationsPage = ({ realisations = [], success, error }: { realisations: any[]; success?: string | null; error?: string | null }) => {
@@ -5428,14 +5486,14 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
   return (
   <AdminLayout activePage="realisations">
     <div class="mb-6">
-      <h2 class="text-xl font-bold text-white">Gestion des r\u00e9alisations</h2>
-      <p class="text-sm text-gray-400 mt-1">Ajoutez et g\u00e9rez vos projets termin\u00e9s visibles sur le site</p>
+      <h2 class="text-xl font-bold text-white">Gestion des réalisations</h2>
+      <p class="text-sm text-gray-400 mt-1">Ajoutez et gérez vos projets terminés visibles sur le site</p>
     </div>
 
     {success && (
       <div class="mb-4 p-3 rounded-lg text-sm font-medium" style="background:rgba(22,163,74,0.15); color:#22c55e; border:1px solid rgba(22,163,74,0.3);">
         <i class="fas fa-check-circle mr-2"></i>
-        {success === 'added' ? 'R\u00e9alisation ajout\u00e9e avec succ\u00e8s' : success === 'updated' ? 'R\u00e9alisation mise \u00e0 jour' : success === 'deleted' ? 'R\u00e9alisation supprim\u00e9e' : 'Op\u00e9ration r\u00e9ussie'}
+        {success === 'added' ? 'Réalisation ajoutée avec succès' : success === 'updated' ? 'Réalisation mise à jour' : success === 'deleted' ? 'Réalisation supprimée' : 'Opération réussie'}
       </div>
     )}
     {error && (
@@ -5470,7 +5528,7 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
       <div class="p-5" style="border-bottom:1px solid rgba(16,185,129,0.15);">
         <h3 class="font-semibold text-white flex items-center space-x-2">
           <i class="fas fa-plus-circle text-green-400"></i>
-          <span>Ajouter une r\u00e9alisation</span>
+          <span>Ajouter une réalisation</span>
         </h3>
       </div>
       <form method="post" action="/api/admin/realisations/add" class="p-5 space-y-4">
@@ -5480,20 +5538,20 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
             <input type="text" name="title" required placeholder="Ex: Installation Split 18000 BTU" class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,163,184,0.2);" />
           </div>
           <div>
-            <label class="block text-xs text-gray-400 mb-1 font-semibold">Cat\u00e9gorie</label>
+            <label class="block text-xs text-gray-400 mb-1 font-semibold">Catégorie</label>
             <select name="category" class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,163,184,0.2);">
               <option value="climatisation">Climatisation</option>
               <option value="ventilation">Ventilation</option>
               <option value="chambre_froide">Chambre froide</option>
               <option value="maintenance">Maintenance</option>
               <option value="commercial">Commercial</option>
-              <option value="residentiel">R\u00e9sidentiel</option>
+              <option value="residentiel">Résidentiel</option>
             </select>
           </div>
         </div>
         <div>
           <label class="block text-xs text-gray-400 mb-1 font-semibold">Description</label>
-          <textarea name="description" rows={3} placeholder="D\u00e9crivez le projet r\u00e9alis\u00e9..." class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,163,184,0.2); resize:vertical;"></textarea>
+          <textarea name="description" rows={3} placeholder="Décrivez le projet réalisé..." class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,163,184,0.2); resize:vertical;"></textarea>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -5505,7 +5563,7 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
             <input type="text" name="quartier" placeholder="Ex: Ouaga 2000" class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,163,184,0.2);" />
           </div>
           <div>
-            <label class="block text-xs text-gray-400 mb-1 font-semibold">Date r\u00e9alisation</label>
+            <label class="block text-xs text-gray-400 mb-1 font-semibold">Date réalisation</label>
             <input type="date" name="date_realisation" class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,163,184,0.2);" />
           </div>
         </div>
@@ -5522,7 +5580,7 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
           </div>
         </div>
         <button type="submit" class="px-6 py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:scale-105" style="background:linear-gradient(135deg,#10b981,#059669);">
-          <i class="fas fa-plus mr-2"></i>Ajouter la r\u00e9alisation
+          <i class="fas fa-plus mr-2"></i>Ajouter la réalisation
         </button>
       </form>
     </div>
@@ -5532,13 +5590,13 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
       <div class="p-5" style="border-bottom:1px solid rgba(148,163,184,0.08);">
         <h3 class="font-semibold text-white flex items-center space-x-2">
           <i class="fas fa-list text-blue-400"></i>
-          <span>Toutes les r\u00e9alisations ({realisations.length})</span>
+          <span>Toutes les réalisations ({realisations.length})</span>
         </h3>
       </div>
       {realisations.length === 0 ? (
         <div class="p-8 text-center">
           <i class="fas fa-images text-3xl text-gray-600 mb-3"></i>
-          <p class="text-gray-400">Aucune r\u00e9alisation pour le moment</p>
+          <p class="text-gray-400">Aucune réalisation pour le moment</p>
         </div>
       ) : (
         <div class="divide-y divide-gray-700/30">
@@ -5549,7 +5607,7 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
                   <div class="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
                     <h4 class="font-bold text-white text-sm">{r.title}</h4>
                     {r.is_featured ? <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:rgba(251,191,36,0.15); color:#fbbf24;"><i class="fas fa-star mr-1"></i>Vedette</span> : null}
-                    {!r.is_visible ? <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:rgba(239,68,68,0.15); color:#f87171;"><i class="fas fa-eye-slash mr-1"></i>Masqu\u00e9</span> : null}
+                    {!r.is_visible ? <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:rgba(239,68,68,0.15); color:#f87171;"><i class="fas fa-eye-slash mr-1"></i>Masqué</span> : null}
                     <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:rgba(59,130,246,0.15); color:#60a5fa;">{categoryLabels[r.category] || r.category}</span>
                   </div>
                   {r.description && <p class="text-xs text-gray-400 mb-2 line-clamp-2">{r.description}</p>}
@@ -5567,14 +5625,14 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
                 <button onclick={`document.getElementById('edit-form-${r.id}').classList.toggle('hidden')`} class="text-xs px-3 py-1.5 rounded-lg font-medium" style="background:rgba(59,130,246,0.1); color:#60a5fa; border:1px solid rgba(59,130,246,0.2);">
                   <i class="fas fa-edit mr-1"></i>Modifier
                 </button>
-                <form method="post" action="/api/admin/realisations/delete" style="display:inline" onsubmit="return confirm('Supprimer cette r\u00e9alisation ?')">
+                <form method="post" action="/api/admin/realisations/delete" style="display:inline" onsubmit="return confirm('Supprimer cette réalisation ?')">
                   <input type="hidden" name="id" value={String(r.id)} />
                   <button type="submit" class="text-xs px-3 py-1.5 rounded-lg font-medium" style="background:rgba(239,68,68,0.1); color:#f87171; border:1px solid rgba(239,68,68,0.2);">
                     <i class="fas fa-trash mr-1"></i>Supprimer
                   </button>
                 </form>
               </div>
-              {/* Formulaire d'\u00e9dition inline (cach\u00e9) */}
+              {/* Formulaire d'édition inline (caché) */}
               <form id={`edit-form-${r.id}`} method="post" action="/api/admin/realisations/update" class="hidden mt-4 p-4 rounded-xl space-y-3" style="background:rgba(15,23,42,0.5); border:1px solid rgba(148,163,184,0.1);">
                 <input type="hidden" name="id" value={String(r.id)} />
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">

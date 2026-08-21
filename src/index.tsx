@@ -19,9 +19,9 @@ import { appointments, reviews, orders, clients, setMaintenanceDueCount } from '
 import type { Order } from './data/store'
 import { products } from './data/products'
 import { quartiers } from './data/quartiers'
-import { createAppointment, updateAppointmentStatus, createOrder, createReview, getProducts, getReviews, getQuartiers, createClient, getClients, getAppointments, getOrders, deleteProduct, deleteClient, deleteOrder, getClientById, getProductById } from './db'
+import { createAppointment, updateAppointmentStatus, createOrder, createReview, getProducts, getReviews, getQuartiers, createClient, getClients, getAppointments, getAppointmentById, getOrders, deleteProduct, deleteClient, deleteOrder, getClientById, getProductById } from './db'
 import type { HonoEnv } from './types'
-import { escapeHtml, isValidEmail, isValidPhone, normalizePhone, validateImageMagicBytes } from './utils/helpers'
+import { escapeHtml, sanitizeText, isValidEmail, isValidPhone, normalizePhone, validateImageMagicBytes } from './utils/helpers'
 import { sendSmsWithLog, notifyAdmin, logActivity, logSecurityEvent, sendTelegramMessage, ensureActivityLog, ensureNotificationsTable } from './utils/notifications'
 
 // App Hono — types et utilitaires importés depuis ./types et ./utils/
@@ -157,6 +157,86 @@ function rateLimitCleanup() {
   }
 }
 
+// Rate limit persistant, partagé par tous les isolates (table rate_limits,
+// migration 0038). Le compteur mémoire ci-dessus vit dans un seul isolate
+// Cloudflare : un attaquant qui retente sa chance tombe sur un autre isolate et
+// repart d'un compteur à zéro, donc les 5 tentatives de login admin ne
+// plafonnaient rien. À réserver aux endpoints sensibles (une écriture D1 par
+// tentative) ; le reste du site garde le compteur mémoire.
+// En cas d'échec D1, on retombe sur le compteur mémoire plutôt que d'ouvrir grand.
+async function rateLimitD1(db: any, key: string, maxRequests: number, windowMs: number): Promise<{ allowed: boolean; remaining: number }> {
+  if (!db) return rateLimit(key, maxRequests, windowMs)
+  const now = Date.now()
+  const nowIso = new Date(now).toISOString()
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS rate_limits (
+      key TEXT PRIMARY KEY,
+      count INTEGER NOT NULL DEFAULT 0,
+      window_start INTEGER NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`).run()
+    const row = await db.prepare('SELECT count, window_start FROM rate_limits WHERE key = ?').bind(key).first() as any
+    const windowStart = Number(row?.window_start ?? 0)
+    const count = Number(row?.count ?? 0)
+    if (!row || !isFinite(windowStart) || now - windowStart > windowMs) {
+      await db.prepare('INSERT OR REPLACE INTO rate_limits (key, count, window_start, updated_at) VALUES (?, 1, ?, ?)').bind(key, now, nowIso).run()
+      // Purge des fenêtres d'il y a plus de 24 h, tant qu'on écrit déjà
+      try { await db.prepare('DELETE FROM rate_limits WHERE window_start < ?').bind(now - 86400000).run() } catch(_) {}
+      return { allowed: true, remaining: maxRequests - 1 }
+    }
+    if (count >= maxRequests) return { allowed: false, remaining: 0 }
+    await db.prepare('UPDATE rate_limits SET count = count + 1, updated_at = ? WHERE key = ?').bind(nowIso, key).run()
+    return { allowed: true, remaining: Math.max(0, maxRequests - count - 1) }
+  } catch (e) {
+    console.error('[SECURITY] rateLimitD1 indisponible, repli mémoire:', e)
+    return rateLimit(key, maxRequests, windowMs)
+  }
+}
+
+// Remet à zéro un compteur persistant (appelé après une authentification réussie
+// pour ne pas pénaliser un admin qui s'est trompé une fois).
+async function rateLimitD1Reset(db: any, key: string): Promise<void> {
+  if (!db) return
+  try { await db.prepare('DELETE FROM rate_limits WHERE key = ?').bind(key).run() } catch(_) {}
+}
+
+// Journal des actions admin sensibles (export de sauvegarde, réinitialisation de
+// la base, changement d'identifiants). security_log ne conserve pas le
+// user-agent, utile pour reconstituer une compromission.
+async function logAdminAudit(db: any, data: { action: string; detail?: string; ip?: string; userAgent?: string }): Promise<void> {
+  if (!db) return
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS admin_audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      action TEXT NOT NULL,
+      detail TEXT,
+      ip TEXT,
+      user_agent TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`).run()
+    await db.prepare('INSERT INTO admin_audit_log (action, detail, ip, user_agent) VALUES (?, ?, ?, ?)')
+      .bind(data.action, data.detail || null, data.ip || null, (data.userAgent || '').slice(0, 300) || null).run()
+  } catch(_) {}
+}
+
+// Vérifie le mot de passe admin courant (D1, sinon amorçage ADMIN_INITIAL_PASSWORD).
+// Sert à redemander le mot de passe pour les actions destructrices : le cookie de
+// session seul ne doit pas suffire.
+async function verifyAdminPassword(env: any, password: string): Promise<boolean> {
+  if (!password || typeof password !== 'string') return false
+  let hash = ''
+  const db = env?.DB
+  if (db) {
+    try {
+      const row = await db.prepare('SELECT value FROM admin_settings WHERE key = ?').bind('admin_password_hash').first() as any
+      if (row?.value) hash = row.value
+    } catch(_) { /* table absente */ }
+  }
+  if (!hash && env?.ADMIN_INITIAL_PASSWORD) hash = await hashPassword(env.ADMIN_INITIAL_PASSWORD)
+  if (!hash) return false
+  return await verifyPassword(password, hash)
+}
+
 // ADMIN AUTH HELPERS (must be defined before routes that use them)
 // ============================================================
 
@@ -210,18 +290,83 @@ async function verifyToken(token: string, secret: string): Promise<boolean> {
   return diff === 0
 }
 
+// Comparaison de chaînes à durée constante (contre les timing attacks sur un secret).
+// La longueur reste observable, mais le contenu ne fuit pas octet par octet.
+function timingSafeEqualStr(a: string, b: string): boolean {
+  if (typeof a !== 'string' || typeof b !== 'string') return false
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
+}
+
+// ─── Révocation des sessions admin ──────────────────────────────────────────
+// Le cookie admin est stateless (HMAC seul), donc ni la déconnexion ni un
+// changement de mot de passe n'invalidaient les cookies déjà émis : un cookie
+// volé restait valable 24 h. On versionne les sessions avec une « epoch »
+// stockée en D1 (admin_settings.admin_token_epoch, créée par la migration 0038).
+// Le payload du cookie devient admin_<epoch>_<timestamp> et adminAuth rejette
+// tout cookie dont l'epoch ne correspond plus. Incrémenter l'epoch déconnecte
+// donc toutes les sessions d'un coup.
+const ADMIN_EPOCH_KEY = 'admin_token_epoch'
+
+async function getAdminTokenEpoch(db: any): Promise<string> {
+  if (!db) return '1'
+  try {
+    const row = await db.prepare('SELECT value FROM admin_settings WHERE key = ?').bind(ADMIN_EPOCH_KEY).first() as any
+    const v = parseInt(row?.value ?? '', 10)
+    return isNaN(v) ? '1' : String(v)
+  } catch { return '1' }
+}
+
+async function bumpAdminTokenEpoch(db: any): Promise<void> {
+  if (!db) return
+  try {
+    await db.prepare('CREATE TABLE IF NOT EXISTS admin_settings (key TEXT PRIMARY KEY, value TEXT, updated_at TEXT)').run()
+    const current = parseInt(await getAdminTokenEpoch(db), 10)
+    await db.prepare('INSERT OR REPLACE INTO admin_settings (key, value, updated_at) VALUES (?, ?, ?)')
+      .bind(ADMIN_EPOCH_KEY, String(current + 1), new Date().toISOString()).run()
+  } catch (e) { console.error('[SECURITY] bumpAdminTokenEpoch a échoué:', e) }
+}
+
+// Extrait l'epoch d'un token dont le payload vaut admin_<epoch>_<timestamp>.
+// Retourne null pour l'ancien format admin_<timestamp> : ces sessions sont
+// rejetées, l'admin se reconnecte une fois.
+function adminPayloadEpoch(token: string): string | null {
+  const parts = token.split('.')
+  if (parts.length < 2) return null
+  const payload = parts.slice(0, -1).join('.')
+  const m = payload.match(/^admin_(\d+)_(\d+)$/)
+  return m ? m[1] : null
+}
+
 // CSRF protection: verify Origin/Referer header on all state-changing requests
-const ALLOWED_ORIGINS = [SITE_URL, 'http://localhost', 'http://127.0.0.1']
+const ALLOWED_ORIGINS = [SITE_URL]
+// Hôtes de développement. Ils ne sont acceptés que si la requête arrive
+// elle-même sur un hôte local (npm run dev / wrangler pages dev) : en production
+// le worker répond sur pages.dev, donc une origine http://localhost est refusée.
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
+
 function csrfCheck(c: any): boolean {
   if (c.req.method === 'GET' || c.req.method === 'HEAD') return true
+  let reqUrl: URL
+  try { reqUrl = new URL(c.req.url) } catch { return false }
+  const localRequest = LOCAL_HOSTNAMES.has(reqUrl.hostname)
+  // Comparaison exacte de l'origine (scheme + host + port). L'ancien
+  // origin.startsWith(o) acceptait https://maasga-website.pages.dev.attaquant.com,
+  // ce qui vidait la protection CSRF de son intérêt.
+  const isAllowed = (value: string): boolean => {
+    let u: URL
+    try { u = new URL(value) } catch { return false }
+    if (u.origin === reqUrl.origin) return true          // même origine : prod, preview Pages, domaine custom
+    if (ALLOWED_ORIGINS.includes(u.origin)) return true
+    if (localRequest && LOCAL_HOSTNAMES.has(u.hostname)) return true
+    return false
+  }
   const origin = c.req.header('Origin') || ''
+  if (origin) return isAllowed(origin)
   const referer = c.req.header('Referer') || ''
-  if (origin) {
-    return ALLOWED_ORIGINS.some(o => origin.startsWith(o))
-  }
-  if (referer) {
-    return ALLOWED_ORIGINS.some(o => referer.startsWith(o))
-  }
+  if (referer) return isAllowed(referer)
   // If neither Origin nor Referer is present, block (safer default)
   return false
 }
@@ -257,9 +402,19 @@ const adminAuth = async (c: any, next: any) => {
   const cookie = c.req.header('Cookie') || ''
   const match = cookie.match(/maasga_admin=([^;]+)/)
   if (match) {
-    const valid = await verifyToken(decodeURIComponent(match[1]), secret)
+    const rawToken = decodeURIComponent(match[1])
+    const valid = await verifyToken(rawToken, secret)
     if (valid) {
-      return next()
+      // Signature valide : vérifier en plus que la session n'a pas été révoquée
+      // (déconnexion, changement de mot de passe, reset). Voir bumpAdminTokenEpoch.
+      const tokenEpoch = adminPayloadEpoch(rawToken)
+      const currentEpoch = await getAdminTokenEpoch(c.env?.DB)
+      if (tokenEpoch !== null && tokenEpoch === currentEpoch) {
+        return next()
+      }
+      const revokedIp = c.req.header('cf-connecting-ip') || 'unknown'
+      logSecurityEvent(c.env?.DB, { event: 'admin_auth_revoked_session', severity: 'warn', ip: revokedIp, details: `Cookie epoch ${tokenEpoch ?? 'legacy'} != ${currentEpoch}` })
+      return c.html(AdminLoginPage({ error: 'session_expired' }))
     }
     // Invalid token — potential tampering
     const adminIp = c.req.header('cf-connecting-ip') || 'unknown'
@@ -563,7 +718,7 @@ async function ensureMaintenanceTables(db: any) {
       plan_price INTEGER NOT NULL DEFAULT 0,
       start_date TEXT NOT NULL,
       end_date TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','expired','cancelled')),
+      status TEXT NOT NULL DEFAULT 'en_attente' CHECK(status IN ('en_attente','contacte','actif','expire','annule')),
       total_visits INTEGER NOT NULL DEFAULT 0,
       completed_visits INTEGER NOT NULL DEFAULT 0,
       next_visit_date TEXT,
@@ -2379,7 +2534,7 @@ app.post('/api/stock-alert', async (c) => {
     return c.json({ ok: false, error: 'Service indisponible.' }, 500)
   }
 
-  const safePhone = escapeHtml(phone)
+  const safePhone = sanitizeText(phone, 20)
   try {
     await ensureStockAlerts(db)
     // Check if already registered
@@ -2453,12 +2608,12 @@ app.post('/api/maintenance/request', async (c) => {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         clientId,
-        escapeHtml(name),
-        escapeHtml(phone),
-        email ? escapeHtml(email) : null,
-        quartier ? escapeHtml(quartier) : null,
+        sanitizeText(name, 120),
+        sanitizeText(phone, 20),
+        email ? sanitizeText(email, 160) : null,
+        quartier ? sanitizeText(quartier, 120) : null,
         requestType,
-        description ? escapeHtml(description) : null,
+        description ? sanitizeText(description, 2000) : null,
         preferredDate || null,
         equipmentType || null,
         planType || null,
@@ -2493,8 +2648,8 @@ app.post('/api/maintenance/request', async (c) => {
            VALUES (?, ?, ?, ?, ?, ?, ?, 'en_attente', ?, 0, ?)`
         ).bind(
           clientId,
-          escapeHtml(name),
-          escapeHtml(phone),
+          sanitizeText(name, 120),
+          sanitizeText(phone, 20),
           planType,
           cfg.price,
           startDate,
@@ -2506,7 +2661,7 @@ app.post('/api/maintenance/request', async (c) => {
         // Retrieve the contract ID just inserted
         const newContract = await db.prepare(
           'SELECT id FROM maintenance_contracts WHERE client_phone = ? AND plan_type = ? AND start_date = ? ORDER BY id DESC LIMIT 1'
-        ).bind(escapeHtml(phone), planType, startDate).first() as any
+        ).bind(sanitizeText(phone, 20), planType, startDate).first() as any
         const contractId = newContract?.id || null
 
         // Visits will be scheduled when admin validates the contract
@@ -2953,7 +3108,7 @@ app.get('/api/maintenance/invoice/:id', async (c) => {
         </div>
         <div class="detail-card">
           <div class="label">Statut du contrat</div>
-          <div class="value status" style="${contract.status === 'active' ? 'background:rgba(22,163,74,0.1);color:#16a34a;' : 'background:rgba(148,163,184,0.1);color:#94a3b8;'}">${statusLabels[contract.status] || contract.status}</div>
+          <div class="value status" style="${contract.status === 'actif' ? 'background:rgba(22,163,74,0.1);color:#16a34a;' : 'background:rgba(148,163,184,0.1);color:#94a3b8;'}">${statusLabels[contract.status] || contract.status}</div>
         </div>
         <div class="detail-card">
           <div class="label">Période de couverture</div>
@@ -3046,13 +3201,13 @@ app.post('/api/order/create', async (c) => {
       appointment_id: body['appointment_id'] ? parseInt(str(body['appointment_id'])) : null,
       product_id: body['product_id'] ? parseInt(str(body['product_id'])) : null,
       quantity: body['quantity'] ? parseInt(str(body['quantity'])) : 1,
-      client_name: escapeHtml(str(body['client_name']).trim()),
-      client_phone: escapeHtml(str(body['client_phone']).trim()),
-      client_email: str(body['client_email']).trim() ? escapeHtml(str(body['client_email']).trim()) : null,
-      quartier: (str(body['quartier']) || str(body['client_address'])).trim() ? escapeHtml((str(body['quartier']) || str(body['client_address'])).trim()) : null,
+      client_name: sanitizeText(str(body['client_name']).trim(), 120),
+      client_phone: sanitizeText(str(body['client_phone']).trim(), 20),
+      client_email: str(body['client_email']).trim() ? sanitizeText(str(body['client_email']).trim(), 160) : null,
+      quartier: (str(body['quartier']) || str(body['client_address'])).trim() ? sanitizeText((str(body['quartier']) || str(body['client_address'])).trim(), 200) : null,
       type: normalizedType,
       status: 'en_attente' as const,
-      notes: str(body['notes']).trim() ? escapeHtml(str(body['notes']).trim()) : null,
+      notes: str(body['notes']).trim() ? sanitizeText(str(body['notes']).trim(), 2000) : null,
       total_price: body['total_price'] ? parseFloat(str(body['total_price'])) : 0,
       installation_price: body['installation_price'] ? parseFloat(str(body['installation_price'])) : 50000
     }
@@ -3083,8 +3238,21 @@ app.post('/api/order/create', async (c) => {
       }
     }
 
-    // Ajouter à mémoire locale (ID temporaire)
-    let orderId = Math.max(...orders.map(o => o.id), 0) + 1
+    // Écrire d'abord en D1 pour obtenir l'identifiant AUTOINCREMENT réel : le
+    // Math.max sur le cache mémoire produisait des id déjà pris en base (cache
+    // partiel, un par isolate), donc deux commandes pouvaient partager un numéro.
+    let orderId = 0
+    if (db) {
+      try {
+        const res: any = await createOrder(db, orderData)
+        orderId = Number(res?.meta?.last_row_id || 0)
+      } catch (error) {
+        console.error('Erreur sauvegarde D1 order:', error)
+        return c.json({ error: 'Enregistrement de la commande impossible. Réessayez.' }, 500)
+      }
+    }
+    if (!orderId) orderId = Math.max(...orders.map(o => o.id), 0) + 1
+
     const newOrder: Order = {
       id: orderId,
       ...orderData,
@@ -3092,19 +3260,7 @@ app.post('/api/order/create', async (c) => {
     }
     orders.push(newOrder)
 
-    // Sauvegarder en D1 si disponible — récupérer l'ID réel autoincrement
     if (db) {
-      try {
-        await createOrder(db, orderData)
-        // Récupérer l'ID autoincrement réel pour cohérence
-        const lastRow = await db.prepare('SELECT id FROM orders ORDER BY id DESC LIMIT 1').first() as any
-        if (lastRow?.id) {
-          newOrder.id = lastRow.id
-          orderId = lastRow.id
-        }
-      } catch (error) {
-        console.error('Erreur sauvegarde D1 order:', error)
-      }
       // Enregistrer/mettre à jour le client dans D1
       try {
         await createClient(db, {
@@ -3173,11 +3329,14 @@ app.post('/api/order/confirm-delivery', async (c) => {
 
   const order = await db.prepare('SELECT * FROM orders WHERE id = ? AND client_id = ?').bind(orderId, session.clientId).first() as any
   if (!order) return c.json({ error: 'Commande introuvable' }, 404)
-  if (order.status !== 'paid') return c.json({ error: 'Cette commande ne peut pas être confirmée comme livrée' }, 400)
+  if (order.status !== 'en_livraison') return c.json({ error: 'Cette commande ne peut pas être confirmée comme livrée' }, 400)
 
   const now = new Date().toISOString()
-  await db.prepare('UPDATE orders SET status = ?, delivered_at = ?, delivery_confirmed_by = ?, updated_at = ? WHERE id = ?')
-    .bind('livre', now, 'client', now, orderId).run()
+  // Pas de colonne delivery_confirmed_by : la table orders reconstruite par la
+  // migration 0036 ne la contient plus. L'information « confirmé par le client »
+  // est tracée dans notes + le journal d'activité.
+  await db.prepare("UPDATE orders SET status = ?, delivered_at = ?, notes = COALESCE(notes, '') || ?, updated_at = ? WHERE id = ?")
+    .bind('livre', now, ' | Réception confirmée par le client le ' + now, now, orderId).run()
 
   const memOrder = orders.find(o => o.id === orderId)
   if (memOrder) memOrder.status = 'livre' as any
@@ -3214,11 +3373,12 @@ app.post('/api/order/devis/validate', async (c) => {
   const now = new Date().toISOString()
   await db.prepare('UPDATE order_devis SET status = ?, validated_at = ?, updated_at = ? WHERE id = ?')
     .bind('validated', now, now, devisId).run()
+  // Devis accepté = transaction confirmée avec le client (statut 0036)
   await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?')
-    .bind('devis_valide', now, devis.order_id).run()
+    .bind('confirme', now, devis.order_id).run()
 
   const memOrder = orders.find(o => o.id === devis.order_id)
-  if (memOrder) memOrder.status = 'devis_valide' as any
+  if (memOrder) memOrder.status = 'confirme' as any
 
   await logActivity(db, {
     clientId: session.clientId,
@@ -3272,7 +3432,7 @@ app.post('/api/order/devis/refuse', async (c) => {
 
   const body = await c.req.json().catch(() => null)
   const devisId = parseInt((body as any)?.devis_id || '0')
-  const reason = escapeHtml(String((body as any)?.reason || '').trim())
+  const reason = sanitizeText((body as any)?.reason, 1000)
   if (!devisId) return c.json({ error: 'ID devis manquant' }, 400)
 
   const devis = await db.prepare('SELECT od.*, o.client_id FROM order_devis od JOIN orders o ON od.order_id = o.id WHERE od.id = ? AND o.client_id = ?').bind(devisId, session.clientId).first() as any
@@ -3282,11 +3442,9 @@ app.post('/api/order/devis/refuse', async (c) => {
   const now = new Date().toISOString()
   await db.prepare('UPDATE order_devis SET status = ?, refused_at = ?, client_response_notes = ?, updated_at = ? WHERE id = ?')
     .bind('refused', now, reason, now, devisId).run()
-  await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?')
-    .bind('devis_refuse', now, devis.order_id).run()
-
-  const memOrder = orders.find(o => o.id === devis.order_id)
-  if (memOrder) memOrder.status = 'devis_refuse' as any
+  // Refus de devis : le statut de la commande ne bouge pas — il n'existe plus de
+  // valeur « devis_refuse » depuis la migration 0036, c'est order_devis.status qui
+  // porte l'information. L'admin relance le client depuis la fiche commande.
 
   await logActivity(db, {
     clientId: session.clientId,
@@ -3327,44 +3485,13 @@ app.post('/api/order/devis/refuse', async (c) => {
   return c.json({ success: true })
 })
 
-// Client cancels just the installation
-app.post('/api/order/cancel-installation', async (c) => {
-  const db = c.env.DB
-  if (!db) return c.json({ error: 'Service indisponible' }, 503)
-
-  const sessionToken = getCookie(c, 'maasga_session') || ''
-  const session = sessionToken ? await getSession(c.env.DB, sessionToken) : null
-  if (!session) return c.json({ error: 'Non connecté' }, 401)
-
-  const body = await c.req.json().catch(() => null)
-  const orderId = parseInt((body as any)?.order_id || '0')
-  if (!orderId) return c.json({ error: 'ID commande manquant' }, 400)
-
-  const order = await db.prepare('SELECT * FROM orders WHERE id = ? AND client_id = ?').bind(orderId, session.clientId).first() as any
-  if (!order) return c.json({ error: 'Commande introuvable' }, 404)
-
-  const cancellableStatuses = ['validation_terrain', 'devis_en_attente', 'devis_valide', 'devis_refuse']
-  if (!cancellableStatuses.includes(order.status)) return c.json({ error: "L'installation ne peut pas être annulée à ce stade" }, 400)
-
-  const now = new Date().toISOString()
-  // Revert to 'livre' — the client keeps the product but cancels installation
-  await db.prepare("UPDATE orders SET status = ?, notes = COALESCE(notes, '') || ? , updated_at = ? WHERE id = ?")
-    .bind('livre', ' | Installation annulée par client le ' + now, now, orderId).run()
-
-  const memOrder = orders.find(o => o.id === orderId)
-  if (memOrder) memOrder.status = 'livre' as any
-
-  await logActivity(db, {
-    clientId: session.clientId,
-    clientPhone: order.client_phone,
-    action: `Installation annulée — Commande #${orderId}`,
-    category: 'order',
-    ip: c.req.header('cf-connecting-ip') || ''
-  })
-  await notifyAdmin(c.env, 'order', `Installation annulée par client — Commande #${orderId} — ${order.client_name}`)
-
-  return c.json({ success: true })
-})
+// Note : l'ancien endpoint POST /api/order/cancel-installation a été retiré.
+// Son garde-fou n'acceptait que validation_terrain / devis_en_attente /
+// devis_valide / devis_refuse, statuts supprimés par la migration 0036 : aucune
+// commande ne pouvait plus le franchir. Le flux simplifié ne distingue plus la
+// livraison de l'installation (statut unique 'livre'), donc « annuler seulement
+// l'installation » n'a plus de sens ; l'annulation complète passe par
+// /api/order/cancel-order.
 
 // Client cancels the entire order (refund request)
 app.post('/api/order/cancel-order', async (c) => {
@@ -3377,21 +3504,22 @@ app.post('/api/order/cancel-order', async (c) => {
 
   const body = await c.req.json().catch(() => null)
   const orderId = parseInt((body as any)?.order_id || '0')
-  const reason = escapeHtml(String((body as any)?.reason || '').trim())
+  const reason = sanitizeText((body as any)?.reason, 1000)
   if (!orderId) return c.json({ error: 'ID commande manquant' }, 400)
 
   const order = await db.prepare('SELECT * FROM orders WHERE id = ? AND client_id = ?').bind(orderId, session.clientId).first() as any
   if (!order) return c.json({ error: 'Commande introuvable' }, 404)
 
-  const cancellableStatuses = ['paid', 'livre', 'validation_terrain', 'devis_en_attente', 'devis_refuse']
+  // Statuts annulables — alignés sur le CHECK de la migration 0036
+  const cancellableStatuses = ['en_attente', 'contacte', 'confirme']
   if (!cancellableStatuses.includes(order.status)) return c.json({ error: 'Cette commande ne peut plus être annulée' }, 400)
 
   const now = new Date().toISOString()
   await db.prepare(`UPDATE orders SET status = ?, notes = COALESCE(notes, '') || ?, updated_at = ? WHERE id = ?`)
-    .bind('cancelled', ' | Annulée par client le ' + now + (reason ? ' — ' + reason : ''), now, orderId).run()
+    .bind('annule', ' | Annulée par client le ' + now + (reason ? ' — ' + reason : ''), now, orderId).run()
 
   const memOrder = orders.find(o => o.id === orderId)
-  if (memOrder) memOrder.status = 'cancelled' as any
+  if (memOrder) memOrder.status = 'annule' as any
 
   // Pas de paiement en ligne — rien à rembourser automatiquement
 
@@ -3477,18 +3605,18 @@ app.post('/api/admin/order/create-devis', adminAuth, async (c) => {
   const now = new Date().toISOString()
 
   // Parse new structured fields
-  const climatiseurNom = escapeHtml((body['climatiseur_nom'] as string || '').trim()) || null
+  const climatiseurNom = sanitizeText(body['climatiseur_nom'], 200) || null
   const climatiseurPrix = parseInt(body['climatiseur_prix'] as string || '0') || 0
   const mainOeuvrePrix = parseInt(body['main_oeuvre_prix'] as string || '50000') || 0
-  const motif = escapeHtml((body['motif'] as string || '').trim()) || null
-  const messageClient = escapeHtml((body['message_client'] as string || '').trim()) || null
+  const motif = sanitizeText(body['motif'], 500) || null
+  const messageClient = sanitizeText(body['message_client'], 2000) || null
 
   // Build fournitures JSON from dynamic d_acc_nom_N / d_acc_prix_N fields
   const fournitures: Array<{nom: string; prix: number}> = []
   for (let i = 1; i <= 20; i++) {
-    const nom = (body[`d_acc_nom_${i}`] as string || '').trim()
+    const nom = sanitizeText(body[`d_acc_nom_${i}`], 200)
     const prix = parseInt(body[`d_acc_prix_${i}`] as string || '0') || 0
-    if (nom) fournitures.push({ nom: escapeHtml(nom), prix })
+    if (nom) fournitures.push({ nom, prix })
   }
   const accTotal = fournitures.reduce((s, a) => s + a.prix, 0)
 
@@ -3519,11 +3647,12 @@ app.post('/api/admin/order/create-devis', adminAuth, async (c) => {
       now, now
     ).run()
 
-    // Update order status to devis_en_attente
+    // Devis envoyé au client : la commande passe à « contacte » (le suivi fin du
+    // devis vit dans order_devis.status — 'devis_en_attente' n'existe plus depuis 0036)
     await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?')
-      .bind('devis_en_attente', now, orderId).run()
+      .bind('contacte', now, orderId).run()
     const memOrder = orders.find(o => o.id === orderId)
-    if (memOrder) memOrder.status = 'devis_en_attente' as any
+    if (memOrder) memOrder.status = 'contacte' as any
 
     // Email notification if client has email
     if (order.client_email) {
@@ -3569,22 +3698,12 @@ app.post('/api/admin/order/create-devis', adminAuth, async (c) => {
   }
 })
 
-// Admin marks order for terrain validation
-app.post('/api/admin/order/terrain-validation', adminAuth, async (c) => {
-  const db = c.env.DB
-  if (!db) return c.redirect('/admin/commandes?error=DB indisponible')
-
-  const body = await c.req.parseBody()
-  const orderId = parseInt(body['order_id'] as string || '0')
-  if (!orderId) return c.redirect('/admin/commandes?error=ID manquant')
-
-  const now = new Date().toISOString()
-  await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').bind('validation_terrain', now, orderId).run()
-  const memOrder = orders.find(o => o.id === orderId)
-  if (memOrder) memOrder.status = 'validation_terrain' as any
-
-  return c.redirect('/admin/commandes?success=1')
-})
+// Note : l'ancien endpoint POST /api/admin/order/terrain-validation a été retiré.
+// Il écrivait orders.status = 'validation_terrain', valeur supprimée par la
+// migration 0036 (le CHECK n'accepte plus que en_attente/contacte/confirme/
+// en_livraison/livre/annule), donc chaque appel violait la contrainte. Aucune vue
+// admin ne le référençait : l'étape « validation terrain » est couverte par le
+// statut 'contacte' et par les RDV.
 
 // ============================================================
 // ADMIN ROUTES
@@ -3600,14 +3719,14 @@ const refreshAdminCache = async (c: any, next: any) => {
       const dbAppts = await getAppointments(db)
       dbAppts.forEach((a: any) => appointments.push({
         id: a.id,
-        name: escapeHtml(a.name || ''),
-        phone: escapeHtml(a.phone || ''),
-        quartier: escapeHtml(a.quartier || ''),
+        name: a.name || '',
+        phone: a.phone || '',
+        quartier: a.quartier || '',
         date: a.date,
         heure_debut: a.heure_debut || '08:00',
         heure_fin: a.heure_fin || '18:00',
         type: a.type || 'devis',
-        notes: escapeHtml(a.notes || ''),
+        notes: a.notes || '',
         latitude: a.latitude ?? null,
         longitude: a.longitude ?? null,
         adresse_precise: a.adresse_precise || '',
@@ -3726,6 +3845,8 @@ const AdminLoginPage = ({ error }: { error?: string } = {}) => (
               <span class="text-sm text-red-700 font-medium">
                 {error === '1' ? 'Identifiant ou mot de passe incorrect.' :
                  error === 'logged_out' ? 'Session terminée avec succès.' :
+                 error === 'session_expired' ? 'Session expirée ou révoquée. Reconnectez-vous.' :
+                 error === 'ratelimit' ? 'Trop de tentatives. Réessayez dans 15 minutes.' :
                  error === 'no_init' ? "Aucun mot de passe admin configuré. Contactez l'administrateur." :
                  'Erreur de connexion.'}
               </span>
@@ -3764,6 +3885,13 @@ const DEFAULT_ADMIN_USERNAME = 'admin'
 // Store pour les tokens de reset de mot de passe admin (token -> { createdAt, used })
 const RESET_TOKEN_MAX_AGE = 15 * 60 * 1000 // 15 minutes
 
+// Le token de reset est stateless (HMAC), donc rejouable autant de fois qu'on veut
+// pendant ses 15 minutes de validité. On garde en D1 le timestamp du dernier token
+// consommé : tout token dont le timestamp est <= ce plancher est refusé. Chaque
+// token devient à usage unique, et consommer le dernier invalide aussi les
+// précédents.
+const RESET_FLOOR_KEY = 'admin_reset_min_ts'
+
 // Génère un token de reset HMAC signé (stateless — pas de Map en mémoire)
 async function generateAdminResetToken(secret: string): Promise<string> {
   const ts = Date.now().toString()
@@ -3794,10 +3922,14 @@ async function verifyAdminResetToken(token: string, secret: string): Promise<boo
 }
 
 app.post('/api/admin/login', async (c) => {
-  // Rate limiting: 5 admin login attempts per IP per 15 minutes
+  // Rate limiting: 5 admin login attempts per IP per 15 minutes.
+  // Compteur persistant en D1 : le compteur mémoire est par isolate, donc
+  // contournable en retentant jusqu'à tomber sur un isolate neuf.
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`admin-login:${ip}`, 5, 15 * 60 * 1000)
+  const rlKey = `admin-login:${ip}`
+  const rl = await rateLimitD1(c.env?.DB, rlKey, 5, 15 * 60 * 1000)
   if (!rl.allowed) {
+    logSecurityEvent(c.env?.DB, { event: 'admin_login_rate_limit', severity: 'warn', ip, details: `Login admin limité pour ${ip}` })
     return c.redirect('/admin?error=ratelimit')
   }
 
@@ -3820,9 +3952,12 @@ app.post('/api/admin/login', async (c) => {
       if (userRow?.value) validUsername = userRow.value
     } catch(e) { /* settings table may not exist yet */ }
   }
-  // Si aucun hash en D1, utiliser ADMIN_INITIAL_PASSWORD ou ADMIN_SECRET comme fallback
+  // Si aucun hash en D1, utiliser ADMIN_INITIAL_PASSWORD comme amorçage.
+  // ADMIN_SECRET n'est PLUS accepté ici : c'est la clé de signature HMAC des
+  // cookies, la réutiliser comme mot de passe faisait qu'une seule fuite donnait
+  // à la fois la session et le compte (et le même secret sert au reset).
   if (!validHash) {
-    const initPwd = c.env.ADMIN_INITIAL_PASSWORD || c.env.ADMIN_SECRET
+    const initPwd = c.env.ADMIN_INITIAL_PASSWORD
     if (!initPwd) return c.redirect('/admin?error=no_init')
     validHash = await hashPassword(initPwd)
     // Persister immédiatement pour ne plus dépendre de l'env
@@ -3839,8 +3974,11 @@ app.post('/api/admin/login', async (c) => {
       try { await db.prepare('INSERT OR REPLACE INTO admin_settings (key, value, updated_at) VALUES (?, ?, ?)').bind('admin_password_hash', newHash, new Date().toISOString()).run() } catch(_) {}
     }
     const secret = getAdminSecret(c.env)
-    const payload = `admin_${Date.now()}`
+    const epoch = await getAdminTokenEpoch(db)
+    const payload = `admin_${epoch}_${Date.now()}`
     const token = await signToken(payload, secret)
+    await rateLimitD1Reset(db, rlKey)
+    logSecurityEvent(db, { event: 'admin_login_success', severity: 'info', ip, details: `Connexion admin depuis ${ip}` })
     const response = new Response(null, {
       status: 302,
       headers: {
@@ -3850,10 +3988,31 @@ app.post('/api/admin/login', async (c) => {
     })
     return response
   }
+  logSecurityEvent(db, { event: 'admin_login_failed', severity: 'critical', ip, details: `Échec de connexion admin pour "${username.slice(0, 64)}"` })
   return c.redirect('/admin?error=1')
 })
 
-// Admin logout — clears admin cookie with Secure flag
+// Déconnexion admin — efface le cookie ET incrémente l'epoch pour invalider
+// côté serveur tous les cookies déjà émis (un cookie HMAC volé restait sinon
+// valable 24 h même après déconnexion).
+// En POST : couvert par le middleware CSRF global, donc un site tiers ne peut
+// plus déconnecter l'admin (ni révoquer sa session) via une simple <img>.
+app.post('/api/admin/logout', adminAuth, async (c) => {
+  await bumpAdminTokenEpoch(c.env?.DB)
+  const ip = c.req.header('cf-connecting-ip') || 'unknown'
+  logSecurityEvent(c.env?.DB, { event: 'admin_logout', severity: 'info', ip, details: 'Déconnexion admin (sessions révoquées)' })
+  return new Response(null, {
+    status: 302,
+    headers: {
+      'Location': '/admin?error=logged_out',
+      'Set-Cookie': 'maasga_admin=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0'
+    }
+  })
+})
+
+// Ancien lien GET /api/admin/logout : conservé pour les signets, mais il ne
+// révoque plus rien côté serveur (un GET est déclenchable par un site tiers).
+// Il efface juste le cookie local et renvoie vers la page de connexion.
 app.get('/api/admin/logout', (c) => {
   return new Response(null, {
     status: 302,
@@ -3948,8 +4107,9 @@ app.get('/admin/reset-password', (c) => {
 // Étape 2 : Vérifier le secret et générer un token temporaire
 app.post('/api/admin/generate-reset-token', async (c) => {
   // Rate limit: 3 attempts per 15 min per IP to prevent brute-force of ADMIN_SECRET
+  // (persistant en D1 : ce formulaire est la porte de secours du compte admin)
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`reset-token:${ip}`, 3, 15 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `reset-token:${ip}`, 3, 15 * 60 * 1000)
   if (!rl.allowed) {
     return c.redirect('/admin/reset-password?error=toomany')
   }
@@ -3957,7 +4117,12 @@ app.post('/api/admin/generate-reset-token', async (c) => {
   const inputSecret = (body['admin_secret'] as string || '').trim()
   try {
     const realSecret = getAdminSecret(c.env)
-    if (inputSecret !== realSecret) return c.redirect('/admin/reset-password?error=invalid')
+    // Comparaison à durée constante : un !== simple sort au premier octet
+    // différent et laissait deviner ADMIN_SECRET caractère par caractère.
+    if (!timingSafeEqualStr(inputSecret, realSecret)) {
+      logSecurityEvent(c.env?.DB, { event: 'admin_reset_secret_invalid', severity: 'critical', ip, details: `ADMIN_SECRET incorrect depuis ${ip}` })
+      return c.redirect('/admin/reset-password?error=invalid')
+    }
   } catch {
     return c.redirect('/admin/reset-password?error=invalid')
   }
@@ -4008,9 +4173,9 @@ app.post('/api/admin/generate-reset-token', async (c) => {
 
 // Étape 3 : Appliquer le reset avec le token temporaire
 app.post('/api/admin/reset-password', async (c) => {
-  // Rate limit: 5 attempts per 15 min per IP
+  // Rate limit: 5 attempts per 15 min per IP (persistant en D1)
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`reset-pwd:${ip}`, 5, 15 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `reset-pwd:${ip}`, 5, 15 * 60 * 1000)
   if (!rl.allowed) {
     return c.redirect('/admin/reset-password?error=toomany')
   }
@@ -4028,6 +4193,22 @@ app.post('/api/admin/reset-password', async (c) => {
     return c.redirect('/admin/reset-password?error=expired')
   }
 
+  // Usage unique : refuser un token déjà consommé (voir RESET_FLOOR_KEY)
+  const db = c.env.DB
+  const tokenTs = parseInt(resetToken.slice(0, resetToken.indexOf('.')), 10)
+  if (isNaN(tokenTs)) return c.redirect('/admin/reset-password?error=expired')
+  if (db) {
+    try {
+      await db.prepare('CREATE TABLE IF NOT EXISTS admin_settings (key TEXT PRIMARY KEY, value TEXT, updated_at TEXT)').run()
+      const floorRow = await db.prepare('SELECT value FROM admin_settings WHERE key = ?').bind(RESET_FLOOR_KEY).first() as any
+      const floor = parseInt(floorRow?.value ?? '0', 10) || 0
+      if (tokenTs <= floor) {
+        logSecurityEvent(db, { event: 'admin_reset_token_replay', severity: 'critical', ip, details: `Token de reset déjà consommé, rejeu depuis ${ip}` })
+        return c.redirect('/admin/reset-password?error=expired')
+      }
+    } catch (e) { console.error('Reset token floor check error:', e) }
+  }
+
   // Valider l'identifiant : 3-64 caractères, email ou alphanumérique
   if (!newUsername || newUsername.length < 3 || newUsername.length > 64 || /[<>"'`\\]/.test(newUsername)) {
     return c.redirect('/admin/reset-password?error=invalid')
@@ -4036,14 +4217,23 @@ app.post('/api/admin/reset-password', async (c) => {
     return c.redirect('/admin/reset-password?error=invalid')
   }
 
-  const db = c.env.DB
   const newHash = await hashPassword(newPwd)
   if (db) {
     try {
       await db.prepare('CREATE TABLE IF NOT EXISTS admin_settings (key TEXT PRIMARY KEY, value TEXT, updated_at TEXT)').run()
+      // Consommer le token AVANT d'écrire le nouveau hash : les validations
+      // ci-dessus sont pures, donc une simple faute de frappe ne brûle pas le lien.
+      await db.prepare('INSERT OR REPLACE INTO admin_settings (key, value, updated_at) VALUES (?, ?, ?)').bind(RESET_FLOOR_KEY, String(tokenTs), new Date().toISOString()).run()
       await db.prepare('INSERT OR REPLACE INTO admin_settings (key, value, updated_at) VALUES (?, ?, ?)').bind('admin_password_hash', newHash, new Date().toISOString()).run()
       await db.prepare('INSERT OR REPLACE INTO admin_settings (key, value, updated_at) VALUES (?, ?, ?)').bind('admin_username', newUsername, new Date().toISOString()).run()
-    } catch(e) { console.error('Reset password error:', e) }
+      // Révoquer les sessions admin en cours : après un reset, un cookie encore
+      // valide 24 h aurait laissé l'accès à qui avait provoqué le reset.
+      await bumpAdminTokenEpoch(db)
+      logSecurityEvent(db, { event: 'admin_password_reset', severity: 'critical', ip, details: `Identifiant et mot de passe admin réinitialisés depuis ${ip}` })
+    } catch(e) {
+      console.error('Reset password error:', e)
+      return c.redirect('/admin/reset-password?error=invalid')
+    }
   }
   return c.redirect('/admin/reset-password?success=reset')
 })
@@ -4147,25 +4337,34 @@ app.post('/admin/maintenance/validate-visit', adminAuth, async (c) => {
   const filtersCleaned = body['filters_cleaned'] === '1' ? 1 : 0
   const notes = (body['notes'] as string || '').trim()
 
-  if (visitId && technician) {
-    try {
-      await db.prepare(
-        `UPDATE maintenance_visits SET status = 'effectuee', technician = ?, actions_performed = ?, gas_recharged = ?, filters_cleaned = ?, notes = ?, updated_at = datetime('now') WHERE id = ?`
-      ).bind(escapeHtml(technician), escapeHtml(actionsPerformed), gasRecharged, filtersCleaned, escapeHtml(notes), visitId).run()
-
-      // Update contract completed_visits count
-      const visit = await db.prepare('SELECT contract_id FROM maintenance_visits WHERE id = ?').bind(visitId).first() as any
-      if (visit?.contract_id) {
-        const countRes = await db.prepare("SELECT COUNT(*) as cnt FROM maintenance_visits WHERE contract_id = ? AND status = 'effectuee'").bind(visit.contract_id).first() as any
-        const completedCount = countRes?.cnt || 0
-        // Update completed_visits and recalculate next_visit_date
-        const nextVisit = await db.prepare("SELECT visit_date FROM maintenance_visits WHERE contract_id = ? AND status = 'planifiee' ORDER BY visit_date ASC LIMIT 1").bind(visit.contract_id).first() as any
-        await db.prepare(`UPDATE maintenance_contracts SET completed_visits = ?, next_visit_date = ?, updated_at = datetime('now') WHERE id = ?`)
-          .bind(completedCount, nextVisit?.visit_date || null, visit.contract_id).run()
-      }
-    } catch(e) { console.error('Visit validation error:', e) }
+  if (!visitId || !technician) {
+    return c.redirect('/admin/maintenance?error=visite_incomplete')
   }
-  return c.redirect('/admin/maintenance')
+  try {
+    const res = await db.prepare(
+      `UPDATE maintenance_visits SET status = 'effectuee', technician = ?, actions_performed = ?, gas_recharged = ?, filters_cleaned = ?, notes = ?, updated_at = datetime('now') WHERE id = ?`
+    ).bind(sanitizeText(technician, 120), sanitizeText(actionsPerformed, 2000), gasRecharged, filtersCleaned, sanitizeText(notes, 2000), visitId).run()
+    if (!res?.meta?.changes) {
+      return c.redirect('/admin/maintenance?error=visite_introuvable')
+    }
+
+    // Update contract completed_visits count
+    const visit = await db.prepare('SELECT contract_id FROM maintenance_visits WHERE id = ?').bind(visitId).first() as any
+    if (visit?.contract_id) {
+      const countRes = await db.prepare("SELECT COUNT(*) as cnt FROM maintenance_visits WHERE contract_id = ? AND status = 'effectuee'").bind(visit.contract_id).first() as any
+      const completedCount = countRes?.cnt || 0
+      // Update completed_visits and recalculate next_visit_date
+      const nextVisit = await db.prepare("SELECT visit_date FROM maintenance_visits WHERE contract_id = ? AND status IN ('planifiee','confirmee') ORDER BY visit_date ASC LIMIT 1").bind(visit.contract_id).first() as any
+      await db.prepare(`UPDATE maintenance_contracts SET completed_visits = ?, next_visit_date = ?, updated_at = datetime('now') WHERE id = ?`)
+        .bind(completedCount, nextVisit?.visit_date || null, visit.contract_id).run()
+    }
+  } catch(e) {
+    // Ne plus avaler l'erreur : le try/catch silencieux redirigeait vers un écran
+    // de succès alors que la visite n'était pas enregistrée (colonnes manquantes).
+    console.error('Visit validation error:', e)
+    return c.redirect('/admin/maintenance?error=visite_echec')
+  }
+  return c.redirect('/admin/maintenance?success=visite_validee')
 })
 
 // ── Valider un contrat de maintenance (pending → active) ──
@@ -4188,8 +4387,26 @@ app.post('/api/admin/maintenance/validate-contract', adminAuth, async (c) => {
     const contract = await db.prepare('SELECT * FROM maintenance_contracts WHERE id = ?').bind(contractId).first() as any
     if (!contract) return c.json({ error: 'Contrat introuvable' }, 404)
 
-    // Activer le contrat
-    await db.prepare("UPDATE maintenance_contracts SET status = 'actif', updated_at = datetime('now') WHERE id = ?").bind(contractId).run()
+    // Idempotence : un double clic (ou un renvoi de formulaire) replanifiait un
+    // second jeu de visites et renvoyait un second SMS au client. On n'active que
+    // depuis un statut en attente, et l'UPDATE conditionnel sert de verrou.
+    if (contract.status === 'actif') {
+      return c.req.header('content-type')?.includes('application/json')
+        ? c.json({ success: true, message: 'Contrat déjà actif — aucune action' })
+        : c.redirect('/admin/maintenance?success=contract_already_active')
+    }
+    if (contract.status !== 'en_attente' && contract.status !== 'contacte') {
+      return c.json({ error: `Contrat au statut "${contract.status}" : activation impossible` }, 400)
+    }
+
+    // Activer le contrat (garde conditionnelle : si une requête concurrente est
+    // passée avant, changes vaut 0 et on s'arrête sans replanifier)
+    const activation = await db.prepare("UPDATE maintenance_contracts SET status = 'actif', updated_at = datetime('now') WHERE id = ? AND status IN ('en_attente','contacte')").bind(contractId).run()
+    if (!activation?.meta?.changes) {
+      return c.req.header('content-type')?.includes('application/json')
+        ? c.json({ success: true, message: 'Contrat déjà activé par une autre requête' })
+        : c.redirect('/admin/maintenance?success=contract_already_active')
+    }
 
     // Planifier les visites
     const planConfig: Record<string, { months: number; visits: number }> = {
@@ -4510,8 +4727,15 @@ app.get('/api/realisations', async (c) => {
 
 function csvEscape(val: any): string {
   if (val == null) return ''
-  const s = String(val).replace(/"/g, '""')
-  return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s
+  let s = String(val)
+  // Injection de formule : Excel et LibreOffice évaluent une cellule qui commence
+  // par = + - @ (ou tabulation / retour chariot), ce qui permet à un client
+  // d'exécuter du code sur le poste de l'admin qui ouvre l'export (=cmd|...).
+  // On préfixe par une apostrophe pour forcer l'interprétation en texte, sauf pour
+  // les nombres (les prix négatifs restent lisibles).
+  if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+(?:[.,]\d+)?$/.test(s)) s = "'" + s
+  s = s.replace(/"/g, '""')
+  return /[",\n\r]/.test(s) ? `"${s}"` : s
 }
 
 // Export commandes CSV
@@ -4746,6 +4970,14 @@ app.get('/api/admin/stock/low', adminAuth, async (c) => {
 app.get('/api/admin/backup', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB non disponible' }, 503)
+  // Cet export contient l'intégralité des données clients : on le limite en débit
+  // et on le trace, sinon une session volée pouvait aspirer la base en silence.
+  const ip = c.req.header('cf-connecting-ip') || 'unknown'
+  const backupRl = await rateLimitD1(db, `admin-backup:${ip}`, 3, 60 * 60 * 1000)
+  if (!backupRl.allowed) {
+    logSecurityEvent(db, { event: 'admin_backup_rate_limit', severity: 'warn', ip, details: `Export de sauvegarde limité pour ${ip}` })
+    return c.json({ error: 'Trop d\'exports. Réessayez dans une heure.' }, 429)
+  }
   const tables = ['products', 'clients', 'appointments', 'orders', 'reviews', 'contact_messages', 'maintenance_contracts', 'sav_tickets', 'sav_ticket_messages', 'stock_movements', 'site_settings', 'user_activity_log', 'realisations']
   const backup: Record<string, any[]> = {}
   for (const table of tables) {
@@ -4756,6 +4988,9 @@ app.get('/api/admin/backup', adminAuth, async (c) => {
       backup[table] = []
     }
   }
+  const totalRows = Object.values(backup).reduce((n, rows) => n + rows.length, 0)
+  logSecurityEvent(db, { event: 'admin_backup_export', severity: 'warn', ip, details: `Export de ${totalRows} lignes` })
+  await logAdminAudit(db, { action: 'backup_export', detail: `${totalRows} lignes sur ${tables.length} tables`, ip, userAgent: c.req.header('User-Agent') })
   const json = JSON.stringify({ exported_at: new Date().toISOString(), tables: backup }, null, 2)
   return new Response(json, {
     headers: {
@@ -4863,8 +5098,8 @@ app.post('/api/admin/site-settings', adminAuth, async (c) => {
 
 app.post('/api/admin/change-password', adminAuth, async (c) => {
   const ip = c.req.header('cf-connecting-ip') || 'unknown'
-  // Rate limit: max 5 attempts per 15 min to prevent brute force
-  const pwdRl = rateLimit(`admin-pwd-change:${ip}`, 5, 15 * 60 * 1000)
+  // Rate limit: max 5 attempts per 15 min to prevent brute force (persistant en D1)
+  const pwdRl = await rateLimitD1(c.env?.DB, `admin-pwd-change:${ip}`, 5, 15 * 60 * 1000)
   if (!pwdRl.allowed) {
     logSecurityEvent(c.env?.DB, { event: 'admin_pwd_change_rate_limit', severity: 'warn', ip, details: 'Password change rate limited' })
     return c.redirect('/admin/parametres?error=rate_limited')
@@ -4890,7 +5125,8 @@ app.post('/api/admin/change-password', adminAuth, async (c) => {
     } catch(e) { /* table may not exist */ }
   }
   if (!storedHash) {
-    const initPwd = c.env.ADMIN_INITIAL_PASSWORD || c.env.ADMIN_SECRET
+    // ADMIN_SECRET n'est plus accepté comme mot de passe d'amorçage (cf. /api/admin/login)
+    const initPwd = c.env.ADMIN_INITIAL_PASSWORD
     if (initPwd) storedHash = await hashPassword(initPwd)
     else return c.redirect('/admin/parametres?error=no_init')
   }
@@ -4908,12 +5144,28 @@ app.post('/api/admin/change-password', adminAuth, async (c) => {
       if (newUsername) {
         await db.prepare('INSERT OR REPLACE INTO admin_settings (key, value, updated_at) VALUES (?, ?, ?)').bind('admin_username', newUsername, new Date().toISOString()).run()
       }
-    } catch(e) { console.error('Error saving admin credentials:', e) }
+    } catch(e) {
+      console.error('Error saving admin credentials:', e)
+      return c.redirect('/admin/parametres?error=db')
+    }
   }
   // Audit log: password change successful
   logSecurityEvent(db, { event: 'admin_pwd_changed', severity: 'warn', ip, details: `Admin password changed successfully from ${ip}` })
   logActivity(db, { type: 'admin', action: 'Mot de passe admin modifié', details: `Depuis IP: ${ip}`, ip })
-  return c.redirect('/admin/parametres?success=pwd')
+  await logAdminAudit(db, { action: 'admin_password_changed', detail: newUsername ? `Identifiant également modifié` : 'Mot de passe seul', ip, userAgent: c.req.header('User-Agent') })
+  // Révoquer toutes les sessions admin : changer de mot de passe doit déconnecter
+  // un éventuel intrus dont le cookie serait encore valable 24 h. La session
+  // courante est réémise juste en dessous avec la nouvelle epoch.
+  await bumpAdminTokenEpoch(db)
+  const freshEpoch = await getAdminTokenEpoch(db)
+  let freshCookie = ''
+  try {
+    const token = await signToken(`admin_${freshEpoch}_${Date.now()}`, getAdminSecret(c.env))
+    freshCookie = `maasga_admin=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=86400`
+  } catch { /* ADMIN_SECRET absent : l'admin sera simplement renvoyé au login */ }
+  const headers: Record<string, string> = { 'Location': '/admin/parametres?success=pwd' }
+  if (freshCookie) headers['Set-Cookie'] = freshCookie
+  return new Response(null, { status: 302, headers })
 })
 
 // ============================================================
@@ -5374,12 +5626,13 @@ app.post('/api/admin/devis/create', adminAuth, async (c) => {
               now, now
             ).run()
         }
-        // Update order status to devis_en_attente only when actually sending
+        // Envoi effectif du devis : la commande passe à « contacte »
+        // ('devis_en_attente' n'existe plus dans le CHECK depuis la migration 0036)
         if (isSendAction) {
           await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?')
-            .bind('devis_en_attente', now, orderId).run()
+            .bind('contacte', now, orderId).run()
           const memOrder = orders.find(o => o.id === orderId)
-          if (memOrder) memOrder.status = 'devis_en_attente' as any
+          if (memOrder) memOrder.status = 'contacte' as any
           // Email client notification on send
           if (linkedOrder.client_email) {
             try {
@@ -5947,36 +6200,47 @@ app.post('/api/admin/rdv/update', adminAuth, async (c) => {
     return c.redirect('/admin/rdv?error=Statut invalide')
   }
   const rdv = appointments.find(a => a.id === id)
-  if (rdv) rdv.status = status as 'pending' | 'confirmed' | 'done'
-  
-  // Modifier status en D1 aussi
+
+  // Modifier status en D1 (référence) avant le cache mémoire
   const db = c.env.DB
   if (db) {
     try {
-      await db.prepare('UPDATE appointments SET status = ? WHERE id = ?').bind(status, id).run()
+      const res = await db.prepare('UPDATE appointments SET status = ? WHERE id = ?').bind(status, id).run()
+      if (!res?.meta?.changes) return c.redirect('/admin/rdv?error=' + encodeURIComponent('Rendez-vous introuvable'))
     } catch (error) {
       console.error('Erreur D1 rdv update:', error)
+      return c.redirect('/admin/rdv?error=' + encodeURIComponent('Mise à jour impossible (base de données)'))
     }
+  } else if (!rdv) {
+    return c.redirect('/admin/rdv?error=' + encodeURIComponent('Rendez-vous introuvable'))
   }
-  
+  if (rdv) rdv.status = status as 'pending' | 'confirmed' | 'done'
+
   return c.redirect('/admin/rdv?success=1')
 })
 
 // API Admin - Valider la visite (marquer RDV done SANS créer de commande)
 app.post('/api/admin/rdv/validate-visit', adminAuth, async (c) => {
-  const body = await c.req.json()
-  const appointment_id = body.appointment_id as number
+  const body = await c.req.json().catch(() => ({} as any))
+  const appointment_id = parseInt(body.appointment_id) || 0
+  if (!appointment_id) return c.json({ success: false, error: 'appointment_id requis' }, 400)
   const rdv = appointments.find(a => a.id === appointment_id)
-  if (rdv) rdv.status = 'done'
 
   const db = c.env.DB
   if (db) {
     try {
-      await db.prepare('UPDATE appointments SET status = ? WHERE id = ?').bind('done', appointment_id).run()
+      const res = await db.prepare('UPDATE appointments SET status = ? WHERE id = ?').bind('done', appointment_id).run()
+      if (!res?.meta?.changes) return c.json({ success: false, error: 'Rendez-vous introuvable' }, 404)
     } catch (error) {
+      // Ne plus avaler l'erreur : l'admin voyait « Visite validée » alors que le
+      // statut restait inchangé en base.
       console.error('Erreur D1 validate-visit:', error)
+      return c.json({ success: false, error: 'Validation impossible (base de données)' }, 500)
     }
+  } else if (!rdv) {
+    return c.json({ success: false, error: 'Rendez-vous introuvable' }, 404)
   }
+  if (rdv) rdv.status = 'done'
 
   return c.json({ success: true, message: 'Visite validée avec succès' })
 })
@@ -6126,16 +6390,16 @@ app.post('/api/admin/produit/add', adminAuth, async (c) => {
   if (!rawName || !rawBrand) {
     return c.redirect('/admin/produits?error=' + encodeURIComponent('Nom et marque du produit sont requis.'))
   }
-  const name = escapeHtml(rawName)
-  const brand = escapeHtml(rawBrand)
-  const model = escapeHtml(rawModel)
+  const name = sanitizeText(rawName, 200)
+  const brand = sanitizeText(rawBrand, 120)
+  const model = sanitizeText(rawModel, 120)
   const btu = parseInt(body['btu'] as string) || 12000
   const price = parseInt(body['price'] as string) || 0
   const stock = parseInt(body['stock'] as string) || 0
   const surface_min = parseInt(body['surface_min'] as string) || 10
   const surface_max = parseInt(body['surface_max'] as string) || 25
   const energy_class = (body['energy_class'] as string) || 'A++'
-  const description = escapeHtml((body['description'] as string || '').trim())
+  const description = sanitizeText(body['description'], 3000)
   const inverter = !!body['inverter']
   const available = stock > 0
   
@@ -6190,8 +6454,33 @@ app.post('/api/admin/produit/add', adminAuth, async (c) => {
     media = []
   }
 
+  // Écrire en D1 d'abord : l'identifiant vient de l'AUTOINCREMENT, pas d'un
+  // Math.max sur le cache mémoire (partiel et par isolate, donc source de
+  // collisions d'id) ; le produit n'est mis en cache qu'en cas de succès.
+  const db = c.env.DB
+  let newId = 0
+  if (db) {
+    try {
+      const res = await db.prepare(`
+        INSERT INTO products (name, brand, model, btu, price, stock, surface_min, surface_max, energy_class, description, inverter, available, warranty, features, image, imageUrl, tech_specs, media_urls)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        name, brand, model, btu, price, stock, surface_min, surface_max, energy_class,
+        description, inverter ? 1 : 0, available ? 1 : 0, '1 an constructeur',
+        features.length > 0 ? JSON.stringify(features) : null,
+        '❄️', imageUrl || null, techSpecsJson,
+        media.length > 0 ? JSON.stringify(media) : null
+      ).run()
+      newId = Number(res?.meta?.last_row_id || 0)
+    } catch (error) {
+      console.error('Erreur D1 produit add:', error)
+      return c.redirect('/admin/produits?error=' + encodeURIComponent('Enregistrement impossible (base de données)'))
+    }
+  }
+  if (!newId) newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1
+
   const newProduct: any = {
-    id: products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1,
+    id: newId,
     name, brand, model, btu, price, price_install: 0, stock,
     surface_min, surface_max, energy_class, description,
     inverter, available,
@@ -6204,27 +6493,6 @@ app.post('/api/admin/produit/add', adminAuth, async (c) => {
   }
   products.push(newProduct)
 
-  // Écrire en D1 — récupérer l'ID réel autoincrement
-  const db = c.env.DB
-  if (db) {
-    try {
-      await db.prepare(`
-        INSERT INTO products (name, brand, model, btu, price, stock, surface_min, surface_max, energy_class, description, inverter, available, warranty, features, image, imageUrl, tech_specs, media_urls)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).bind(
-        name, brand, model, btu, price, stock, surface_min, surface_max, energy_class,
-        description, inverter ? 1 : 0, available ? 1 : 0, '1 an constructeur',
-        features.length > 0 ? JSON.stringify(features) : null,
-        '❄️', imageUrl || null, techSpecsJson,
-        media.length > 0 ? JSON.stringify(media) : null
-      ).run()
-      // Sync ID with D1 autoincrement
-      const lastRow = await db.prepare('SELECT id FROM products ORDER BY id DESC LIMIT 1').first() as any
-      if (lastRow?.id) newProduct.id = lastRow.id
-    } catch (error) {
-      console.error('Erreur D1 produit add:', error)
-    }
-  }
   await notifyAdmin((c as any).env, 'product', `${name} — ${brand}, ${btu.toLocaleString()} BTU — ${price.toLocaleString()} FCFA (stock: ${stock})`)
   return c.redirect('/admin/produits?success=1')
 })
@@ -6319,10 +6587,10 @@ app.post('/api/admin/produits/import', adminAuth, async (c) => {
   `)
 
   const batch = lignes.map((l) => {
-    const name = escapeHtml(l.nom!.trim())
-    const brand = escapeHtml(l.marque!.trim())
-    const model = escapeHtml((l.modele || '').trim())
-    const description = escapeHtml((l.description || '').trim())
+    const name = sanitizeText(l.nom, 200)
+    const brand = sanitizeText(l.marque, 120)
+    const model = sanitizeText(l.modele, 120)
+    const description = sanitizeText(l.description, 3000)
     const features = Array.isArray(l.mentions) && l.mentions.length > 0 ? JSON.stringify(l.mentions) : null
     const available = l.disponible !== false
     return stmt.bind(
@@ -6341,9 +6609,9 @@ app.post('/api/admin/produits/import', adminAuth, async (c) => {
       const l = lignes[i]
       products.push({
         id,
-        name: escapeHtml(l.nom!.trim()),
-        brand: escapeHtml(l.marque!.trim()),
-        model: (l.modele || '').trim(),
+        name: sanitizeText(l.nom, 200),
+        brand: sanitizeText(l.marque, 120),
+        model: sanitizeText(l.modele, 120),
         btu: l.puissanceBtu,
         price: l.prixFcfa,
         price_install: 0,
@@ -6518,17 +6786,24 @@ app.post('/api/admin/produit/image', adminAuth, async (c) => {
     let binary = ''
     for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
     const dataUrl = `data:${file.type || 'image/jpeg'};base64,${btoa(binary)}`
-    const product = products.find(p => p.id === id)
-    if (product) {
-      (product as any).imageUrl = dataUrl
-      // Also persist to D1
-      const db = c.env.DB
-      if (db) {
-        try {
-          await db.prepare('UPDATE products SET imageUrl = ? WHERE id = ?').bind(dataUrl, id).run()
-        } catch(_) {}
+    // D1 fait référence : le cache produits ne contient que les produits
+    // disponibles de cet isolate, donc `if (product)` faisait échouer l'upload en
+    // silence pour tout produit absent du cache.
+    const db = c.env.DB
+    if (db) {
+      try {
+        const res = await db.prepare('UPDATE products SET imageUrl = ? WHERE id = ?').bind(dataUrl, id).run()
+        if (!res?.meta?.changes) {
+          return c.redirect('/admin/produits?error=' + encodeURIComponent('Produit introuvable.'))
+        }
+      } catch(e) {
+        console.error('Erreur D1 produit image:', e)
+        return c.redirect('/admin/produits?error=' + encodeURIComponent("Enregistrement de l'image impossible (base de données)."))
       }
     }
+    const product = products.find(p => p.id === id)
+    if (product) (product as any).imageUrl = dataUrl
+    else if (!db) return c.redirect('/admin/produits?error=' + encodeURIComponent('Produit introuvable.'))
   }
   
   return c.redirect('/admin/produits?success=1')
@@ -6736,48 +7011,58 @@ app.post('/api/admin/create-order', adminAuth, async (c) => {
   const quartier = (body.quartier as string || '').trim()
   const type = body.type as 'devis' | 'installation'
 
-  // Vérifier que le RDV existe
-  const appointment = appointments.find(a => a.id === appointment_id)
-  if (!appointment) {
+  // Vérifier que le RDV existe. D1 fait référence : ce POST ne passe pas par
+  // refreshAdminCache, donc le tableau `appointments` de cet isolate peut être vide
+  // et un appointments.find() refusait des rendez-vous qui existent bien en base.
+  const db = c.env.DB
+  const cachedAppointment = appointments.find(a => a.id === appointment_id)
+  if (db) {
+    const row = await getAppointmentById(db, appointment_id).catch(() => null)
+    if (!row) return c.json({ success: false, error: 'Rendez-vous non trouvé' }, 404)
+  } else if (!cachedAppointment) {
     return c.json({ success: false, error: 'Rendez-vous non trouvé' }, 404)
   }
 
-  // Mettre à jour le statut du RDV à 'confirmed'
-  appointment.status = 'confirmed'
-
-  // Créer une nouvelle commande
-  const newOrder = {
-    id: orders.length > 0 ? Math.max(...orders.map(o => o.id)) + 1 : 1,
-    appointment_id,
-    client_name,
-    client_phone,
-    quartier,
-    type,
-    status: 'validation_terrain' as const,
-    created_at: new Date().toISOString()
-  }
-  orders.push(newOrder)
-
-  // Mettre à jour en base de données D1 si disponible
-  const db = c.env.DB
+  // Créer une nouvelle commande — l'identifiant vient de l'AUTOINCREMENT D1
+  let newOrderId = 0
   if (db) {
     try {
       await updateAppointmentStatus(db, appointment_id, 'confirmed')
-      await createOrder(db, {
+      const res: any = await createOrder(db, {
         appointment_id,
         client_name,
         client_phone,
         quartier,
         type,
-        status: 'validation_terrain'
+        status: 'en_attente'
       })
+      newOrderId = Number(res?.meta?.last_row_id || 0)
     } catch (error) {
       console.error('Erreur lors de la création de la commande en D1:', error)
+      return c.json({ success: false, error: 'Création de la commande impossible (base de données)' }, 500)
     }
   }
+  if (!newOrderId) newOrderId = orders.length > 0 ? Math.max(...orders.map(o => o.id)) + 1 : 1
 
-  return c.json({ 
-    success: true, 
+  // Mettre à jour le statut du RDV en mémoire (si présent dans cet isolate)
+  if (cachedAppointment) cachedAppointment.status = 'confirmed'
+
+  const newOrder = {
+    id: newOrderId,
+    appointment_id,
+    client_name,
+    client_phone,
+    quartier,
+    type,
+    // 'validation_terrain' n'existe plus dans la contrainte CHECK depuis la
+    // migration 0036 : une commande créée depuis un RDV démarre en attente.
+    status: 'en_attente' as const,
+    created_at: new Date().toISOString()
+  }
+  orders.push(newOrder)
+
+  return c.json({
+    success: true,
     order_id: newOrder.id,
     message: `✅ Commande #${newOrder.id} créée avec succès. Statut du RDV mis à jour.`
   })
@@ -6808,6 +7093,8 @@ app.get('/api/stats', adminAuth, (c) => {
   return c.json({
     rdv: { total: totalRdv, pending: pendingRdv, confirmed: confirmedRdv, done: doneRdv },
     products: { total: totalProducts, available: availableProducts, lowStock: lowStockProducts, outOfStock: outOfStockProducts },
+    // Les compteurs d'avis étaient calculés puis oubliés dans la réponse.
+    reviews: { total: totalReviews, pending: pendingReviews, avgNote },
   })
 })
 
@@ -6818,14 +7105,28 @@ app.get('/api/stats', adminAuth, (c) => {
 // Réinitialiser la base de données (supprimer toutes les données)
 app.post('/api/admin/reset-db', adminAuth, async (c) => {
   const db = c.env.DB
+  const ip = c.req.header('cf-connecting-ip') || 'unknown'
   if (!db) {
     return c.json({ success: false, error: 'D1 non disponible' }, 400)
   }
 
-  // V\u00e9rifier le token de confirmation pour \u00e9viter les suppressions accidentelles
-  const body = await c.req.json().catch(() => ({}))
+  // Vérifier le token de confirmation pour éviter les suppressions accidentelles
+  const body = await c.req.json().catch(() => ({} as any))
   if (body.confirm !== 'REINITIALISER') {
     return c.json({ success: false, error: 'Confirmation requise. Envoyez {"confirm": "REINITIALISER"} pour confirmer.' }, 400)
+  }
+
+  // Ré-authentification : action irréversible qui vide produits, clients et
+  // commandes. Un cookie admin volé ne doit pas suffire à détruire la base.
+  const resetRl = await rateLimitD1(db, `admin-reset-db:${ip}`, 3, 60 * 60 * 1000)
+  if (!resetRl.allowed) {
+    logSecurityEvent(db, { event: 'admin_reset_db_rate_limit', severity: 'critical', ip, details: `Réinitialisation limitée pour ${ip}` })
+    return c.json({ success: false, error: 'Trop de tentatives. Réessayez dans une heure.' }, 429)
+  }
+  const pwdOk = await verifyAdminPassword(c.env, typeof body.password === 'string' ? body.password : '')
+  if (!pwdOk) {
+    logSecurityEvent(db, { event: 'admin_reset_db_wrong_password', severity: 'critical', ip, details: `Tentative de réinitialisation sans mot de passe valide depuis ${ip}` })
+    return c.json({ success: false, error: 'Mot de passe admin requis ou incorrect.' }, 403)
   }
 
   try {
@@ -6852,8 +7153,11 @@ app.post('/api/admin/reset-db', adminAuth, async (c) => {
     reviews.length = 0
     orders.length = 0
     clients.length = 0
-    
-    return c.json({ 
+
+    logSecurityEvent(db, { event: 'admin_reset_db', severity: 'critical', ip, details: `Base réinitialisée depuis ${ip}` })
+    await logAdminAudit(db, { action: 'database_reset', detail: 'orders, appointments, admin_sessions, reviews, clients, products, quartiers vidées', ip, userAgent: c.req.header('User-Agent') })
+
+    return c.json({
       success: true, 
       message: '✅ Base de données complètement réinitialisée (D1 + mémoire + sqlite_sequence)'
     })
@@ -6882,33 +7186,41 @@ app.post('/api/admin/client/add', adminAuth, async (c) => {
     return c.json({ success: false, error: 'Adresse email invalide' }, 400)
   }
 
-  const name = escapeHtml(rawName)
-  const email = escapeHtml(rawEmail)
-  const phone = escapeHtml(rawPhone)
-  const quartier = escapeHtml(rawQuartier)
+  const name = sanitizeText(rawName, 120)
+  const email = sanitizeText(rawEmail, 160)
+  const phone = sanitizeText(rawPhone, 20)
+  const quartier = sanitizeText(rawQuartier, 120)
 
-  const newClient = {
-    id: clients.length > 0 ? Math.max(...clients.map(c => c.id)) + 1 : 1,
+  // L'identifiant vient de D1 (AUTOINCREMENT), pas d'un Math.max sur le cache
+  // mémoire : ce cache est partiel et par isolate, donc il produisait des id déjà
+  // pris en base et le client ajouté restait introuvable depuis les autres écrans.
+  const db = c.env.DB
+  const createdAt = new Date().toISOString().split('T')[0]
+  let newId = 0
+  if (db) {
+    try {
+      const res = await db.prepare(`
+        INSERT INTO clients (name, email, phone, quartier, password_hash, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).bind(name, email, phone, quartier, 'pending', createdAt).run()
+      newId = Number(res?.meta?.last_row_id || 0)
+    } catch (error) {
+      // Ne plus avaler l'erreur : l'admin voyait « succès » et le client
+      // n'existait qu'en mémoire, jusqu'au recyclage de l'isolate.
+      console.error('Erreur D1 client add:', error)
+      return c.redirect('/admin/clients?error=' + encodeURIComponent("Enregistrement impossible (base de données)"))
+    }
+  }
+  if (!newId) newId = clients.length > 0 ? Math.max(...clients.map(c => c.id)) + 1 : 1
+
+  clients.push({
+    id: newId,
     name, email, phone, quartier,
     password_hash: 'pending',
     type_demande: '',
     notes: '',
-    created_at: new Date().toISOString().split('T')[0]
-  }
-  clients.push(newClient)
-
-  // Écrire en D1 aussi
-  const db = c.env.DB
-  if (db) {
-    try {
-      await db.prepare(`
-        INSERT INTO clients (name, email, phone, quartier, password_hash, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `).bind(name, email, phone, quartier, 'pending', new Date().toISOString().split('T')[0]).run()
-    } catch (error) {
-      console.error('Erreur D1 client add:', error)
-    }
-  }
+    created_at: createdAt
+  })
 
   return c.redirect('/admin/clients?success=1')
 })
@@ -6916,11 +7228,7 @@ app.post('/api/admin/client/add', adminAuth, async (c) => {
 app.post('/api/admin/client/update', adminAuth, async (c) => {
   const body = await c.req.parseBody()
   const id = parseInt(body['id'] as string)
-  const clientIndex = clients.findIndex(cl => cl.id === id)
-
-  if (clientIndex === -1) {
-    return c.redirect('/admin/clients?error=notfound')
-  }
+  if (!id || isNaN(id)) return c.redirect('/admin/clients?error=notfound')
 
   const rawName = (body['name'] as string || '').trim()
   const rawEmail = (body['email'] as string || '').trim()
@@ -6934,23 +7242,32 @@ app.post('/api/admin/client/update', adminAuth, async (c) => {
     return c.redirect('/admin/clients?error=' + encodeURIComponent('Adresse email invalide'))
   }
 
-  const name = escapeHtml(rawName)
-  const email = escapeHtml(rawEmail)
-  const phone = escapeHtml(rawPhone)
-  const quartier = escapeHtml(rawQuartier)
+  const name = sanitizeText(rawName, 120)
+  const email = sanitizeText(rawEmail, 160)
+  const phone = sanitizeText(rawPhone, 20)
+  const quartier = sanitizeText(rawQuartier, 120)
 
-  clients[clientIndex] = { ...clients[clientIndex], name, email, phone, quartier }
-
-  // Écrire en D1 aussi
+  // D1 fait référence, pas le cache mémoire : celui-ci ne contient qu'une partie
+  // des clients selon l'isolate, donc un findIndex à -1 refusait des modifications
+  // de clients qui existent bel et bien en base.
   const db = c.env.DB
   if (db) {
     try {
-      await db.prepare(`
+      const res = await db.prepare(`
         UPDATE clients SET name = ?, email = ?, phone = ?, quartier = ? WHERE id = ?
       `).bind(name, email, phone, quartier, id).run()
+      if (!res?.meta?.changes) return c.redirect('/admin/clients?error=notfound')
     } catch (error) {
       console.error('Erreur D1 client update:', error)
+      return c.redirect('/admin/clients?error=' + encodeURIComponent('Modification impossible (base de données)'))
     }
+  }
+
+  const clientIndex = clients.findIndex(cl => cl.id === id)
+  if (clientIndex !== -1) {
+    clients[clientIndex] = { ...clients[clientIndex], name, email, phone, quartier }
+  } else if (!db) {
+    return c.redirect('/admin/clients?error=notfound')
   }
 
   return c.redirect('/admin/clients?success=1')
@@ -7083,32 +7400,35 @@ app.post('/api/admin/rdv/add', adminAuth, async (c) => {
     return c.json({ success: false, error: 'Numéro de téléphone invalide (8 chiffres requis)' }, 400)
   }
 
-  const name = escapeHtml(rawName)
-  const phone = escapeHtml(rawPhone)
-  const quartier = escapeHtml(rawQuartier)
-  const notes = escapeHtml(rawNotes)
+  const name = sanitizeText(rawName, 120)
+  const phone = sanitizeText(rawPhone, 20)
+  const quartier = sanitizeText(rawQuartier, 120)
+  const notes = sanitizeText(rawNotes, 2000)
 
-  const newRdv = {
-    id: appointments.length > 0 ? Math.max(...appointments.map(a => a.id)) + 1 : 1,
+  // Écrire en D1 d'abord : l'identifiant vient de l'AUTOINCREMENT
+  const db = c.env.DB
+  let newRdvId = 0
+  if (db) {
+    try {
+      const res: any = await createAppointment(db, {
+        name, phone, quartier, date, heure_debut, heure_fin, type, notes,
+        latitude, longitude, adresse_precise: ''
+      })
+      newRdvId = Number(res?.meta?.last_row_id || 0)
+    } catch (error) {
+      console.error('Erreur D1 rdv add:', error)
+      return c.redirect('/admin/rdv?error=' + encodeURIComponent('Enregistrement impossible (base de données)'))
+    }
+  }
+  if (!newRdvId) newRdvId = appointments.length > 0 ? Math.max(...appointments.map(a => a.id)) + 1 : 1
+
+  appointments.push({
+    id: newRdvId,
     name, phone, quartier, date, heure_debut, heure_fin, type, notes,
     latitude: latitude as any, longitude: longitude as any,
     adresse_precise: '', status: 'pending' as 'pending',
     created_at: new Date().toISOString().split('T')[0]
-  }
-  appointments.push(newRdv)
-
-  // Écrire en D1 aussi
-  const db = c.env.DB
-  if (db) {
-    try {
-      await createAppointment(db, {
-        name, phone, quartier, date, heure_debut, heure_fin, type, notes,
-        latitude, longitude, adresse_precise: ''
-      })
-    } catch (error) {
-      console.error('Erreur D1 rdv add:', error)
-    }
-  }
+  })
 
   return c.redirect('/admin/rdv?success=1')
 })
@@ -7167,24 +7487,30 @@ app.post('/api/admin/commande/update-statut', adminAuth, async (c) => {
   }
 
   const order = orders.find(o => o.id === id)
-  if (order) order.status = status as any
 
   const db = c.env.DB
   if (db) {
     const now = new Date().toISOString()
     try {
+      let res: any
       if (status === 'livre') {
-        await db.prepare('UPDATE orders SET status = ?, delivered_at = ?, installed_at = ?, updated_at = ? WHERE id = ?')
+        res = await db.prepare('UPDATE orders SET status = ?, delivered_at = ?, installed_at = ?, updated_at = ? WHERE id = ?')
           .bind(status, now, now, now, id).run()
       } else if (adminNotes) {
-        await db.prepare('UPDATE orders SET status = ?, admin_notes = ?, updated_at = ? WHERE id = ?')
+        res = await db.prepare('UPDATE orders SET status = ?, admin_notes = ?, updated_at = ? WHERE id = ?')
           .bind(status, adminNotes, now, id).run()
       } else {
-        await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').bind(status, now, id).run()
+        res = await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').bind(status, now, id).run()
       }
+      if (!res?.meta?.changes) return c.json({ error: 'Commande introuvable' }, 404)
     } catch (error) {
+      // Ne plus avaler l'erreur : un statut refusé par la contrainte CHECK
+      // renvoyait quand même un succès, et le cache mémoire divergeait de la base.
       console.error('Erreur D1 commande update:', error)
+      return c.json({ error: 'Mise à jour impossible (base de données)' }, 500)
     }
+    // Le cache mémoire n'est aligné qu'après une écriture D1 réussie
+    if (order) order.status = status as any
 
     // Auto-create SAV gratuit when order is marked as livre (livré + installé)
     if (status === 'livre') {
@@ -7253,6 +7579,9 @@ app.post('/api/admin/commande/update-statut', adminAuth, async (c) => {
         }
       } catch(e) { console.error('Notification client order error:', e) }
     }
+  } else if (order) {
+    // Pas de D1 (dev sans binding) : on ne met à jour que le cache mémoire
+    order.status = status as any
   }
 
   return c.json({ success: true })
@@ -7617,13 +7946,13 @@ app.post('/api/telegram/webhook', async (c) => {
         await db.prepare(`UPDATE orders SET status='livre', delivered_at=datetime('now') WHERE id=?`).bind(parseInt(id)).run()
         await sendTelegramMessage(token, chatId, `✅ Commande #${id} livrée !`)
       } else if (action === 'cancel' && type === 'order' && db) {
-        await db.prepare(`UPDATE orders SET status='cancelled' WHERE id=?`).bind(parseInt(id)).run()
+        await db.prepare(`UPDATE orders SET status='annule' WHERE id=?`).bind(parseInt(id)).run()
         await sendTelegramMessage(token, chatId, `❌ Commande #${id} annulée.`)
       } else if (action === 'installed' && type === 'order' && db) {
-        await db.prepare(`UPDATE orders SET status='installed' WHERE id=?`).bind(parseInt(id)).run()
+        await db.prepare(`UPDATE orders SET status='livre', installed_at=datetime('now') WHERE id=?`).bind(parseInt(id)).run()
         await sendTelegramMessage(token, chatId, `📦 Commande #${id} installée !`)
       } else if (action === 'complete' && type === 'visit' && db) {
-        await db.prepare(`UPDATE maintenance_visits SET status='completed', completed_at=datetime('now') WHERE id=?`).bind(parseInt(id)).run()
+        await db.prepare(`UPDATE maintenance_visits SET status='effectuee', updated_at=datetime('now') WHERE id=?`).bind(parseInt(id)).run()
         await sendTelegramMessage(token, chatId, `✅ Visite #${id} complétée !`)
       } else if (action === 'read' && type === 'msg' && db) {
         await db.prepare(`UPDATE contact_messages SET is_read=1 WHERE id=?`).bind(parseInt(id)).run()
@@ -7815,10 +8144,10 @@ app.post('/api/telegram/webhook', async (c) => {
       case '/stats': {
         if (!db) { await reply('❌ Base de données indisponible'); break }
         const [contracts, visits, rdvs, orders, devis, contacts, products] = await Promise.all([
-          db.prepare(`SELECT COUNT(*) as c FROM maintenance_contracts WHERE status='active'`).first(),
-          db.prepare(`SELECT COUNT(*) as c FROM maintenance_visits WHERE status='scheduled' AND visit_date >= date('now')`).first(),
+          db.prepare(`SELECT COUNT(*) as c FROM maintenance_contracts WHERE status='actif'`).first(),
+          db.prepare(`SELECT COUNT(*) as c FROM maintenance_visits WHERE status='planifiee' AND visit_date >= date('now')`).first(),
           db.prepare(`SELECT COUNT(*) as c FROM appointments WHERE date >= date('now') AND status != 'cancelled'`).first(),
-          db.prepare(`SELECT COUNT(*) as c FROM orders WHERE status='pending'`).first(),
+          db.prepare(`SELECT COUNT(*) as c FROM orders WHERE status='en_attente'`).first(),
           db.prepare(`SELECT COUNT(*) as c FROM devis WHERE status='sent'`).first(),
           db.prepare(`SELECT COUNT(*) as c FROM contact_messages WHERE is_read=0`).first(),
           db.prepare(`SELECT COUNT(*) as c, SUM(CASE WHEN stock <= 2 THEN 1 ELSE 0 END) as low FROM products`).first(),
@@ -7866,7 +8195,7 @@ app.post('/api/telegram/webhook', async (c) => {
           `SELECT mc.id, mc.plan_type, mc.status, mc.start_date, mc.end_date, c.name as client
            FROM maintenance_contracts mc
            JOIN clients c ON mc.client_id = c.id
-           WHERE mc.status = 'active'
+           WHERE mc.status = 'actif'
            ORDER BY mc.start_date DESC LIMIT 10`
         ).all()
         if (!rows.results?.length) { await reply('Aucun contrat actif.'); break }
@@ -7887,7 +8216,7 @@ app.post('/api/telegram/webhook', async (c) => {
            FROM maintenance_visits mv
            JOIN maintenance_contracts mc ON mv.contract_id = mc.id
            JOIN clients c ON mc.client_id = c.id
-           WHERE mv.status = 'scheduled' AND mv.visit_date >= date('now')
+           WHERE mv.status IN ('planifiee','confirmee') AND mv.visit_date >= date('now')
            ORDER BY mv.visit_date ASC LIMIT 10`
         ).all()
         if (!rows.results?.length) { await reply('Aucune visite à venir.'); break }
@@ -7914,9 +8243,9 @@ app.post('/api/telegram/webhook', async (c) => {
            WHERE mv.id = ?`
         ).bind(visitId).first() as any
         if (!visit) { await reply(`❌ Visite #${visitId} introuvable.`); break }
-        if (visit.status === 'completed') { await reply(`✅ Visite #${visitId} est déjà complétée.`); break }
+        if (visit.status === 'effectuee') { await reply(`✅ Visite #${visitId} est déjà complétée.`); break }
         await db.prepare(
-          `UPDATE maintenance_visits SET status='completed', completed_at=datetime('now'), notes='Validée via Telegram Bot' WHERE id=?`
+          `UPDATE maintenance_visits SET status='effectuee', updated_at=datetime('now'), notes='Validée via Telegram Bot' WHERE id=?`
         ).bind(visitId).run()
         await reply(
           `✅ *Visite #${visitId} validée !*\n\n` +
@@ -7964,7 +8293,7 @@ app.post('/api/telegram/webhook', async (c) => {
         let txt = `🛒 *Commandes récentes*\n\n`
         const buttons: any[] = []
         for (const r of rows.results as any[]) {
-          const st = r.status === 'pending' ? '⏳' : r.status === 'paid' ? '💰' : r.status === 'livre' ? '🚚' : r.status === 'installed' ? '📦' : r.status === 'cancelled' ? '❌' : '🔄'
+          const st = r.status === 'en_attente' ? '⏳' : r.status === 'contacte' ? '📞' : r.status === 'confirme' ? '✅' : r.status === 'en_livraison' ? '🚚' : r.status === 'livre' ? '📦' : r.status === 'annule' ? '❌' : '🔄'
           const nom = r.client || r.client_name || 'Anonyme'
           txt += `${st} #${r.id} — *${nom}*\n   ${(r.total_price || 0).toLocaleString()} FCFA | ${r.status}\n\n`
           if (r.status === 'pending') {
@@ -8594,7 +8923,7 @@ app.post('/api/mobile/order/:id/devis-action', mobileAuth, async (c) => {
   const reason = body.reason || ''
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB indisponible' }, 503)
-  const newStatus = action === 'accept' ? 'confirmed' : 'cancelled'
+  const newStatus = action === 'accept' ? 'confirme' : 'annule'
   await db.prepare(`UPDATE orders SET status = ?, notes = COALESCE(NULLIF(?, ''), notes), updated_at = ? WHERE id = ?`)
     .bind(newStatus, reason, new Date().toISOString(), orderId).run()
   return c.json({ success: true })
@@ -8788,7 +9117,7 @@ app.get('/api/mobile/activity', mobileAuth, async (c) => {
 
     const [rdvs, orders] = await Promise.all([
       db.prepare('SELECT id, type, status, date, notes, created_at FROM appointments WHERE phone = ? ORDER BY created_at DESC LIMIT 20').bind(phone).all(),
-      db.prepare('SELECT id, status, total_price, payment_method, notes, created_at FROM orders WHERE client_phone = ? ORDER BY created_at DESC LIMIT 20').bind(phone).all(),
+      db.prepare('SELECT id, status, total_price, notes, created_at FROM orders WHERE client_phone = ? ORDER BY created_at DESC LIMIT 20').bind(phone).all(),
     ])
 
     const activity: any[] = [

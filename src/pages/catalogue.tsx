@@ -559,14 +559,23 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
               }
             });
             const cols = ids.map(id => products[id]).filter(Boolean);
+            // Les valeurs viennent de data-* rendus côté serveur depuis la base
+            // (nom, marque, modèle saisis en admin). Comme on assemble du HTML à la
+            // main, chaque valeur textuelle passe par esc() — sinon un nom de
+            // produit contenant du balisage s'exécute dans la modale.
+            function esc(v) {
+              return String(v == null ? '' : v)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            }
             const rows = [
-              { label: 'Marque', fn: p => p.brand },
-              { label: 'Modèle', fn: p => p.model },
+              { label: 'Marque', fn: p => esc(p.brand) },
+              { label: 'Modèle', fn: p => esc(p.model) },
               { label: 'Puissance', fn: p => Number(p.btu).toLocaleString('fr-FR') + ' BTU' },
               { label: 'Prix', fn: p => Number(p.price).toLocaleString('fr-FR') + ' FCFA' },
               { label: 'Inverter', fn: p => p.inverter ? '<span style="color:#34d399;">✓ Oui</span>' : '<span style="color:#f87171;">✗ Non</span>' },
-              { label: 'Classe énergie', fn: p => p.energy },
-              { label: 'Stock', fn: p => p.stock > 0 ? '<span style="color:#34d399;">' + p.stock + ' dispo</span>' : '<span style="color:#f87171;">Rupture</span>' },
+              { label: 'Classe énergie', fn: p => esc(p.energy) },
+              { label: 'Stock', fn: p => p.stock > 0 ? '<span style="color:#34d399;">' + Number(p.stock) + ' dispo</span>' : '<span style="color:#f87171;">Rupture</span>' },
             ];
 
             let html = '<div style="display:grid; grid-template-columns: 140px repeat(' + cols.length + ', 1fr); gap:0;">';
@@ -574,10 +583,12 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
             html += '<div style="background:rgba(56,189,248,0.05); padding:12px; font-weight:700; font-size:0.75rem; color:#38bdf8; text-transform:uppercase;">Caractéristique</div>';
             cols.forEach(p => {
               html += '<div style="background:rgba(56,189,248,0.05); padding:12px; text-align:center; border-left:1px solid rgba(56,189,248,0.08);">';
-              html += '<img src="' + (p.imageUrl || '/static/ac-placeholder.svg') + '" alt="' + p.name + '" style="width:50px;height:50px;object-fit:contain;margin-bottom:4px;" loading="lazy" />';
-              html += '<div style="font-size:0.7rem; color:#38bdf8; font-weight:700; text-transform:uppercase;">' + p.brand + '</div>';
-              html += '<div style="font-size:0.8rem; color:white; font-weight:600; line-height:1.3; margin-bottom:6px;">' + p.name + '</div>';
-              html += '<a href="/rendez-vous?product=' + p.id + '" style="display:inline-block; background:linear-gradient(135deg,#0ea5e9,#3b82f6); color:white; padding:5px 10px; border-radius:8px; font-size:0.7rem; font-weight:700; text-decoration:none;">Commander</a>';
+              // dataset expose 'image' (data-image), pas 'imageUrl' : l'ancienne clé
+              // était toujours undefined, donc toutes les vignettes tombaient sur le placeholder.
+              html += '<img src="' + esc(p.image || '/static/ac-placeholder.svg') + '" alt="' + esc(p.name) + '" style="width:50px;height:50px;object-fit:contain;margin-bottom:4px;" loading="lazy" />';
+              html += '<div style="font-size:0.7rem; color:#38bdf8; font-weight:700; text-transform:uppercase;">' + esc(p.brand) + '</div>';
+              html += '<div style="font-size:0.8rem; color:white; font-weight:600; line-height:1.3; margin-bottom:6px;">' + esc(p.name) + '</div>';
+              html += '<a href="/rendez-vous?product=' + Number(p.id) + '" style="display:inline-block; background:linear-gradient(135deg,#0ea5e9,#3b82f6); color:white; padding:5px 10px; border-radius:8px; font-size:0.7rem; font-weight:700; text-decoration:none;">Commander</a>';
               html += '</div>';
             });
             // Rows

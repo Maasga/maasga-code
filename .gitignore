@@ -72,3 +72,10 @@ eduplatform-v4 (2).html
 
 # app mobile Flutter — retirée du dépôt web, conservée en local uniquement
 mobile/
+
+# worktrees git locaux
+.worktrees/
+
+# bytecode Python des skills
+__pycache__/
+*.pyc

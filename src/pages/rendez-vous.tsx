@@ -593,12 +593,22 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                 { name: value + ' (Secteur 15)', lat: 12.375000, lng: -1.510000 }
               ];
               
+              // Construction par API DOM et non par innerHTML : la valeur vient du
+              // champ saisi par l'utilisateur. En HTML interpolé, une apostrophe
+              // (« L'Hôpital ») cassait le littéral JS du onclick — la suggestion
+              // devenait inerte — et un "img onerror" s'exécutait (self-XSS).
               const suggestionsDiv = document.getElementById('address-suggestions');
-              suggestionsDiv.innerHTML = suggestions.map(s => 
-                \`<div class="px-4 py-2 hover:bg-white/5 cursor-pointer text-gray-300" onclick="selectSuggestion('\${s.name}', \${s.lat}, \${s.lng})">
-                  <i class="fas fa-map-marker-alt text-primary-500 mr-2"></i>\${s.name}
-                </div>\`
-              ).join('');
+              suggestionsDiv.textContent = '';
+              suggestions.forEach(function(s) {
+                const row = document.createElement('div');
+                row.className = 'px-4 py-2 hover:bg-white/5 cursor-pointer text-gray-300';
+                const icon = document.createElement('i');
+                icon.className = 'fas fa-map-marker-alt text-primary-500 mr-2';
+                row.appendChild(icon);
+                row.appendChild(document.createTextNode(s.name));
+                row.addEventListener('click', function() { selectSuggestion(s.name, s.lat, s.lng); });
+                suggestionsDiv.appendChild(row);
+              });
             }
           });
 

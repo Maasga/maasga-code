@@ -297,49 +297,40 @@ function formatDate(dateStr: string): string {
 }
 
 // Status badge helpers
+// Statuts commandes : valeurs canoniques de la migration 0036
+// (en_attente, contacte, confirme, en_livraison, livre, annule).
+// Les anciennes valeurs anglaises sont conservées en repli pour les captures
+// d'écran/exports antérieurs, mais plus aucune ligne en base ne les porte.
 function orderStatusLabel(status: string): string {
   const map: Record<string, string> = {
-    pending: 'En attente', paid: 'Payée', en_livraison: 'En livraison', livre: 'Livrée',
-    validation_terrain: 'Visite terrain', devis_en_attente: 'Devis en attente', devis_valide: 'Devis validé',
-    devis_refuse: 'Devis refusé', validated: 'Validée', installing: 'En installation',
-    installed: 'Installée', cancelled: 'Annulée', refunded: 'Remboursée'
+    en_attente: 'En attente', contacte: 'Client contacté', confirme: 'Confirmée',
+    en_livraison: 'En livraison', livre: 'Livrée & installée', annule: 'Annulée'
   }
   return map[status] || status
 }
 function orderStatusColor(status: string): string {
-  if (status === 'installed') return 'color:#34d399; background:rgba(52,211,153,0.12);'
-  if (status === 'paid' || status === 'validated' || status === 'devis_valide') return 'color:#38bdf8; background:rgba(56,189,248,0.12);'
-  if (status === 'en_livraison' || status === 'installing') return 'color:#a78bfa; background:rgba(167,139,250,0.12);'
-  if (status === 'livre') return 'color:#2dd4bf; background:rgba(45,212,191,0.12);'
-  if (status === 'devis_en_attente' || status === 'validation_terrain') return 'color:#f59e0b; background:rgba(245,158,11,0.12);'
-  if (status === 'cancelled' || status === 'devis_refuse') return 'color:#f87171; background:rgba(248,113,113,0.12);'
-  if (status === 'refunded') return 'color:#7c3aed; background:rgba(124,58,237,0.12);'
+  if (status === 'livre') return 'color:#10b981; background:rgba(16,185,129,0.12);'
+  if (status === 'en_livraison') return 'color:#a78bfa; background:rgba(167,139,250,0.12);'
+  if (status === 'confirme') return 'color:#34d399; background:rgba(52,211,153,0.12);'
+  if (status === 'contacte') return 'color:#38bdf8; background:rgba(56,189,248,0.12);'
+  if (status === 'annule') return 'color:#f87171; background:rgba(248,113,113,0.12);'
   return 'color:#fbbf24; background:rgba(251,191,36,0.12);'
 }
 function orderStepIndex(status: string): number {
-  if (status === 'pending') return 0
-  if (status === 'paid') return 1
-  if (status === 'en_livraison') return 2
-  if (status === 'livre') return 3
-  if (status === 'validation_terrain' || status === 'devis_en_attente' || status === 'devis_valide' || status === 'devis_refuse' || status === 'validated' || status === 'installing') return 3
-  if (status === 'installed') return 4
+  if (status === 'contacte') return 1
+  if (status === 'confirme') return 2
+  if (status === 'en_livraison') return 3
+  if (status === 'livre') return 4
   return 0
 }
 function orderStepDesc(status: string): { msg: string; color: string } {
   const m: Record<string, { msg: string; color: string }> = {
-    pending:            { msg: 'Commande reçue — paiement en cours de traitement', color: '#f59e0b' },
-    paid:               { msg: 'Paiement confirmé ✓ — préparation de la livraison', color: '#38bdf8' },
-    en_livraison:       { msg: 'Produit en cours de livraison chez vous', color: '#a78bfa' },
-    livre:              { msg: 'Produit livré — visite technique en attente', color: '#2dd4bf' },
-    validation_terrain: { msg: 'Visite terrain planifiée — validation en cours', color: '#f59e0b' },
-    devis_en_attente:   { msg: 'Devis technique envoyé — en attente de votre accord', color: '#f59e0b' },
-    devis_valide:       { msg: 'Devis accepté ✓ — planification de l\'installation', color: '#38bdf8' },
-    devis_refuse:       { msg: 'Devis refusé — contactez-nous pour ajuster', color: '#f87171' },
-    validated:          { msg: 'Dossier validé — installation planifiée', color: '#34d399' },
-    installing:         { msg: 'Installation en cours par nos techniciens', color: '#a78bfa' },
-    installed:          { msg: '✅ Installation terminée ! Profitez de votre climatiseur MAASGA', color: '#34d399' },
-    cancelled:          { msg: 'Commande annulée', color: '#f87171' },
-    refunded:           { msg: 'Commande annulée — remboursement traité', color: '#7c3aed' },
+    en_attente:   { msg: 'Commande reçue — notre équipe va vous contacter', color: '#f59e0b' },
+    contacte:     { msg: 'Nous vous avons contacté — confirmation de la commande en cours', color: '#38bdf8' },
+    confirme:     { msg: 'Commande confirmée ✓ — préparation de la livraison', color: '#34d399' },
+    en_livraison: { msg: 'Produit en cours de livraison chez vous', color: '#a78bfa' },
+    livre:        { msg: '✅ Livrée et installée ! Profitez de votre climatiseur MAASGA', color: '#10b981' },
+    annule:       { msg: 'Commande annulée', color: '#f87171' },
   }
   return m[status] || { msg: 'Statut en cours de mise à jour', color: '#94a3b8' }
 }
@@ -403,10 +394,10 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
 }) => {
   const initials = clientName.split(' ').map((n: string) => n[0] || '').join('').toUpperCase().slice(0, 2) || '?'
   const totalOrders = orders.length
-  const installedCount = orders.filter(o => o.status === 'installed').length
+  const installedCount = orders.filter(o => o.status === 'livre').length
   const pendingRdvs = rdvs.filter(r => r.status === 'pending' || r.status === 'confirmed')
   const nextRdv = pendingRdvs.length > 0 ? pendingRdvs[0] : null
-  const activeContracts = maintenanceContracts.filter(c => c.status === 'active')
+  const activeContracts = maintenanceContracts.filter(c => c.status === 'actif')
   const allMaintenanceItems = [...maintenanceVisits, ...maintenanceRequests].length
 
   return (
@@ -550,13 +541,13 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
               <div class="space-y-4">
                 {orders.map(o => {
                   const step = orderStepIndex(o.status)
-                  const isCancelled = o.status === 'cancelled' || o.status === 'refunded'
+                  const isCancelled = o.status === 'annule'
                   const steps = [
                     { label: 'Commande', icon: 'fa-receipt', done: step >= 0 },
-                    { label: 'Payée', icon: 'fa-credit-card', done: step >= 1 },
-                    { label: 'En livraison', icon: 'fa-truck', done: step >= 2 },
-                    { label: 'Livrée', icon: 'fa-box-open', done: step >= 3 },
-                    { label: 'Installée', icon: 'fa-check-double', done: step >= 4 }
+                    { label: 'Contacté', icon: 'fa-phone', done: step >= 1 },
+                    { label: 'Confirmée', icon: 'fa-check', done: step >= 2 },
+                    { label: 'En livraison', icon: 'fa-truck', done: step >= 3 },
+                    { label: 'Livrée', icon: 'fa-check-double', done: step >= 4 }
                   ]
                   return (
                     <div class="p-4 rounded-xl" style="background:#f0f7ff; border:1px solid rgba(0,119,182,0.1);">
@@ -634,7 +625,7 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                       {isCancelled && (
                         <div class="flex items-center space-x-2 p-2.5 rounded-lg mb-3" style="background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.12);">
                           <i class="fas fa-times-circle text-sm" style="color:#ef4444;"></i>
-                          <span class="text-xs font-semibold" style="color:#ef4444;">{o.status === 'refunded' ? 'Commande annulée — remboursement traité' : 'Commande annulée'}</span>
+                          <span class="text-xs font-semibold" style="color:#ef4444;">Commande annulée</span>
                         </div>
                       )}
 
@@ -652,14 +643,10 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                             </button>
                           </>
                         )}
-                        {(o.status === 'validation_terrain' || o.status === 'devis_en_attente' || o.status === 'devis_refuse') && (
-                          <button onclick={`cancelInstallation(${o.id})`} class="inline-flex items-center space-x-1.5 text-xs font-bold px-3 py-2 rounded-lg" style="background:rgba(239,68,68,0.08); color:#ef4444; border:1px solid rgba(239,68,68,0.15);">
-                            <i class="fas fa-ban"></i><span>Annuler l'installation</span>
-                          </button>
-                        )}
-                        {['paid', 'en_livraison', 'livre', 'validation_terrain', 'devis_en_attente', 'devis_refuse'].includes(o.status) && (
+                        {/* Annulation client — mêmes statuts que le CHECK de /api/order/cancel-order */}
+                        {['en_attente', 'contacte', 'confirme'].includes(o.status) && (
                           <button onclick={`cancelOrder(${o.id})`} class="inline-flex items-center space-x-1.5 text-xs font-bold px-3 py-2 rounded-lg" style="background:rgba(127,29,29,0.06); color:#991b1b; border:1px solid rgba(127,29,29,0.12);">
-                            <i class="fas fa-undo"></i><span>Annuler et rembourser</span>
+                            <i class="fas fa-ban"></i><span>Annuler la commande</span>
                           </button>
                         )}
                       </div>
@@ -1192,20 +1179,8 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
           }).catch(function() { alert('Erreur réseau'); });
         }
 
-        function cancelInstallation(orderId) {
-          if (!confirm('Annuler l\\'installation pour la commande #' + orderId + ' ? Vous garderez le produit.')) return;
-          fetch('/api/order/cancel-installation', {
-            method: 'POST', credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ order_id: orderId })
-          }).then(function(r) { return r.json(); }).then(function(d) {
-            if (d.success) { alert('Installation annulée.'); window.location.reload(); }
-            else alert(d.error || 'Erreur');
-          }).catch(function() { alert('Erreur réseau'); });
-        }
-
         function cancelOrder(orderId) {
-          var reason = prompt('Êtes-vous sûr de vouloir annuler la commande #' + orderId + ' et demander un remboursement ?\\nMotif (optionnel) :');
+          var reason = prompt('Êtes-vous sûr de vouloir annuler la commande #' + orderId + ' ?\\nMotif (optionnel) :');
           if (reason === null) return;
           fetch('/api/order/cancel-order', {
             method: 'POST', credentials: 'same-origin',

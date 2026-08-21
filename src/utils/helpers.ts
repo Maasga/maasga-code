@@ -3,6 +3,29 @@ export function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 }
 
+// Décode les entités produites par escapeHtml. Sert uniquement à rattraper les
+// lignes historiques stockées déjà échappées : le stockage se fait désormais en
+// texte brut et l'échappement est appliqué au rendu (une seule couche).
+export function unescapeHtml(str: string): string {
+  return str.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/&amp;/g, '&')
+}
+
+// Normalise un champ texte libre destiné à la base : retire les caractères de
+// contrôle (hors tabulation et retours à la ligne), coupe les espaces de bord et
+// borne la longueur pour qu'un formulaire public ne serve pas à gonfler la base.
+// N'échappe PAS le HTML — sinon on stocke `&#39;` et le rendu l'affiche tel quel.
+export function sanitizeText(value: unknown, maxLength = 500): string {
+  const s = typeof value === 'string' ? value : value != null ? String(value) : ''
+  let out = ''
+  for (const ch of s) {
+    const code = ch.codePointAt(0) as number
+    if (code < 32 && code !== 9 && code !== 10 && code !== 13) continue
+    if (code === 127) continue
+    out += ch
+  }
+  return out.trim().slice(0, maxLength)
+}
+
 // Email format validation
 export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
