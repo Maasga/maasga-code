@@ -43,11 +43,11 @@
   --ink: #020617;             /* texte le plus sombre */
 
   /* Échelle d'ombres froides graduées */
-  --shadow-sm: 0 1px 2px rgba(2,6,23,0.04), 0 2px 6px rgba(3,105,161,0.05);
-  --shadow-md: 0 4px 12px rgba(3,105,161,0.07), 0 8px 24px rgba(2,6,23,0.05);
-  --shadow-lg: 0 12px 28px rgba(3,105,161,0.10), 0 20px 48px rgba(2,6,23,0.08);
-  --shadow-xl: 0 24px 56px rgba(3,105,161,0.14), 0 40px 80px rgba(2,6,23,0.12);
-  --shadow-navy: 0 24px 60px rgba(2,6,23,0.35);
+  --shadow-sm: 0 1px 2px rgba(2,6,23,0.02), 0 2px 6px rgba(3,105,161,0.025);
+  --shadow-md: 0 4px 12px rgba(3,105,161,0.035), 0 8px 24px rgba(2,6,23,0.025);
+  --shadow-lg: 0 12px 28px rgba(3,105,161,0.05), 0 20px 48px rgba(2,6,23,0.04);
+  --shadow-xl: 0 24px 56px rgba(3,105,161,0.07), 0 40px 80px rgba(2,6,23,0.06);
+  --shadow-navy: 0 24px 60px rgba(2,6,23,0.175);
 
   /* Rayons */
   --radius-sm: 0.625rem;
@@ -113,7 +113,7 @@
 
 /* ─── SURFACES PREMIUM ─── */
 .surface {
-  background: var(--bg-card);
+  background: var(--bg-base);
   border: 1px solid var(--slate-200);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
@@ -164,20 +164,20 @@
   box-shadow: 0 4px 20px rgba(0, 119, 182, 0.08);
 }
 .glass-card {
-  background: #ffffff;
+  background: var(--slate-50);
   border: 1px solid rgba(0,119,182,0.12);
   transition: all 0.4s var(--ease-out-expo);
 }
 .glass-card:hover {
-  border-color: rgba(3,105,161,0.3);
-  box-shadow: 0 20px 45px rgba(3,105,161,0.18), 0 6px 16px rgba(3,105,161,0.10);
-  background: #f0f8ff;
-  transform: translateY(-6px);
+  border-color: rgba(3,105,161,0.2);
+  box-shadow: 0 8px 20px rgba(3,105,161,0.08), 0 2px 6px rgba(3,105,161,0.05);
+  background: #f8fbff;
+  transform: translateY(-2px);
 }
 
 /* ─── GRADIENT HERO (navy premium) ─── */
 .gradient-hero {
-  background: linear-gradient(160deg, var(--navy-950) 0%, var(--navy-900) 42%, #0b2c47 78%, #0e3a5c 100%);
+  background: linear-gradient(160deg, #0F172A 0%, #18212F 25%, #212E42 100%);
   position: relative;
 }
 .gradient-hero::before {
@@ -185,8 +185,8 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 78% 28%, rgba(3,105,161,0.30) 0%, transparent 55%),
-    radial-gradient(ellipse at 22% 80%, rgba(0,180,216,0.14) 0%, transparent 55%);
+    radial-gradient(ellipse at 78% 28%, rgba(3,105,161,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse at 22% 80%, rgba(0,180,216,0.02) 0%, transparent 60%);
   pointer-events: none;
 }
 
@@ -269,7 +269,7 @@
   border: 1px solid rgba(0,119,182,0.18);
   background: #ffffff;
   color: #03045e;
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   transition: all 0.25s ease;
 }
 .input-field::placeholder { color: #94a3b8; }
@@ -338,10 +338,10 @@
 
 /* ─── HOVER EFFECTS ─── */
 .hover-lift { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease; }
-.hover-lift:hover { transform: translateY(-6px); box-shadow: 0 20px 45px rgba(3,105,161,0.18), 0 6px 16px rgba(3,105,161,0.10); }
+.hover-lift:hover { transform: translateY(-1.5px); box-shadow: 0 4px 10px rgba(3,105,161,0.08), 0 1px 3px rgba(3,105,161,0.04); }
 
 .hover-glow { transition: box-shadow 0.3s ease; }
-.hover-glow:hover { box-shadow: 0 0 20px rgba(0,119,182,0.2); }
+.hover-glow:hover { box-shadow: 0 0 8px rgba(0,119,182,0.08); }
 
 /* ─── Tilt 3D « carte entière » (type Tympanus) ───
    Seule la carte [data-tilt] s'incline au survol (rotateX/rotateY via GSAP, perspective
@@ -356,8 +356,8 @@
   transition: box-shadow 0.35s var(--ease-out-expo), border-color 0.35s var(--ease-out-expo);
 }
 [data-tilt]:hover {
-  border-color: rgba(0,180,216,0.6) !important;
-  box-shadow: 0 0 0 2px rgba(0,180,216,0.4), 0 28px 60px -12px rgba(3,105,161,0.45) !important;
+  border-color: rgba(0,180,216,0.2) !important;
+  box-shadow: 0 0 0 1px rgba(0,180,216,0.15), 0 8px 16px -4px rgba(3,105,161,0.15) !important;
 }
 
 /* Reflet retiré à la demande — masqué partout (l'élément peut subsister dans le markup). */

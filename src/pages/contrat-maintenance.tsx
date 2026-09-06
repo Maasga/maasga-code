@@ -26,7 +26,7 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
     {/* Hero */}
     <section class="gradient-hero py-16 text-white text-center relative overflow-hidden reveal">
       <div class="relative z-10 max-w-4xl mx-auto px-4">
-        <div class="inline-flex items-center space-x-2 bg-white bg-opacity-10 rounded-full px-4 py-2 text-sm mb-4 font-medium">
+        <div class="inline-flex items-center space-x-2 rounded-full px-4 py-2 text-sm mb-4 font-medium" style="background-color:rgba(241,245,249,0.1); border-color:rgba(226,232,240,0.1);">
           <i class="fas fa-shield-alt"></i><span>Maintenance préventive · MAASGA</span>
         </div>
         <h1 class="text-4xl md:text-5xl font-extrabold mb-4">Contrats de Maintenance</h1>
@@ -83,16 +83,16 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
             </div>
             <div class="space-y-3 mb-6">
               {[
-                '3 maintenances préventives',
-                'Vérification complète du système',
-                'Nettoyage des filtres',
-                'Contrôle des performances de refroidissement',
-                'Vérification du gaz réfrigérant',
-                'Diagnostic technique'
-              ].map(f => (
-                <div class="flex items-start space-x-2 text-sm">
-                  <i class="fas fa-check mt-0.5 flex-shrink-0" style="color:#16a34a; font-size:0.7rem;"></i>
-                  <span style="color:#334155;">{f}</span>
+                { text: '3 maintenances préventives', icon: 'fa-calendar-check' },
+                { text: 'Vérification complète du système', icon: 'fa-search' },
+                { text: 'Nettoyage des filtres', icon: 'fa-filter' },
+                { text: 'Contrôle des performances de refroidissement', icon: 'fa-tachometer-alt' },
+                { text: 'Vérification du gaz réfrigérant', icon: 'fa-snowflake' },
+                { text: 'Diagnostic technique', icon: 'fa-stethoscope' }
+              ].map((f, index) => (
+                <div key={index} class="flex items-start space-x-2 text-sm">
+                  <i class={`fas ${f.icon} mt-0.5 flex-shrink-0`} style="color:#16a34a; font-size:0.7rem;"></i>
+                  <span style="color:#334155;">{f.text}</span>
                 </div>
               ))}
             </div>

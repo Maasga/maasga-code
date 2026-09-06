@@ -17,12 +17,12 @@ export const SimulateurPage = ({
     <Layout title="Simulateur BTU Climatisation - MAASGA" activePage="simulateur" canonicalPath="/simulateur" description="Simulateur BTU gratuit — Calculez la puissance idéale pour votre climatiseur. Recommandation personnalisée adaptée à Ouagadougou.">
 
       {/* Hero */}
-      <section class="gradient-hero py-16 text-white text-center relative overflow-hidden">
+      <section class="gradient-hero py-16 text-white relative overflow-hidden">
         <div class="absolute inset-0 pointer-events-none">
           <i class="fas fa-calculator absolute top-8 right-8 text-white/10 text-5xl"></i>
         </div>
         <div class="max-w-4xl mx-auto px-4 relative z-10">
-          <div class="inline-flex items-center space-x-2 bg-white/15 border border-white/20 rounded-full px-4 py-2 text-sm mb-4">
+          <div class="inline-flex items-center space-x-2 rounded-full px-4 py-2 text-sm mb-4" style="background-color:rgba(241,245,249,0.15); border-color:rgba(226,232,240,0.2);">
             <i class="fas fa-calculator text-ice-300"></i>
             <span>Outil gratuit · Résultat immédiat</span>
           </div>
@@ -355,7 +355,7 @@ export const SimulateurPage = ({
               <div class="tilt-caption">
                 <h4 class="font-bold text-lg mb-2">Besoin d'un avis expert ?</h4>
                 <p class="text-sm mb-4" style="color:#111827;">Nos techniciens se déplacent gratuitement pour dimensionner votre projet.</p>
-                <a href="/rendez-vous" class="bg-white text-primary-700 font-bold px-6 py-3 rounded-xl inline-flex items-center space-x-2 hover:bg-blue-50 transition-colors shadow-md">
+                <a href="/rendez-vous" class="bg-slate-50 text-primary-700 font-bold px-6 py-3 rounded-xl inline-flex items-center space-x-2 hover:bg-blue-50 transition-colors shadow-md">
                   <i class="fas fa-calendar-check"></i>
                   <span>Prendre rendez-vous</span>
                 </a>

@@ -129,7 +129,7 @@ const ClientLogin = ({ error, success, defaultTab, redirect }: { error?: string;
     <section class="gradient-hero py-16 text-white text-center relative overflow-hidden reveal">
       <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:url('data:image/svg+xml,...') repeat;opacity:0.03;pointer-events:none;"></div>
       <div class="relative z-10">
-        <div class="inline-flex items-center space-x-2 bg-white bg-opacity-10 rounded-full px-4 py-2 text-sm mb-4 font-medium">
+        <div class="inline-flex items-center space-x-2 rounded-full px-4 py-2 text-sm mb-4 font-medium" style="background-color:rgba(241,245,249,0.1); border-color:rgba(226,232,240,0.1);">
           <i class="fas fa-user-shield"></i><span>Espace sécurisé · MAASGA</span>
         </div>
         <h1 class="text-4xl font-bold mb-4">Espace Client</h1>
@@ -406,7 +406,7 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
       {/* Hero profil */}
       <section class="gradient-hero py-12 text-white relative overflow-hidden">
         <div class="absolute inset-0 pointer-events-none">
-          <div class="absolute -top-20 -right-20 w-80 h-80 bg-white/5 rounded-full blur-3xl"></div>
+          <div class="absolute -top-20 -right-20 w-80 h-80" style="background-color:rgba(241,245,249,0.05); border-radius:9999px; backdrop-filter:blur(8px);"></div>
         </div>
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
@@ -424,7 +424,7 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                 {clientSince && <span><i class="fas fa-star mr-1.5"></i>Membre depuis {formatDate(clientSince)}</span>}
               </div>
             </div>
-            <a href="/api/logout" class="flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-semibold flex-shrink-0 transition-all hover:bg-white/25" style="background:rgba(255,255,255,0.15); color:#ffffff; border:1px solid rgba(255,255,255,0.2);">
+            <a href="/api/logout" class="flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-semibold flex-shrink-0 transition-all hover:bg-slate-50/50" style="background-color:rgba(241,245,249,0.15); color:#ffffff; border:1px solid rgba(226,232,240,0.2);">
               <i class="fas fa-sign-out-alt"></i>
               <span>Déconnexion</span>
             </a>
@@ -512,7 +512,7 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
               </div>
             </div>
             <a href={`https://wa.me/22655996418?text=Bonjour MAASGA, je confirme mon RDV du ${nextRdv.date}`} target="_blank" rel="noopener noreferrer"
-              class="flex items-center space-x-2 bg-white font-bold px-4 py-2.5 rounded-xl text-sm hover:bg-blue-50 transition-colors flex-shrink-0" style="color:#0077b6;">
+              class="flex items-center space-x-2 bg-slate-50 font-bold px-4 py-2.5 rounded-xl text-sm hover:bg-blue-50 transition-colors flex-shrink-0" style="color:#0077b6;">
               <i class="fab fa-whatsapp" style="color:#25d366;"></i>
               <span>Confirmer par WhatsApp</span>
             </a>

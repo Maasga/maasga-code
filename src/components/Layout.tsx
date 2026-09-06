@@ -144,7 +144,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         {/* JSON-LD Structured Data injection point */}
         {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />}
       </head>
-      <body class="min-h-screen pb-16 md:pb-0" style="background-color:#f8fbff; color:#03045e;" onload="window.initCGUModal?.()">
+      <body class="bg-navy min-h-screen pb-16 md:pb-0" style="color:var(--ink);" onload="window.initCGUModal?.()">
 
         {/* js-ready : pose immédiatement la classe pour activer l'état initial caché
             des reveals. Si JS est désactivé, la classe n'est jamais posée → contenu visible. */}

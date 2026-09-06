@@ -9,9 +9,10 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
     <Layout title="Prendre Rendez-vous - MAASGA Climatisation Ouagadougou" activePage="rdv" canonicalPath="/rendez-vous" description="Prenez rendez-vous avec MAASGA — Visite technique gratuite pour installation climatiseur à Ouagadougou. Créneaux disponibles en ligne.">
 
       {/* Hero */}
-      <section class="gradient-hero py-16 text-white text-center relative overflow-hidden">
+      <section class="gradient-hero py-16 text-white relative overflow-hidden">
         <div class="max-w-4xl mx-auto px-4 relative z-10">
-          <div class="inline-flex items-center space-x-2 bg-white/15 border border-white/20 rounded-full px-4 py-2 text-sm mb-4">
+          <div class="inline-flex items-center space-x-2 border rounded-full px-4 py-2 text-sm mb-4"
+     style="background-color:rgba(241,245,249,0.15); border-color:rgba(226,232,240,0.1);">
             <i class="fas fa-calendar-check text-ice-300"></i>
             <span>Visite technique gratuite · Devis sous 24h</span>
           </div>
@@ -383,14 +384,16 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                 <span>Contact direct</span>
               </h4>
               <div class="space-y-3">
-                <a href="tel:+22655996418" class="flex items-center space-x-3 bg-white/15 rounded-xl px-4 py-3 hover:bg-white/20 transition-all">
+                <a href="tel:+22655996418" class="flex items-center space-x-3 border rounded-xl px-4 py-3 hover:border-primary-500/50 transition-all"
+     style="background-color:rgba(241,245,249,0.15); border-color:rgba(226,232,240,0.1);">
                   <i class="fas fa-phone text-ice-300"></i>
                   <div>
                     <div class="text-xs opacity-70">Téléphone</div>
                     <div class="font-semibold text-sm">+226 55 99 64 18</div>
                   </div>
                 </a>
-                <a href="https://wa.me/22655996418" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-3 bg-white/15 rounded-xl px-4 py-3 hover:bg-white/20 transition-all">
+                <a href="https://wa.me/22655996418" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-3 border rounded-xl px-4 py-3 hover:border-primary-500/50 transition-all"
+     style="background-color:rgba(241,245,249,0.15); border-color:rgba(226,232,240,0.1);">
                   <i class="fab fa-whatsapp text-green-300 text-lg"></i>
                   <div>
                     <div class="text-xs opacity-70">WhatsApp</div>
@@ -457,7 +460,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                   <span class="hidden sm:inline text-sm">Me localiser</span>
                 </button>
               </div>
-              <div id="address-suggestions" class="rounded-lg max-h-40 overflow-y-auto" style="background:#ffffff; border:1px solid rgba(59,130,246,0.15);"></div>
+              <div id="address-suggestions" class="rounded-lg max-h-40 overflow-y-auto" style="background:var(--slate-50); border:1px solid rgba(59,130,246,0.15);"></div>
               <div id="location-status" class="text-xs mt-2 hidden"></div>
             </div>
 
@@ -601,7 +604,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
               suggestionsDiv.textContent = '';
               suggestions.forEach(function(s) {
                 const row = document.createElement('div');
-                row.className = 'px-4 py-2 hover:bg-white/5 cursor-pointer text-gray-300';
+                row.className = 'px-4 py-2 border rounded hover:border-primary-500/50 cursor-pointer text-gray-300';
                 const icon = document.createElement('i');
                 icon.className = 'fas fa-map-marker-alt text-primary-500 mr-2';
                 row.appendChild(icon);

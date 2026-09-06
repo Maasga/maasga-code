@@ -5,13 +5,13 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
     <Layout title="Contact MAASGA - Climatisation Ouagadougou" activePage="contact" canonicalPath="/contact" description="Contactez MAASGA Climatisation — Téléphone, WhatsApp, email ou formulaire. Réponse rapide garantie. Devis gratuit à Ouagadougou.">
 
       {/* Hero */}
-      <section class="gradient-hero py-16 text-white text-center relative overflow-hidden">
+      <section class="gradient-hero py-16 text-white relative overflow-hidden">
         <div class="absolute inset-0 pointer-events-none">
           <i class="fas fa-phone-alt absolute top-8 right-10 text-white/10 text-5xl"></i>
           <i class="fas fa-envelope absolute bottom-10 left-10 text-white/8 text-4xl"></i>
         </div>
         <div class="max-w-4xl mx-auto px-4 relative z-10">
-          <div class="inline-flex items-center space-x-2 bg-white/15 border border-white/20 rounded-full px-4 py-2 text-sm mb-4">
+          <div class="inline-flex items-center space-x-2 border rounded-full px-4 py-2 text-sm mb-4" style="background-color:rgba(248,250,252,0.15); border-color:rgba(226,232,240,0.2);">
             <i class="fas fa-headset text-ice-300"></i>
             <span>Disponible 7j/7 · Réponse rapide</span>
           </div>
@@ -117,7 +117,7 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
             <a href="/rendez-vous"
               data-tilt class="block btn-primary rounded-2xl p-5 text-white transition-all duration-300">
               <div class="flex items-center space-x-4">
-                <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style="background-color:rgba(248,250,252,0.2);">
                   <i class="fas fa-calendar-check text-white text-xl"></i>
                 </div>
                 <div>

@@ -70,9 +70,9 @@ export const RealisationsPage = ({ realisations = [] }: { realisations?: any[] }
     <Layout title="Nos Services — MAASGA Climatisation Ouagadougou" activePage="realisations" canonicalPath="/realisations" description="Services MAASGA — Installation, maintenance et dépannage de climatiseurs à Ouagadougou. Résidentiel, professionnel, commercial.">
 
       {/* Hero */}
-      <section class="gradient-hero py-16 text-white text-center relative overflow-hidden">
+      <section class="gradient-hero py-16 text-white relative overflow-hidden">
         <div class="max-w-4xl mx-auto px-4 relative z-10">
-          <div class="inline-flex items-center space-x-2 bg-white/15 border border-white/20 rounded-full px-4 py-2 text-sm mb-4">
+          <div class="inline-flex items-center space-x-2 rounded-full px-4 py-2 text-sm mb-4" style="background-color:rgba(241,245,249,0.15); border-color:rgba(226,232,240,0.2);">
             <i class="fas fa-snowflake text-ice-300"></i>
             <span>Services de climatisation · Ouagadougou, Burkina Faso</span>
           </div>
@@ -195,7 +195,7 @@ export const RealisationsPage = ({ realisations = [] }: { realisations?: any[] }
               <i class="fas fa-calendar-check"></i>
               <span>Demander un devis gratuit</span>
             </a>
-            <a href="/catalogue" class="font-bold px-8 py-3.5 rounded-2xl inline-flex items-center justify-center space-x-2 transition-all hover:bg-white/5" style="color:#38bdf8; border:1px solid rgba(56,189,248,0.25);">
+            <a href="/catalogue" class="font-bold px-8 py-3.5 rounded-2xl inline-flex items-center justify-center space-x-2 transition-all hover:bg-slate-50/5" style="color:#38bdf8; border:1px solid rgba(56,189,248,0.25);">
               <i class="fas fa-th-large"></i>
               <span>Voir le catalogue</span>
             </a>

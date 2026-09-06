@@ -66,8 +66,8 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
         <div id="snow-container" class="absolute inset-0 overflow-hidden pointer-events-none"></div>
 
         {/* Halos lumineux subtils — parallaxe légère (au-dessus de l'overlay, derrière le texte) */}
-        <div class="glow-dot w-96 h-96 top-[-60px] right-[-40px] pointer-events-none" style="z-index:6; background:rgba(0,180,216,0.14);" data-parallax="40"></div>
-        <div class="glow-dot w-80 h-80 bottom-[-40px] left-[-40px] pointer-events-none" style="z-index:6; background:rgba(3,105,161,0.16);" data-parallax="-30"></div>
+        <div class="glow-dot w-72 h-72 top-[-60px] right-[-40px] pointer-events-none" style="z-index:6; background:rgba(0,180,216,0.04);" data-parallax="40"></div>
+        <div class="glow-dot w-60 h-60 bottom-[-40px] left-[-40px] pointer-events-none" style="z-index:6; background:rgba(3,105,161,0.05);" data-parallax="-30"></div>
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10 w-full">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -180,7 +180,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       </section>
 
       {/* ===== BARRE DE GARANTIES ===== */}
-      <section class="py-5" style="background:#ffffff; border-bottom:1px solid var(--slate-200); box-shadow:var(--shadow-sm);">
+      <section class="py-5" style="background:var(--slate-50); border-bottom:1px solid var(--slate-200); box-shadow:var(--shadow-sm);">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4" data-stagger>
             {[
@@ -204,7 +204,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       </section>
 
       {/* ===== MARQUES PARTENAIRES (marquee) ===== */}
-      <section class="py-10 bg-white border-y" style="border-color:rgba(3,105,161,0.08);" aria-label="Marques partenaires">
+      <section class="py-10 bg-slate-50 border-y" style="border-color:rgba(3,105,161,0.08);" aria-label="Marques partenaires">
         <p class="text-center text-xs font-bold uppercase tracking-[0.2em] mb-6" style="color:var(--slate-500);">Les grandes marques que nous installons</p>
         <div class="brand-marquee">
           <div class="brand-track">
@@ -216,7 +216,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       </section>
 
       {/* ===== NOTRE EXPERTISE — split-écran épinglé, révélation au scroll ===== */}
-      <section id="services" class="expertise-pin bg-white">
+      <section id="services" class="expertise-pin bg-slate-50">
         <div class="expertise-stage">
           <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div class="text-center mb-10 lg:mb-12" data-reveal>
@@ -330,18 +330,22 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             { icon: "fa-file-pdf",        color: "#ef4444", title: "Devis PDF détaillé", desc: "Devis transparent et complet remis immédiatement après visite technique et installation." },
             { icon: "fa-arrows-rotate",   color: "#10b981", title: "Maintenance trim.", desc: "Plan d'entretien régulier pour garantir les performances et la durée de vie." },
             { icon: "fa-helmet-safety",   color: "#f59e0b", title: "Techniciens qualifiés", desc: "Équipe formée et certifiée, spécialisée en froid et climatisation." }
-          ].map(av => (
-            <div data-tilt class="surface-elevated p-6 text-center group">
-              <div class="tilt-image w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform" style={`background:${av.color}14; border:1px solid ${av.color}26;`}>
-                <i class={`fas ${av.icon} text-2xl`} style={`color:${av.color};`}></i>
+          ].map((av, index) => {
+            const radiusClasses = ['rounded-xl', 'rounded-lg', 'rounded-md', 'rounded-sm'];
+            const radiusClass = radiusClasses[index] || 'rounded-2xl';
+            return (
+              <div data-tilt class="surface-elevated p-6 text-center group">
+                <div class={`tilt-image w-14 h-14 ${radiusClass} flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform`} style={`background:${av.color}14; border:1px solid ${av.color}26;`}>
+                  <i class={`fas ${av.icon} text-2xl`} style={`color:${av.color};`}></i>
+                </div>
+                <div class="tilt-caption">
+                  <h3 class="font-bold mb-2 font-display" style="color:var(--navy-900);">{av.title}</h3>
+                  <p class="text-sm leading-relaxed" style="color:var(--slate-700);">{av.desc}</p>
+                </div>
+                <div class="tilt-shine" aria-hidden="true"></div>
               </div>
-              <div class="tilt-caption">
-                <h3 class="font-bold mb-2 font-display" style="color:var(--navy-900);">{av.title}</h3>
-                <p class="text-sm leading-relaxed" style="color:var(--slate-700);">{av.desc}</p>
-              </div>
-              <div class="tilt-shine" aria-hidden="true"></div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -425,7 +429,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       </section>
 
       {/* ===== FONCTIONNALITÉS ===== */}
-      <section class="py-20 bg-white">
+      <section class="py-20 bg-slate-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="text-center mb-14" data-reveal>
             <span class="eyebrow mb-4">Plateforme</span>
@@ -484,7 +488,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             {/* Carte calcul */}
             <div class="surface-elevated p-8">
               <div class="text-center mb-6">
-                <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan));">
+                <div class="w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-3" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan));">
                   <i class="fas fa-calculator text-white text-xl"></i>
                 </div>
                 <h3 class="font-extrabold text-lg font-display" style="color:var(--navy-900);">Exemple de calcul</h3>
@@ -540,7 +544,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
           <div class="relative" style="overflow:hidden;" data-reveal>
             <div class="testimonial-track">
               {[...topReviews, ...topReviews, ...topReviews].map((r, idx) => (
-                <div class="surface-elevated p-6 flex-shrink-0 testimonial-card-in" style={`min-width:320px; max-width:360px; transition-delay:${0.08 * (idx % topReviews.length)}s;`} data-testimonial-card>
+                <div class="surface-elevated p-6 flex-shrink-0 testimonial-card-in rounded-lg" style={`min-width:320px; max-width:360px; transition-delay:${0.08 * (idx % topReviews.length)}s;`} data-testimonial-card>
                   <div class="flex items-center justify-between mb-4">
                     <div class="flex space-x-0.5">
                       {[1,2,3,4,5].map(s => (
@@ -637,7 +641,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
 
       {/* ===== CTA FINAL ===== */}
       <section class="py-20 relative overflow-hidden bg-navy" data-reveal>
-        <div class="glow-dot w-80 h-80 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style="background:rgba(3,105,161,0.25);" data-parallax="-30"></div>
+        <div class="glow-dot w-80 h-80 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style="background:rgba(3,105,161,0.15);" data-parallax="-30"></div>
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <i class="ph-duotone ph-rocket-launch text-5xl mb-4" style="color:var(--ice);"></i>
           <h2 data-split class="display-2 mb-4" style="color:#ffffff;">Prêt à profiter du confort climatisé ?</h2>

@@ -29,9 +29,9 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
     <Layout title="Avis Clients MAASGA - Climatisation Ouagadougou" activePage="avis" canonicalPath="/avis" description={approvedReviews.length > 0 ? `Avis clients MAASGA — Témoignages vérifiés sur nos installations climatisation à Ouagadougou. Note moyenne ${avgNote}/5.` : 'Avis clients MAASGA — Découvrez les témoignages de nos clients en climatisation à Ouagadougou.'} jsonLd={jsonLdAvis}>
 
       {/* Hero */}
-      <section class="gradient-hero py-16 text-white text-center relative overflow-hidden">
+      <section class="gradient-hero py-16 text-white relative overflow-hidden">
         <div class="max-w-4xl mx-auto px-4 relative z-10">
-          <div class="inline-flex items-center space-x-2 bg-white/15 border border-white/20 rounded-full px-4 py-2 text-sm mb-4">
+          <div class="inline-flex items-center space-x-2 border rounded-full px-4 py-2 text-sm mb-4" style="background-color:rgba(241,245,249,0.15); border-color:rgba(226,232,240,0.1);">
             <i class="fas fa-star text-yellow-400"></i>
             <span>Avis vérifiés · Clients réels</span>
           </div>
@@ -41,7 +41,7 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
           </p>
           {/* Note globale */}
           {hasReviews ? (
-          <div class="mt-8 inline-flex items-center space-x-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-4">
+          <div class="mt-8 inline-flex items-center space-x-4 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-4" style="background-color:rgba(241,245,249,0.1);">
             <div class="text-5xl font-bold text-yellow-400">{avgNote}</div>
             <div>
               <div class="flex space-x-0.5 mb-1">
@@ -53,7 +53,7 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
             </div>
           </div>
           ) : (
-          <div class="mt-8 inline-flex items-center space-x-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-4">
+          <div class="mt-8 inline-flex items-center space-x-3 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-4" style="background-color:rgba(241,245,249,0.1);">
             <i class="fas fa-comments text-2xl text-blue-200/60"></i>
             <span class="text-blue-200 text-sm">Aucun avis pour le moment — soyez le premier !</span>
           </div>

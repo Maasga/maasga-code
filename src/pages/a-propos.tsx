@@ -18,11 +18,11 @@ export const AProposPage = () => {
       {/* Hero */}
       <section class="gradient-hero py-20 text-white relative overflow-hidden">
         <div class="absolute inset-0 pointer-events-none">
-          <div class="absolute -top-20 -right-20 w-80 h-80 bg-white/5 rounded-full blur-3xl"></div>
+          <div class="absolute -top-20 -right-20 w-80 h-80" style="background-color:rgba(241,245,249,0.05); border-radius:9999px; backdrop-filter:blur(8px);"></div>
           <div class="absolute -bottom-20 -left-20 w-80 h-80 bg-ice-400/5 rounded-full blur-3xl"></div>
         </div>
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div class="inline-flex items-center space-x-2 bg-white/15 border border-white/20 rounded-full px-4 py-2 text-sm mb-6">
+          <div class="inline-flex items-center space-x-2 rounded-full px-4 py-2 text-sm mb-6" style="background-color:rgba(241,245,249,0.15); border-color:rgba(226,232,240,0.2);">
             <i class="fas fa-building text-ice-300"></i>
             <span>Notre histoire · Nos valeurs</span>
           </div>
@@ -39,8 +39,8 @@ export const AProposPage = () => {
         <section class="mb-16 reveal">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 class="text-3xl font-bold mb-6" style="color:#03045e;">Notre histoire</h2>
-              <div class="space-y-4 leading-relaxed" style="color:#111827;">
+              <h2 class="text-3xl font-bold mb-6" style="color:var(--ink);">Notre histoire</h2>
+              <div class="space-y-4 leading-relaxed" style="color:var(--ink);">
                 <p>
                   Fondée à Ouagadougou, MAASGA est née d'une conviction : le marché burkinabé méritait un prestataire de climatisation <strong>vraiment professionnel</strong>, transparent et orienté client.
                 </p>
@@ -74,7 +74,7 @@ export const AProposPage = () => {
         <section class="mb-16 reveal">
           <div class="text-center mb-10">
             <h2 class="text-3xl font-bold text-white mb-3">Nos valeurs</h2>
-            <p class="max-w-xl mx-auto" style="color:#8ba3c0;">Les principes qui guident chacune de nos interventions.</p>
+            <p class="max-w-xl mx-auto" style="color:var(--ink);">Les principes qui guident chacune de nos interventions.</p>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
@@ -89,7 +89,7 @@ export const AProposPage = () => {
                 </div>
                 <div class="tilt-caption">
                   <h3 class="font-bold text-white mb-2">{v.title}</h3>
-                  <p class="text-sm leading-relaxed" style="color:#8ba3c0;">{v.desc}</p>
+                  <p class="text-sm leading-relaxed" style="color:var(--ink);">{v.desc}</p>
                 </div>
                 <div class="tilt-shine" aria-hidden="true"></div>
               </div>
@@ -100,7 +100,7 @@ export const AProposPage = () => {
         {/* Notre équipe */}
         <section class="mb-16 rounded-3xl p-10 reveal" style="background:rgba(56,189,248,0.04); border:1px solid rgba(56,189,248,0.1);">
           <div class="text-center mb-10">
-            <h2 class="text-3xl font-bold mb-3" style="color:#03045e;">Notre équipe</h2>
+            <h2 class="text-3xl font-bold mb-3" style="color:var(--ink);">Notre équipe</h2>
             <p style="color:#475569;">Des professionnels passionnés par leur métier.</p>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
@@ -111,7 +111,7 @@ export const AProposPage = () => {
                 <img src="/cherif.jpeg" alt="Sherif SAWADOGO" loading="lazy" width={112} height={112} class="w-full h-full object-cover" />
               </div>
               <div class="tilt-caption">
-                <h3 class="font-extrabold text-lg mb-1" style="color:#03045e;">Sherif SAWADOGO</h3>
+                <h3 class="font-extrabold text-lg mb-1" style="color:var(--ink);">Sherif SAWADOGO</h3>
                 <p class="text-sm font-semibold mb-1" style="color:#0077b6;">Directeur Technique</p>
                 <p class="text-xs mb-3" style="color:#64748b;">Chef d'équipe installation · 8 ans d'expérience</p>
                 <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#0077b6; border:1px solid rgba(0,119,182,0.2);">
@@ -128,7 +128,7 @@ export const AProposPage = () => {
                 <img src="/malick.jpg" alt="Kompaore Abdoul Malick" loading="lazy" width={112} height={112} class="w-full h-full object-cover" />
               </div>
               <div class="tilt-caption">
-                <h3 class="font-extrabold text-lg mb-1" style="color:#03045e;">Kompaore Abdoul Malick</h3>
+                <h3 class="font-extrabold text-lg mb-1" style="color:var(--ink);">Kompaore Abdoul Malick</h3>
                 <p class="text-sm font-semibold mb-1" style="color:#0077b6;">Directeur Commercial</p>
                 <p class="text-xs mb-3" style="color:#64748b;">Devis & relation client · 4 ans d'expérience</p>
                 <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#0077b6; border:1px solid rgba(0,119,182,0.2);">
@@ -145,7 +145,7 @@ export const AProposPage = () => {
                 <img src="/ines.jpeg" alt="Inès" loading="lazy" width={112} height={112} class="w-full h-full object-cover" />
               </div>
               <div class="tilt-caption">
-                <h3 class="font-extrabold text-lg mb-1" style="color:#03045e;">Inès</h3>
+                <h3 class="font-extrabold text-lg mb-1" style="color:var(--ink);">Inès</h3>
                 <p class="text-sm font-semibold mb-1" style="color:#0077b6;">Directrice Marketing</p>
                 <p class="text-xs mb-3" style="color:#64748b;">Stratégie & communication</p>
                 <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#0077b6; border:1px solid rgba(0,119,182,0.2);">
@@ -163,7 +163,7 @@ export const AProposPage = () => {
         <section class="mb-16 reveal">
           <div class="text-center mb-10">
             <h2 class="text-3xl font-bold text-white mb-3">Zones d'intervention</h2>
-            <p style="color:#8ba3c0;">MAASGA intervient dans tout Ouagadougou et les communes environnantes.</p>
+            <p style="color:var(--ink);">MAASGA intervient dans tout Ouagadougou et les communes environnantes.</p>
           </div>
           <div class="glass-card rounded-2xl p-8">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
