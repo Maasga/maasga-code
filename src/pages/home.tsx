@@ -231,7 +231,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                 {EXPERTISES.map((s, i) => (
                   <div class={`exp-step${i === 0 ? ' is-active' : ''}`} data-step={String(i)}>
                     <div class="exp-step-icon w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-5" style={`background:${s.iconBg}; color:${s.iconColor};`}>
-                      <i class={s.icon}></i>
+                      <i class={`${s.icon} icon-pulse`}></i>
                     </div>
                     <div class="exp-num">Expertise 0{i + 1} <span style="opacity:0.4;">/ 0{EXPERTISES.length}</span></div>
                     <h3 class="exp-title font-display font-extrabold mb-4" style="color:var(--navy-900);">{s.title}</h3>
@@ -254,7 +254,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                   <div class="exp-panel-wm" aria-hidden="true"><i class="ph-duotone ph-wrench"></i></div>
                   {EXPERTISES.map((s, i) => (
                     <div class={`exp-visual${i === 0 ? ' is-active' : ''}`} data-step={String(i)}>
-                      <i class={s.icon}></i>
+                      <i class={`${s.icon} icon-pulse`}></i>
                     </div>
                   ))}
                 </div>
