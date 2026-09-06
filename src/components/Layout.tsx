@@ -1,4 +1,4 @@
-import { CGUModal, initCGUModal } from './CGUModal'
+﻿import { CGUModal, initCGUModal } from './CGUModal'
 import { SITE_URL } from '../types'
 
 const PAGE_LABELS: Record<string, string> = {
@@ -8,15 +8,15 @@ const PAGE_LABELS: Record<string, string> = {
   maintenance: "Maintenance",
   rdv: "Rendez-vous",
   avis: "Avis",
-  apropos: "À propos",
+  apropos: "Ã€ propos",
   contact: "Contact",
   client: "Espace client",
-  realisations: "Réalisations",
+  realisations: "RÃ©alisations",
 }
 
-// Mapping route → libellé pour le texte de l'overlay de transition de page
+// Mapping route â†’ libellÃ© pour le texte de l'overlay de transition de page
 // (client-side, voir bloc ASYNC PAGE TRANSITIONS). Couvre toutes les routes
-// publiques définies dans src/index.tsx ; /admin* n'a pas besoin d'entrée
+// publiques dÃ©finies dans src/index.tsx ; /admin* n'a pas besoin d'entrÃ©e
 // puisqu'il est exclu du pipeline de transition.
 const ROUTE_LABELS: Record<string, string> = {
   "/": PAGE_LABELS.home,
@@ -31,14 +31,14 @@ const ROUTE_LABELS: Record<string, string> = {
   "/espace-client": PAGE_LABELS.client,
 }
 
-// Icônes Font Awesome (déjà chargé, fiable) — remplace l'ancien AnimatedIcon
-// basé sur Lordicon : la plupart des IDs Lordicon gratuits renvoyaient 404 et
+// IcÃ´nes Font Awesome (dÃ©jÃ  chargÃ©, fiable) â€” remplace l'ancien AnimatedIcon
+// basÃ© sur Lordicon : la plupart des IDs Lordicon gratuits renvoyaient 404 et
 // le player Lottie plantait en boucle (voir CLAUDE.md, "known issue").
 export const NavIcon = ({ icon, color = '#94a3b8', size = 16, class: className = '' }: { icon: string, color?: string, size?: number, class?: string }) => {
   return <i class={`fas ${icon} ${className}`} style={{ color, fontSize: `${size}px`, width: `${size + 4}px`, textAlign: 'center' }} aria-hidden="true"></i>
 }
 
-export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisation Burkina Faso", activePage = "", description = "MAASGA - Spécialiste vente, installation et maintenance de climatiseurs à Ouagadougou, Burkina Faso. Devis gratuit, techniciens certifiés.", canonicalPath = "", jsonLd }: {
+export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisation Burkina Faso", activePage = "", description = "MAASGA - SpÃ©cialiste vente, installation et maintenance de climatiseurs Ã  Ouagadougou, Burkina Faso. Devis gratuit, techniciens certifiÃ©s.", canonicalPath = "", jsonLd }: {
   children: any
   title?: string
   activePage?: string
@@ -46,7 +46,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
   canonicalPath?: string
   jsonLd?: string
 }) => {
-  // SITE_URL importé depuis src/types.ts — modifier là-bas quand le domaine change.
+  // SITE_URL importÃ© depuis src/types.ts â€” modifier lÃ -bas quand le domaine change.
   const siteUrl = SITE_URL
   const canonical = canonicalPath ? `${siteUrl}${canonicalPath}` : ''
   return (
@@ -89,7 +89,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         <link href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/duotone/style.css" rel="stylesheet" media="print" onload="this.media='all'" />
         <link href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/fill/style.css" rel="stylesheet" media="print" onload="this.media='all'" />
 
-        {/* Global Agentation System — Control via ?agentation=1 */}
+        {/* Global Agentation System â€” Control via ?agentation=1 */}
         <script type="importmap" dangerouslySetInnerHTML={{ __html: `{
           "imports": {
             "react": "https://esm.sh/react@18.3.1",
@@ -121,14 +121,14 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', mount, { once: true });
               } else { mount(); }
-              console.info('[Agentation] activé (public)');
+              console.info('[Agentation] activÃ© (public)');
             } catch (e) {
-              console.error('[Agentation] échec:', e);
+              console.error('[Agentation] Ã©chec:', e);
             }
           })();
         ` }} />
 
-        {/* Google Analytics GA4 — consent-aware (load async FIRST, then configure) */}
+        {/* Google Analytics GA4 â€” consent-aware (load async FIRST, then configure) */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-LCQJE6963G"></script>
         <script dangerouslySetInnerHTML={{ __html: `
           window.dataLayer = window.dataLayer || [];
@@ -145,17 +145,17 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
       </head>
       <body class="min-h-screen pb-16 md:pb-0" style="background-color:#f8fbff; color:var(--ink);" onload="window.initCGUModal?.()">
 
-        {/* js-ready : pose immédiatement la classe pour activer l'état initial caché
-            des reveals. Si JS est désactivé, la classe n'est jamais posée → contenu visible. */}
+        {/* js-ready : pose immÃ©diatement la classe pour activer l'Ã©tat initial cachÃ©
+            des reveals. Si JS est dÃ©sactivÃ©, la classe n'est jamais posÃ©e â†’ contenu visible. */}
         <script dangerouslySetInnerHTML={{ __html: `document.documentElement.classList.add('js-ready');` }} />
 
-        {/* PAGE LOADER — affiché uniquement au premier chargement de la session */}
+        {/* PAGE LOADER â€” affichÃ© uniquement au premier chargement de la session */}
         <div id="page-loader" style="position:fixed;inset:0;z-index:999999;background:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.3s ease,visibility 0.3s ease;">
           <div style="position:relative;margin-bottom:1.5rem;">
             <div style="width:72px;height:72px;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,119,182,0.2);animation:loader-pulse 1.5s ease-in-out infinite;">
               <img src="/logo-site.png" alt="MAASGA" style="width:100%;height:100%;object-fit:cover;" />
             </div>
-            <div style="position:absolute;top:-8px;right:-8px;font-size:1.4rem;animation:loader-spin 2s linear infinite;color:#0077b6;">❄</div>
+            <div style="position:absolute;top:-8px;right:-8px;font-size:1.4rem;animation:loader-spin 2s linear infinite;color:#0077b6;">â„</div>
           </div>
           <div style="color:#03045e;font-size:1.6rem;font-weight:800;letter-spacing:0.1em;margin-bottom:0.4rem;">MAASGA</div>
           <div style="color:#0077b6;font-size:0.75rem;letter-spacing:0.2em;margin-bottom:2rem;font-weight:600;">FROID &amp; CLIMATISATION</div>
@@ -166,7 +166,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
           </div>
         </div>
         <script dangerouslySetInnerHTML={{ __html: `
-          // Cacher immédiatement le loader si déjà visité dans la session
+          // Cacher immÃ©diatement le loader si dÃ©jÃ  visitÃ© dans la session
           (function(){
             var l=document.getElementById('page-loader');
             if(!l)return;
@@ -204,10 +204,10 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
           body.modal-open { overflow: hidden !important; height: 100vh !important; }
         `}</style>
 
-        {/* Skip to content — accessibility */}
+        {/* Skip to content â€” accessibility */}
         <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[99999] focus:px-4 focus:py-2 focus:rounded-lg focus:text-white" style="background:#0ea5e9;">Aller au contenu principal</a>
 
-        {/* PAGE TRANSITION OVERLAY — grand texte qui traverse pendant le fetch async */}
+        {/* PAGE TRANSITION OVERLAY â€” grand texte qui traverse pendant le fetch async */}
         <div id="page-transition" style="position:fixed; inset:0; z-index:99999; background:#03045e; display:flex; align-items:center; justify-content:center; overflow:hidden; transition:opacity 0.3s ease; pointer-events:none; opacity:0;">
           <span id="page-transition-text" class="pt-text"></span>
         </div>
@@ -217,7 +217,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
           <i class="fas fa-chevron-up"></i>
         </button>
 
-        {/* HEADER — floating pill */}
+        {/* HEADER â€” floating pill */}
         <header class="fixed w-full z-50 px-3 sm:px-4 lg:px-6 pt-3 sm:pt-4">
           <div id="header-pill" class="max-w-7xl mx-auto flex justify-between items-center glass rounded-full px-4 sm:px-6 py-2.5 sm:py-3 shadow-lg">
 
@@ -227,7 +227,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               <span class="hidden sm:inline text-sm font-bold uppercase tracking-widest" style="color:#03045e;">MAASGA</span>
             </a>
 
-            {/* Nav Desktop — visible xl+ */}
+            {/* Nav Desktop â€” visible xl+ */}
             <nav class="hidden xl:flex items-center gap-0.5 whitespace-nowrap" aria-label="Navigation principale">
               {[
                 { href: "/", icon: "fa-house", label: "Accueil", key: "home" },
@@ -236,7 +236,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 { href: "/contrat-maintenance", icon: "fa-screwdriver-wrench", label: "Maintenance", key: "maintenance" },
                 { href: "/rendez-vous", icon: "fa-calendar-check", label: "Rendez-vous", key: "rdv" },
                 { href: "/avis", icon: "fa-star", label: "Avis", key: "avis" },
-                { href: "/a-propos", icon: "fa-circle-info", label: "À propos", key: "apropos" },
+                { href: "/a-propos", icon: "fa-circle-info", label: "Ã€ propos", key: "apropos" },
                 { href: "/contact", icon: "fa-envelope", label: "Contact", key: "contact" },
               ].map(n => (
                 <a href={n.href} class={`nav-link flex items-center gap-1.5 font-semibold px-2.5 py-2 rounded-lg transition-all text-xs uppercase tracking-wide ${activePage===n.key ? 'active' : ''}`} {...(activePage===n.key ? {'aria-current': 'page'} : {})}>
@@ -246,7 +246,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               ))}
             </nav>
 
-            {/* Nav Tablet — visible lg only (condensed) */}
+            {/* Nav Tablet â€” visible lg only (condensed) */}
             <nav class="hidden lg:flex xl:hidden items-center gap-0.5 whitespace-nowrap" aria-label="Navigation principale">
               {[
                 { href: "/", icon: "fa-house", label: "Accueil", key: "home" },
@@ -269,7 +269,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 </button>
                 <div id="nav-more-dropdown" class="hidden absolute right-0 top-full mt-2 w-48 rounded-xl shadow-xl py-2" style="background:rgba(255,255,255,0.98); backdrop-filter:blur(20px); border:1px solid rgba(0,119,182,0.12); z-index:60;">
                   {[
-                    { href: "/a-propos", icon: "fa-circle-info", label: "À propos", key: "apropos" },
+                    { href: "/a-propos", icon: "fa-circle-info", label: "Ã€ propos", key: "apropos" },
                     { href: "/espace-client", icon: "fa-user", label: "Espace client", key: "client" },
                   ].map(n => (
                     <a href={n.href} class={`flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium transition-all hover:bg-blue-50 ${activePage===n.key ? 'font-bold' : ''}`} style={activePage===n.key ? 'color:#0077b6' : 'color:#334155'}>
@@ -281,7 +281,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               </div>
             </nav>
 
-            {/* Indicateur de page — visible uniquement quand la nav desktop/tablette est masquée (<1024px) */}
+            {/* Indicateur de page â€” visible uniquement quand la nav desktop/tablette est masquÃ©e (<1024px) */}
             {activePage && PAGE_LABELS[activePage] && (
               <span class="eyebrow lg:hidden">{PAGE_LABELS[activePage]}</span>
             )}
@@ -321,7 +321,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 { href: "/rendez-vous", icon: "fa-calendar-check", label: "Rendez-vous", key: "rdv" },
                 { href: "/avis", icon: "fa-star", label: "Avis clients", key: "avis" },
                 { href: "/contact", icon: "fa-envelope", label: "Contact", key: "contact" },
-                { href: "/a-propos", icon: "fa-circle-info", label: "À propos", key: "apropos" },
+                { href: "/a-propos", icon: "fa-circle-info", label: "Ã€ propos", key: "apropos" },
               ].map(n => (
                 <a href={n.href} class={`flex items-center gap-2.5 py-3 px-3.5 rounded-xl text-sm font-semibold transition-all ${activePage===n.key ? 'mobile-nav-active' : 'hover:bg-blue-50'}`} style={activePage===n.key ? 'background:rgba(0,119,182,0.08); color:#0077b6;' : ''} {...(activePage===n.key ? {'aria-current': 'page'} : {})}>
                   <NavIcon icon={n.icon} size={16} color={activePage===n.key ? '#0077b6' : '#94a3b8'} />
@@ -339,7 +339,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         </header>
 
         {/* CONTENT */}
-        <main id="main-content" role="main" class="pt-20">
+        <main id="main-content" role="main" class="pt-20 pb-20 md:pb-0">
           {children}
         </main>
 
@@ -365,7 +365,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                   </div>
                 </div>
                 <p class="text-sm leading-relaxed max-w-sm" style="color:#1e3a5f;">
-                  Spécialiste en vente, installation et maintenance de systèmes de climatisation à Ouagadougou et dans tout le Burkina Faso.
+                  SpÃ©cialiste en vente, installation et maintenance de systÃ¨mes de climatisation Ã  Ouagadougou et dans tout le Burkina Faso.
                 </p>
                 <div class="mt-5 space-y-3">
                   <div class="text-sm" style="color:#1e3a5f;">
@@ -413,7 +413,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 <ul class="space-y-3 text-sm" style="color:#64748b;">
                   {["/", "/catalogue", "/contrat-maintenance", "/simulateur", "/rendez-vous", "/avis", "/a-propos", "/contact"].map((href, i) => (
                     <li><a href={href} class="hover:text-white hover:pl-1 transition-all block">
-                      {["Accueil","Catalogue","Maintenance","Simulateur BTU","Prendre RDV","Avis clients","À propos","Contact"][i]}
+                      {["Accueil","Catalogue","Maintenance","Simulateur BTU","Prendre RDV","Avis clients","Ã€ propos","Contact"][i]}
                     </a></li>
                   ))}
                 </ul>
@@ -422,7 +422,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               <div>
                 <h4 class="font-semibold mb-5 text-sm uppercase tracking-widest" style="color:#38bdf8;">Services</h4>
                 <ul class="space-y-3 text-sm" style="color:#64748b;">
-                  {["Vente climatiseurs","Installation pro","Maintenance tri.","Devis gratuit","SAV réactif","Techniciens certifiés"].map(s => (
+                  {["Vente climatiseurs","Installation pro","Maintenance tri.","Devis gratuit","SAV rÃ©actif","Techniciens certifiÃ©s"].map(s => (
                     <li class="flex items-center space-x-2">
                       <NavIcon icon="fa-circle-check" size={13} color="#0ea5e9" />
                       <span>{s}</span>
@@ -439,20 +439,20 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
 
             <div class="cyan-line mt-10 mb-6"></div>
             <div class="flex flex-col md:flex-row justify-between items-center text-xs gap-4" style="color:#475569;">
-              <span>© 2026 MAASGA - Tous droits réservés</span>
+              <span>Â© 2026 MAASGA - Tous droits rÃ©servÃ©s</span>
               <div class="flex items-center space-x-3 text-xs">
                 <button onclick="document.getElementById('cgu-modal').classList.remove('hidden')" class="hover:text-white transition">
                   <i class="fas fa-file-contract mr-1"></i>Conditions & Politique
                 </button>
               </div>
-              <span class="mt-2 md:mt-0">Spécialiste Froid & Climatisation · Ouagadougou · Burkina Faso</span>
+              <span class="mt-2 md:mt-0">SpÃ©cialiste Froid & Climatisation Â· Ouagadougou Â· Burkina Faso</span>
             </div>
           </div>
         </footer>
 
         {/* Loader hide + Scroll Reveal + Scroll Progress + Back-to-top + Counter animation */}
         <script dangerouslySetInnerHTML={{ __html: `
-          // Hide loader (rapide si déjà visité)
+          // Hide loader (rapide si dÃ©jÃ  visitÃ©)
           (function() {
             function hideLoader() {
               var l = document.getElementById('page-loader');
@@ -461,12 +461,12 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               l.style.visibility = 'hidden';
               setTimeout(function() { l.style.display = 'none'; }, 350);
             }
-            // Use DOMContentLoaded instead of load — don't wait for external fonts/images
+            // Use DOMContentLoaded instead of load â€” don't wait for external fonts/images
             if (document.readyState !== 'loading') { setTimeout(hideLoader, 50); }
             else { document.addEventListener('DOMContentLoaded', function() { setTimeout(hideLoader, 50); }); }
           })();
 
-          // Scroll reveal (+ left/right variants) — classe legacy .visible
+          // Scroll reveal (+ left/right variants) â€” classe legacy .visible
           var legacyRevealObserver = new IntersectionObserver(function(entries) {
             entries.forEach(function(entry) {
               if (entry.isIntersecting) {
@@ -476,8 +476,8 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             });
           }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
 
-          // Moteur de révélation data-* — robuste, indépendant de GSAP.
-          // Ajoute .in dès que l'élément entre à l'écran (CSS gère l'anim + cascade).
+          // Moteur de rÃ©vÃ©lation data-* â€” robuste, indÃ©pendant de GSAP.
+          // Ajoute .in dÃ¨s que l'Ã©lÃ©ment entre Ã  l'Ã©cran (CSS gÃ¨re l'anim + cascade).
           var revealObserver = new IntersectionObserver(function(entries) {
             entries.forEach(function(entry) {
               if (entry.isIntersecting) {
@@ -512,8 +512,8 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             });
           }, { threshold: 0.3 });
 
-          // Attache les 3 observers ci-dessus à tout élément concerné sous root —
-          // document au chargement initial, le nouveau <main> après un swap de
+          // Attache les 3 observers ci-dessus Ã  tout Ã©lÃ©ment concernÃ© sous root â€”
+          // document au chargement initial, le nouveau <main> aprÃ¨s un swap de
           // transition async (voir bloc "ASYNC PAGE TRANSITIONS" plus bas).
           function initPageBehaviors(root) {
             root = root || document;
@@ -567,15 +567,15 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
           });
         `}} />
 
-        {/* ─── MOTEUR D'ANIMATION GSAP DÉCLARATIF (perf-safe) ───────────────
-             Piloté par attributs data-* sur n'importe quelle page :
-               data-reveal    → apparition au scroll
-               data-stagger   → enfants directs révélés en cascade
-               data-parallax  → parallax léger (valeur = intensité px, borné ±60)
-               .magnetic      → CTA magnétique (desktop pointer:fine uniquement)
-             FALLBACK : le contenu est visible par défaut ; l'état caché (opacity:0)
-             n'existe que sous html.gsap-ready, posé seulement quand GSAP répond.
-             Si GSAP absent/lent ou reduced-motion → tout reste visible. */}
+        {/* â”€â”€â”€ MOTEUR D'ANIMATION GSAP DÃ‰CLARATIF (perf-safe) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+             PilotÃ© par attributs data-* sur n'importe quelle page :
+               data-reveal    â†’ apparition au scroll
+               data-stagger   â†’ enfants directs rÃ©vÃ©lÃ©s en cascade
+               data-parallax  â†’ parallax lÃ©ger (valeur = intensitÃ© px, bornÃ© Â±60)
+               .magnetic      â†’ CTA magnÃ©tique (desktop pointer:fine uniquement)
+             FALLBACK : le contenu est visible par dÃ©faut ; l'Ã©tat cachÃ© (opacity:0)
+             n'existe que sous html.gsap-ready, posÃ© seulement quand GSAP rÃ©pond.
+             Si GSAP absent/lent ou reduced-motion â†’ tout reste visible. */}
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
             var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -587,13 +587,13 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               var gsap = window.gsap;
               gsap.registerPlugin(window.ScrollTrigger);
 
-              // Les reveals/cascades sont gérés en CSS+IntersectionObserver (robuste).
-              // GSAP n'ajoute QUE des enrichissements. Distinction clé sous reduced-motion :
-              //  - parallax = mouvement AUTOMATIQUE au scroll → désactivé sous reduced-motion.
-              //  - tilt + CTA magnétiques = interactions DIRECTES au pointeur (déclenchées par
-              //    l'utilisateur, pas auto-jouées) → CONSERVÉS même sous reduced-motion, sinon
-              //    l'effet demandé ne se voit jamais chez un utilisateur qui a « réduire les
-              //    animations » activé (cas de l'owner de ce site).
+              // Les reveals/cascades sont gÃ©rÃ©s en CSS+IntersectionObserver (robuste).
+              // GSAP n'ajoute QUE des enrichissements. Distinction clÃ© sous reduced-motion :
+              //  - parallax = mouvement AUTOMATIQUE au scroll â†’ dÃ©sactivÃ© sous reduced-motion.
+              //  - tilt + CTA magnÃ©tiques = interactions DIRECTES au pointeur (dÃ©clenchÃ©es par
+              //    l'utilisateur, pas auto-jouÃ©es) â†’ CONSERVÃ‰S mÃªme sous reduced-motion, sinon
+              //    l'effet demandÃ© ne se voit jamais chez un utilisateur qui a Â« rÃ©duire les
+              //    animations Â» activÃ© (cas de l'owner de ce site).
               if (!reduce) {
                 gsap.utils.toArray(root.querySelectorAll('[data-parallax]')).forEach(function(el) {
                   var amount = parseFloat(el.getAttribute('data-parallax')) || 30;
@@ -618,11 +618,11 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                   });
                 });
 
-                // Tilt 3D « carte entière » (type Tympanus) — SEULE la carte s'incline (plus
-                // de couches internes qui glissent, plus de reflet). Suivi RÉACTIF de la
+                // Tilt 3D Â« carte entiÃ¨re Â» (type Tympanus) â€” SEULE la carte s'incline (plus
+                // de couches internes qui glissent, plus de reflet). Suivi RÃ‰ACTIF de la
                 // souris : lissage court (0.14s) + overwrite:'auto' pour que chaque mouvement
-                // reprenne la main immédiatement (sinon les tweens s'empilent et l'effet
-                // « traîne »). Rebond élastique accentué au départ du curseur.
+                // reprenne la main immÃ©diatement (sinon les tweens s'empilent et l'effet
+                // Â« traÃ®ne Â»). Rebond Ã©lastique accentuÃ© au dÃ©part du curseur.
                 root.querySelectorAll('[data-tilt]').forEach(function(card) {
                   gsap.set(card, { transformPerspective: 900, transformOrigin: 'center' });
                   var rect = null;
@@ -646,12 +646,12 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             }
             window.__maasgaReinitGsap = initGsap;
 
-            // GSAP est chargé en <script defer> depuis un CDN : sur un réseau lent le
-            // download peut prendre plusieurs secondes (mesuré ~5s ici). L'ancienne fenêtre
-            // de 3s abandonnait avant que window.gsap soit prêt → le tilt/parallax ne
-            // s'attachaient jamais au 1er chargement (il fallait naviguer pour re-déclencher
-            // l'init). On élargit le poll à ~20s ET on relance au 'load' de la fenêtre (qui
-            // ne se déclenche qu'une fois les scripts defer téléchargés, même très tard).
+            // GSAP est chargÃ© en <script defer> depuis un CDN : sur un rÃ©seau lent le
+            // download peut prendre plusieurs secondes (mesurÃ© ~5s ici). L'ancienne fenÃªtre
+            // de 3s abandonnait avant que window.gsap soit prÃªt â†’ le tilt/parallax ne
+            // s'attachaient jamais au 1er chargement (il fallait naviguer pour re-dÃ©clencher
+            // l'init). On Ã©largit le poll Ã  ~20s ET on relance au 'load' de la fenÃªtre (qui
+            // ne se dÃ©clenche qu'une fois les scripts defer tÃ©lÃ©chargÃ©s, mÃªme trÃ¨s tard).
             var gsapInited = initGsap(document);
             if (!gsapInited) {
               var tries = 0;
@@ -667,7 +667,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
           })();
         `}} />
 
-        {/* ASYNC PAGE TRANSITIONS — fetch + swap de <main>, overlay texte qui glisse */}
+        {/* ASYNC PAGE TRANSITIONS â€” fetch + swap de <main>, overlay texte qui glisse */}
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
             var MIN_DISPLAY_MS = 900;
@@ -717,15 +717,15 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               var oldHeader = document.querySelector('header');
               var newHeader = doc.querySelector('header');
               if (!oldHeader || !newHeader) return;
-              // Le header est rendu par le MÊME composant Layout pour chaque page :
-              // l'ordre des <a href> est identique d'une page à l'autre, seul l'état
-              // actif change. On apparie donc par INDEX (et non par href) — car le
-              // même href apparaît dans plusieurs variantes (nav xl / nav lg /
+              // Le header est rendu par le MÃŠME composant Layout pour chaque page :
+              // l'ordre des <a href> est identique d'une page Ã  l'autre, seul l'Ã©tat
+              // actif change. On apparie donc par INDEX (et non par href) â€” car le
+              // mÃªme href apparaÃ®t dans plusieurs variantes (nav xl / nav lg /
               // dropdown / menu mobile) ET comme CTA (bouton "Rendez-vous"), chacun
-              // avec un style actif différent. L'ancien appariement par href
+              // avec un style actif diffÃ©rent. L'ancien appariement par href
               // recopiait la classe de CHAQUE nouveau lien vers TOUS les anciens de
-              // même href : le dernier dans l'ordre DOM (souvent un CTA non-actif)
-              // écrasait l'état actif du vrai lien nav → aucune page marquée active.
+              // mÃªme href : le dernier dans l'ordre DOM (souvent un CTA non-actif)
+              // Ã©crasait l'Ã©tat actif du vrai lien nav â†’ aucune page marquÃ©e active.
               var oldLinks = oldHeader.querySelectorAll('a[href]');
               var newLinks = newHeader.querySelectorAll('a[href]');
               if (oldLinks.length === newLinks.length) {
@@ -742,8 +742,8 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 }
               }
               // Bouton "Plus" (dropdown lg) : ce n'est pas un <a href>, on le
-              // synchronise à part pour qu'il s'illumine quand la page courante est
-              // l'une de ses entrées (À propos / Espace client).
+              // synchronise Ã  part pour qu'il s'illumine quand la page courante est
+              // l'une de ses entrÃ©es (Ã€ propos / Espace client).
               var oldPlus = oldHeader.querySelector('#nav-more-wrapper > button');
               var newPlus = newHeader.querySelector('#nav-more-wrapper > button');
               if (oldPlus && newPlus) oldPlus.className = newPlus.className;
@@ -779,8 +779,8 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             function navigate(href, isPopstate) {
               if (navigationInProgress) return;
               navigationInProgress = true;
-              // Replie toute navigation ouverte AVANT la transition — sinon le
-              // dropdown "Plus" (fermé uniquement au clic extérieur) et le menu
+              // Replie toute navigation ouverte AVANT la transition â€” sinon le
+              // dropdown "Plus" (fermÃ© uniquement au clic extÃ©rieur) et le menu
               // mobile restent ouverts par-dessus la nouvelle page.
               var dd = document.getElementById('nav-more-dropdown');
               if (dd) dd.classList.add('hidden');
@@ -794,13 +794,13 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               }
               var pathname = href.split('?')[0].split('#')[0];
               var supportsVT = typeof document.startViewTransition === 'function';
-              // Le morph View Transitions (sans overlay) est réservé aux navigations
-              // catalogue ↔ fiche produit (/catalogue/:id) — là où une image partage un
-              // view-transition-name. Partout ailleurs on garde l'overlay navy (« preloader »)
-              // à texte glissant, historique du site.
+              // Le morph View Transitions (sans overlay) est rÃ©servÃ© aux navigations
+              // catalogue â†” fiche produit (/catalogue/:id) â€” lÃ  oÃ¹ une image partage un
+              // view-transition-name. Partout ailleurs on garde l'overlay navy (Â« preloader Â»)
+              // Ã  texte glissant, historique du site.
               function isProductPath(p) { return /^\\/catalogue\\/[0-9]+$/.test(p); }
               var here = window.location.pathname;
-              // Morph uniquement sur catalogue → fiche produit, et fiche produit → catalogue.
+              // Morph uniquement sur catalogue â†’ fiche produit, et fiche produit â†’ catalogue.
               // Quitter une fiche vers une AUTRE page (ex: contact) garde l'overlay navy.
               var useMorph = supportsVT && (isProductPath(pathname) || (isProductPath(here) && pathname === '/catalogue'));
 
@@ -824,8 +824,8 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               }
 
               if (useMorph) {
-                // Navigation catalogue ↔ fiche produit : le crossfade + le morph de l'image
-                // (view-transition-name partagé) SONT la transition — pas d'overlay navy,
+                // Navigation catalogue â†” fiche produit : le crossfade + le morph de l'image
+                // (view-transition-name partagÃ©) SONT la transition â€” pas d'overlay navy,
                 // il masquerait le morph.
                 fetchPromise.then(function(html) {
                   var vt = document.startViewTransition(function() { finishNav(html); });
@@ -835,7 +835,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                   window.location.href = href;
                 });
               } else {
-                // Toutes les autres navigations : overlay navy à texte glissant (« preloader ») + swap.
+                // Toutes les autres navigations : overlay navy Ã  texte glissant (Â« preloader Â») + swap.
                 showOverlay(labelForPath(pathname));
                 var minTimer = new Promise(function(resolve) { setTimeout(resolve, MIN_DISPLAY_MS); });
                 Promise.all([fetchPromise, minTimer]).then(function(results) {
@@ -859,7 +859,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               navigate(href, false);
             });
 
-            window.__maasgaNavigate = navigate; // exposé pour le hardening des tâches suivantes
+            window.__maasgaNavigate = navigate; // exposÃ© pour le hardening des tÃ¢ches suivantes
 
             window.addEventListener('popstate', function() {
               navigate(window.location.pathname + window.location.search, true);
@@ -899,7 +899,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
           })()
         `}} />
 
-        {/* Barre mobile fixe Call/WhatsApp/RDV — visible uniquement sur mobile */}
+        {/* Barre mobile fixe Call/WhatsApp/RDV â€” visible uniquement sur mobile */}
         <div class="md:hidden fixed bottom-0 left-0 right-0 z-50 flex" style="background:rgba(11,17,32,0.97); border-top:1px solid rgba(56,189,248,0.18); padding-bottom:env(safe-area-inset-bottom);">
           <a href="tel:+22655996418" class="flex-1 flex flex-col items-center justify-center py-3 gap-1 active:opacity-70" style="color:#38bdf8;">
             <i class="fas fa-phone text-base"></i>
@@ -935,9 +935,9 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 </div>
                 <div style="flex:1;">
                   <div style="color:white; font-weight:700; font-size:0.9rem; line-height:1.2;">MAASGA Support</div>
-                  <div style="color:rgba(255,255,255,0.75); font-size:0.72rem; margin-top:2px;">🟢 En ligne · Répond rapidement</div>
+                  <div style="color:rgba(255,255,255,0.75); font-size:0.72rem; margin-top:2px;">ðŸŸ¢ En ligne Â· RÃ©pond rapidement</div>
                 </div>
-                <button onclick="closeWaPanel()" style="color:rgba(255,255,255,0.65); background:none; border:none; cursor:pointer; font-size:1.15rem; padding:4px; line-height:1; border-radius:50%; transition:all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='none'">✕</button>
+                <button onclick="closeWaPanel()" style="color:rgba(255,255,255,0.65); background:none; border:none; cursor:pointer; font-size:1.15rem; padding:4px; line-height:1; border-radius:50%; transition:all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='none'">âœ•</button>
               </div>
             </div>
 
@@ -946,7 +946,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               {/* Message bubble */}
               <div style="display:flex; gap:6px; margin-bottom:14px;">
                 <div style="background:white; border-radius:0 10px 10px 10px; padding:10px 12px; box-shadow:0 1px 2px rgba(0,0,0,0.12); max-width:85%;">
-                  <p style="color:#111; font-size:0.83rem; line-height:1.5; margin:0 0 4px;">Bonjour 👋 Comment puis-je vous aider ?</p>
+                  <p style="color:#111; font-size:0.83rem; line-height:1.5; margin:0 0 4px;">Bonjour ðŸ‘‹ Comment puis-je vous aider ?</p>
                   <span style="color:#888; font-size:0.68rem; display:block; text-align:right;">MAASGA Climatisation</span>
                 </div>
               </div>
@@ -954,11 +954,11 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               {/* Quick replies */}
               <div style="display:flex; flex-direction:column; gap:7px;">
                 {[
-                  { icon: "🔧", label: "Demander un devis", msg: "Bonjour MAASGA, je souhaite un devis pour l'installation ou la maintenance d'un climatiseur." },
-                  { icon: "📅", label: "Prendre un rendez-vous", href: "/rendez-vous" },
-                  { icon: "💰", label: "Connaître les tarifs", msg: "Bonjour MAASGA, quels sont vos tarifs pour l'installation et la maintenance de climatiseurs ?" },
-                  { icon: "🌡️", label: "Urgence — panne clim", msg: "Bonjour MAASGA, j'ai une urgence : mon climatiseur est en panne, pouvez-vous intervenir rapidement ?" },
-                  { icon: "📦", label: "Infos sur les produits", msg: "Bonjour MAASGA, je voudrais des informations sur vos modèles de climatiseurs disponibles." },
+                  { icon: "ðŸ”§", label: "Demander un devis", msg: "Bonjour MAASGA, je souhaite un devis pour l'installation ou la maintenance d'un climatiseur." },
+                  { icon: "ðŸ“…", label: "Prendre un rendez-vous", href: "/rendez-vous" },
+                  { icon: "ðŸ’°", label: "ConnaÃ®tre les tarifs", msg: "Bonjour MAASGA, quels sont vos tarifs pour l'installation et la maintenance de climatiseurs ?" },
+                  { icon: "ðŸŒ¡ï¸", label: "Urgence â€” panne clim", msg: "Bonjour MAASGA, j'ai une urgence : mon climatiseur est en panne, pouvez-vous intervenir rapidement ?" },
+                  { icon: "ðŸ“¦", label: "Infos sur les produits", msg: "Bonjour MAASGA, je voudrais des informations sur vos modÃ¨les de climatiseurs disponibles." },
                 ].map(opt => (
                   opt.href
                     ? <a href={opt.href}
@@ -977,7 +977,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 ))}
               </div>
 
-              <p style="text-align:center; font-size:0.65rem; color:#666; margin-top:12px; margin-bottom:0;">Propulsé par WhatsApp · Réponse en &lt; 30 min</p>
+              <p style="text-align:center; font-size:0.65rem; color:#666; margin-top:12px; margin-bottom:0;">PropulsÃ© par WhatsApp Â· RÃ©ponse en &lt; 30 min</p>
             </div>
           </div>
 
@@ -1041,7 +1041,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
           <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
             <div class="flex items-center gap-2 text-sm" style="color:#e2e8f0; flex:1;">
               <i class="fas fa-cookie-bite" style="color:#f59e0b; font-size:1.1rem;"></i>
-              <span>Ce site utilise des cookies pour améliorer votre expérience et analyser le trafic via Google Analytics.
+              <span>Ce site utilise des cookies pour amÃ©liorer votre expÃ©rience et analyser le trafic via Google Analytics.
                 <button onclick="document.getElementById('cgu-modal').classList.remove('hidden')" class="underline hover:no-underline" style="color:#38bdf8;">En savoir plus</button>
               </span>
             </div>
@@ -1132,12 +1132,12 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             window.__focusTrapStack = window.__focusTrapStack.filter(function(m) { return m !== modalEl; });
           };
 
-          // Alerte réappro stock (utilisée par les cartes catalogue et la page produit)
+          // Alerte rÃ©appro stock (utilisÃ©e par les cartes catalogue et la page produit)
           window.submitStockAlert = function(productId) {
             var phoneEl = document.getElementById('stock-phone-' + productId) || document.getElementById('modal-stock-phone');
             var phone = phoneEl ? phoneEl.value.trim() : '';
             if (!phone || phone.length < 8) {
-              alert('Veuillez saisir un numéro de téléphone valide.');
+              alert('Veuillez saisir un numÃ©ro de tÃ©lÃ©phone valide.');
               return;
             }
             var fd = new FormData();
@@ -1157,14 +1157,14 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                     modalForm.parentElement.innerHTML = '<div style="text-align:center;padding:12px;border-radius:12px;background:rgba(16,185,129,0.1);color:#34d399;border:1px solid rgba(16,185,129,0.2);font-size:0.85rem;"><i class="fas fa-check-circle" style="margin-right:6px;"></i>' + safeMsg + '</div>';
                   }
                 } else {
-                  alert(data.error || 'Erreur, réessayez.');
+                  alert(data.error || 'Erreur, rÃ©essayez.');
                 }
               })
-              .catch(function() { alert('Erreur réseau.'); });
+              .catch(function() { alert('Erreur rÃ©seau.'); });
           };
         ` }} />
 
-        {/* ─── Lenis smooth scroll (se synchronise au ticker GSAP existant) ─── */}
+        {/* â”€â”€â”€ Lenis smooth scroll (se synchronise au ticker GSAP existant) â”€â”€â”€ */}
         <script dangerouslySetInnerHTML={{ __html: `
           (function(){
             function boot(){
@@ -1173,7 +1173,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               var lenis = new Lenis({ duration: 1.1, smoothWheel: true });
               window.__lenis = lenis;
               var usingGsap = false;
-              // Fallback rAF : garantit que Lenis avance même si GSAP tarde (jamais de scroll figé)
+              // Fallback rAF : garantit que Lenis avance mÃªme si GSAP tarde (jamais de scroll figÃ©)
               function raf(t){ if (!usingGsap) { lenis.raf(t); requestAnimationFrame(raf); } }
               requestAnimationFrame(raf);
               function wire(){
@@ -1181,7 +1181,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                   lenis.on('scroll', ScrollTrigger.update);
                   gsap.ticker.add(function(t){ lenis.raf(t * 1000); });
                   gsap.ticker.lagSmoothing(0);
-                  usingGsap = true; // stoppe le fallback à sa prochaine frame
+                  usingGsap = true; // stoppe le fallback Ã  sa prochaine frame
                   return true;
                 }
                 return false;
@@ -1196,5 +1196,6 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
     </html>
   )
 }
+
 
 

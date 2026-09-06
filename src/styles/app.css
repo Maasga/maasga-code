@@ -1,11 +1,11 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Google Fonts ─── */
+/* â”€â”€â”€ Google Fonts â”€â”€â”€ */
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
-/* ─── COLOR SYSTEM ─── */
+/* â”€â”€â”€ COLOR SYSTEM â”€â”€â”€ */
 :root {
   --primary: #0077b6;
   --secondary: #caf0f8;
@@ -26,7 +26,7 @@
   --glow-primary: 0 4px 20px rgba(0,119,182,0.12);
   --glow-primary-strong: 0 8px 40px rgba(0,119,182,0.2);
 
-  /* ─── NAVY PREMIUM SYSTEM (« Trust & Authority ») ─── */
+  /* â”€â”€â”€ NAVY PREMIUM SYSTEM (Â« Trust & Authority Â») â”€â”€â”€ */
   --navy-950: #020617;
   --navy-900: #0F172A;
   --navy-800: #1E293B;
@@ -34,7 +34,7 @@
   --accent: #0369A1;          /* accent CTA premium */
   --accent-bright: #0077b6;   /* accent vif (brand) */
   --accent-cyan: #00b4d8;     /* halo froid */
-  --ice: #caf0f8;             /* highlight glacé sur fonds sombres */
+  --ice: #caf0f8;             /* highlight glacÃ© sur fonds sombres */
   --slate-50: #F8FAFC;
   --slate-100: #F1F5F9;
   --slate-200: #E2E8F0;
@@ -42,7 +42,7 @@
   --slate-700: #334155;
   --ink: #020617;             /* texte le plus sombre */
 
-  /* Échelle d'ombres froides graduées */
+  /* Ã‰chelle d'ombres froides graduÃ©es */
   --shadow-sm: 0 1px 2px rgba(2,6,23,0.02), 0 2px 6px rgba(3,105,161,0.025);
   --shadow-md: 0 4px 12px rgba(3,105,161,0.035), 0 8px 24px rgba(2,6,23,0.025);
   --shadow-lg: 0 12px 28px rgba(3,105,161,0.05), 0 20px 48px rgba(2,6,23,0.04);
@@ -66,7 +66,7 @@
 
 * { font-family: var(--font-body); }
 
-/* ─── TYPOGRAPHIE PREMIUM (titres en display, clamp responsive) ─── */
+/* â”€â”€â”€ TYPOGRAPHIE PREMIUM (titres en display, clamp responsive) â”€â”€â”€ */
 .font-display { font-family: var(--font-display); }
 .display-1 {
   font-family: var(--font-display);
@@ -111,7 +111,7 @@
   border-color: rgba(202,240,248,0.25);
 }
 
-/* ─── SURFACES PREMIUM ─── */
+/* â”€â”€â”€ SURFACES PREMIUM â”€â”€â”€ */
 .surface {
   background: var(--bg-base);
   border: 1px solid var(--slate-200);
@@ -152,10 +152,10 @@
   color: var(--slate-700);
 }
 
-/* ─── MAGNETIC CTA (déplacement piloté par GSAP) ─── */
+/* â”€â”€â”€ MAGNETIC CTA (dÃ©placement pilotÃ© par GSAP) â”€â”€â”€ */
 .magnetic { transition: transform 0.25s var(--ease-out-expo); will-change: transform; }
 
-/* ─── GLASS COMPONENTS ─── */
+/* â”€â”€â”€ GLASS COMPONENTS â”€â”€â”€ */
 .glass {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(10px);
@@ -175,7 +175,7 @@
   transform: translateY(-2px);
 }
 
-/* ─── GRADIENT HERO (navy premium) ─── */
+/* â”€â”€â”€ GRADIENT HERO (navy premium) â”€â”€â”€ */
 .gradient-hero {
   background: linear-gradient(160deg, #0F172A 0%, #18212F 25%, #212E42 100%);
   position: relative;
@@ -190,7 +190,7 @@
   pointer-events: none;
 }
 
-/* ─── CARD HOVER ─── */
+/* â”€â”€â”€ CARD HOVER â”€â”€â”€ */
 .card-hover {
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -199,7 +199,7 @@
   box-shadow: 0 20px 40px rgba(0, 119, 182, 0.12);
 }
 
-/* ─── NAV LINKS ─── */
+/* â”€â”€â”€ NAV LINKS â”€â”€â”€ */
 .nav-link {
   transition: all 0.25s ease;
   color: #475569;
@@ -219,7 +219,7 @@
 }
 .nav-link:hover::after { width: 100%; }
 
-/* ─── BUTTONS ─── */
+/* â”€â”€â”€ BUTTONS â”€â”€â”€ */
 .btn-primary {
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-bright) 55%, var(--accent-cyan) 100%);
   color: #ffffff;
@@ -259,12 +259,12 @@
 }
 .btn-secondary:active { transform: translateY(0); }
 
-/* ─── BADGES STOCK ─── */
+/* â”€â”€â”€ BADGES STOCK â”€â”€â”€ */
 .badge-stock-ok  { background: rgba(16,185,129,0.1); color: #059669; border: 1px solid rgba(16,185,129,0.2); }
 .badge-stock-low { background: rgba(245,158,11,0.1); color: #d97706; border: 1px solid rgba(245,158,11,0.2); }
 .badge-stock-out { background: rgba(239,68,68,0.1);  color: #dc2626; border: 1px solid rgba(239,68,68,0.2); }
 
-/* ─── INPUTS ─── */
+/* â”€â”€â”€ INPUTS â”€â”€â”€ */
 .input-field {
   border: 1px solid rgba(0,119,182,0.18);
   background: #ffffff;
@@ -280,11 +280,11 @@
   box-shadow: 0 0 0 3px rgba(0,119,182,0.1);
 }
 
-/* ─── STARS ─── */
+/* â”€â”€â”€ STARS â”€â”€â”€ */
 .star-filled { color: #f59e0b; }
 .star-empty  { color: #cbd5e1; }
 
-/* ─── DECORATIVE ─── */
+/* â”€â”€â”€ DECORATIVE â”€â”€â”€ */
 .glow-dot {
   position: absolute;
   border-radius: 9999px;
@@ -296,7 +296,7 @@
   background: linear-gradient(90deg, transparent, rgba(0,119,182,0.25), transparent);
 }
 
-/* ─── SNOW PARTICLES ─── */
+/* â”€â”€â”€ SNOW PARTICLES â”€â”€â”€ */
 .snow-particle {
   position: absolute;
   background: white;
@@ -305,7 +305,7 @@
   opacity: 0.5;
 }
 
-/* ─── ANIMATIONS ─── */
+/* â”€â”€â”€ ANIMATIONS â”€â”€â”€ */
 .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
 @keyframes fadeInUp {
@@ -336,17 +336,17 @@
 @keyframes float { 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-8px); } }
 .float { animation: float 3s ease-in-out infinite; }
 
-/* ─── HOVER EFFECTS ─── */
+/* â”€â”€â”€ HOVER EFFECTS â”€â”€â”€ */
 .hover-lift { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease; }
 .hover-lift:hover { transform: translateY(-1.5px); box-shadow: 0 4px 10px rgba(3,105,161,0.08), 0 1px 3px rgba(3,105,161,0.04); }
 
 .hover-glow { transition: box-shadow 0.3s ease; }
 .hover-glow:hover { box-shadow: 0 0 8px rgba(0,119,182,0.08); }
 
-/* ─── Tilt 3D « carte entière » (type Tympanus) ───
+/* â”€â”€â”€ Tilt 3D Â« carte entiÃ¨re Â» (type Tympanus) â”€â”€â”€
    Seule la carte [data-tilt] s'incline au survol (rotateX/rotateY via GSAP, perspective
-   portée par transformPerspective). Feedback de survol accentué : bordure + anneau accent
-   cyan + ombre portée profonde, en transition douce. */
+   portÃ©e par transformPerspective). Feedback de survol accentuÃ© : bordure + anneau accent
+   cyan + ombre portÃ©e profonde, en transition douce. */
 [data-tilt] {
   position: relative;
   overflow: hidden;
@@ -360,10 +360,10 @@
   box-shadow: 0 0 0 1px rgba(0,180,216,0.15), 0 8px 16px -4px rgba(3,105,161,0.15) !important;
 }
 
-/* Reflet retiré à la demande — masqué partout (l'élément peut subsister dans le markup). */
+/* Reflet retirÃ© Ã  la demande â€” masquÃ© partout (l'Ã©lÃ©ment peut subsister dans le markup). */
 .tilt-shine { display: none !important; }
 
-/* ─── « Notre Expertise » — split-écran épinglé (sticky) + révélation au scroll ─── */
+/* â”€â”€â”€ Â« Notre Expertise Â» â€” split-Ã©cran Ã©pinglÃ© (sticky) + rÃ©vÃ©lation au scroll â”€â”€â”€ */
 .expertise-pin { position: relative; }
 .exp-num {
   font-size: 0.8rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
@@ -373,7 +373,7 @@
 .exp-desc { font-size: 1.075rem; line-height: 1.6; max-width: 34rem; }
 .exp-step-icon { flex: 0 0 auto; }
 
-/* Panneau navy à droite (grande carte épinglée) */
+/* Panneau navy Ã  droite (grande carte Ã©pinglÃ©e) */
 .exp-right { display: flex; flex-direction: column; align-items: center; }
 .exp-panel {
   position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 1.75rem;
@@ -399,7 +399,7 @@
 }
 .exp-dot.is-active { width: 26px; background: var(--accent); }
 
-/* ── Desktop (lg+) : épinglage sticky + étapes empilées en cross-fade ── */
+/* â”€â”€ Desktop (lg+) : Ã©pinglage sticky + Ã©tapes empilÃ©es en cross-fade â”€â”€ */
 @media (min-width: 1024px) {
   .expertise-pin { height: 320vh; }
   .expertise-stage {
@@ -414,10 +414,10 @@
     pointer-events: none;
   }
   .exp-step.is-active { opacity: 1; transform: none; pointer-events: auto; }
-  .exp-step-icon { display: none; } /* l'icône est portée par le grand panneau navy */
+  .exp-step-icon { display: none; } /* l'icÃ´ne est portÃ©e par le grand panneau navy */
 }
 
-/* ── Mobile / tablette : liste verticale classique (pas d'épinglage) ── */
+/* â”€â”€ Mobile / tablette : liste verticale classique (pas d'Ã©pinglage) â”€â”€ */
 @media (max-width: 1023px) {
   .exp-right { display: none; }
   .exp-step {
@@ -428,7 +428,7 @@
   .exp-step:last-child { border-bottom: 0; margin-bottom: 0; }
 }
 
-/* ─── Icon pulse (cartes services) ─── */
+/* â”€â”€â”€ Icon pulse (cartes services) â”€â”€â”€ */
 @keyframes icon-pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.12); }
@@ -440,15 +440,19 @@
   .icon-pulse { animation: none; }
 }
 
+/* â”€â”€â”€ Page transition overlay : texte qui glisse (async page transitions) â”€â”€â”€ */
 /* ─── Page transition overlay : texte qui glisse (async page transitions) ─── */
 .pt-text {
-  position: absolute;
+  position: relative;
   white-space: nowrap;
   font-weight: 800;
-  font-size: clamp(2rem, 8vw, 4.5rem);
+  font-size: clamp(1.2rem, 5.5vw, 3.5rem);
   color: #caf0f8;
   letter-spacing: -0.02em;
   transform: translateX(110%);
+  max-width: 88vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .pt-text.pt-slide {
   animation: pt-slide-across 1s var(--ease-out-expo) forwards;
@@ -458,28 +462,28 @@
   to { transform: translateX(-110%); }
 }
 
-/* ─── MOBILE MENU ─── */
+/* â”€â”€â”€ MOBILE MENU â”€â”€â”€ */
 .mobile-menu { display: none; opacity: 0; transform: translateY(-8px); transition: opacity 0.25s ease, transform 0.25s ease; }
 .mobile-menu.open { display: block; opacity: 1; transform: translateY(0); animation: menuSlideIn 0.25s ease forwards; }
 @keyframes menuSlideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 .mobile-nav-active { background: rgba(0,119,182,0.08); color: #0077b6; font-weight: 700; }
 
-/* ─── SCROLLBAR ─── */
+/* â”€â”€â”€ SCROLLBAR â”€â”€â”€ */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: #f1f5f9; }
 ::-webkit-scrollbar-thumb { background: #0077b6; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: #00b4d8; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 
-/* ─── SCROLL REVEAL (legacy class, conservée pour compat) ─── */
+/* â”€â”€â”€ SCROLL REVEAL (legacy class, conservÃ©e pour compat) â”€â”€â”€ */
 .reveal { opacity: 0; transform: translateY(20px); transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
 .reveal.visible { opacity: 1; transform: translateY(0); }
 
-/* ─── MOTEUR DE RÉVÉLATION (IntersectionObserver + CSS, robuste) ─────
-   Indépendant de GSAP/CDN : se déclenche de façon fiable à chaque section
-   qui entre à l'écran. Contenu VISIBLE par défaut ; l'état caché n'existe
-   que sous html.js-ready (posé immédiatement par un script inline).
-   → JS désactivé = tout visible, aucun risque d'invisibilité. */
+/* â”€â”€â”€ MOTEUR DE RÃ‰VÃ‰LATION (IntersectionObserver + CSS, robuste) â”€â”€â”€â”€â”€
+   IndÃ©pendant de GSAP/CDN : se dÃ©clenche de faÃ§on fiable Ã  chaque section
+   qui entre Ã  l'Ã©cran. Contenu VISIBLE par dÃ©faut ; l'Ã©tat cachÃ© n'existe
+   que sous html.js-ready (posÃ© immÃ©diatement par un script inline).
+   â†’ JS dÃ©sactivÃ© = tout visible, aucun risque d'invisibilitÃ©. */
 html.js-ready [data-reveal],
 html.js-ready [data-stagger] > *,
 html.js-ready [data-hero] > * {
@@ -494,7 +498,7 @@ html.js-ready [data-hero].in > * {
   opacity: 1;
   transform: none;
 }
-/* Cascade : délai progressif sur les enfants directs */
+/* Cascade : dÃ©lai progressif sur les enfants directs */
 html.js-ready [data-stagger].in > *:nth-child(1), html.js-ready [data-hero].in > *:nth-child(1) { transition-delay: 0.04s; }
 html.js-ready [data-stagger].in > *:nth-child(2), html.js-ready [data-hero].in > *:nth-child(2) { transition-delay: 0.11s; }
 html.js-ready [data-stagger].in > *:nth-child(3), html.js-ready [data-hero].in > *:nth-child(3) { transition-delay: 0.18s; }
@@ -504,10 +508,10 @@ html.js-ready [data-stagger].in > *:nth-child(6), html.js-ready [data-hero].in >
 html.js-ready [data-stagger].in > *:nth-child(n+7) { transition-delay: 0.46s; }
 html.js-ready [data-parallax] { will-change: transform; }
 
-/* ─── Cartes : entrée 3D des couches internes (icône/texte/reflet) ───
-   Le conteneur [data-tilt] ne tourne jamais lui-même (cf. tilt au survol,
-   Layout.tsx) — seules ses couches internes animent, en cascade, quand
-   son [data-stagger]/[data-hero] parent reçoit .in. */
+/* â”€â”€â”€ Cartes : entrÃ©e 3D des couches internes (icÃ´ne/texte/reflet) â”€â”€â”€
+   Le conteneur [data-tilt] ne tourne jamais lui-mÃªme (cf. tilt au survol,
+   Layout.tsx) â€” seules ses couches internes animent, en cascade, quand
+   son [data-stagger]/[data-hero] parent reÃ§oit .in. */
 html.js-ready [data-stagger] > [data-tilt] .tilt-image,
 html.js-ready [data-hero] > [data-tilt] .tilt-image {
   opacity: 0;
@@ -545,7 +549,7 @@ html.js-ready [data-hero].in > [data-tilt] .tilt-shine {
   transform: none;
 }
 
-/* Header pill : état affiné au scroll */
+/* Header pill : Ã©tat affinÃ© au scroll */
 #header-pill {
   transition: background 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease;
 }
@@ -555,7 +559,7 @@ html.js-ready [data-hero].in > [data-tilt] .tilt-shine {
   border-color: rgba(3,105,161,0.18);
 }
 
-/* ─── REDUCED MOTION : tout visible, aucune animation ─── */
+/* â”€â”€â”€ REDUCED MOTION : tout visible, aucune animation â”€â”€â”€ */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
@@ -570,8 +574,8 @@ html.js-ready [data-hero].in > [data-tilt] .tilt-shine {
     opacity: 1 !important;
   }
   /* On neutralise le transform des reveals SAUF sur les cartes [data-tilt] : leur tilt
-     au survol est une interaction directe conservée même sous reduced-motion (voir
-     Layout.tsx), et un "transform: none !important" ici écraserait le transform GSAP. */
+     au survol est une interaction directe conservÃ©e mÃªme sous reduced-motion (voir
+     Layout.tsx), et un "transform: none !important" ici Ã©craserait le transform GSAP. */
   html.js-ready [data-reveal]:not([data-tilt]),
   html.js-ready [data-stagger] > *:not([data-tilt]),
   html.js-ready [data-hero] > *:not([data-tilt]) {
@@ -579,8 +583,8 @@ html.js-ready [data-hero].in > [data-tilt] .tilt-shine {
   }
   .float, .animate-pulse-slow, .shimmer, .animate-bounce { animation: none !important; }
 
-  /* Feedback de survol supplémentaire (statique) qui complète le tilt : bordure
-     accent + anneau + ombre appuyée + icône avivée. */
+  /* Feedback de survol supplÃ©mentaire (statique) qui complÃ¨te le tilt : bordure
+     accent + anneau + ombre appuyÃ©e + icÃ´ne avivÃ©e. */
   .surface-elevated:hover,
   .surface-navy:hover,
   [data-tilt]:hover {
@@ -589,7 +593,7 @@ html.js-ready [data-hero].in > [data-tilt] .tilt-shine {
   }
   [data-tilt]:hover .tilt-image { filter: brightness(1.12) saturate(1.15); }
 
-  /* View Transitions natives : navigation conservée, animation neutralisée */
+  /* View Transitions natives : navigation conservÃ©e, animation neutralisÃ©e */
   ::view-transition-group(*),
   ::view-transition-old(*),
   ::view-transition-new(*) {
@@ -597,24 +601,24 @@ html.js-ready [data-hero].in > [data-tilt] .tilt-shine {
   }
 }
 
-/* ─── SMOOTH SCROLL ─── */
+/* â”€â”€â”€ SMOOTH SCROLL â”€â”€â”€ */
 html { scroll-behavior: smooth; }
 
-/* ─── FOCUS RING ─── */
+/* â”€â”€â”€ FOCUS RING â”€â”€â”€ */
 *:focus-visible { outline: 2px solid #0077b6; outline-offset: 2px; }
 
-/* ─── LINE CLAMP ─── */
+/* â”€â”€â”€ LINE CLAMP â”€â”€â”€ */
 .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
-/* ─── PRINT ─── */
+/* â”€â”€â”€ PRINT â”€â”€â”€ */
 @media print {
   header, footer, nav, aside { display: none !important; }
   .no-print { display: none !important; }
   body { background: white; }
 }
 
-/* ─── WHATSAPP BUTTON ─── */
+/* â”€â”€â”€ WHATSAPP BUTTON â”€â”€â”€ */
 .whatsapp-float {
   position: fixed;
   bottom: 1.5rem;
@@ -638,16 +642,16 @@ html { scroll-behavior: smooth; }
   box-shadow: 0 6px 28px rgba(37,211,102,0.55);
 }
 
-/* ─── Lenis smooth scroll ─── */
+/* â”€â”€â”€ Lenis smooth scroll â”€â”€â”€ */
 html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
 .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
 .lenis.lenis-stopped { overflow: hidden; }
 
-/* ─── SplitText (slogan hero composé mot par mot) ─── */
+/* â”€â”€â”€ SplitText (slogan hero composÃ© mot par mot) â”€â”€â”€ */
 .split-line { overflow: hidden; }
-/* Préserve le dégradé du mot "Réinventé" après découpe SplitText :
-   les sous-spans générés re-cliquent le dégradé au lieu d'hériter un texte transparent. */
+/* PrÃ©serve le dÃ©gradÃ© du mot "RÃ©inventÃ©" aprÃ¨s dÃ©coupe SplitText :
+   les sous-spans gÃ©nÃ©rÃ©s re-cliquent le dÃ©gradÃ© au lieu d'hÃ©riter un texte transparent. */
 .hero-grad, .hero-grad * {
   background: linear-gradient(120deg, #caf0f8, #38bdf8 60%, #0077b6);
   -webkit-background-clip: text;
@@ -656,7 +660,7 @@ html.lenis, html.lenis body { height: auto; }
   color: transparent;
 }
 
-/* ─── Hero carousel — transition balayage (clip-path, étape 1B) ─── */
+/* â”€â”€â”€ Hero carousel â€” transition balayage (clip-path, Ã©tape 1B) â”€â”€â”€ */
 .hero-carousel-slide {
   position: absolute; inset: 0; opacity: 1;
   clip-path: inset(0 0 0 100%);
@@ -668,7 +672,7 @@ html.lenis, html.lenis body { height: auto; }
   will-change: transform;
 }
 
-/* ─── Testimonials marquee (défilement continu, pause au survol) ─── */
+/* â”€â”€â”€ Testimonials marquee (dÃ©filement continu, pause au survol) â”€â”€â”€ */
 @keyframes testimonialMarquee {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
@@ -687,7 +691,7 @@ html.js-ready .testimonial-card-in {
 }
 html.js-ready .testimonial-card-in.in { opacity: 1; transform: none; }
 
-/* ─── Marquee de marques ─── */
+/* â”€â”€â”€ Marquee de marques â”€â”€â”€ */
 @keyframes brandMarquee {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
@@ -717,5 +721,136 @@ html.js-ready .testimonial-card-in.in { opacity: 1; transform: none; }
 .brand-item:hover { opacity: 1; color: var(--accent); }
 @media (prefers-reduced-motion: reduce) {
   .brand-track { animation: none; flex-wrap: wrap; justify-content: center; }
+}
+
+
+
+/* ==========================================================
+   ─── RESPONSIVE MOBILE-FIRST — corrections globales ───
+   Priorité : mobile (< 640px) → tablette (640-1023px)
+   ========================================================== */
+
+/* ─── Overlay de transition de page ─── */
+#page-transition {
+  padding: 0 1rem;
+}
+.pt-text {
+  white-space: normal !important;
+  word-break: break-word;
+  text-align: center;
+  line-height: 1.2;
+  max-width: 90vw;
+}
+
+/* ─── WhatsApp panel : taille max sécurisée sur petit écran ─── */
+#wa-panel {
+  width: min(300px, calc(100vw - 2rem)) !important;
+  left: 0 !important;
+  right: auto;
+}
+
+/* ─── Barre mobile bas : s'assurer qu'elle ne recouvre pas le contenu ─── */
+@media (max-width: 767px) {
+  main#main-content { padding-bottom: 4.5rem !important; }
+  .whatsapp-float { bottom: 5.5rem; }
+  #wa-widget { bottom: 5rem; }
+  #back-to-top { bottom: 5.5rem; }
+}
+
+/* ─── Hero home : espacements mobiles ─── */
+@media (max-width: 639px) {
+  .display-1 {
+    font-size: clamp(2rem, 8vw + 0.5rem, 3.5rem) !important;
+  }
+  .display-2 {
+    font-size: clamp(1.5rem, 5vw + 0.4rem, 2.4rem) !important;
+  }
+  .hero-content { padding-bottom: 1rem; }
+
+  /* Stats hero : 3 colonnes trop serrées sur 320px */
+  .hero-content .grid-cols-3 { grid-template-columns: repeat(3, 1fr); gap: 0.5rem !important; }
+  .hero-content .grid-cols-3 > div { padding: 0.6rem 0.25rem !important; }
+  .hero-content .grid-cols-3 .text-2xl { font-size: 1.15rem !important; }
+}
+
+/* ─── Sections avec padding horizontal trop grand sur mobile ─── */
+@media (max-width: 639px) {
+  .glass-card.rounded-3xl { padding: 1.25rem !important; border-radius: 1rem !important; }
+  .glass-card.rounded-2xl { padding: 1rem !important; }
+  .surface-elevated { padding: 1rem !important; border-radius: 0.875rem !important; }
+  .surface { padding: 0.875rem !important; }
+
+  /* Simulateur : formulaire plein écran */
+  #btu-form .grid-cols-2 { gap: 0.75rem; }
+
+  /* Pages légales / politique : sections internes */
+  .glass-card section { padding: 1rem !important; }
+}
+
+/* ─── Grilles produits et fonctionnalités ─── */
+@media (max-width: 639px) {
+  /* Grille avantages : 2 colonnes sur mobile, 4 sur desktop */
+  .grid.grid-cols-1.sm\\:grid-cols-2.lg\\:grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+}
+
+/* ─── Carte flottante simulateur BTU : cachée sur mobile (déjà lg:hidden) ─── */
+/* ─── Section expertise : déjà responsive via CSS dédié ─── */
+
+/* ─── FAQ accordéon : texte correct sur mobile ─── */
+@media (max-width: 639px) {
+  details summary { padding: 0.875rem 1rem; }
+  details summary span { font-size: 0.8rem; }
+  details > div { padding: 0 1rem 0.875rem; }
+}
+
+/* ─── Testimonials marquee : taille carte sur mobile ─── */
+@media (max-width: 639px) {
+  .testimonial-track { gap: 0.75rem; }
+  .testimonial-track > .surface-elevated { min-width: 80vw !important; max-width: 85vw !important; padding: 1rem !important; }
+}
+
+/* ─── Footer : grid 1 col sur mobile ─── */
+@media (max-width: 767px) {
+  footer .grid.grid-cols-1.md\\:grid-cols-4 { gap: 1.5rem; }
+  footer .md\\:col-span-2 { width: 100%; }
+}
+
+/* ─── CTA hero mobile : boutons full-width ─── */
+@media (max-width: 639px) {
+  .hero-content .flex-col.sm\\:flex-row > a {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ─── Barre de garanties : 2 cols sur mobile ─── */
+@media (max-width: 639px) {
+  .grid.grid-cols-2.md\\:grid-cols-4 { gap: 0.5rem; }
+}
+
+/* ─── Contact / avis : formulaires ─── */
+@media (max-width: 639px) {
+  .max-w-5xl, .max-w-4xl, .max-w-6xl { padding-left: 1rem !important; padding-right: 1rem !important; }
+}
+
+/* ─── Simulateur : résultat sous le formulaire bien visible ─── */
+@media (max-width: 1023px) {
+  #result-zone { margin-top: 1.5rem; }
+  .grid.grid-cols-1.lg\\:grid-cols-2.gap-10 { gap: 1.5rem; }
+}
+
+/* ─── Page indicator (eyebrow) : espacement dans le header ─── */
+@media (max-width: 1023px) {
+  .eyebrow.lg\\:hidden { font-size: 0.6rem; padding: 0.25rem 0.65rem; }
+}
+
+/* ─── Touch targets : minimum 44px pour les boutons interactifs ─── */
+@media (max-width: 767px) {
+  a, button { min-height: 44px; }
+  /* Exemples d'inputs radio dans le simulateur */
+  #btu-form label > div { min-height: 44px; }
 }
 

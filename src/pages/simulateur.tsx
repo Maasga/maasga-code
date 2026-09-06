@@ -77,7 +77,7 @@ export const SimulateurPage = ({
 
           {/* ===== FORMULAIRE ===== */}
           <div>
-            <div class="glass-card rounded-3xl p-8 reveal">
+            <div class="glass-card rounded-3xl p-4 sm:p-8 reveal">
               <h2 class="text-xl font-bold text-white mb-6 flex items-center space-x-3">
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.2);">
                   <i class="fas fa-ruler-combined text-cyan-400"></i>
@@ -558,3 +558,4 @@ export const SimulateurPage = ({
     </Layout>
   )
 }
+
