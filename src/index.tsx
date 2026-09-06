@@ -15,6 +15,8 @@ import { EspaceClientPage } from './pages/espace-client'
 import { AdminPage, AdminProduitsPage, AdminRDVPage, AdminClientsPage, AdminCommandesPage, AdminAvisPage, AdminParametresPage, AdminDevisListPage, AdminDevisNewPage, AdminDevisDetailPage, AdminMaintenancePage, AdminMessagesPage, AdminRealisationsPage, AdminSAVPage, AdminSAVDetailPage, AdminAuditLogPage, AdminNotificationsPage } from './pages/admin'
 import { RealisationsPage } from './pages/realisations'
 import { ContratMaintenancePage } from './pages/contrat-maintenance'
+import { MentionsLegalesPage } from './pages/mentions-legales'
+import { PolitiqueDeConfidentialitePage } from './pages/politique-de-confidentialite'
 import { appointments, reviews, orders, clients, setMaintenanceDueCount } from './data/store'
 import type { Order } from './data/store'
 import { products } from './data/products'
@@ -695,6 +697,9 @@ app.get('/contact', (c) => {
   const success = c.req.query('success') === '1'
   return c.html(<ContactPage success={success} />)
 })
+
+app.get('/mentions-legales', (c) => c.html(<MentionsLegalesPage />))
+app.get('/politique-de-confidentialite', (c) => c.html(<PolitiqueDeConfidentialitePage />))
 
 // ============================================================
 // ESPACE CLIENT
