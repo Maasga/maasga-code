@@ -3716,11 +3716,83 @@ app.post('/api/admin/order/create-devis', adminAuth, async (c) => {
 // ADMIN ROUTES
 // ============================================================
 
+// Crée les tables essentielles si elles n'existent pas (garde-fou DB vide en dev local)
+async function ensureCoreTables(db: any): Promise<void> {
+  try {
+    await db.batch([
+      db.prepare(`CREATE TABLE IF NOT EXISTS appointments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL, phone TEXT NOT NULL, quartier TEXT,
+        date TEXT NOT NULL, heure_debut TEXT, heure_fin TEXT,
+        type TEXT DEFAULT 'devis', notes TEXT, latitude REAL, longitude REAL,
+        adresse_precise TEXT, status TEXT DEFAULT 'pending',
+        created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now'))
+      )`),
+      db.prepare(`CREATE TABLE IF NOT EXISTS clients (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL, phone TEXT NOT NULL UNIQUE, email TEXT,
+        quartier TEXT, password_hash TEXT, type_demande TEXT, notes TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`),
+      db.prepare(`CREATE TABLE IF NOT EXISTS orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        client_id INTEGER, appointment_id INTEGER, product_id INTEGER,
+        quantity INTEGER DEFAULT 1, client_name TEXT NOT NULL,
+        client_phone TEXT NOT NULL, client_email TEXT, quartier TEXT,
+        status TEXT NOT NULL DEFAULT 'en_attente', type TEXT DEFAULT 'commande',
+        notes TEXT, total_price REAL DEFAULT 0, installation_price REAL DEFAULT 0,
+        admin_notes TEXT, created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      )`),
+      db.prepare(`CREATE TABLE IF NOT EXISTS reviews (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL, note INTEGER NOT NULL, comment TEXT,
+        date TEXT, service TEXT, approved INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`),
+      db.prepare(`CREATE TABLE IF NOT EXISTS maintenance_contracts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        client_id INTEGER, client_name TEXT NOT NULL, client_phone TEXT NOT NULL,
+        client_email TEXT, order_id INTEGER, plan_type TEXT NOT NULL,
+        plan_price INTEGER DEFAULT 0, start_date TEXT NOT NULL, end_date TEXT NOT NULL,
+        status TEXT DEFAULT 'en_attente', total_visits INTEGER DEFAULT 0,
+        completed_visits INTEGER DEFAULT 0, next_visit_date TEXT, notes TEXT,
+        admin_notes TEXT, created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      )`),
+      db.prepare(`CREATE TABLE IF NOT EXISTS maintenance_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        client_id INTEGER, client_name TEXT, client_phone TEXT,
+        request_type TEXT NOT NULL, equipment_type TEXT, description TEXT,
+        status TEXT DEFAULT 'pending', created_by TEXT, updated_by TEXT,
+        created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now'))
+      )`),
+      db.prepare(`CREATE TABLE IF NOT EXISTS maintenance_visits (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        contract_id INTEGER, client_name TEXT, client_phone TEXT, client_id INTEGER,
+        visit_type TEXT DEFAULT 'preventive', visit_date TEXT,
+        status TEXT DEFAULT 'planifiee', technician TEXT, description TEXT,
+        actions_performed TEXT, notes TEXT, checklist_data TEXT,
+        created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now'))
+      )`),
+      db.prepare(`CREATE TABLE IF NOT EXISTS admin_notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT, title TEXT, message TEXT, read INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`),
+    ])
+  } catch(e) {
+    // Silencieux — si une table existe déjà avec un schéma différent, on continue
+    console.warn('ensureCoreTables warning:', (e as any)?.message)
+  }
+}
+
 // Recharge toutes les données depuis D1 dans les tableaux mémoire (évite reset au deploy)
 const refreshAdminCache = async (c: any, next: any) => {
   const db = c.env.DB
   if (db) {
     try {
+      await ensureCoreTables(db);
       // ---------- Appointments ----------
       appointments.length = 0
       const dbAppts = await getAppointments(db)
@@ -9241,15 +9313,27 @@ app.post('/api/mobile/commandes', mobileAuth, async (c) => {
   const clientPhone = (body.client_phone || user.phone || '').trim()
   const quartier = (body.quartier || '').trim()
   const productId = body.product_id ? parseInt(body.product_id) : null
-  const quantity = body.quantity || 1
+  const quantity = Math.max(1, parseInt(body.quantity) || 1)
   const paymentMethod = body.payment_method || 'Téléphone'
   const notes = body.notes || ''
-  const totalPrice = body.total_price || 0
+  // Le total_price envoyé par le client est volontairement ignoré.
+  // On recalcule depuis le prix officiel en base pour éviter toute falsification.
 
   if (!clientName || !clientPhone) return c.json({ error: 'Nom et téléphone requis' }, 400)
 
   if (db) {
     try {
+      // Recalcul du prix unitaire depuis D1 (source de vérité)
+      let unitPrice = 0
+      if (productId) {
+        const product = await db.prepare(
+          'SELECT price FROM products WHERE id = ? AND available = 1'
+        ).bind(productId).first() as any
+        if (!product) return c.json({ error: 'Produit introuvable ou indisponible' }, 404)
+        unitPrice = product.price || 0
+      }
+      const totalPrice = unitPrice * quantity
+
       await db.prepare(
         'INSERT INTO orders (client_name, client_phone, quartier, product_id, quantity, notes, total_price, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
       ).bind(clientName, clientPhone, quartier, productId, quantity, `[${paymentMethod}] ${notes}`.trim(), totalPrice, 'pending', new Date().toISOString()).run()
@@ -9316,6 +9400,103 @@ app.get('/api/mobile/activity', mobileAuth, async (c) => {
     activity.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     return c.json(activity.slice(0, 30))
   } catch (e) { console.error('Mobile activity error:', e); return c.json([]) }
+})
+
+// ── POST /api/mobile/commandes/:id/annuler ────────────────────
+// Annulation d'une commande par le client mobile (Firebase Auth).
+// Logique identique à /api/order/cancel-order mais authentifiée via mobileAuth.
+app.post('/api/mobile/commandes/:id/annuler', mobileAuth, async (c) => {
+  const user = c.get('mobileUser')
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  const orderId = parseInt(c.req.param('id'))
+  if (!orderId || isNaN(orderId)) return c.json({ error: 'ID commande invalide' }, 400)
+
+  const body = await c.req.json().catch(() => ({})) as any
+  const reason = sanitizeText(body?.reason, 1000)
+
+  // Vérifier que la commande appartient bien à cet utilisateur Firebase
+  const order = await db.prepare(
+    'SELECT * FROM orders WHERE id = ? AND client_phone = ?'
+  ).bind(orderId, user.phone).first() as any
+
+  if (!order) return c.json({ error: 'Commande introuvable' }, 404)
+
+  // Statuts annulables — alignés sur le CHECK de la migration 0036
+  const cancellableStatuses = ['en_attente', 'contacte', 'confirme', 'pending']
+  if (!cancellableStatuses.includes(order.status)) {
+    return c.json({ error: 'Cette commande ne peut plus être annulée' }, 400)
+  }
+
+  const now = new Date().toISOString()
+  await db.prepare(
+    `UPDATE orders SET status = 'annule', notes = COALESCE(notes, '') || ?, updated_at = ? WHERE id = ?`
+  ).bind(
+    ' | Annulée par client (mobile) le ' + now + (reason ? ' — ' + reason : ''),
+    now,
+    orderId
+  ).run()
+
+  await logActivity(db, {
+    clientId: user.id,
+    clientPhone: user.phone,
+    action: `Commande annulée — #${orderId}${reason ? ' — ' + reason : ''}`,
+    category: 'order',
+    ip: c.req.header('cf-connecting-ip') || ''
+  })
+  await notifyAdmin(
+    c.env,
+    'order',
+    `⚠️ Commande #${orderId} annulée par client (mobile) — ${order.client_name}${reason ? ' — Raison: ' + reason : ''}`
+  )
+
+  return c.json({ success: true, message: 'Commande annulée.' })
+})
+
+// ── POST /api/client/push-token ───────────────────────────────
+// Enregistre ou renouvelle le token FCM d'un appareil mobile.
+// L'authentification passe par le Bearer Firebase (mobileAuth).
+app.post('/api/client/push-token', mobileAuth, async (c) => {
+  const user = c.get('mobileUser')
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  const body = await c.req.json().catch(() => ({})) as any
+  const token = (body?.token || '').trim()
+  const platform = (body?.platform || 'android').trim()
+  const appVersion = (body?.appVersion || '').trim()
+
+  if (!token) return c.json({ error: 'Token FCM manquant' }, 400)
+
+  // Upsert : un même appareil peut changer de token (rotation FCM)
+  await db.prepare(`
+    INSERT INTO push_tokens (client_id, token, platform, app_version, updated_at)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(token) DO UPDATE SET
+      client_id   = excluded.client_id,
+      platform    = excluded.platform,
+      app_version = excluded.app_version,
+      updated_at  = excluded.updated_at
+  `).bind(user.id, token, platform, appVersion, new Date().toISOString()).run()
+
+  return c.json({ success: true })
+})
+
+// ── DELETE /api/client/push-token ────────────────────────────
+// Révoque le token FCM à la déconnexion pour ne plus recevoir de notifications.
+app.delete('/api/client/push-token', mobileAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  const body = await c.req.json().catch(() => ({})) as any
+  const token = (body?.token || '').trim()
+
+  if (!token) return c.json({ error: 'Token FCM manquant' }, 400)
+
+  await db.prepare('DELETE FROM push_tokens WHERE token = ?').bind(token).run()
+
+  return c.json({ success: true })
 })
 
 // ============================================================
