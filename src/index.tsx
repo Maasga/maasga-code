@@ -98,7 +98,7 @@ app.use(async (c, next) => {
   c.res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)')
   c.res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
   // CSP: allow inline styles/scripts for SSR JSX, Google Maps embeds, Font Awesome CDN, Google Analytics
-  c.res.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' data: https:; frame-src https://www.google.com; connect-src 'self' https://app.ligdicash.com https://www.google-analytics.com https://analytics.google.com https://www.google.com https://cdn.jsdelivr.net;")
+  c.res.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' data: https:; frame-src https://www.google.com; connect-src 'self' https://app.ligdicash.com https://www.google-analytics.com https://analytics.google.com https://www.google.com https://cdn.jsdelivr.net https://api.imgbb.com;")
   // Cache control per route type
   const path = new URL(c.req.url).pathname
   if (path.startsWith('/api/')) {
@@ -6551,9 +6551,15 @@ app.post('/api/admin/produit/add', adminAuth, async (c) => {
     if (!validateImageMagicBytes(bytes)) {
       return c.redirect('/admin/produits?error=' + encodeURIComponent('Le fichier ne semble pas être une image valide.'))
     }
-    let binary = ''
-    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
-    imageUrl = `data:${file.type || 'image/jpeg'};base64,${btoa(binary)}`
+    // Upload vers ImgBB
+    const imgbbKey2 = (c.env as any).IMGBB_API_KEY as string
+    try {
+      if (!imgbbKey2) throw new Error('IMGBB_API_KEY manquante')
+      imageUrl = await uploadToImgBB(imgbbKey2, buffer, file.type)
+    } catch(imgbbErr2) {
+      console.error('ImgBB upload error (create):', imgbbErr2)
+      return c.redirect('/admin/produits?error=' + encodeURIComponent('Upload image echoue.'))
+    }
   }
 
   // Parse media JSON
@@ -7022,6 +7028,24 @@ app.post('/api/admin/produit/delete', adminAuth, async (c) => {
   return c.redirect('/admin/produits?deleted=1')
 })
 
+// ============================================================
+// IMGBB IMAGE UPLOAD HELPER
+// ============================================================
+async function uploadToImgBB(apiKey: string, fileBuffer: ArrayBuffer, mimeType: string): Promise<string> {
+  const bytes = new Uint8Array(fileBuffer)
+  let binary = ''
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
+  const base64 = btoa(binary)
+  const form = new FormData()
+  form.append('key', apiKey)
+  form.append('image', base64)
+  const res = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: form })
+  if (!res.ok) throw new Error('ImgBB upload failed: ' + res.status)
+  const json = await res.json() as any
+  if (!json?.data?.url) throw new Error('ImgBB: no URL in response')
+  return json.data.url as string
+}
+
 // API Admin - Uploader/changer l'image d'un produit
 app.post('/api/admin/produit/image', adminAuth, async (c) => {
   const body = await c.req.parseBody()
@@ -7043,26 +7067,31 @@ app.post('/api/admin/produit/image', adminAuth, async (c) => {
     if (!validateImageMagicBytes(bytes)) {
       return c.redirect('/admin/produits?error=' + encodeURIComponent('Le fichier ne semble pas être une image valide.'))
     }
-    let binary = ''
-    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
-    const dataUrl = `data:${file.type || 'image/jpeg'};base64,${btoa(binary)}`
-    // D1 fait référence : le cache produits ne contient que les produits
-    // disponibles de cet isolate, donc `if (product)` faisait échouer l'upload en
-    // silence pour tout produit absent du cache.
+    // Upload vers ImgBB (remplace le stockage base64 en D1)
+    const imgbbKey = (c.env as any).IMGBB_API_KEY as string
+    let uploadedUrl = ''
+    try {
+      if (!imgbbKey) throw new Error('IMGBB_API_KEY manquante')
+      uploadedUrl = await uploadToImgBB(imgbbKey, buffer, file.type)
+    } catch(imgbbErr) {
+      console.error('ImgBB upload error:', imgbbErr)
+      return c.redirect('/admin/produits?error=' + encodeURIComponent('Upload image echoue. Verifiez la cle ImgBB.'))
+    }
     const db = c.env.DB
     if (db) {
       try {
-        const res = await db.prepare('UPDATE products SET imageUrl = ? WHERE id = ?').bind(dataUrl, id).run()
+        const res = await db.prepare('UPDATE products SET imageUrl = ? WHERE id = ?').bind(uploadedUrl, id).run()
         if (!res?.meta?.changes) {
           return c.redirect('/admin/produits?error=' + encodeURIComponent('Produit introuvable.'))
         }
       } catch(e) {
         console.error('Erreur D1 produit image:', e)
-        return c.redirect('/admin/produits?error=' + encodeURIComponent("Enregistrement de l'image impossible (base de données)."))
+        return c.redirect('/admin/produits?error=' + encodeURIComponent('Enregistrement image impossible.'))
       }
     }
     const product = products.find(p => p.id === id)
-    if (product) (product as any).imageUrl = dataUrl
+    if (product) (product as any).imageUrl = uploadedUrl
+    else if (!db) return c.redirect('/admin/produits?error=' + encodeURIComponent('Produit introuvable.'))
     else if (!db) return c.redirect('/admin/produits?error=' + encodeURIComponent('Produit introuvable.'))
   }
   

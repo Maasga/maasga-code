@@ -16,5 +16,6 @@ export type HonoEnv = {
     ADMIN_EMAIL?: string
     ADMIN_WHATSAPP?: string
     BREVO_API_KEY?: string
+    IMGBB_API_KEY?: string
   }
 }
