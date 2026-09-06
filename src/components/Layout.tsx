@@ -291,11 +291,6 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               <a href="/espace-client" id="user-nav-btn" class="hidden lg:flex items-center justify-center w-9 h-9 rounded-full transition-all hover:bg-blue-50" style="color:#0077b6;" title="Espace client" aria-label="Espace client">
                 <i class="fas fa-user text-sm"></i>
               </a>
-              <a href="/rendez-vous" class="hidden sm:flex items-center gap-1.5 btn-primary text-white text-xs sm:text-sm font-bold px-4 sm:px-5 py-2 rounded-full shadow-md">
-                <i class="fas fa-calendar-plus text-xs"></i>
-                <span class="hidden md:inline">Rendez-vous</span>
-                <span class="md:hidden">RDV</span>
-              </a>
               <button onclick="var m=document.getElementById('mobile-menu');var b=this.querySelector('i');if(m.classList.contains('open')){m.classList.remove('open');b.className='fas fa-bars text-lg';}else{m.classList.add('open');b.className='fas fa-times text-lg';}this.setAttribute('aria-expanded',m.classList.contains('open'))" class="lg:hidden flex items-center justify-center w-10 h-10 rounded-full hover:bg-blue-50 transition-colors" style="color:#475569;" aria-label="Menu de navigation" aria-expanded="false" aria-controls="mobile-menu">
                 <i class="fas fa-bars text-lg"></i>
               </button>

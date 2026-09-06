@@ -62,7 +62,7 @@ export const products: Product[] = [
     available: true,
     warranty: "2 ans constructeur",
     features: ["Mode Turbo", "Auto-nettoyage", "Wi-Fi intégré", "Mode Eco", "Anti-bactérien"],
-    image: "/assets/icons/temperature.svg", // était '🌡️'
+    image: "/static/ac-placeholder.svg", // était '🌡️'
     imageUrl: undefined
   },
   {
@@ -81,7 +81,7 @@ export const products: Product[] = [
     available: true,
     warranty: "2 ans constructeur",
     features: ["Mode Turbo", "Auto-nettoyage", "Wi-Fi intégré", "Mode Eco", "Timer programmable"],
-    image: "/assets/icons/snowflake.svg", // était '❄️'
+    image: "/static/ac-placeholder.svg", // était '❄️'
     imageUrl: undefined
   },
   {
@@ -100,7 +100,7 @@ export const products: Product[] = [
     available: true,
     warranty: "2 ans + extension disponible",
     features: ["Dual Inverter", "Mode Quiet", "Auto Cleaning", "4-Way Swing", "Smart Diagnosis"],
-    image: "/assets/icons/office.svg", // était '🏢'
+    image: "/static/ac-placeholder.svg", // était '🏢'
     imageUrl: undefined
   },
   {
@@ -119,7 +119,7 @@ export const products: Product[] = [
     available: true,
     warranty: "1 an constructeur",
     features: ["Refroidissement rapide", "Mode Sommeil", "Timer 24h", "Filtre lavable"],
-    image: "/assets/icons/wind.svg", // était '💨'
+    image: "/static/ac-placeholder.svg", // était '💨'
     imageUrl: undefined
   },
   {
@@ -138,7 +138,7 @@ export const products: Product[] = [
     available: true,
     warranty: "1 an constructeur",
     features: ["Démarrage à froid", "Mode Auto", "Filtre anti-poussière", "Timer programmable"],
-    image: "/assets/icons/wind.svg", // était '🌬️'
+    image: "/static/ac-placeholder.svg", // était '🌬️'
     imageUrl: undefined
   },
   {
@@ -157,7 +157,7 @@ export const products: Product[] = [
     available: true,
     warranty: "3 ans constructeur",
     features: ["Dual Inverter Gold Fin", "Mode Jet Cool", "Auto Cleaning", "Smart ThinQ", "UVnano"],
-    image: "/assets/icons/store.svg", // était '🏬'
+    image: "/static/ac-placeholder.svg", // était '🏬'
     imageUrl: undefined
   },
   {
@@ -176,7 +176,7 @@ export const products: Product[] = [
     available: false,
     warranty: "3 ans constructeur",
     features: ["Diffusion 4 directions", "Filtre plasma", "Mode Confort", "Programmation hebdo"],
-    image: "/assets/icons/factory.svg", // était '🏗️'
+    image: "/static/ac-placeholder.svg", // était '🏗️'
     imageUrl: undefined
   },
   {
@@ -195,7 +195,7 @@ export const products: Product[] = [
     available: true,
     warranty: "2 ans constructeur",
     features: ["WindFree Cooling", "AI Auto Mode", "SmartThings", "Self Clean", "Triple Protection+"],
-    image: "/assets/icons/temperature.svg", // était '🔵'
+    image: "/static/ac-placeholder.svg", // était '🔵'
     imageUrl: undefined
   }
 ];
