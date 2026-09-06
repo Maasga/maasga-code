@@ -1,4 +1,4 @@
-﻿import { Hono } from 'hono'
+import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { serveStatic } from 'hono/cloudflare-workers'
 import { setCookie, getCookie, deleteCookie } from 'hono/cookie'
@@ -12,7 +12,7 @@ import { AvisPage } from './pages/avis'
 import { AProposPage } from './pages/a-propos'
 import { ContactPage } from './pages/contact'
 import { EspaceClientPage } from './pages/espace-client'
-import { AdminPage, AdminProduitsPage, AdminRDVPage, AdminClientsPage, AdminCommandesPage, AdminAvisPage, AdminParametresPage, AdminDevisListPage, AdminDevisNewPage, AdminDevisDetailPage, AdminMaintenancePage, AdminMessagesPage, AdminRealisationsPage, AdminSAVPage, AdminSAVDetailPage, AdminAuditLogPage, AdminNotificationsPage } from './pages/admin'
+import { AdminPage, AdminProduitsPage, AdminRDVPage, AdminClientsPage, AdminCommandesPage, AdminPaiementsPage, AdminAvisPage, AdminParametresPage, AdminDevisListPage, AdminDevisNewPage, AdminDevisDetailPage, AdminMaintenancePage, AdminMessagesPage, AdminRealisationsPage, AdminSAVPage, AdminSAVDetailPage, AdminAuditLogPage, AdminNotificationsPage } from './pages/admin'
 import { RealisationsPage } from './pages/realisations'
 import { ContratMaintenancePage } from './pages/contrat-maintenance'
 import { MentionsLegalesPage } from './pages/mentions-legales'
@@ -4266,6 +4266,39 @@ app.get('/admin/clients', adminAuth, refreshAdminCache, (c) => {
 
 app.get('/admin/commandes', adminAuth, refreshAdminCache, async (c) => {
   return c.html(<AdminCommandesPage />)
+})
+
+// ============================================================
+// ADMIN PAIEMENTS
+// ============================================================
+
+app.get('/admin/paiements', adminAuth, refreshAdminCache, async (c) => {
+  const db = c.env.DB
+  let payments: any[] = []
+  if (db) {
+    try {
+      const rows = await db.prepare(
+        `SELECT id, client_name, client_phone, client_email, status, total_price, type, notes, created_at, updated_at
+        FROM orders
+        ORDER BY created_at DESC
+        LIMIT 500`
+      ).all()
+      payments = rows.results || []
+    } catch (e) {
+      console.error('Admin paiements load:', e)
+    }
+  }
+  const statusFilter = c.req.query('status')
+  const filtered = statusFilter ? payments.filter((p: any) => p.status === statusFilter) : payments
+  // Calcul des stats depuis les commandes
+  const stats = {
+    total: payments.length,
+    pending: payments.filter((p: any) => p.status === 'en_attente').length,
+    completed: payments.filter((p: any) => ['confirme','en_livraison','livre'].includes(p.status)).length,
+    failed: payments.filter((p: any) => p.status === 'annule').length,
+    revenue: payments.filter((p: any) => ['confirme','en_livraison','livre'].includes(p.status)).reduce((sum: number, p: any) => sum + (p.total_price || 0), 0),
+  }
+  return c.html(<AdminPaiementsPage payments={filtered} stats={stats} />)
 })
 
 // ============================================================
