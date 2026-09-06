@@ -3607,12 +3607,12 @@ export const AdminClientsPage = () => {
 // ============================================================
 
 export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {}) => {
-  const { onlineOrders, terrainOrders, pendingAppointments, paymentsByOrder, loading, error } = useAdminCommandesData();
-  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
-  const [isOrderDetailOpen, setIsOrderDetailOpen] = useState(false);
-  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
-  const [isClientDetailOpen, setIsClientDetailOpen] = useState(false);
-  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<number>>(new Set());
+  const { onlineOrders, terrainOrders, pendingAppointments, paymentsByOrder } = useAdminCommandesData();
+  const selectedOrderId: number | null = null;
+  const isOrderDetailOpen = false;
+  const selectedClientId: number | null = null;
+  const isClientDetailOpen = false;
+  const selectedOrderIds = new Set<number>();
 
   // Handler functions
   const handleUpdateStatus = (orderId: number, newStatus: string) => {
@@ -3639,15 +3639,8 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
     console.log('Exporting orders to CSV');
   };
 
-  const handleOpenClientDetail = (clientId: number) => {
-    setSelectedClientId(clientId);
-    setIsClientDetailOpen(true);
-  };
-
-  const handleCloseClientDetail = () => {
-    setIsClientDetailOpen(false);
-    setSelectedClientId(null);
-  };
+  const handleOpenClientDetail = (_clientId: number) => { /* SSR — géré côté client */ };
+  const handleCloseClientDetail = () => { /* SSR — géré côté client */ };
 
   const handleBulkStatusChange = (status: string) => {
     console.log(`Changing status to ${status} for ${selectedOrderIds.size} selected orders`);
@@ -3660,16 +3653,12 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
   };
 
   const handleBulkDelete = () => {
-    if (window.confirm(`Supprimer définitivement ${selectedOrderIds.size} commande(s) sélectionnée(s) ? Cette action est irréversible.`)) {
-      console.log(`Deleting ${selectedOrderIds.size} selected orders`);
-      // This would call bulk delete API
-      setSelectedOrderIds(new Set());
+    if (typeof window !== 'undefined' && window.confirm(`Supprimer les commandes sélectionnées ? Cette action est irréversible.`)) {
+      console.log(`Deleting selected orders`);
     }
   };
 
-  const handleClearSelection = () => {
-    setSelectedOrderIds(new Set());
-  };
+  const handleClearSelection = () => { /* SSR */ };
 
   if (loading) {
     return (
@@ -5153,25 +5142,21 @@ export const AdminMaintenancePage = () => {
   const dueVisits = visits.filter((v: any) => v.status === 'planifiee' && v.visit_date <= today)
   const upcomingVisits = visits.filter((v: any) => v.status === 'planifiee' && v.visit_date > today)
 
-  // Client detail modal state
-  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
-  const [isClientDetailOpen, setIsClientDetailOpen] = useState(false);
+  // Variables SSR (pas de hooks React — Hono SSR)
+  const selectedClientId: number | null = null;
+  const isClientDetailOpen = false;
+  const activeContracts = contracts.filter((c: any) => c.status === 'actif').length;
+  const pendingRequests = requests.filter((r: any) => r.status === 'pending').length;
+  const totalVisits = visits.length;
 
   const fmtDate = (d: string) => {
     if (!d) return '—'
     try { return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) } catch { return d }
   }
 
-  // Handler functions for client detail modal
-  const handleOpenClientDetail = (clientId: number | null) => {
-    setSelectedClientId(clientId);
-    setIsClientDetailOpen(true);
-  };
-
-  const handleCloseClientDetail = () => {
-    setSelectedClientId(null);
-    setIsClientDetailOpen(false);
-  };
+  // Handler functions for client detail modal (SSR — pas de hooks)
+  const handleOpenClientDetail = (_clientId: number | null) => { /* SSR */ };
+  const handleCloseClientDetail = () => { /* SSR */ };
 
   if (loading) {
     return (
@@ -6501,3 +6486,6 @@ export const AdminNotificationsPage = ({ notifications = [] }: { notifications: 
   </AdminLayout>
   )
 }
+
+
+
