@@ -1,5 +1,6 @@
 ﻿import { products } from '../data/products'
 import { reviews, appointments, orders, clients, maintenanceDueCount, notifications } from '../data/store'
+import { SITE_URL } from '../types'
 // Référentiels de l'import produits, injectés dans le <script> de la modale plutôt
 // que recopiés côté navigateur : l'ancienne UI dupliquait les listes de marques,
 // catégories et classes, vouées à diverger de celles du serveur.
@@ -4558,7 +4559,7 @@ export const AdminDevisListPage = ({ devisData = [], rdvsPending = [] }: { devis
                     class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap" style="background:rgba(99,102,241,0.12); color:#818cf8; border:1px solid rgba(99,102,241,0.2);">
                     <i class="fas fa-file-pdf mr-1"></i>PDF
                   </a>
-                  <a href={`https://wa.me/${(d.client_phone || '').replace(/\D/g,'')}?text=${encodeURIComponent('Bonjour ' + d.client_name + ', votre devis MAASGA ' + d.numero + ' est disponible : https://maasga-website.pages.dev/devis/' + d.token)}`} target="_blank" rel="noopener noreferrer"
+                  <a href={`https://wa.me/${(d.client_phone || '').replace(/\D/g,'')}?text=${encodeURIComponent('Bonjour ' + d.client_name + ', votre devis MAASGA ' + d.numero + ' est disponible : ' + SITE_URL + '/devis/' + d.token)}`} target="_blank" rel="noopener noreferrer"
                     class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap" style="background:rgba(37,211,102,0.12); color:#25D366; border:1px solid rgba(37,211,102,0.2);">
                     <i class="fab fa-whatsapp mr-1"></i>WA
                   </a>

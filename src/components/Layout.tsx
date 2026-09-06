@@ -1,4 +1,5 @@
 import { CGUModal, initCGUModal } from './CGUModal'
+import { SITE_URL } from '../types'
 
 const PAGE_LABELS: Record<string, string> = {
   home: "Accueil",
@@ -45,10 +46,8 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
   canonicalPath?: string
   jsonLd?: string
 }) => {
-  // SITE_URL centralisé — modifier ici si le domaine change
-  const siteUrl = typeof globalThis !== 'undefined' && (globalThis as any).MAASGA_SITE_URL
-    ? (globalThis as any).MAASGA_SITE_URL
-    : 'https://maasga-website.pages.dev'
+  // SITE_URL importé depuis src/types.ts — modifier là-bas quand le domaine change.
+  const siteUrl = SITE_URL
   const canonical = canonicalPath ? `${siteUrl}${canonicalPath}` : ''
   return (
     <html lang="fr">

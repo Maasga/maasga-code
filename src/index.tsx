@@ -23,6 +23,7 @@ import { products } from './data/products'
 import { quartiers } from './data/quartiers'
 import { createAppointment, updateAppointmentStatus, createOrder, createReview, getProducts, getReviews, getQuartiers, createClient, getClients, getAppointments, getAppointmentById, getOrders, deleteProduct, deleteClient, deleteOrder, getClientById, getProductById } from './db'
 import type { HonoEnv } from './types'
+import { SITE_URL } from './types'
 import { escapeHtml, sanitizeText, isValidEmail, isValidPhone, normalizePhone, validateImageMagicBytes } from './utils/helpers'
 import { sendSmsWithLog, notifyAdmin, logActivity, logSecurityEvent, sendTelegramMessage, ensureActivityLog, ensureNotificationsTable } from './utils/notifications'
 import { analyserClasseur, cleProduit, MAX_LIGNES_PAR_LOT } from './utils/importProduits'
@@ -32,8 +33,7 @@ import type { ChampCible, ChampsProduit, ProduitDerive } from './utils/importPro
 
 const app = new Hono<HonoEnv>()
 
-// SITE_URL centralisé — à synchroniser avec Layout.tsx si le domaine change
-const SITE_URL = 'https://maasga-website.pages.dev'
+// SITE_URL importé depuis src/types.ts — modifier là-bas quand le domaine change.
 
 app.use('/api/*', cors({
   origin: [SITE_URL, 'http://localhost:5173', 'http://127.0.0.1:5173'],
@@ -526,7 +526,7 @@ app.get('/favicon.svg', (c) => {
 // Robots.txt
 app.get('/robots.txt', (c) => {
   return new Response(
-    `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nSitemap: https://maasga-website.pages.dev/sitemap.xml`,
+    `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nSitemap: ${SITE_URL}/sitemap.xml`,
     { headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'public, max-age=86400' } }
   )
 })
@@ -548,7 +548,7 @@ app.get('/sitemap.xml', (c) => {
   ]
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${pages.map(p => `  <url><loc>https://maasga-website.pages.dev${p.path}</loc><lastmod>${now}</lastmod><changefreq>${p.freq}</changefreq><priority>${p.priority}</priority></url>`).join('\n')}
+${pages.map(p => `  <url><loc>${SITE_URL}${p.path}</loc><lastmod>${now}</lastmod><changefreq>${p.freq}</changefreq><priority>${p.priority}</priority></url>`).join('\n')}
 </urlset>`
   return new Response(xml, { headers: { 'Content-Type': 'application/xml', 'Cache-Control': 'public, max-age=3600' } })
 })
@@ -3078,7 +3078,7 @@ app.get('/api/maintenance/invoice/:id', async (c) => {
   <div class="invoice-container">
     <div class="header">
       <div>
-        <img src="https://maasga-website.pages.dev/logo-site.png" alt="MAASGA Logo" style="height:60px;width:auto;border-radius:10px;margin-bottom:8px;display:block;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
+        <img src="${SITE_URL}/logo-site.png" alt="MAASGA Logo" style="height:60px;width:auto;border-radius:10px;margin-bottom:8px;display:block;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
         <div class="logo" style="display:none;">MAASGA<span> ❄️</span></div>
         <p style="font-size:13px;margin-top:6px;opacity:0.85;">Solutions Climatisation & Maintenance</p>
       </div>
