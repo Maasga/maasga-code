@@ -68,22 +68,25 @@ export const useAdminMaintenanceData = () => {
       try {
         setData(prev => ({ ...prev, loading: true, error: null }));
 
-        // Simulate async data fetching
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Fetch data from API endpoints
+        const [contractsRes, requestsRes, visitsRes] = await Promise.all([
+          fetch('/api/admin/maintenance/contracts'),
+          fetch('/api/admin/maintenance/requests'),
+          fetch('/api/admin/maintenance/visits')
+        ]);
 
-        // In a real app, we would fetch from API endpoints like:
-        // const [contractsRes, requestsRes, visitsRes] = await Promise.all([
-        //   fetch('/api/admin/maintenance/contracts'),
-        //   fetch('/api/admin/maintenance/requests'),
-        //   fetch('/api/admin/maintenance/visits')
-        // ]);
+        if (!contractsRes.ok || !requestsRes.ok || !visitsRes.ok) {
+          throw new Error('Failed to fetch maintenance data');
+        }
 
-        // For now, we'll use mock data or empty arrays
-        // The actual data is passed as props to the component in the current implementation
+        const contracts = await contractsRes.json();
+        const requests = await requestsRes.json();
+        const visits = await visitsRes.json();
+
         setData({
-          contracts: mockContracts,
-          requests: mockRequests,
-          visits: mockVisits,
+          contracts,
+          requests,
+          visits,
           loading: false,
           error: null,
         });

@@ -8,6 +8,7 @@ interface CommandesTableProps {
   onOpenDevisModal: (orderId: number, clientName: string, clientPhone: string) => void;
   onDeleteOrder: (orderId: number) => void;
   onExportOrders: () => void;
+  onClientClick: (clientId: number | null) => void;
 }
 
 export const CommandesTable = ({
@@ -16,7 +17,8 @@ export const CommandesTable = ({
   onUpdateStatus,
   onOpenDevisModal,
   onDeleteOrder,
-  onExportOrders
+  onExportOrders,
+  onClientClick
 }: CommandesTableProps) => {
   // State for table UI controls
   const [searchQuery, setSearchQuery] = useState('');
@@ -388,7 +390,7 @@ export const CommandesTable = ({
                       </td>
                     )}
                     {isColumnVisible('client') && (
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 cursor-pointer hover:text-blue-400" onClick={() => onClientClick(order.client_id ?? null)}>
                         <div className="font-semibold text-gray-200 text-sm">{order.client_name}</div>
                         <div className="text-xs text-gray-500">{order.client_phone}</div>
                       </td>

@@ -5,11 +5,13 @@ import { reviews, appointments, orders, clients, maintenanceDueCount, notificati
 // catégories et classes, vouées à diverger de celles du serveur.
 import { LIBELLES_CHAMPS, COLONNES_MODELE, CATEGORIES, MAX_LIGNES_PAR_LOT } from '../utils/importProduits'
 import { useAdminCommandesData } from '../hooks/useAdminCommandesData';
+import { useAdminMaintenanceData } from '../hooks/useAdminMaintenanceData';
 import { CommandesTable } from '../components/admin/CommandesTable';
 import { CommandesKPIs } from '../components/admin/CommandesKPIs';
 import { CommandesProcessDiagram } from '../components/admin/CommandesProcessDiagram';
 import { OrderDetailModal } from '../components/admin/OrderDetailModal';
 import { BulkActionsToolbar } from '../components/admin/BulkActionsToolbar';
+import { ClientDetailModal } from '../components/admin/ClientDetailModal';
 
 
 // ============================================================
@@ -95,8 +97,8 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
         .delay-1 { animation-delay: 0.1s; }
         .delay-2 { animation-delay: 0.2s; }
         .delay-3 { animation-delay: 0.3s; }
-        .hover-lift { transition: transform 0.2s, box-shadow 0.2s; }
-        .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+        .hover-lift { transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s ease; }
+        .hover-lift:hover { transform: translateY(-1.5px); box-shadow: 0 4px 10px rgba(3,105,161,0.08), 0 1px 3px rgba(3,105,161,0.04); }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #0b1120; }
         ::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 3px; }
@@ -150,7 +152,7 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
       <aside id="admin-sidebar" class="admin-sidebar w-64 fixed left-0 top-0 bottom-0 text-white flex flex-col z-50">
         <div class="p-5 border-b border-white/10">
           <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background-color:rgba(255,255,255,0.05);">
               <i class="fas fa-snowflake text-white text-lg"></i>
             </div>
             <div>
@@ -3607,6 +3609,8 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
   const { onlineOrders, terrainOrders, pendingAppointments, paymentsByOrder, loading, error } = useAdminCommandesData();
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isOrderDetailOpen, setIsOrderDetailOpen] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
+  const [isClientDetailOpen, setIsClientDetailOpen] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<Set<number>>(new Set());
 
   // Handler functions
@@ -3632,6 +3636,16 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
   const handleExportOrders = () => {
     // This would trigger CSV export
     console.log('Exporting orders to CSV');
+  };
+
+  const handleOpenClientDetail = (clientId: number) => {
+    setSelectedClientId(clientId);
+    setIsClientDetailOpen(true);
+  };
+
+  const handleCloseClientDetail = () => {
+    setIsClientDetailOpen(false);
+    setSelectedClientId(null);
   };
 
   const handleBulkStatusChange = (status: string) => {
@@ -3693,6 +3707,12 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
           isOpen={isOrderDetailOpen}
           onClose={() => setIsOrderDetailOpen(false)}
           onUpdateOrder={handleUpdateStatus}
+        />
+        {/* Client Detail Modal */}
+        <ClientDetailModal
+          client={clients.find(c => c.id === selectedClientId) || null}
+          isOpen={isClientDetailOpen}
+          onClose={handleCloseClientDetail}
         />
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
@@ -3781,7 +3801,6 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
                   <div className="text-xs text-gray-400 mt-0.5">{kpi.label}</div>
                 </div>
               </div>
-            }
           ))}
         </div>
 
@@ -3816,6 +3835,7 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
                 onOpenDevisModal={handleOpenDevisModal}
                 onDeleteOrder={handleDeleteOrder}
                 onExportOrders={handleExportOrders}
+                onClientClick={handleOpenClientDetail}
               />
             </div>
           ) : (
@@ -3849,6 +3869,7 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
                 onOpenDevisModal={handleOpenDevisModal}
                 onDeleteOrder={handleDeleteOrder}
                 onExportOrders={handleExportOrders}
+                onClientClick={handleOpenClientDetail}
               />
             </div>
           ) : (
@@ -3914,7 +3935,7 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
                         }}>
                           {appointment.type === 'devis' ? 'Devis' :
                            appointment.type === 'installation' ? 'Installation' :
-                           appointment.type === 'entretien' => 'Entretien' :
+                           appointment.type === 'entretien' ? 'Entretien' :
                            appointment.type === 'depannage' ? 'Dépannage' :
                            appointment.type}
                         </span>
@@ -4019,7 +4040,6 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
                   <div className="text-xl font-bold text-white">{stat.val}</div>
                 </div>
               </div>
-            }
           ))}
         </div>
       </>
@@ -5121,22 +5141,64 @@ export const AdminPaiementsPage = ({ payments = [], stats }: { payments: any[]; 
 // ============================================================
 // ADMIN MAINTENANCE PAGE
 // ============================================================
+export const AdminMaintenancePage = () => {
 
-export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [] }: { contracts: any[]; requests: any[]; visits: any[] }) => {
-  const activeContracts = contracts.filter((c: any) => c.status === 'actif').length
-  const totalRequests = requests.length
-  const pendingRequests = requests.filter((r: any) => r.status === 'pending').length
-  const totalVisits = visits.length
+  const { contracts, requests, visits, loading, error } = useAdminMaintenanceData();
 
   // Visites dues/en retard (date passée et toujours planifiée)
   const today = new Date().toISOString().split('T')[0]
   const dueVisits = visits.filter((v: any) => v.status === 'planifiee' && v.visit_date <= today)
   const upcomingVisits = visits.filter((v: any) => v.status === 'planifiee' && v.visit_date > today)
 
+  // Client detail modal state
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
+  const [isClientDetailOpen, setIsClientDetailOpen] = useState(false);
+
   const fmtDate = (d: string) => {
     if (!d) return '—'
     try { return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) } catch { return d }
   }
+
+  // Handler functions for client detail modal
+  const handleOpenClientDetail = (clientId: number | null) => {
+    setSelectedClientId(clientId);
+    setIsClientDetailOpen(true);
+  };
+
+  const handleCloseClientDetail = () => {
+    setSelectedClientId(null);
+    setIsClientDetailOpen(false);
+  };
+
+  if (loading) {
+    return (
+      <AdminLayout activePage="maintenance">
+        <div class="flex flex-col items-center justify-center py-12">
+          <div class="w-16 h-16 border-4 border-blue-400 rounded-full animate-spin"></div>
+          <p class="mt-4 text-gray-400">Chargement des données de maintenance...</p>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout activePage="maintenance">
+        <div class="p-8 text-center" style={{ background: 'rgba(248,113,113,0.1)' }}>
+          <i class="fas fa-exclamation-triangle text-3xl text-red-400 mb-3"></i>
+          <p class="text-red-400">Erreur de chargement: {error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 rounded-lg font-medium bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/20"
+          >
+            <i class="fas fa-sync mr-1"></i> Réessayer
+          </button>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  return (
 
   return (
   <AdminLayout activePage="maintenance">
@@ -5266,7 +5328,7 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                       <td class="px-5 py-3 font-mono text-xs text-blue-300 hidden lg:table-cell">
                         <i class="fas fa-chevron-right expand-icon text-xs mr-1" style="color:#64748b;"></i>#{c.id}
                       </td>
-                      <td class="px-5 py-3">
+                      <td class="px-5 py-3 cursor-pointer hover:text-blue-400" onClick={() => handleOpenClientDetail(c.client_id ?? null)}>
                         <div class="text-white text-sm font-semibold">{c.client_name || c.client_phone || `Client #${c.client_id}`}</div>
                         {c.client_phone && <div class="text-xs" style="color:#64748b;">{c.client_phone}</div>}
                       </td>
@@ -5438,7 +5500,7 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                   return (
                     <tr style={`border-bottom:1px solid rgba(56,189,248,0.05);${isDue ? ' background:rgba(245,158,11,0.05);' : ''}`} class="hover:bg-white/5">
                       <td class="px-5 py-3 font-mono text-xs text-blue-300">#{v.id}</td>
-                      <td class="px-5 py-3">
+                      <td class="px-5 py-3 cursor-pointer hover:text-blue-400" onClick={() => handleOpenClientDetail(v.client_id || (contract ? contract.id : null))}>
                         <div class="text-white text-sm font-semibold">{v.client_name || (contract ? contract.client_name : '—')}</div>
                         <div class="text-xs" style="color:#64748b;">{v.client_phone || (contract ? contract.client_phone : '')}</div>
                       </td>
@@ -5522,7 +5584,7 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                   return (
                     <tr style="border-bottom:1px solid rgba(56,189,248,0.05);" class="hover:bg-white/5">
                       <td class="px-5 py-3 font-mono text-xs text-blue-300">#{r.id}</td>
-                      <td class="px-5 py-3">
+                      <td class="px-5 py-3 cursor-pointer hover:text-blue-400" onClick={() => handleOpenClientDetail(r.client_id ?? null)}>
                         <div class="text-white text-sm font-semibold">{r.client_name || '—'}</div>
                         <div class="text-xs" style="color:#64748b;">{r.client_phone || ''}</div>
                       </td>
@@ -5631,6 +5693,13 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
         if (e.target === this) closeValidationModal();
       });
     `}} />
+
+    {/* Client Detail Modal */}
+    <ClientDetailModal
+      client={clients.find(c => c.id === selectedClientId) || null}
+      isOpen={isClientDetailOpen}
+      onClose={handleCloseClientDetail}
+    />
   </AdminLayout>
   )
 }
