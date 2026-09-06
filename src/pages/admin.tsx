@@ -1,4 +1,4 @@
-﻿import { products } from '../data/products'
+import { products } from '../data/products'
 import { reviews, appointments, orders, clients, maintenanceDueCount, notifications } from '../data/store'
 import { SITE_URL } from '../types'
 // Référentiels de l'import produits, injectés dans le <script> de la modale plutôt
@@ -3660,34 +3660,6 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
 
   const handleClearSelection = () => { /* SSR */ };
 
-  if (loading) {
-    return (
-      <AdminLayout activePage="commandes">
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="w-16 h-16 border-4 border-blue-400 rounded-full animate-spin"></div>
-          <p className="mt-4 text-gray-400">Chargement des commandes...</p>
-        </div>
-      </AdminLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <AdminLayout activePage="commandes">
-        <div className="p-8 text-center" style={{ background: 'rgba(248,113,113,0.1)' }}>
-          <i className="fas fa-exclamation-triangle text-3xl text-red-400 mb-3"></i>
-          <p className="text-red-400">Erreur de chargement: {error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 rounded-lg font-medium bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/20"
-          >
-            <i className="fas fa-sync mr-1"></i> Réessayer
-          </button>
-        </div>
-      </AdminLayout>
-    );
-  }
-
   return (
     <AdminLayout activePage="commandes">
       <>
@@ -5157,34 +5129,6 @@ export const AdminMaintenancePage = () => {
   // Handler functions for client detail modal (SSR — pas de hooks)
   const handleOpenClientDetail = (_clientId: number | null) => { /* SSR */ };
   const handleCloseClientDetail = () => { /* SSR */ };
-
-  if (loading) {
-    return (
-      <AdminLayout activePage="maintenance">
-        <div class="flex flex-col items-center justify-center py-12">
-          <div class="w-16 h-16 border-4 border-blue-400 rounded-full animate-spin"></div>
-          <p class="mt-4 text-gray-400">Chargement des données de maintenance...</p>
-        </div>
-      </AdminLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <AdminLayout activePage="maintenance">
-        <div class="p-8 text-center" style={{ background: 'rgba(248,113,113,0.1)' }}>
-          <i class="fas fa-exclamation-triangle text-3xl text-red-400 mb-3"></i>
-          <p class="text-red-400">Erreur de chargement: {error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 rounded-lg font-medium bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/20"
-          >
-            <i class="fas fa-sync mr-1"></i> Réessayer
-          </button>
-        </div>
-      </AdminLayout>
-    );
-  }
 
   return (
   <AdminLayout activePage="maintenance">
