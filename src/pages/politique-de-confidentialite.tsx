@@ -162,7 +162,7 @@ export const PolitiqueDeConfidentialitePage = () => {
               MAASGA Climatisation
             </p>
             <p class="text-white">
-              Email : maasgabf@gmail.com<br>
+              Email : maasgabf@gmail.com<br />
               Téléphone : +226 55 99 64 18
             </p>
           </section>

@@ -46,8 +46,8 @@ export const MentionsLegalesPage = () => {
               MAASGA Climatisation
             </p>
             <p class="text-white">
-              Siège social : Ouagadougou, Burkina Faso<br>
-              Téléphone : +226 55 99 64 18<br>
+              Siège social : Ouagadougou, Burkina Faso<br />
+              Téléphone : +226 55 99 64 18<br />
               Email : maasgabf@gmail.com
             </p>
           </section>
@@ -62,7 +62,7 @@ export const MentionsLegalesPage = () => {
               Cloudflare Pages
             </p>
             <p class="text-white">
-              Adresse : Cloudflare, Inc.<br>
+              Adresse : Cloudflare, Inc.<br />
               100 Townsend Street, San Francisco, CA 94107, États-Unis
             </p>
           </section>
