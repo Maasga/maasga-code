@@ -1,6 +1,4 @@
-import { useEffect, useState } from 'react';
-
-// Types for maintenance data (based on what we see in the admin maintenance page)
+// Types for maintenance data
 export interface MaintenanceContract {
   id: number;
   client_name?: string;
@@ -26,77 +24,37 @@ export interface MaintenanceRequest {
   equipment_type?: string;
   description?: string;
   status: 'pending' | 'contacted' | 'scheduled' | 'done' | 'cancelled';
-  created_by?: string; // Who created the request (staff or 'Client')
-  updated_by?: string; // Who last updated it
+  created_by?: string;
+  updated_by?: string;
   created_at?: string;
   updated_at?: string;
 }
 
 export interface MaintenanceVisit {
   id: number;
+  contract_id?: number;
   client_name?: string;
   client_phone?: string;
-  contract_id?: number;
-  visit_type: 'preventive' | 'occasionnelle' | 'urgence';
-  visit_date: string;
-  status: 'planifiee' | 'confirmee' | 'effectuee' | 'annulee';
-  technician?: string;
-  actions_performed?: string;
+  visit_date?: string;
+  status: 'scheduled' | 'done' | 'cancelled' | 'missed';
+  technician_name?: string;
   notes?: string;
-  created_by?: string; // Who created the visit
-  updated_by?: string; // Who validated/updated it
+  actions_performed?: string;
+  checklist_data?: string;
   created_at?: string;
   updated_at?: string;
 }
 
-// Mock data - in a real app, this would come from API endpoints
-const mockContracts: MaintenanceContract[] = [];
-const mockRequests: MaintenanceRequest[] = [];
-const mockVisits: MaintenanceVisit[] = [];
-
+// Fonction synchrone (pas un hook React) — Hono SSR ne supporte pas useState/useEffect.
+// Les données maintenance sont passées en props par les routes admin de index.tsx via D1.
+// Ce hook retourne des valeurs par défaut ; AdminMaintenancePage reçoit ses données
+// directement en props (contracts, requests, visits) injectées par le handler de route.
 export const useAdminMaintenanceData = () => {
-  const [data, setData] = useState({
+  return {
     contracts: [] as MaintenanceContract[],
     requests: [] as MaintenanceRequest[],
     visits: [] as MaintenanceVisit[],
     loading: false,
     error: null as string | null,
-  });
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setData(prev => ({ ...prev, loading: true, error: null }));
-
-        // Fetch data from API endpoints
-        const [contractsRes, requestsRes, visitsRes] = await Promise.all([
-          fetch('/api/admin/maintenance/contracts'),
-          fetch('/api/admin/maintenance/requests'),
-          fetch('/api/admin/maintenance/visits')
-        ]);
-
-        if (!contractsRes.ok || !requestsRes.ok || !visitsRes.ok) {
-          throw new Error('Failed to fetch maintenance data');
-        }
-
-        const contracts = await contractsRes.json();
-        const requests = await requestsRes.json();
-        const visits = await visitsRes.json();
-
-        setData({
-          contracts,
-          requests,
-          visits,
-          loading: false,
-          error: null,
-        });
-      } catch (err) {
-        setData(prev => ({ ...prev, loading: false, error: err instanceof Error ? err.message : 'Unknown error' }));
-      }
-    };
-
-    fetchData();
-  }, []); // Empty deps for now - in reality would depend on refresh triggers
-
-  return data;
+  };
 };

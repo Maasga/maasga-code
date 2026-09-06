@@ -3802,6 +3802,7 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
                   <div className="text-xs text-gray-400 mt-0.5">{kpi.label}</div>
                 </div>
               </div>
+            </div>
           ))}
         </div>
 
@@ -4041,6 +4042,7 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
                   <div className="text-xl font-bold text-white">{stat.val}</div>
                 </div>
               </div>
+            </div>
           ))}
         </div>
       </>
@@ -5198,8 +5200,6 @@ export const AdminMaintenancePage = () => {
       </AdminLayout>
     );
   }
-
-  return (
 
   return (
   <AdminLayout activePage="maintenance">

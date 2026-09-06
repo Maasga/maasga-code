@@ -1,98 +1,57 @@
-import { useState } from 'react';
+// BulkActionsToolbar — Hono JSX SSR (pas React).
+// La sélection et les actions en lot sont gérées par JS natif côté client.
+// Ce composant n'est jamais rendu (selectedCount vient du state client) ;
+// il est conservé pour compatibilité de l'import dans admin.tsx.
 
 interface BulkActionsToolbarProps {
   selectedCount: number;
   totalCount: number;
-  onBulkStatusChange: (status: string) => void;
-  onBulkExport: () => void;
-  onBulkDelete: () => void;
-  onClearSelection: () => void;
+  onBulkStatusChange?: (status: string) => void;
+  onBulkExport?: () => void;
+  onBulkDelete?: () => void;
+  onClearSelection?: () => void;
 }
 
-export const BulkActionsToolbar = ({
-  selectedCount,
-  totalCount,
-  onBulkStatusChange,
-  onBulkExport,
-  onBulkDelete,
-  onClearSelection
-}: BulkActionsToolbarProps) => {
-  const [bulkActionType, setBulkActionType] = useState<'status' | 'export' | 'delete'>('status');
-
-  const handleBulkAction = () => {
-    switch (bulkActionType) {
-      case 'status':
-        // Show status selection modal/dropdown
-        alert(`Changing status for ${selectedCount} selected orders`);
-        onBulkStatusChange('confirme'); // Example
-        break;
-      case 'export':
-        onBulkExport();
-        break;
-      case 'delete':
-        if (window.confirm(`Supprimer définitivement ${selectedCount} commande(s) sélectionnée(s) ? Cette action est irréversible.`)) {
-          onBulkDelete();
-        }
-        break;
-    }
-  };
-
+export const BulkActionsToolbar = ({ selectedCount, totalCount }: BulkActionsToolbarProps) => {
   if (selectedCount === 0) return null;
-
   return (
-    <div className="border-t pt-4 mt-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center space-x-3">
-          <i className="fas fa-boxes text-gray-400"></i>
-          <span className="font-medium text-white">{selectedCount} / {totalCount} commande{sélectionnée}s</span>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <label className="block text-sm font-medium text-gray-300 mb-1">Action en lot</label>
-            <select
-              value={bulkActionType}
-              onChange={(e) => setBulkActionType(e.target.value as 'status' | 'export' | 'delete')}
-              className="w-48 p-2 rounded border focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-800/50 text-white"
-            >
-              <option value="status">Changer le statut</option>
-              <option value="export">Exporter</option>
-              <option value="delete">Supprimer</option>
-            </select>
-          </div>
-
-          <button
-            onClick={handleBulkAction}
-            className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={selectedCount === 0}
-          >
-            {bulkActionType === 'status' && (
-              <>
-                <i className="fas fa-exchange-alt mr-1"></i>
-                Appliquer le statut
-              </>
-            )}
-            {bulkActionType === 'export' && (
-              <>
-                <i className="fas fa-file-export mr-1"></i>
-                Exporter sélection
-              </>
-            )}
-            {bulkActionType === 'delete' && (
-              <>
-                <i className="fas fa-trash mr-1"></i>
-                Supprimer sélection
-              </>
-            )}
-          </button>
-
-          <button
-            onClick={onClearSelection}
-            className="text-xs px-3 py-1 rounded border text-gray-400 hover:text-white hover:border-gray-600"
-          >
-            Effacer sélection
-          </div>
-        </div>
+    <div class="flex items-center justify-between gap-4 px-4 py-3 rounded-xl" style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.15);">
+      <span class="text-sm font-medium text-white">
+        {selectedCount} / {totalCount} commande{selectedCount > 1 ? 's' : ''} sélectionnée{selectedCount > 1 ? 's' : ''}
+      </span>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          onclick="adminBulkAction('status')"
+          class="text-xs px-3 py-1.5 rounded-lg font-semibold"
+          style="background:rgba(245,158,11,0.12); color:#f59e0b; border:1px solid rgba(245,158,11,0.2);"
+        >
+          <i class="fas fa-exchange-alt mr-1"></i>Statut en lot
+        </button>
+        <button
+          type="button"
+          onclick="adminBulkAction('export')"
+          class="text-xs px-3 py-1.5 rounded-lg font-semibold"
+          style="background:rgba(59,130,246,0.12); color:#60a5fa; border:1px solid rgba(59,130,246,0.2);"
+        >
+          <i class="fas fa-file-export mr-1"></i>Exporter
+        </button>
+        <button
+          type="button"
+          onclick="adminBulkAction('delete')"
+          class="text-xs px-3 py-1.5 rounded-lg font-semibold"
+          style="background:rgba(239,68,68,0.12); color:#f87171; border:1px solid rgba(239,68,68,0.2);"
+        >
+          <i class="fas fa-trash mr-1"></i>Supprimer
+        </button>
+        <button
+          type="button"
+          onclick="adminClearSelection()"
+          class="text-xs px-3 py-1.5 rounded-lg"
+          style="background:rgba(148,163,184,0.08); color:#94a3b8; border:1px solid rgba(148,163,184,0.12);"
+        >
+          Effacer sélection
+        </button>
       </div>
     </div>
   );
