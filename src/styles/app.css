@@ -164,7 +164,7 @@
   box-shadow: 0 4px 20px rgba(0, 119, 182, 0.08);
 }
 .glass-card {
-  background: var(--slate-50);
+  background: #ffffff;
   border: 1px solid rgba(0,119,182,0.12);
   transition: all 0.4s var(--ease-out-expo);
 }
@@ -718,3 +718,4 @@ html.js-ready .testimonial-card-in.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
   .brand-track { animation: none; flex-wrap: wrap; justify-content: center; }
 }
+
