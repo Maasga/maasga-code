@@ -3775,9 +3775,13 @@ async function ensureCoreTables(db: any): Promise<void> {
       )`),
     ])
   } catch(e) {
-    // Silencieux — si une table existe déjà avec un schéma différent, on continue
-    console.warn('ensureCoreTables warning:', (e as any)?.message)
+    console.warn('ensureCoreTables batch warning:', (e as any)?.message)
   }
+  // Corrections défensives : si maintenance_requests a client_name/client_phone au lieu de name/phone
+  try { await db.prepare('ALTER TABLE maintenance_requests ADD COLUMN name TEXT NOT NULL DEFAULT ""').run() } catch(_) {}
+  try { await db.prepare('ALTER TABLE maintenance_requests ADD COLUMN phone TEXT NOT NULL DEFAULT ""').run() } catch(_) {}
+  // Corrections défensives : si maintenance_requests a name/phone mais pas client_name (alias pour le code)
+  // La requête utilise 'name as client_name' donc name doit exister — on ne fait rien de plus
 }
 
 // Recharge toutes les données depuis D1 dans les tableaux mémoire (évite reset au deploy)
@@ -4381,7 +4385,9 @@ app.get('/admin/maintenance', adminAuth, refreshAdminCache, async (c) => {
       contracts = (cRows.results || []) as any[]
     } catch(e) { console.error('Admin contracts load:', e) }
     try {
-      const rRows = await db.prepare('SELECT *, name as client_name, phone as client_phone FROM maintenance_requests ORDER BY id DESC LIMIT 200').all()
+      let rRows: any
+      try { rRows = await db.prepare('SELECT *, name as client_name, phone as client_phone FROM maintenance_requests ORDER BY id DESC LIMIT 200').all() }
+      catch(_) { rRows = await db.prepare('SELECT *, client_name, client_phone FROM maintenance_requests ORDER BY id DESC LIMIT 200').all() }
       requests = (rRows.results || []) as any[]
     } catch(e) { console.error('Admin requests load:', e) }
     try {
