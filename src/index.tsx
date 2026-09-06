@@ -4388,7 +4388,7 @@ app.get('/admin/maintenance', adminAuth, refreshAdminCache, async (c) => {
       contracts = (cRows.results || []) as any[]
     } catch(e) { console.error('Admin contracts load:', e) }
     try {
-      const rRows = await db.prepare('SELECT *, COALESCE(client_name, name) as client_name, COALESCE(client_phone, phone) as client_phone FROM maintenance_requests ORDER BY id DESC LIMIT 200').all()
+      const rRows = await db.prepare('SELECT *, name as client_name, phone as client_phone FROM maintenance_requests ORDER BY id DESC LIMIT 200').all()
       requests = (rRows.results || []) as any[]
     } catch(e) { console.error('Admin requests load:', e) }
     try {
