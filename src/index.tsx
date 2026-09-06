@@ -3762,17 +3762,10 @@ async function ensureCoreTables(db: any): Promise<void> {
       )`),
       db.prepare(`CREATE TABLE IF NOT EXISTS maintenance_requests (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        client_id INTEGER, client_name TEXT, client_phone TEXT,
-        request_type TEXT NOT NULL, equipment_type TEXT, description TEXT,
-        status TEXT DEFAULT 'pending', created_by TEXT, updated_by TEXT,
-        created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now'))
-      )`),
-      db.prepare(`CREATE TABLE IF NOT EXISTS maintenance_visits (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        contract_id INTEGER, client_name TEXT, client_phone TEXT, client_id INTEGER,
-        visit_type TEXT DEFAULT 'preventive', visit_date TEXT,
-        status TEXT DEFAULT 'planifiee', technician TEXT, description TEXT,
-        actions_performed TEXT, notes TEXT, checklist_data TEXT,
+        client_id INTEGER, name TEXT NOT NULL, phone TEXT NOT NULL,
+        email TEXT, quartier TEXT, request_type TEXT NOT NULL,
+        description TEXT, preferred_date TEXT, equipment_type TEXT,
+        status TEXT DEFAULT 'pending', admin_notes TEXT,
         created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now'))
       )`),
       db.prepare(`CREATE TABLE IF NOT EXISTS admin_notifications (
