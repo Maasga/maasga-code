@@ -3667,12 +3667,12 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
         <OrderDetailModal
           order={onlineOrders.find(o => o.id === selectedOrderId) || null}
           isOpen={isOrderDetailOpen}
-          onClose={() => setIsOrderDetailOpen(false)}
+          onClose={() => {}}
           onUpdateOrder={handleUpdateStatus}
         />
         {/* Client Detail Modal */}
         <ClientDetailModal
-          client={clients.find(c => c.id === selectedClientId) || null}
+          client={null}
           isOpen={isClientDetailOpen}
           onClose={handleCloseClientDetail}
         />
@@ -3771,7 +3771,7 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <CommandesProcessDiagram
             selectedOrderId={selectedOrderId}
-            onSelectOrder={setSelectedOrderId}
+            onSelectOrder={() => {}}
           />
         </div>
 
@@ -5626,7 +5626,7 @@ export const AdminMaintenancePage = () => {
 
     {/* Client Detail Modal */}
     <ClientDetailModal
-      client={clients.find(c => c.id === selectedClientId) || null}
+      client={null}
       isOpen={isClientDetailOpen}
       onClose={handleCloseClientDetail}
     />
