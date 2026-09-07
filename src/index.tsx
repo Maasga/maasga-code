@@ -7257,18 +7257,21 @@ app.post('/api/admin/media/brand/upload', adminAuth, async (c) => {
   const body = await c.req.parseBody()
   const brand = sanitizeText(body['brand'] as string, 120)
   const label = sanitizeText(body['label'] as string, 200) || ''
-  const file = body['image'] as File | null
+  const file = body['image'] as any
   if (!brand) return c.json({ error: 'Marque requise' }, 400)
-  if (!file || !(file instanceof File) || file.size === 0) return c.json({ error: 'Fichier manquant' }, 400)
+  if (!file || typeof file !== 'object' || typeof file.arrayBuffer !== 'function' || !file.size) {
+    return c.json({ error: 'Fichier manquant ou invalide' }, 400)
+  }
   const MAX = 5 * 1024 * 1024
   if (file.size > MAX) return c.json({ error: 'Image trop grande (max 5 MB)' }, 400)
+  const fileType = file.type || 'image/jpeg'
   const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-  if (!allowed.includes(file.type)) return c.json({ error: 'Format non autorisé' }, 400)
+  if (!allowed.includes(fileType)) return c.json({ error: 'Format non autorisé' }, 400)
   const imgbbKey = (c.env as any).IMGBB_API_KEY as string
   if (!imgbbKey) return c.json({ error: 'IMGBB_API_KEY manquante' }, 500)
   const buffer = await file.arrayBuffer()
   try {
-    const r = await uploadToImgBB(imgbbKey, buffer, file.type)
+    const r = await uploadToImgBB(imgbbKey, buffer, fileType)
     const db = c.env.DB
     if (!db) return c.json({ error: 'DB indisponible' }, 500)
     const row = await db.prepare(

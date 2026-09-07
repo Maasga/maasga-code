@@ -1426,14 +1426,14 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
                       <i class="fas fa-eye text-xs"></i>
                     </a>
                     <button 
-                      data-product={JSON.stringify({
+                      data-product={jsonForScript({
                         id: p.id, name: p.name, brand: p.brand, model: p.model,
                         btu: p.btu, price: p.price, stock: p.stock, energy_class: p.energy_class,
                         surface_min: p.surface_min || '', surface_max: p.surface_max || '',
                         description: p.description, inverter: p.inverter,
                         features: p.features, techSpecs: p.techSpecs || {},
                         media: p.media || []
-                      }).replace(/</g, '\\u003c')}
+                      })}
                       onclick="editProductFromData(this)"
                       class="text-orange-400 hover:text-orange-300 p-1.5 rounded-lg transition-colors" title="Modifier">
                       <i class="fas fa-edit text-xs"></i>
