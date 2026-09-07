@@ -13,6 +13,7 @@ import { AProposPage } from './pages/a-propos'
 import { ContactPage } from './pages/contact'
 import { EspaceClientPage } from './pages/espace-client'
 import { AdminPage, AdminProduitsPage, AdminRDVPage, AdminClientsPage, AdminCommandesPage, AdminPaiementsPage, AdminAvisPage, AdminParametresPage, AdminDevisListPage, AdminDevisNewPage, AdminDevisDetailPage, AdminMaintenancePage, AdminMessagesPage, AdminRealisationsPage, AdminSAVPage, AdminSAVDetailPage, AdminAuditLogPage, AdminNotificationsPage } from './pages/admin'
+import { AdminBannersPage } from './pages/banners'
 import { RealisationsPage } from './pages/realisations'
 import { ContratMaintenancePage } from './pages/contrat-maintenance'
 import { MentionsLegalesPage } from './pages/mentions-legales'
@@ -29,11 +30,11 @@ import { sendSmsWithLog, notifyAdmin, logActivity, logSecurityEvent, sendTelegra
 import { analyserClasseur, cleProduit, MAX_LIGNES_PAR_LOT } from './utils/importProduits'
 import type { ChampCible, ChampsProduit, ProduitDerive } from './utils/importProduits'
 
-// App Hono — types et utilitaires importés depuis ./types et ./utils/
+// App Hono â€” types et utilitaires importÃ©s depuis ./types et ./utils/
 
 const app = new Hono<HonoEnv>()
 
-// SITE_URL importé depuis src/types.ts — modifier là-bas quand le domaine change.
+// SITE_URL importÃ© depuis src/types.ts â€” modifier lÃ -bas quand le domaine change.
 
 app.use('/api/*', cors({
   origin: [SITE_URL, 'http://localhost:5173', 'http://127.0.0.1:5173'],
@@ -44,7 +45,7 @@ app.use('/api/*', cors({
 }))
 
 // ============================================================
-// CF EDGE CACHE — Cache public HTML pages at the Cloudflare PoP
+// CF EDGE CACHE â€” Cache public HTML pages at the Cloudflare PoP
 // Uses the Worker Cache API (caches.default) for sub-50ms TTFB
 // ============================================================
 const CACHEABLE_PATHS = new Set(['/', '/catalogue', '/simulateur', '/rendez-vous', '/avis', '/a-propos', '/contact', '/realisations', '/contrat-maintenance'])
@@ -56,7 +57,7 @@ app.use(async (c, next) => {
   const url = new URL(c.req.url)
   if (!CACHEABLE_PATHS.has(url.pathname)) return next()
 
-  // @ts-ignore — caches.default is available in CF Workers runtime
+  // @ts-ignore â€” caches.default is available in CF Workers runtime
   const cache = (caches as any).default
   const cacheKey = new Request(url.toString(), { method: 'GET' })
 
@@ -78,7 +79,7 @@ app.use(async (c, next) => {
     resp.headers.set('Cache-Control', `public, s-maxage=${EDGE_CACHE_TTL}, max-age=30`)
     resp.headers.set('X-Cache', 'MISS')
     // waitUntil lets us cache without blocking the response
-    // @ts-ignore — executionCtx available in CF Workers
+    // @ts-ignore â€” executionCtx available in CF Workers
     const ctx = c.executionCtx
     if (ctx?.waitUntil) {
       ctx.waitUntil(cache.put(cacheKey, resp.clone()))
@@ -87,7 +88,7 @@ app.use(async (c, next) => {
 })
 
 // ============================================================
-// SECURITY HEADERS — CSP, HSTS, X-Frame-Options, etc.
+// SECURITY HEADERS â€” CSP, HSTS, X-Frame-Options, etc.
 // ============================================================
 app.use(async (c, next) => {
   await next()
@@ -129,7 +130,7 @@ function rateLimit(key: string, maxRequests: number, windowMs: number): { allowe
   const now = Date.now()
   const entry = rateLimitStore.get(key)
   if (!entry || now > entry.resetAt) {
-    // Enforce size cap — evict expired entries first, then oldest if still over limit
+    // Enforce size cap â€” evict expired entries first, then oldest if still over limit
     if (rateLimitStore.size >= RATE_LIMIT_MAX_ENTRIES) {
       for (const [k, v] of rateLimitStore) {
         if (now > v.resetAt) rateLimitStore.delete(k)
@@ -161,13 +162,13 @@ function rateLimitCleanup() {
   }
 }
 
-// Rate limit persistant, partagé par tous les isolates (table rate_limits,
-// migration 0038). Le compteur mémoire ci-dessus vit dans un seul isolate
+// Rate limit persistant, partagÃ© par tous les isolates (table rate_limits,
+// migration 0038). Le compteur mÃ©moire ci-dessus vit dans un seul isolate
 // Cloudflare : un attaquant qui retente sa chance tombe sur un autre isolate et
-// repart d'un compteur à zéro, donc les 5 tentatives de login admin ne
-// plafonnaient rien. À réserver aux endpoints sensibles (une écriture D1 par
-// tentative) ; le reste du site garde le compteur mémoire.
-// En cas d'échec D1, on retombe sur le compteur mémoire plutôt que d'ouvrir grand.
+// repart d'un compteur Ã  zÃ©ro, donc les 5 tentatives de login admin ne
+// plafonnaient rien. Ã€ rÃ©server aux endpoints sensibles (une Ã©criture D1 par
+// tentative) ; le reste du site garde le compteur mÃ©moire.
+// En cas d'Ã©chec D1, on retombe sur le compteur mÃ©moire plutÃ´t que d'ouvrir grand.
 async function rateLimitD1(db: any, key: string, maxRequests: number, windowMs: number): Promise<{ allowed: boolean; remaining: number }> {
   if (!db) return rateLimit(key, maxRequests, windowMs)
   const now = Date.now()
@@ -184,7 +185,7 @@ async function rateLimitD1(db: any, key: string, maxRequests: number, windowMs: 
     const count = Number(row?.count ?? 0)
     if (!row || !isFinite(windowStart) || now - windowStart > windowMs) {
       await db.prepare('INSERT OR REPLACE INTO rate_limits (key, count, window_start, updated_at) VALUES (?, 1, ?, ?)').bind(key, now, nowIso).run()
-      // Purge des fenêtres d'il y a plus de 24 h, tant qu'on écrit déjà
+      // Purge des fenÃªtres d'il y a plus de 24 h, tant qu'on Ã©crit dÃ©jÃ 
       try { await db.prepare('DELETE FROM rate_limits WHERE window_start < ?').bind(now - 86400000).run() } catch(_) {}
       return { allowed: true, remaining: maxRequests - 1 }
     }
@@ -192,19 +193,19 @@ async function rateLimitD1(db: any, key: string, maxRequests: number, windowMs: 
     await db.prepare('UPDATE rate_limits SET count = count + 1, updated_at = ? WHERE key = ?').bind(nowIso, key).run()
     return { allowed: true, remaining: Math.max(0, maxRequests - count - 1) }
   } catch (e) {
-    console.error('[SECURITY] rateLimitD1 indisponible, repli mémoire:', e)
+    console.error('[SECURITY] rateLimitD1 indisponible, repli mÃ©moire:', e)
     return rateLimit(key, maxRequests, windowMs)
   }
 }
 
-// Remet à zéro un compteur persistant (appelé après une authentification réussie
-// pour ne pas pénaliser un admin qui s'est trompé une fois).
+// Remet Ã  zÃ©ro un compteur persistant (appelÃ© aprÃ¨s une authentification rÃ©ussie
+// pour ne pas pÃ©naliser un admin qui s'est trompÃ© une fois).
 async function rateLimitD1Reset(db: any, key: string): Promise<void> {
   if (!db) return
   try { await db.prepare('DELETE FROM rate_limits WHERE key = ?').bind(key).run() } catch(_) {}
 }
 
-// Journal des actions admin sensibles (export de sauvegarde, réinitialisation de
+// Journal des actions admin sensibles (export de sauvegarde, rÃ©initialisation de
 // la base, changement d'identifiants). security_log ne conserve pas le
 // user-agent, utile pour reconstituer une compromission.
 async function logAdminAudit(db: any, data: { action: string; detail?: string; ip?: string; userAgent?: string }): Promise<void> {
@@ -223,8 +224,8 @@ async function logAdminAudit(db: any, data: { action: string; detail?: string; i
   } catch(_) {}
 }
 
-// Vérifie le mot de passe admin courant (D1, sinon amorçage ADMIN_INITIAL_PASSWORD).
-// Sert à redemander le mot de passe pour les actions destructrices : le cookie de
+// VÃ©rifie le mot de passe admin courant (D1, sinon amorÃ§age ADMIN_INITIAL_PASSWORD).
+// Sert Ã  redemander le mot de passe pour les actions destructrices : le cookie de
 // session seul ne doit pas suffire.
 async function verifyAdminPassword(env: any, password: string): Promise<boolean> {
   if (!password || typeof password !== 'string') return false
@@ -244,9 +245,9 @@ async function verifyAdminPassword(env: any, password: string): Promise<boolean>
 // ADMIN AUTH HELPERS (must be defined before routes that use them)
 // ============================================================
 
-// Middleware auth admin — HMAC signed cookie
+// Middleware auth admin â€” HMAC signed cookie
 // Secret HMAC : OBLIGATOIRE via variable d'environnement ADMIN_SECRET
-// Aucun fallback hardcodé — fail closed si non configuré
+// Aucun fallback hardcodÃ© â€” fail closed si non configurÃ©
 const TOKEN_MAX_AGE_MS = 24 * 60 * 60 * 1000 // 24h d'expiration
 
 function getAdminSecret(env: any): string {
@@ -269,11 +270,11 @@ async function verifyToken(token: string, secret: string): Promise<boolean> {
   const parts = token.split('.')
   if (parts.length < 2) return false
   const payload = parts.slice(0, -1).join('.')
-  // Vérifier l'expiration du token (payload = admin_<timestamp>)
+  // VÃ©rifier l'expiration du token (payload = admin_<timestamp>)
   const tsMatch = payload.match(/_(\d+)$/)
   if (tsMatch) {
     const tokenTime = parseInt(tsMatch[1], 10)
-    if (Date.now() - tokenTime > TOKEN_MAX_AGE_MS) return false // Token expiré
+    if (Date.now() - tokenTime > TOKEN_MAX_AGE_MS) return false // Token expirÃ©
   }
   const expected = await signToken(payload, secret)
   // Constant-time comparison to prevent timing attacks
@@ -294,7 +295,7 @@ async function verifyToken(token: string, secret: string): Promise<boolean> {
   return diff === 0
 }
 
-// Comparaison de chaînes à durée constante (contre les timing attacks sur un secret).
+// Comparaison de chaÃ®nes Ã  durÃ©e constante (contre les timing attacks sur un secret).
 // La longueur reste observable, mais le contenu ne fuit pas octet par octet.
 function timingSafeEqualStr(a: string, b: string): boolean {
   if (typeof a !== 'string' || typeof b !== 'string') return false
@@ -304,13 +305,13 @@ function timingSafeEqualStr(a: string, b: string): boolean {
   return diff === 0
 }
 
-// ─── Révocation des sessions admin ──────────────────────────────────────────
-// Le cookie admin est stateless (HMAC seul), donc ni la déconnexion ni un
-// changement de mot de passe n'invalidaient les cookies déjà émis : un cookie
-// volé restait valable 24 h. On versionne les sessions avec une « epoch »
-// stockée en D1 (admin_settings.admin_token_epoch, créée par la migration 0038).
+// â”€â”€â”€ RÃ©vocation des sessions admin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Le cookie admin est stateless (HMAC seul), donc ni la dÃ©connexion ni un
+// changement de mot de passe n'invalidaient les cookies dÃ©jÃ  Ã©mis : un cookie
+// volÃ© restait valable 24 h. On versionne les sessions avec une Â« epoch Â»
+// stockÃ©e en D1 (admin_settings.admin_token_epoch, crÃ©Ã©e par la migration 0038).
 // Le payload du cookie devient admin_<epoch>_<timestamp> et adminAuth rejette
-// tout cookie dont l'epoch ne correspond plus. Incrémenter l'epoch déconnecte
+// tout cookie dont l'epoch ne correspond plus. IncrÃ©menter l'epoch dÃ©connecte
 // donc toutes les sessions d'un coup.
 const ADMIN_EPOCH_KEY = 'admin_token_epoch'
 
@@ -330,12 +331,12 @@ async function bumpAdminTokenEpoch(db: any): Promise<void> {
     const current = parseInt(await getAdminTokenEpoch(db), 10)
     await db.prepare('INSERT OR REPLACE INTO admin_settings (key, value, updated_at) VALUES (?, ?, ?)')
       .bind(ADMIN_EPOCH_KEY, String(current + 1), new Date().toISOString()).run()
-  } catch (e) { console.error('[SECURITY] bumpAdminTokenEpoch a échoué:', e) }
+  } catch (e) { console.error('[SECURITY] bumpAdminTokenEpoch a Ã©chouÃ©:', e) }
 }
 
 // Extrait l'epoch d'un token dont le payload vaut admin_<epoch>_<timestamp>.
 // Retourne null pour l'ancien format admin_<timestamp> : ces sessions sont
-// rejetées, l'admin se reconnecte une fois.
+// rejetÃ©es, l'admin se reconnecte une fois.
 function adminPayloadEpoch(token: string): string | null {
   const parts = token.split('.')
   if (parts.length < 2) return null
@@ -346,9 +347,9 @@ function adminPayloadEpoch(token: string): string | null {
 
 // CSRF protection: verify Origin/Referer header on all state-changing requests
 const ALLOWED_ORIGINS = [SITE_URL]
-// Hôtes de développement. Ils ne sont acceptés que si la requête arrive
-// elle-même sur un hôte local (npm run dev / wrangler pages dev) : en production
-// le worker répond sur pages.dev, donc une origine http://localhost est refusée.
+// HÃ´tes de dÃ©veloppement. Ils ne sont acceptÃ©s que si la requÃªte arrive
+// elle-mÃªme sur un hÃ´te local (npm run dev / wrangler pages dev) : en production
+// le worker rÃ©pond sur pages.dev, donc une origine http://localhost est refusÃ©e.
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
 
 function csrfCheck(c: any): boolean {
@@ -358,11 +359,11 @@ function csrfCheck(c: any): boolean {
   const localRequest = LOCAL_HOSTNAMES.has(reqUrl.hostname)
   // Comparaison exacte de l'origine (scheme + host + port). L'ancien
   // origin.startsWith(o) acceptait https://maasga-website.pages.dev.attaquant.com,
-  // ce qui vidait la protection CSRF de son intérêt.
+  // ce qui vidait la protection CSRF de son intÃ©rÃªt.
   const isAllowed = (value: string): boolean => {
     let u: URL
     try { u = new URL(value) } catch { return false }
-    if (u.origin === reqUrl.origin) return true          // même origine : prod, preview Pages, domaine custom
+    if (u.origin === reqUrl.origin) return true          // mÃªme origine : prod, preview Pages, domaine custom
     if (ALLOWED_ORIGINS.includes(u.origin)) return true
     if (localRequest && LOCAL_HOSTNAMES.has(u.hostname)) return true
     return false
@@ -385,11 +386,13 @@ app.use(async (c, next) => {
     if (path === '/api/products' && c.req.header('Authorization')?.startsWith('Bearer ')) return next()
     // Mobile app routes: no browser origin, authenticated via Bearer token
     if (path.startsWith('/api/mobile/') || path === '/api/auth/google/mobile') return next()
+    // Push token endpoints — authenticated via Bearer Firebase, no browser origin
+    if (path === '/api/client/push-token' && c.req.header('Authorization')?.startsWith('Bearer ')) return next()
     if (!csrfCheck(c)) {
       console.warn(`[CSRF] Blocked ${c.req.method} ${path} from origin: ${c.req.header('Origin') || 'none'}`)
       const csrfIp = c.req.header('cf-connecting-ip') || 'unknown'
       logSecurityEvent(c.env?.DB, { event: 'csrf_blocked', severity: 'warn', ip: csrfIp, details: `${c.req.method} ${path} from ${c.req.header('Origin') || 'no-origin'}` })
-      return c.text('Requête rejetée (origine non autorisée).', 403)
+      return c.text('RequÃªte rejetÃ©e (origine non autorisÃ©e).', 403)
     }
   }
   return next()
@@ -401,7 +404,7 @@ const adminAuth = async (c: any, next: any) => {
     secret = getAdminSecret(c.env)
   } catch (e: any) {
     console.error('[SECURITY] ' + e.message)
-    return c.text("Configuration serveur incomplète. Contactez l'administrateur.", 503)
+    return c.text("Configuration serveur incomplÃ¨te. Contactez l'administrateur.", 503)
   }
   const cookie = c.req.header('Cookie') || ''
   const match = cookie.match(/maasga_admin=([^;]+)/)
@@ -409,8 +412,8 @@ const adminAuth = async (c: any, next: any) => {
     const rawToken = decodeURIComponent(match[1])
     const valid = await verifyToken(rawToken, secret)
     if (valid) {
-      // Signature valide : vérifier en plus que la session n'a pas été révoquée
-      // (déconnexion, changement de mot de passe, reset). Voir bumpAdminTokenEpoch.
+      // Signature valide : vÃ©rifier en plus que la session n'a pas Ã©tÃ© rÃ©voquÃ©e
+      // (dÃ©connexion, changement de mot de passe, reset). Voir bumpAdminTokenEpoch.
       const tokenEpoch = adminPayloadEpoch(rawToken)
       const currentEpoch = await getAdminTokenEpoch(c.env?.DB)
       if (tokenEpoch !== null && tokenEpoch === currentEpoch) {
@@ -420,7 +423,7 @@ const adminAuth = async (c: any, next: any) => {
       logSecurityEvent(c.env?.DB, { event: 'admin_auth_revoked_session', severity: 'warn', ip: revokedIp, details: `Cookie epoch ${tokenEpoch ?? 'legacy'} != ${currentEpoch}` })
       return c.html(AdminLoginPage({ error: 'session_expired' }))
     }
-    // Invalid token — potential tampering
+    // Invalid token â€” potential tampering
     const adminIp = c.req.header('cf-connecting-ip') || 'unknown'
     logSecurityEvent(c.env?.DB, { event: 'admin_auth_invalid_token', severity: 'warn', ip: adminIp, details: 'Invalid admin cookie signature' })
   }
@@ -430,7 +433,7 @@ const adminAuth = async (c: any, next: any) => {
   return c.html(AdminLoginPage({ error: error || undefined }))
 }
 
-// Charger les produits ET orders depuis D1 en parallèle (une seule fois par isolate)
+// Charger les produits ET orders depuis D1 en parallÃ¨le (une seule fois par isolate)
 let _d1LoadPromise: Promise<void> | null = null
 
 app.use(async (c, next) => {
@@ -440,7 +443,7 @@ app.use(async (c, next) => {
       _d1LoadPromise = (async () => {
         const db = c.env.DB!
         const [prodResult, ordResult] = await Promise.allSettled([
-          db.prepare('SELECT * FROM products WHERE available = 1').all(),
+          db.prepare('SELECT * FROM products').all(),
           getOrders(db)
         ])
 
@@ -461,7 +464,7 @@ app.use(async (c, next) => {
               description: p.description,
               inverter: p.inverter === 1,
               available: p.available === 1,
-              image: p.image || '❄️',
+              image: p.image || 'â„ï¸',
               imageUrl: p.imageUrl || p.image_url,
               features: (() => { try { return JSON.parse(p.features || '[]') } catch { return [] } })(),
               warranty: p.warranty || '1 an constructeur',
@@ -500,7 +503,7 @@ app.use(async (c, next) => {
 })
 
 // Servir les fichiers statiques avec cache
-// @ts-ignore – manifest requis en prod CF Pages uniquement
+// @ts-ignore â€“ manifest requis en prod CF Pages uniquement
 app.use('/static/*', async (c, next) => {
   await next()
   if (c.res.status === 200) {
@@ -519,9 +522,9 @@ app.get('/favicon.svg', (c) => {
 })
 
 // OG Image for social sharing (1200x630 standard)
-// OG image — served as static PNG from public/og-image.png via Cloudflare Pages
+// OG image â€” served as static PNG from public/og-image.png via Cloudflare Pages
 // The _routes.json excludes /*.png so Pages serves public/og-image.png directly
-// No worker route needed — social platforms (Facebook, WhatsApp, Twitter) get a real 1200x630 PNG
+// No worker route needed â€” social platforms (Facebook, WhatsApp, Twitter) get a real 1200x630 PNG
 
 // Robots.txt
 app.get('/robots.txt', (c) => {
@@ -612,7 +615,7 @@ app.get('/catalogue', (c) => {
   return c.html(<CataloguePage filters={{ brand, btu, inverter, available, product }} page={page} />)
 })
 
-// Fiche produit dédiée — morph View Transitions depuis la carte catalogue
+// Fiche produit dÃ©diÃ©e â€” morph View Transitions depuis la carte catalogue
 app.get('/catalogue/:id', (c) => {
   const id = parseInt(c.req.param('id'))
   if (!id || isNaN(id)) return c.redirect('/catalogue?error=produit_introuvable')
@@ -707,7 +710,7 @@ app.get('/politique-de-confidentialite', (c) => c.html(<PolitiqueDeConfidentiali
 
 // (Session-aware handler is defined below after session/auth utilities)
 
-// Helper : rendre le dashboard directement (pas de redirect — évite les problèmes Set-Cookie en dev)
+// Helper : rendre le dashboard directement (pas de redirect â€” Ã©vite les problÃ¨mes Set-Cookie en dev)
 // Tables are now pre-created via migrations (0018_all_runtime_tables.sql)
 // These ensure* functions kept as fallback for first-time setup only
 let _tablesChecked = false
@@ -864,9 +867,9 @@ async function ensureSiteSettings(db: any) {
     if (!(count as any)?.cnt) {
       const defaults: [string, string][] = [
         ['phone', '+226 55 99 64 18'], ['email', 'maasgabf@gmail.com'],
-        ['address', 'Ouagadougou, Burkina Faso'], ['hours', 'Lundi–Dimanche · 8h00–18h00'],
+        ['address', 'Ouagadougou, Burkina Faso'], ['hours', 'Lundiâ€“Dimanche Â· 8h00â€“18h00'],
         ['company_name', 'MAASGA'], ['whatsapp', '+226 55 99 64 18'],
-        ['facebook', ''], ['instagram', ''], ['slogan', 'Spécialiste climatisation & froid à Ouagadougou']
+        ['facebook', ''], ['instagram', ''], ['slogan', 'SpÃ©cialiste climatisation & froid Ã  Ouagadougou']
       ]
       for (const [k, v] of defaults) {
         await db.prepare('INSERT OR IGNORE INTO site_settings (key, value) VALUES (?, ?)').bind(k, v).run()
@@ -942,7 +945,7 @@ async function renderDashboard(c: any, clientId: number) {
       }
     })
   }
-  // Rétroactivement lier les commandes créées avec ce téléphone mais sans client_id
+  // RÃ©troactivement lier les commandes crÃ©Ã©es avec ce tÃ©lÃ©phone mais sans client_id
   if (client.phone) {
     try {
       const rawPhone = client.phone.replace(/\D/g, '')
@@ -991,10 +994,10 @@ async function renderDashboard(c: any, clientId: number) {
   />)
 }
 
-// Helper : hachage mot de passe sécurisé (PBKDF2 avec salt unique par utilisateur)
+// Helper : hachage mot de passe sÃ©curisÃ© (PBKDF2 avec salt unique par utilisateur)
 async function hashPassword(password: string, salt?: string): Promise<string> {
   const encoder = new TextEncoder()
-  // Si pas de salt fourni, en générer un nouveau (16 bytes hex)
+  // Si pas de salt fourni, en gÃ©nÃ©rer un nouveau (16 bytes hex)
   if (!salt) {
     const saltBytes = new Uint8Array(16)
     crypto.getRandomValues(saltBytes)
@@ -1009,7 +1012,7 @@ async function hashPassword(password: string, salt?: string): Promise<string> {
   return `pbkdf2:${salt}:${hash}`
 }
 
-// Vérifier un mot de passe contre un hash stocké (supporte ancien SHA-256 + nouveau PBKDF2)
+// VÃ©rifier un mot de passe contre un hash stockÃ© (supporte ancien SHA-256 + nouveau PBKDF2)
 async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
   if (storedHash.startsWith('pbkdf2:')) {
     const parts = storedHash.split(':')
@@ -1018,8 +1021,8 @@ async function verifyPassword(password: string, storedHash: string): Promise<boo
     const rehashed = await hashPassword(password, salt)
     return rehashed === storedHash
   }
-  // Rétrocompatibilité : ancien format SHA-256 simple (migration automatique au login)
-  console.warn('Legacy SHA-256 password verification attempt — will auto-migrate to PBKDF2')
+  // RÃ©trocompatibilitÃ© : ancien format SHA-256 simple (migration automatique au login)
+  console.warn('Legacy SHA-256 password verification attempt â€” will auto-migrate to PBKDF2')
   const encoder = new TextEncoder()
   const data = encoder.encode(password + 'maasga_salt_2025')
   const hashBuffer = await crypto.subtle.digest('SHA-256', data)
@@ -1027,14 +1030,14 @@ async function verifyPassword(password: string, storedHash: string): Promise<boo
   return legacyHash === storedHash
 }
 
-// Générer un token de session sécurisé (non devinable)
+// GÃ©nÃ©rer un token de session sÃ©curisÃ© (non devinable)
 function generateSessionToken(): string {
   const bytes = new Uint8Array(32)
   crypto.getRandomValues(bytes)
   return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
-// Store sessions serveur — D1-backed with in-memory cache for performance
+// Store sessions serveur â€” D1-backed with in-memory cache for performance
 const SESSION_TTL_MS = 86400000 // 24h
 const SESSION_CACHE_MAX_SIZE = 500 // Max entries in memory cache
 const sessionCache = new Map<string, { clientId: number; createdAt: number }>()
@@ -1052,7 +1055,7 @@ async function ensureSessionTable(db: any) {
 
 async function setSession(db: any, token: string, clientId: number) {
   const now = Date.now()
-  // Enforce session cache size limit — evict oldest entries
+  // Enforce session cache size limit â€” evict oldest entries
   if (sessionCache.size >= SESSION_CACHE_MAX_SIZE) {
     let oldest: string | null = null, oldestTime = Infinity
     for (const [k, v] of sessionCache) {
@@ -1137,7 +1140,7 @@ function generateEmailToken(): string {
 async function sendVerificationEmail(env: any, toEmail: string, toName: string, verifyUrl: string): Promise<boolean> {
   const apiKey = env.BREVO_API_KEY
   if (!apiKey) {
-    console.warn('[EMAIL] BREVO_API_KEY not configured — skipping verification email')
+    console.warn('[EMAIL] BREVO_API_KEY not configured â€” skipping verification email')
     return false
   }
 
@@ -1152,7 +1155,7 @@ async function sendVerificationEmail(env: any, toEmail: string, toName: string, 
       body: JSON.stringify({
         sender: { name: 'MAASGA', email: 'maasgabf@gmail.com' },
         to: [{ email: toEmail, name: toName }],
-        subject: 'Vérifiez votre email — MAASGA',
+        subject: 'VÃ©rifiez votre email â€” MAASGA',
         htmlContent: `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f8fafc;">
@@ -1175,7 +1178,7 @@ async function sendVerificationEmail(env: any, toEmail: string, toName: string, 
       Ce lien expire dans 24 heures. Si vous n'avez pas cree de compte sur MAASGA, ignorez cet email.
     </p>
     <div style="margin-top:20px;padding-top:20px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center;">
-      MAASGA — Froid &amp; Climatisation - Ouagadougou, Burkina Faso<br>
+      MAASGA â€” Froid &amp; Climatisation - Ouagadougou, Burkina Faso<br>
       Tel: +226 55 99 64 18 - maasgabf@gmail.com
     </div>
   </div>
@@ -1195,7 +1198,7 @@ async function sendVerificationEmail(env: any, toEmail: string, toName: string, 
 async function sendPasswordResetEmail(env: any, toEmail: string, toName: string, code: string): Promise<boolean> {
   const apiKey = env.BREVO_API_KEY
   if (!apiKey) {
-    console.warn('[EMAIL] BREVO_API_KEY not configured — cannot send reset email')
+    console.warn('[EMAIL] BREVO_API_KEY not configured â€” cannot send reset email')
     return false
   }
 
@@ -1210,7 +1213,7 @@ async function sendPasswordResetEmail(env: any, toEmail: string, toName: string,
       body: JSON.stringify({
         sender: { name: 'MAASGA', email: 'maasgabf@gmail.com' },
         to: [{ email: toEmail, name: toName }],
-        subject: 'Code de réinitialisation — MAASGA',
+        subject: 'Code de rÃ©initialisation â€” MAASGA',
         htmlContent: `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f8fafc;">
@@ -1239,7 +1242,7 @@ async function sendPasswordResetEmail(env: any, toEmail: string, toName: string,
       Si vous n'avez pas demande cette reinitialisation, ignorez cet email. Votre mot de passe ne sera pas modifie.
     </p>
     <div style="margin-top:20px;padding-top:20px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center;">
-      MAASGA — Froid &amp; Climatisation - Ouagadougou, Burkina Faso<br>
+      MAASGA â€” Froid &amp; Climatisation - Ouagadougou, Burkina Faso<br>
       Tel: +226 55 99 64 18 - maasgabf@gmail.com
     </div>
   </div>
@@ -1263,7 +1266,7 @@ async function sendPasswordResetEmail(env: any, toEmail: string, toName: string,
 app.get('/api/verify-email', async (c) => {
   const token = c.req.query('token') || ''
   const db = c.env.DB
-  if (!db || !token) return c.redirect('/espace-client?error=' + encodeURIComponent('Lien de vérification invalide.'))
+  if (!db || !token) return c.redirect('/espace-client?error=' + encodeURIComponent('Lien de vÃ©rification invalide.'))
 
   try {
     await ensureEmailVerificationTable(db)
@@ -1272,7 +1275,7 @@ app.get('/api/verify-email', async (c) => {
     ).bind(token, Date.now()).first() as any
 
     if (!row) {
-      return c.redirect('/espace-client?error=' + encodeURIComponent('Lien de vérification invalide ou expiré.'))
+      return c.redirect('/espace-client?error=' + encodeURIComponent('Lien de vÃ©rification invalide ou expirÃ©.'))
     }
 
     // Mark as verified
@@ -1286,14 +1289,14 @@ app.get('/api/verify-email', async (c) => {
 
     await logActivity(db, {
       clientId: row.client_id,
-      action: 'Email vérifié: ' + row.email,
+      action: 'Email vÃ©rifiÃ©: ' + row.email,
       category: 'auth'
     })
 
-    return c.redirect('/espace-client?success=' + encodeURIComponent('Email vérifié avec succès ! Vous pouvez vous connecter.'))
+    return c.redirect('/espace-client?success=' + encodeURIComponent('Email vÃ©rifiÃ© avec succÃ¨s ! Vous pouvez vous connecter.'))
   } catch (e) {
     console.error('[EMAIL] Verify error:', e)
-    return c.redirect('/espace-client?error=' + encodeURIComponent('Erreur lors de la vérification.'))
+    return c.redirect('/espace-client?error=' + encodeURIComponent('Erreur lors de la vÃ©rification.'))
   }
 })
 
@@ -1302,7 +1305,7 @@ app.post('/api/resend-verification', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
   const rl = rateLimit(`resend-email:${ip}`, 3, 15 * 60 * 1000)
   if (!rl.allowed) {
-    return c.json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' }, 429)
+    return c.json({ error: 'Trop de tentatives. RÃ©essayez dans 15 minutes.' }, 429)
   }
 
   const sessionToken = getCookie(c, 'maasga_session') || ''
@@ -1310,10 +1313,10 @@ app.post('/api/resend-verification', async (c) => {
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
 
   const session = sessionToken ? await getSession(db, sessionToken) : null
-  if (!session) return c.json({ error: 'Non connecté' }, 401)
+  if (!session) return c.json({ error: 'Non connectÃ©' }, 401)
 
   const client = await db.prepare('SELECT id, name, email FROM clients WHERE id = ?').bind(session.clientId).first() as any
-  if (!client?.email) return c.json({ error: 'Aucun email associé à votre compte' }, 400)
+  if (!client?.email) return c.json({ error: 'Aucun email associÃ© Ã  votre compte' }, 400)
 
   await ensureEmailVerificationTable(db)
   const emailToken = generateEmailToken()
@@ -1327,7 +1330,7 @@ app.post('/api/resend-verification', async (c) => {
   const verifyUrl = `${baseUrl}/api/verify-email?token=${emailToken}`
   const sent = await sendVerificationEmail(c.env, client.email, client.name || '', verifyUrl)
 
-  return c.json({ success: true, sent, message: sent ? 'Email de vérification envoyé.' : 'Email de vérification enregistré (envoi email non configuré).' })
+  return c.json({ success: true, sent, message: sent ? 'Email de vÃ©rification envoyÃ©.' : 'Email de vÃ©rification enregistrÃ© (envoi email non configurÃ©).' })
 })
 
 // API Login
@@ -1337,7 +1340,7 @@ app.post('/api/login', async (c) => {
   const rl = rateLimit(`login:${ip}`, 10, 15 * 60 * 1000)
   if (!rl.allowed) {
     logSecurityEvent(c.env?.DB, { event: 'login_rate_limit_ip', severity: 'warn', ip, details: `Login rate limited for IP ${ip}` })
-    return c.redirect('/espace-client?error=' + encodeURIComponent('Trop de tentatives. Réessayez dans 15 minutes.'))
+    return c.redirect('/espace-client?error=' + encodeURIComponent('Trop de tentatives. RÃ©essayez dans 15 minutes.'))
   }
 
   const body = await c.req.parseBody()
@@ -1348,12 +1351,12 @@ app.post('/api/login', async (c) => {
     const idRl = rateLimit(`login-id:${identifier.toLowerCase()}`, 20, 15 * 60 * 1000)
     if (!idRl.allowed) {
       logSecurityEvent(c.env?.DB, { event: 'login_rate_limit_id', severity: 'warn', ip, details: `Login rate limited for identifier ${identifier}` })
-      return c.redirect('/espace-client?error=' + encodeURIComponent('Trop de tentatives sur ce compte. Réessayez dans 15 minutes.'))
+      return c.redirect('/espace-client?error=' + encodeURIComponent('Trop de tentatives sur ce compte. RÃ©essayez dans 15 minutes.'))
     }
   }
   const password = (body['password'] as string || '').trim()
   const redirectParam = (body['redirect'] as string || '').trim()
-  // Valider le redirect: doit commencer par / et ne contenir que des caractères sûrs
+  // Valider le redirect: doit commencer par / et ne contenir que des caractÃ¨res sÃ»rs
   const safeRedirect = (redirectParam && /^\/[a-z0-9\-\/]+$/i.test(redirectParam)) ? '/' + redirectParam.replace(/^\/+/, '') : ''
 
   if (!identifier || !password) {
@@ -1362,7 +1365,7 @@ app.post('/api/login', async (c) => {
 
   const db = c.env.DB
 
-  // ── Vérification admin ──────────────────────────────────────────
+  // â”€â”€ VÃ©rification admin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     let validAdminUsername = DEFAULT_ADMIN_USERNAME
     let validAdminHash = ''
@@ -1377,7 +1380,7 @@ app.post('/api/login', async (c) => {
     }
     if (!validAdminHash) {
       const initPwd = c.env.ADMIN_INITIAL_PASSWORD
-      if (!initPwd) return c.redirect('/espace-client?error=' + encodeURIComponent('Configuration admin incomplète. Définissez ADMIN_INITIAL_PASSWORD.'))
+      if (!initPwd) return c.redirect('/espace-client?error=' + encodeURIComponent('Configuration admin incomplÃ¨te. DÃ©finissez ADMIN_INITIAL_PASSWORD.'))
       validAdminHash = await hashPassword(initPwd)
     }
     const isAdminValid = await verifyPassword(password, validAdminHash)
@@ -1398,11 +1401,11 @@ app.post('/api/login', async (c) => {
       })
     }
   }
-  // ───────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   if (db) {
     try {
-      // Normalise le numéro : essaie tel quel, avec +226, et sans espaces
+      // Normalise le numÃ©ro : essaie tel quel, avec +226, et sans espaces
       const cleanId = identifier.replace(/\s/g, '')
       const withPrefix = cleanId.startsWith('+226') ? cleanId : ('+226' + cleanId)
       const withoutPrefix = cleanId.startsWith('+226') ? cleanId.slice(4) : cleanId
@@ -1420,12 +1423,12 @@ app.post('/api/login', async (c) => {
             await db.prepare('UPDATE clients SET password_hash = ?, updated_at = ? WHERE id = ?')
               .bind(newHash, new Date().toISOString(), client.id).run()
           }
-          // Créer une session sécurisée server-side (D1-backed)
+          // CrÃ©er une session sÃ©curisÃ©e server-side (D1-backed)
           const sessionToken = generateSessionToken()
           await setSession(db, sessionToken, client.id)
-          await logActivity(db, { clientId: client.id, clientPhone: client.phone, action: 'Connexion réussie', category: 'auth', ip: c.req.header('cf-connecting-ip') || '' })
+          await logActivity(db, { clientId: client.id, clientPhone: client.phone, action: 'Connexion rÃ©ussie', category: 'auth', ip: c.req.header('cf-connecting-ip') || '' })
           const cookieHeader = `maasga_session=${sessionToken}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=86400`
-          // PRG: toujours rediriger vers GET /espace-client pour que le cookie soit établi avant le rendu
+          // PRG: toujours rediriger vers GET /espace-client pour que le cookie soit Ã©tabli avant le rendu
           const loginRedirect = safeRedirect || '/espace-client'
           return new Response(null, { status: 302, headers: { 'Location': loginRedirect, 'Set-Cookie': cookieHeader } })
         }
@@ -1439,15 +1442,15 @@ app.post('/api/login', async (c) => {
           .bind(newHash, new Date().toISOString(), client.id).run()
         const sessionToken = generateSessionToken()
         await setSession(db, sessionToken, client.id)
-        await logActivity(db, { clientId: client.id, clientPhone: client.phone, action: 'Première connexion (activation compte)', category: 'auth', ip: c.req.header('cf-connecting-ip') || '' })
+        await logActivity(db, { clientId: client.id, clientPhone: client.phone, action: 'PremiÃ¨re connexion (activation compte)', category: 'auth', ip: c.req.header('cf-connecting-ip') || '' })
         const cookieHeader2 = `maasga_session=${sessionToken}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=86400`
-        // PRG: rediriger pour que le cookie soit établi
+        // PRG: rediriger pour que le cookie soit Ã©tabli
         const activationRedirect = safeRedirect || '/espace-client'
         return new Response(null, { status: 302, headers: { 'Location': activationRedirect, 'Set-Cookie': cookieHeader2 } })
       }
 
       // Client introuvable: PAS d'auto-inscription, rediriger vers le formulaire d'inscription
-      return c.redirect('/espace-client?tab=signup&error=' + encodeURIComponent('Aucun compte trouvé avec cet identifiant. Inscrivez-vous.'))
+      return c.redirect('/espace-client?tab=signup&error=' + encodeURIComponent('Aucun compte trouvÃ© avec cet identifiant. Inscrivez-vous.'))
     } catch (e) {
       console.error('Login D1 error:', e)
     }
@@ -1457,7 +1460,7 @@ app.post('/api/login', async (c) => {
 })
 
 // ============================================================
-// CLIENT PASSWORD RESET — via Email (primary) + WhatsApp/SMS (fallback)
+// CLIENT PASSWORD RESET â€” via Email (primary) + WhatsApp/SMS (fallback)
 // ============================================================
 const clientResetCodes = new Map<string, { code: string; phone: string; email: string; createdAt: number; used: boolean }>()
 const CLIENT_RESET_CODE_MAX_AGE = 15 * 60 * 1000 // 15 minutes
@@ -1487,7 +1490,7 @@ app.get('/espace-client/reset-password', (c) => {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="robots" content="noindex,nofollow" />
-        <title>Réinitialisation mot de passe — MAASGA</title>
+        <title>RÃ©initialisation mot de passe â€” MAASGA</title>
         <link rel="stylesheet" href="/static/tailwind.css" />
         <link rel="stylesheet" href="/static/style.css" />
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" />
@@ -1500,13 +1503,13 @@ app.get('/espace-client/reset-password', (c) => {
                 <img src="/logo-site.png" alt="MAASGA" class="h-12 w-auto rounded-lg mx-auto" />
               </a>
               <h1 class="text-xl font-bold" style="color:#03045e;">
-                {step === 'code' ? 'Entrez le code reçu' : step === 'newpwd' ? 'Nouveau mot de passe' : 'Mot de passe oublié'}
+                {step === 'code' ? 'Entrez le code reÃ§u' : step === 'newpwd' ? 'Nouveau mot de passe' : 'Mot de passe oubliÃ©'}
               </h1>
               <p class="text-xs mt-1" style="color:#64748b;">
                 {step === 'code' && method === 'phone' ? 'Un agent MAASGA vous enverra le code par WhatsApp' :
-                 step === 'code' ? `Un code de vérification a été envoyé à ${decodeURIComponent(sentTo || 'votre email')}` :
+                 step === 'code' ? `Un code de vÃ©rification a Ã©tÃ© envoyÃ© Ã  ${decodeURIComponent(sentTo || 'votre email')}` :
                  step === 'newpwd' ? 'Choisissez votre nouveau mot de passe' :
-                 'Recevez un code de réinitialisation'}
+                 'Recevez un code de rÃ©initialisation'}
               </p>
             </div>
 
@@ -1523,7 +1526,7 @@ app.get('/espace-client/reset-password', (c) => {
                   <input type="email" name="email" required placeholder="votre@email.com"
                     class="w-full rounded-xl px-4 py-3 text-sm outline-none" style="border:1.5px solid rgba(0,119,182,0.2); background:#f8fbff; color:#03045e;" />
                 </div>
-                <p class="text-xs" style="color:#94a3b8;"><i class="fas fa-info-circle mr-1"></i>Un code à 6 chiffres sera envoyé à votre adresse email.</p>
+                <p class="text-xs" style="color:#94a3b8;"><i class="fas fa-info-circle mr-1"></i>Un code Ã  6 chiffres sera envoyÃ© Ã  votre adresse email.</p>
                 <button type="submit" class="w-full font-bold py-3.5 rounded-2xl transition-all hover:-translate-y-0.5" style="background:linear-gradient(135deg,#03045e,#0077b6); box-shadow:0 8px 24px rgba(0,119,182,0.35); color:#ffffff;">
                   <i class="fas fa-paper-plane mr-2"></i>Recevoir le code par email
                 </button>
@@ -1535,7 +1538,7 @@ app.get('/espace-client/reset-password', (c) => {
               <form method="post" action="/api/client/verify-reset-code" class="space-y-4">
                 <input type="hidden" name="token" value={token} />
                 <div>
-                  <label class="block text-sm font-semibold mb-2" style="color:#03045e;">Code de vérification (6 chiffres)</label>
+                  <label class="block text-sm font-semibold mb-2" style="color:#03045e;">Code de vÃ©rification (6 chiffres)</label>
                   <input type="text" name="code" required maxlength={6} pattern="[0-9]{6}" placeholder="000000" inputmode="numeric" autocomplete="one-time-code"
                     class="w-full rounded-xl px-4 py-3 text-center text-2xl font-bold tracking-widest outline-none" style="border:1.5px solid rgba(0,119,182,0.2); background:#f8fbff; color:#03045e; letter-spacing:0.5em;" />
                 </div>
@@ -1544,7 +1547,7 @@ app.get('/espace-client/reset-password', (c) => {
                 </p>
 
                 <button type="submit" class="w-full text-white font-bold py-3.5 rounded-2xl transition-all hover:-translate-y-0.5" style="background:linear-gradient(135deg,#03045e,#0077b6);">
-                  <i class="fas fa-check mr-2"></i>Vérifier le code
+                  <i class="fas fa-check mr-2"></i>VÃ©rifier le code
                 </button>
               </form>
             )}
@@ -1555,7 +1558,7 @@ app.get('/espace-client/reset-password', (c) => {
                 <input type="hidden" name="token" value={token} />
                 <div>
                   <label class="block text-sm font-semibold mb-2" style="color:#03045e;">Nouveau mot de passe</label>
-                  <input type="password" name="new_password" required minlength={8} placeholder="Min. 8 caractères (lettres + chiffres)"
+                  <input type="password" name="new_password" required minlength={8} placeholder="Min. 8 caractÃ¨res (lettres + chiffres)"
                     class="w-full rounded-xl px-4 py-3 text-sm outline-none" style="border:1.5px solid rgba(0,119,182,0.2); background:#f8fbff; color:#03045e;" />
                 </div>
                 <div>
@@ -1564,14 +1567,14 @@ app.get('/espace-client/reset-password', (c) => {
                     class="w-full rounded-xl px-4 py-3 text-sm outline-none" style="border:1.5px solid rgba(0,119,182,0.2); background:#f8fbff; color:#03045e;" />
                 </div>
                 <button type="submit" class="w-full text-white font-bold py-3.5 rounded-2xl transition-all hover:-translate-y-0.5" style="background:linear-gradient(135deg,#059669,#10b981);">
-                  <i class="fas fa-key mr-2"></i>Réinitialiser mon mot de passe
+                  <i class="fas fa-key mr-2"></i>RÃ©initialiser mon mot de passe
                 </button>
               </form>
             )}
 
             <div class="text-center mt-5">
               <a href="/espace-client" class="text-xs font-medium hover:underline" style="color:#0077b6;">
-                <i class="fas fa-arrow-left mr-1"></i>Retour à la connexion
+                <i class="fas fa-arrow-left mr-1"></i>Retour Ã  la connexion
               </a>
             </div>
           </div>
@@ -1581,12 +1584,12 @@ app.get('/espace-client/reset-password', (c) => {
   )
 })
 
-// Step 1a backend: EMAIL — Generate 6-digit code and send via Brevo email
+// Step 1a backend: EMAIL â€” Generate 6-digit code and send via Brevo email
 app.post('/api/client/request-reset-email', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
   const rl = rateLimit(`client-reset-email:${ip}`, 3, 15 * 60 * 1000)
   if (!rl.allowed) {
-    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Trop de tentatives. Réessayez dans 15 min.'))
+    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Trop de tentatives. RÃ©essayez dans 15 min.'))
   }
 
   const body = await c.req.parseBody()
@@ -1605,7 +1608,7 @@ app.post('/api/client/request-reset-email', async (c) => {
   ).bind(email).first() as any
 
   if (!client) {
-    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Aucun compte trouvé avec cette adresse email.'))
+    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Aucun compte trouvÃ© avec cette adresse email.'))
   }
 
   // Generate cryptographically secure 8-digit code (crypto.getRandomValues, not Math.random)
@@ -1635,7 +1638,7 @@ app.post('/api/client/request-reset-email', async (c) => {
   // Send code via email (Brevo)
   const emailSent = await sendPasswordResetEmail(c.env, email, client.name || '', code)
   if (!emailSent) {
-    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent("Erreur lors de l\'envoi de l'email. Essayez avec votre numéro de téléphone."))
+    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent("Erreur lors de l\'envoi de l'email. Essayez avec votre numÃ©ro de tÃ©lÃ©phone."))
   }
 
   // Mask email for display: s***@g***.com
@@ -1645,19 +1648,19 @@ app.post('/api/client/request-reset-email', async (c) => {
   return c.redirect('/espace-client/reset-password?step=code&token=' + token + '&method=email&sent_to=' + encodeURIComponent(maskedEmail))
 })
 
-// Step 1b backend: PHONE (WhatsApp) — Generate 6-digit code and send via SMS/WhatsApp
+// Step 1b backend: PHONE (WhatsApp) â€” Generate 6-digit code and send via SMS/WhatsApp
 app.post('/api/client/request-reset', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
   const rl = rateLimit(`client-reset:${ip}`, 3, 15 * 60 * 1000)
   if (!rl.allowed) {
-    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Trop de tentatives. Réessayez dans 15 min.'))
+    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Trop de tentatives. RÃ©essayez dans 15 min.'))
   }
 
   const body = await c.req.parseBody()
   const phone = normalizePhone(((body['phone'] as string) || '').trim())
 
   if (!phone || !isValidPhone(phone)) {
-    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Numéro de téléphone invalide.'))
+    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('NumÃ©ro de tÃ©lÃ©phone invalide.'))
   }
 
   const db = c.env.DB
@@ -1670,7 +1673,7 @@ app.post('/api/client/request-reset', async (c) => {
   ).bind(phone, fullPhone).first() as any
 
   if (!client) {
-    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Aucun compte trouvé avec ce numéro.'))
+    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Aucun compte trouvÃ© avec ce numÃ©ro.'))
   }
 
   // Generate cryptographically secure 8-digit code (crypto.getRandomValues, not Math.random)
@@ -1699,7 +1702,7 @@ app.post('/api/client/request-reset', async (c) => {
   }
 
   // Notify admin via Telegram so they can send the code to the user via WhatsApp
-  const waLink = 'https://wa.me/' + normalizedPhone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent(`Bonjour! Voici votre code de réinitialisation MAASGA: ${code}\nCe code expire dans 15 minutes.`)
+  const waLink = 'https://wa.me/' + normalizedPhone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent(`Bonjour! Voici votre code de rÃ©initialisation MAASGA: ${code}\nCe code expire dans 15 minutes.`)
   if (c.env.TELEGRAM_BOT_TOKEN && c.env.TELEGRAM_CHAT_ID) {
     try {
       await fetch(`https://api.telegram.org/bot${c.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -1707,7 +1710,7 @@ app.post('/api/client/request-reset', async (c) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: c.env.TELEGRAM_CHAT_ID,
-          text: `🔐 *Demande de réinitialisation*\nTéléphone: ${normalizedPhone}\nCode: \`${code}\`\n\n[Envoyer via WhatsApp](${waLink})`,
+          text: `ðŸ” *Demande de rÃ©initialisation*\nTÃ©lÃ©phone: ${normalizedPhone}\nCode: \`${code}\`\n\n[Envoyer via WhatsApp](${waLink})`,
           parse_mode: 'Markdown'
         })
       })
@@ -1742,14 +1745,14 @@ app.post('/api/client/verify-reset-code', async (c) => {
   }
   
   if (!entry || entry.used || Date.now() - entry.createdAt > CLIENT_RESET_CODE_MAX_AGE) {
-    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Code expiré ou invalide. Recommencez.'))
+    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Code expirÃ© ou invalide. Recommencez.'))
   }
 
   if (entry.code !== code) {
     return c.redirect('/espace-client/reset-password?step=code&token=' + token + '&error=' + encodeURIComponent('Code incorrect.'))
   }
 
-  // Code valid — proceed to new password step
+  // Code valid â€” proceed to new password step
   return c.redirect('/espace-client/reset-password?step=newpwd&token=' + token)
 })
 
@@ -1778,11 +1781,11 @@ app.post('/api/client/reset-password', async (c) => {
   }
 
   if (!entry || entry.used || Date.now() - entry.createdAt > CLIENT_RESET_CODE_MAX_AGE) {
-    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Session expirée. Recommencez.'))
+    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Session expirÃ©e. Recommencez.'))
   }
 
   if (!newPwd || newPwd.length < 8 || !/[a-zA-Z]/.test(newPwd) || !/[0-9]/.test(newPwd)) {
-    return c.redirect('/espace-client/reset-password?step=newpwd&token=' + token + '&error=' + encodeURIComponent('Le mot de passe doit faire 8+ caractères avec lettres et chiffres.'))
+    return c.redirect('/espace-client/reset-password?step=newpwd&token=' + token + '&error=' + encodeURIComponent('Le mot de passe doit faire 8+ caractÃ¨res avec lettres et chiffres.'))
   }
   if (newPwd !== confirmPwd) {
     return c.redirect('/espace-client/reset-password?step=newpwd&token=' + token + '&error=' + encodeURIComponent('Les mots de passe ne correspondent pas.'))
@@ -1807,19 +1810,19 @@ app.post('/api/client/reset-password', async (c) => {
     const memEntry = clientResetCodes.get(token)
     if (memEntry) memEntry.used = true
 
-    return c.redirect('/espace-client?success=' + encodeURIComponent('Mot de passe réinitialisé avec succès ! Connectez-vous.'))
+    return c.redirect('/espace-client?success=' + encodeURIComponent('Mot de passe rÃ©initialisÃ© avec succÃ¨s ! Connectez-vous.'))
   } catch(e) {
-    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Erreur lors de la réinitialisation.'))
+    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Erreur lors de la rÃ©initialisation.'))
   }
 })
 
-// API Inscription (après commande)
+// API Inscription (aprÃ¨s commande)
 app.post('/api/register', async (c) => {
   // Rate limiting: 5 registrations per IP per 30 minutes
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
   const rl = rateLimit(`register:${ip}`, 5, 30 * 60 * 1000)
   if (!rl.allowed) {
-    return c.redirect('/espace-client?tab=signup&error=' + encodeURIComponent('Trop de tentatives. Réessayez dans 30 minutes.'))
+    return c.redirect('/espace-client?tab=signup&error=' + encodeURIComponent('Trop de tentatives. RÃ©essayez dans 30 minutes.'))
   }
 
   // Support both form-encoded and JSON body (client pages send JSON via fetch)
@@ -1848,10 +1851,10 @@ app.post('/api/register', async (c) => {
     return c.redirect('/espace-client?tab=signup&error=' + encodeURIComponent(msg) + (safeRedirect ? '&redirect=' + encodeURIComponent(redirectParam) : ''))
   }
 
-  if (!name || !phone) return errRedirect('Nom et téléphone sont obligatoires.')
-  if (!isValidPhone(phone)) return errRedirect('Numéro de téléphone invalide (8 chiffres requis).')
+  if (!name || !phone) return errRedirect('Nom et tÃ©lÃ©phone sont obligatoires.')
+  if (!isValidPhone(phone)) return errRedirect('NumÃ©ro de tÃ©lÃ©phone invalide (8 chiffres requis).')
   if (email && !isValidEmail(email)) return errRedirect('Adresse email invalide.')
-  if (password.length < 8) return errRedirect('Le mot de passe doit faire au moins 8 caractères.')
+  if (password.length < 8) return errRedirect('Le mot de passe doit faire au moins 8 caractÃ¨res.')
   if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
     return errRedirect('Le mot de passe doit contenir des lettres et des chiffres.')
   }
@@ -1866,7 +1869,7 @@ app.post('/api/register', async (c) => {
     ).bind(phone, fullPhone).first() as any
 
     if (existing && existing.password_hash && existing.password_hash !== 'pending') {
-      return errRedirect('Un compte existe déjà avec ce numéro. Connectez-vous.')
+      return errRedirect('Un compte existe dÃ©jÃ  avec ce numÃ©ro. Connectez-vous.')
     }
 
     const password_hash = await hashPassword(password)
@@ -1884,17 +1887,17 @@ app.post('/api/register', async (c) => {
       const inserted = await db.prepare('SELECT id FROM clients WHERE phone = ?').bind(fullPhone).first() as any
       clientId = inserted?.id
     }
-    if (!clientId) return errRedirect('Erreur lors de la création du compte.')
+    if (!clientId) return errRedirect('Erreur lors de la crÃ©ation du compte.')
 
-    // Créer une session sécurisée server-side (D1-backed)
+    // CrÃ©er une session sÃ©curisÃ©e server-side (D1-backed)
     const sessionToken = generateSessionToken()
     await setSession(db, sessionToken, clientId)
     await logActivity(db, { clientId, clientPhone: fullPhone, action: 'Inscription nouveau compte', category: 'auth', ip: c.req.header('cf-connecting-ip') || '' })
     if (!existing) {
-      await notifyAdmin(c.env, 'client', `${name} — Nouvelle inscription. Tél: ${fullPhone}${email ? ' | ' + email : ''}${quartier ? ' | ' + quartier : ''}`)
+      await notifyAdmin(c.env, 'client', `${name} â€” Nouvelle inscription. TÃ©l: ${fullPhone}${email ? ' | ' + email : ''}${quartier ? ' | ' + quartier : ''}`)
     }
 
-    // Envoyer un email de vérification si un email est fourni
+    // Envoyer un email de vÃ©rification si un email est fourni
     if (email && db) {
       try {
         await ensureEmailVerificationTable(db)
@@ -1918,12 +1921,12 @@ app.post('/api/register', async (c) => {
         headers: { 'Content-Type': 'application/json', 'Set-Cookie': cookieHeader3 }
       })
     }
-    // PRG: rediriger pour que le cookie soit établi
+    // PRG: rediriger pour que le cookie soit Ã©tabli
     const registerRedirect = safeRedirect || '/espace-client'
     return new Response(null, { status: 302, headers: { 'Location': registerRedirect, 'Set-Cookie': cookieHeader3 } })
   } catch (e) {
     console.error('Register error:', e)
-    return errRedirect('Erreur lors de la création du compte.')
+    return errRedirect('Erreur lors de la crÃ©ation du compte.')
   }
 })
 
@@ -1933,7 +1936,7 @@ app.post('/api/register', async (c) => {
 
 app.get('/api/auth/google', (c) => {
   const clientId = c.env.GOOGLE_CLIENT_ID
-  if (!clientId) return c.redirect('/espace-client?error=' + encodeURIComponent('Connexion Google non configurée.'))
+  if (!clientId) return c.redirect('/espace-client?error=' + encodeURIComponent('Connexion Google non configurÃ©e.'))
   const redirectUri = new URL('/api/auth/google/callback', c.req.url).toString()
   const state = generateSessionToken().slice(0, 32)
   const redirectParam = c.req.query('redirect') || ''
@@ -1963,7 +1966,7 @@ app.get('/api/auth/google/callback', async (c) => {
   const googleError = c.req.query('error')
   const savedState = getCookie(c, 'oauth_state')
   const oauthRedirect = getCookie(c, 'oauth_redirect') || ''
-  // NOTE: Do NOT use deleteCookie(c, ...) here — it modifies Hono's internal response headers
+  // NOTE: Do NOT use deleteCookie(c, ...) here â€” it modifies Hono's internal response headers
   // which can overwrite Set-Cookie on the raw Response we return later. We manually clear them below.
   const clearOAuthCookies = 'oauth_state=; Path=/; Max-Age=0; SameSite=Lax; Secure'
   const clearOAuthRedirect = 'oauth_redirect=; Path=/; Max-Age=0; SameSite=Lax; Secure'
@@ -1980,23 +1983,23 @@ app.get('/api/auth/google/callback', async (c) => {
 
   // Handle Google-side errors (access_denied, consent refused, etc.)
   if (googleError) {
-    const msg = googleError === 'access_denied' ? 'Accès refusé. Vous avez annulé la connexion Google.' : `Erreur Google: ${googleError}`
+    const msg = googleError === 'access_denied' ? 'AccÃ¨s refusÃ©. Vous avez annulÃ© la connexion Google.' : `Erreur Google: ${googleError}`
     return errorRedirect(msg)
   }
 
   if (!code) {
-    return errorRedirect("Aucun code d'autorisation reçu de Google.")
+    return errorRedirect("Aucun code d'autorisation reÃ§u de Google.")
   }
 
-  // State validation — require both state and cookie to be present and matching (CSRF protection)
+  // State validation â€” require both state and cookie to be present and matching (CSRF protection)
   if (!savedState || !state || state !== savedState) {
-    return errorRedirect('Erreur de sécurité (state invalide). Réessayez.')
+    return errorRedirect('Erreur de sÃ©curitÃ© (state invalide). RÃ©essayez.')
   }
 
   const clientId = c.env.GOOGLE_CLIENT_ID
   const clientSecret = c.env.GOOGLE_CLIENT_SECRET
   if (!clientId || !clientSecret) {
-    return errorRedirect('Connexion Google non configurée.')
+    return errorRedirect('Connexion Google non configurÃ©e.')
   }
 
   const redirectUri = new URL('/api/auth/google/callback', c.req.url).toString()
@@ -2018,9 +2021,9 @@ app.get('/api/auth/google/callback', async (c) => {
     if (!tokenData.access_token) {
       console.error('Google token exchange failed:', JSON.stringify(tokenData))
       const detail = tokenData.error === 'redirect_uri_mismatch'
-        ? 'URI de redirection non autorisée dans Google Console. Ajoutez: ' + redirectUri
+        ? 'URI de redirection non autorisÃ©e dans Google Console. Ajoutez: ' + redirectUri
         : tokenData.error === 'invalid_grant'
-        ? 'Code expiré. Réessayez.'
+        ? 'Code expirÃ©. RÃ©essayez.'
         : tokenData.error_description || tokenData.error || 'Token invalide'
       return errorRedirect('Erreur Google: ' + detail)
     }
@@ -2035,7 +2038,7 @@ app.get('/api/auth/google/callback', async (c) => {
     const googlePicture = user.picture || ''
 
     if (!googleEmail || !db) {
-      return errorRedirect('Impossible de récupérer votre email Google.')
+      return errorRedirect('Impossible de rÃ©cupÃ©rer votre email Google.')
     }
 
     // Find or create client
@@ -2054,7 +2057,7 @@ app.get('/api/auth/google/callback', async (c) => {
           .bind(googleName, now, client.id).run()
       }
     } else {
-      // Create new client with Google info (no password — OAuth only)
+      // Create new client with Google info (no password â€” OAuth only)
       const googleHash = 'google_oauth:' + googleEmail
       await db.prepare(
         'INSERT INTO clients (name, phone, email, quartier, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
@@ -2082,7 +2085,7 @@ app.get('/api/auth/google/callback', async (c) => {
     return new Response(null, { status: 302, headers: successHeaders })
   } catch (e) {
     console.error('Google OAuth error:', e)
-    return errorRedirect('Erreur de connexion Google. Réessayez.')
+    return errorRedirect('Erreur de connexion Google. RÃ©essayez.')
   }
 })
 
@@ -2119,18 +2122,18 @@ app.post('/api/client/update-profile', async (c) => {
 
   const sessionToken = getCookie(c, 'maasga_session') || ''
   const session = sessionToken ? await getSession(db, sessionToken) : null
-  if (!session) return c.json({ error: 'Non connecté' }, 401)
+  if (!session) return c.json({ error: 'Non connectÃ©' }, 401)
 
   const body = await c.req.json().catch(() => null) || await c.req.parseBody()
   const phone = normalizePhone(((body as any)?.phone || '').toString().trim())
   const quartier = ((body as any)?.quartier || '').toString().trim()
   const name = ((body as any)?.name || '').toString().trim()
 
-  if (!phone && !quartier && !name) return c.json({ error: 'Aucune donnée à mettre à jour' }, 400)
+  if (!phone && !quartier && !name) return c.json({ error: 'Aucune donnÃ©e Ã  mettre Ã  jour' }, 400)
 
   // Validate phone if provided
   if (phone) {
-    if (!/^\d{8}$/.test(phone)) return c.json({ error: 'Numéro invalide (8 chiffres requis)' }, 400)
+    if (!/^\d{8}$/.test(phone)) return c.json({ error: 'NumÃ©ro invalide (8 chiffres requis)' }, 400)
   }
 
   try {
@@ -2143,20 +2146,20 @@ app.post('/api/client/update-profile', async (c) => {
     values.push(session.clientId)
 
     await db.prepare(`UPDATE clients SET ${updates.join(', ')} WHERE id = ?`).bind(...values).run()
-    await logActivity(db, { clientId: session.clientId, clientPhone: phone || '', action: 'Profil mis à jour', category: 'profile', ip: c.req.header('cf-connecting-ip') || '' })
+    await logActivity(db, { clientId: session.clientId, clientPhone: phone || '', action: 'Profil mis Ã  jour', category: 'profile', ip: c.req.header('cf-connecting-ip') || '' })
 
     // Return updated client data
     const client = await db.prepare('SELECT id, name, phone, email, quartier FROM clients WHERE id = ?').bind(session.clientId).first() as any
     return c.json({ success: true, name: client?.name || '', phone: client?.phone || '', email: client?.email || '', quartier: client?.quartier || '' })
   } catch (e) {
-    return c.json({ error: 'Erreur lors de la mise à jour' }, 500)
+    return c.json({ error: 'Erreur lors de la mise Ã  jour' }, 500)
   }
 })
 
 // ============================================================
-// CONFIRMATION COMMANDE — Nouveau flux contact commercial
-// Le client confirme sa commande → MAASGA le contacte par email/WhatsApp
-// Pas de paiement en ligne : tout se fait directement avec l'équipe
+// CONFIRMATION COMMANDE â€” Nouveau flux contact commercial
+// Le client confirme sa commande â†’ MAASGA le contacte par email/WhatsApp
+// Pas de paiement en ligne : tout se fait directement avec l'Ã©quipe
 // ============================================================
 
 app.post('/api/order/confirm', async (c) => {
@@ -2170,33 +2173,33 @@ app.post('/api/order/confirm', async (c) => {
   const orderId = parseInt((body as any)?.order_id || '0')
   if (!orderId) return c.json({ error: 'ID commande manquant' }, 400)
 
-  // Vérifier que la commande appartient au client connecté (ou pas de session = accès public)
+  // VÃ©rifier que la commande appartient au client connectÃ© (ou pas de session = accÃ¨s public)
   const order = session
     ? await db.prepare('SELECT * FROM orders WHERE id = ? AND (client_id = ? OR client_phone = (SELECT phone FROM clients WHERE id = ?))').bind(orderId, session.clientId, session.clientId).first() as any
     : await db.prepare('SELECT * FROM orders WHERE id = ?').bind(orderId).first() as any
 
   if (!order) return c.json({ error: 'Commande introuvable' }, 404)
-  if (order.status !== 'en_attente') return c.json({ error: 'Cette commande a déjà été traitée' }, 400)
+  if (order.status !== 'en_attente') return c.json({ error: 'Cette commande a dÃ©jÃ  Ã©tÃ© traitÃ©e' }, 400)
 
   const now = new Date().toISOString()
   await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').bind('en_attente', now, orderId).run()
 
-  // Notifier l'admin immédiatement
+  // Notifier l'admin immÃ©diatement
   await notifyAdmin(c.env, 'order',
-    `🛒 Nouvelle commande confirmée #${orderId} — ${order.client_name} (${order.client_phone})${order.total_price ? ` — ${Number(order.total_price).toLocaleString()} FCFA` : ''} — À contacter !`
+    `ðŸ›’ Nouvelle commande confirmÃ©e #${orderId} â€” ${order.client_name} (${order.client_phone})${order.total_price ? ` â€” ${Number(order.total_price).toLocaleString()} FCFA` : ''} â€” Ã€ contacter !`
   )
 
   if (session) {
     await logActivity(db, {
       clientId: session.clientId,
       clientPhone: order.client_phone,
-      action: `Commande #${orderId} confirmée — en attente de contact MAASGA`,
+      action: `Commande #${orderId} confirmÃ©e â€” en attente de contact MAASGA`,
       category: 'order',
       ip: c.req.header('cf-connecting-ip') || ''
     })
   }
 
-  return c.json({ success: true, message: "Commande confirmée ! L'équipe MAASGA vous contactera par email ou WhatsApp sous 24h." })
+  return c.json({ success: true, message: "Commande confirmÃ©e ! L'Ã©quipe MAASGA vous contactera par email ou WhatsApp sous 24h." })
 })
 
 app.get('/espace-client', async (c) => {
@@ -2204,18 +2207,18 @@ app.get('/espace-client', async (c) => {
   const redirect = c.req.query('redirect') || ''
   const db = c.env.DB
 
-  // Session sécurisée côté serveur (HttpOnly cookie → lookup dans D1)
+  // Session sÃ©curisÃ©e cÃ´tÃ© serveur (HttpOnly cookie â†’ lookup dans D1)
   const sessionToken = getCookie(c, 'maasga_session') || ''
   let session = sessionToken ? await getSession(db, sessionToken) : null
 
-  // Rétrocompatibilité : ancien format cookie (clientId_timestamp) → migrer vers nouvelle session
+  // RÃ©trocompatibilitÃ© : ancien format cookie (clientId_timestamp) â†’ migrer vers nouvelle session
   if (!session && sessionToken && /^\d+_\d+$/.test(sessionToken) && db) {
     const legacyClientId = parseInt(sessionToken.split('_')[0])
     if (legacyClientId && !isNaN(legacyClientId)) {
       try {
         const legacyClient = await db.prepare('SELECT id FROM clients WHERE id = ?').bind(legacyClientId).first() as any
         if (legacyClient) {
-          // Migrer : créer une nouvelle session sécurisée et remplacer le cookie
+          // Migrer : crÃ©er une nouvelle session sÃ©curisÃ©e et remplacer le cookie
           const newToken = generateSessionToken()
           await setSession(db, newToken, legacyClientId)
           const migrateCookie = `maasga_session=${newToken}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=86400`
@@ -2226,7 +2229,7 @@ app.get('/espace-client', async (c) => {
   }
 
   if (db && session) {
-    // Si l'utilisateur est déjà connecté et qu'il y a un redirect, aller directement à la page demandée
+    // Si l'utilisateur est dÃ©jÃ  connectÃ© et qu'il y a un redirect, aller directement Ã  la page demandÃ©e
     if (redirect && /^\/[a-z0-9\-\/]+$/i.test(redirect)) {
       return c.redirect('/' + redirect.replace(/^\/+/, ''))
     }
@@ -2267,7 +2270,7 @@ app.post('/api/rdv', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
   const rl = rateLimit(`rdv:${ip}`, 10, 60 * 60 * 1000)
   if (!rl.allowed) {
-    return c.redirect('/rendez-vous?error=' + encodeURIComponent('Trop de demandes. Réessayez plus tard.'))
+    return c.redirect('/rendez-vous?error=' + encodeURIComponent('Trop de demandes. RÃ©essayez plus tard.'))
   }
 
   const body = await c.req.parseBody()
@@ -2299,12 +2302,12 @@ app.post('/api/rdv', async (c) => {
   }
 
   if (!name || !phone || !quartier || !date) {
-    return c.redirect('/rendez-vous?error=' + encodeURIComponent('Tous les champs obligatoires doivent être remplis.'))
+    return c.redirect('/rendez-vous?error=' + encodeURIComponent('Tous les champs obligatoires doivent Ãªtre remplis.'))
   }
 
   // Validate phone format
   if (!isValidPhone(phone)) {
-    return c.redirect('/rendez-vous?error=' + encodeURIComponent('Numéro de téléphone invalide (8 chiffres requis).'))
+    return c.redirect('/rendez-vous?error=' + encodeURIComponent('NumÃ©ro de tÃ©lÃ©phone invalide (8 chiffres requis).'))
   }
 
   // Validate email format if provided
@@ -2330,10 +2333,10 @@ app.post('/api/rdv', async (c) => {
   }
   appointments.push(newRdv)
 
-  // Écrire en base de données D1 si disponible
+  // Ã‰crire en base de donnÃ©es D1 si disponible
   const db = c.env.DB
   if (db) {
-    // 1. Enregistrer/mettre à jour le client (indépendant du RDV)
+    // 1. Enregistrer/mettre Ã  jour le client (indÃ©pendant du RDV)
     try {
       await createClient(db, {
         name: name,
@@ -2350,7 +2353,7 @@ app.post('/api/rdv', async (c) => {
     } catch (error) {
       console.error('Erreur createClient depuis RDV (non bloquant):', error)
     }
-    // 2. Créer le rendez-vous (séparé pour ne pas être bloqué par createClient)
+    // 2. CrÃ©er le rendez-vous (sÃ©parÃ© pour ne pas Ãªtre bloquÃ© par createClient)
     try {
       await createAppointment(db, {
         name: name,
@@ -2371,8 +2374,8 @@ app.post('/api/rdv', async (c) => {
   }
 
   // Envoyer SMS de confirmation (avec log + fallback WhatsApp)
-  const typeLabel: Record<string, string> = { devis: 'Devis', installation: 'Installation', entretien: 'Entretien', depannage: 'Dépannage' }
-  const smsMessage = `Bonjour ${name}! Votre ${typeLabel[type] || type} MAASGA est confirmée pour le ${date} de ${heure_debut} à ${heure_fin}. Réf: #${newRdv.id}. Questions? +226 55 99 64 18`
+  const typeLabel: Record<string, string> = { devis: 'Devis', installation: 'Installation', entretien: 'Entretien', depannage: 'DÃ©pannage' }
+  const smsMessage = `Bonjour ${name}! Votre ${typeLabel[type] || type} MAASGA est confirmÃ©e pour le ${date} de ${heure_debut} Ã  ${heure_fin}. RÃ©f: #${newRdv.id}. Questions? +226 55 99 64 18`
   await sendSmsWithLog(c.env, db, phone, smsMessage)
 
   // Log activity for connected users
@@ -2386,7 +2389,7 @@ app.post('/api/rdv', async (c) => {
           clientPhone: phone,
           action: 'Rendez-vous pris',
           category: 'rdv',
-          details: `RDV ${type} le ${date} à ${quartier}`,
+          details: `RDV ${type} le ${date} Ã  ${quartier}`,
           ip: c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || ''
         })
       }
@@ -2394,7 +2397,7 @@ app.post('/api/rdv', async (c) => {
   }
 
   // Notifier l'admin du nouveau RDV
-  await notifyAdmin(c.env, 'rdv', `${name} — ${typeLabel[type] || type} le ${date} (${heure_debut}-${heure_fin}) à ${quartier}. Tél: ${phone}`)
+  await notifyAdmin(c.env, 'rdv', `${name} â€” ${typeLabel[type] || type} le ${date} (${heure_debut}-${heure_fin}) Ã  ${quartier}. TÃ©l: ${phone}`)
 
   return c.redirect('/rendez-vous?success=1&name=' + encodeURIComponent(name) + '&phone=' + encodeURIComponent(phone))
 })
@@ -2408,7 +2411,7 @@ app.post('/api/avis', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
   const rl = rateLimit(`avis:${ip}`, 5, 60 * 60 * 1000)
   if (!rl.allowed) {
-    return c.redirect('/avis?error=' + encodeURIComponent('Trop de soumissions. Réessayez plus tard.'))
+    return c.redirect('/avis?error=' + encodeURIComponent('Trop de soumissions. RÃ©essayez plus tard.'))
   }
 
   const body = await c.req.parseBody()
@@ -2425,7 +2428,7 @@ app.post('/api/avis', async (c) => {
   const reviewDate = new Date().toISOString().split('T')[0]
   const reviewService = service || 'Service MAASGA'
 
-  // Écrire en base de données D1 en priorité
+  // Ã‰crire en base de donnÃ©es D1 en prioritÃ©
   const db = c.env.DB
   if (db) {
     try {
@@ -2434,7 +2437,7 @@ app.post('/api/avis', async (c) => {
       ).bind(name, safeNote, comment, reviewDate, reviewService).run()
     } catch (error) {
       console.error('Erreur D1 avis:', error)
-      return c.redirect('/avis?error=' + encodeURIComponent('Erreur lors de la sauvegarde. Réessayez.'))
+      return c.redirect('/avis?error=' + encodeURIComponent('Erreur lors de la sauvegarde. RÃ©essayez.'))
     }
   } else {
     // No D1, use in-memory only
@@ -2453,7 +2456,7 @@ app.post('/api/contact', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
   const rl = rateLimit(`contact:${ip}`, 5, 60 * 60 * 1000)
   if (!rl.allowed) {
-    return c.redirect('/contact?error=' + encodeURIComponent('Trop de messages envoyés. Réessayez plus tard.'))
+    return c.redirect('/contact?error=' + encodeURIComponent('Trop de messages envoyÃ©s. RÃ©essayez plus tard.'))
   }
 
   const body = await c.req.parseBody()
@@ -2475,7 +2478,7 @@ app.post('/api/contact', async (c) => {
 
   // Validate phone if provided
   if (phone && !isValidPhone(phone)) {
-    return c.redirect('/contact?error=' + encodeURIComponent('Numéro de téléphone invalide (8 chiffres requis).'))
+    return c.redirect('/contact?error=' + encodeURIComponent('NumÃ©ro de tÃ©lÃ©phone invalide (8 chiffres requis).'))
   }
 
   // Enregistrer le contact comme client potentiel
@@ -2512,7 +2515,7 @@ app.post('/api/contact', async (c) => {
   }
 
   // Notifier l'admin du nouveau message
-  await notifyAdmin(c.env, 'contact', `${name} — ${message.substring(0, 100)}${message.length > 100 ? '...' : ''}${phone ? ' | Tél: ' + phone : ''}${email ? ' | Email: ' + email : ''}`)
+  await notifyAdmin(c.env, 'contact', `${name} â€” ${message.substring(0, 100)}${message.length > 100 ? '...' : ''}${phone ? ' | TÃ©l: ' + phone : ''}${email ? ' | Email: ' + email : ''}`)
 
   return c.redirect('/contact?success=1')
 })
@@ -2525,7 +2528,7 @@ app.post('/api/stock-alert', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
   const rl = rateLimit(`stockalert:${ip}`, 10, 60 * 60 * 1000)
   if (!rl.allowed) {
-    return c.json({ ok: false, error: 'Trop de demandes. Réessayez plus tard.' }, 429)
+    return c.json({ ok: false, error: 'Trop de demandes. RÃ©essayez plus tard.' }, 429)
   }
 
   const body = await c.req.parseBody()
@@ -2533,7 +2536,7 @@ app.post('/api/stock-alert', async (c) => {
   const phone = (body['phone'] as string || '').trim()
 
   if (!productId || !phone || !isValidPhone(phone)) {
-    return c.json({ ok: false, error: 'Numéro de téléphone invalide (8 chiffres requis).' }, 400)
+    return c.json({ ok: false, error: 'NumÃ©ro de tÃ©lÃ©phone invalide (8 chiffres requis).' }, 400)
   }
 
   const db = c.env.DB
@@ -2549,12 +2552,12 @@ app.post('/api/stock-alert', async (c) => {
       'SELECT id FROM stock_alerts WHERE product_id = ? AND phone = ? AND notified = 0'
     ).bind(productId, safePhone).first()
     if (existing) {
-      return c.json({ ok: true, message: 'Vous êtes déjà inscrit pour ce produit.' })
+      return c.json({ ok: true, message: 'Vous Ãªtes dÃ©jÃ  inscrit pour ce produit.' })
     }
     await db.prepare(
       'INSERT INTO stock_alerts (product_id, phone) VALUES (?, ?)'
     ).bind(productId, safePhone).run()
-    return c.json({ ok: true, message: 'Vous serez notifié dès le réapprovisionnement.' })
+    return c.json({ ok: true, message: 'Vous serez notifiÃ© dÃ¨s le rÃ©approvisionnement.' })
   } catch (err) {
     console.error('Stock alert error:', err)
     return c.json({ ok: false, error: 'Erreur serveur.' }, 500)
@@ -2570,7 +2573,7 @@ app.post('/api/maintenance/request', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
   const rl = rateLimit(`maintenance:${ip}`, 5, 60 * 60 * 1000)
   if (!rl.allowed) {
-    return c.redirect('/contrat-maintenance?error=' + encodeURIComponent('Trop de demandes. Réessayez plus tard.'))
+    return c.redirect('/contrat-maintenance?error=' + encodeURIComponent('Trop de demandes. RÃ©essayez plus tard.'))
   }
 
   const body = await c.req.parseBody()
@@ -2587,11 +2590,11 @@ app.post('/api/maintenance/request', async (c) => {
   const planType = (body['plan_type'] as string || '').trim()
 
   if (!name || !phone) {
-    return c.redirect('/contrat-maintenance?error=' + encodeURIComponent('Nom et téléphone sont obligatoires.'))
+    return c.redirect('/contrat-maintenance?error=' + encodeURIComponent('Nom et tÃ©lÃ©phone sont obligatoires.'))
   }
   // Validate phone format
   if (!isValidPhone(phone)) {
-    return c.redirect('/contrat-maintenance?error=' + encodeURIComponent('Numéro de téléphone invalide (8 chiffres requis).'))
+    return c.redirect('/contrat-maintenance?error=' + encodeURIComponent('NumÃ©ro de tÃ©lÃ©phone invalide (8 chiffres requis).'))
   }
   // Validate email format if provided
   if (email && !isValidEmail(email)) {
@@ -2649,7 +2652,7 @@ app.post('/api/maintenance/request', async (c) => {
           visitDates.push(vd.toISOString().split('T')[0])
         }
 
-        // Create the maintenance contract in PENDING status — must be validated by admin
+        // Create the maintenance contract in PENDING status â€” must be validated by admin
         await db.prepare(
           `INSERT INTO maintenance_contracts (client_id, client_name, client_phone, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date)
            VALUES (?, ?, ?, ?, ?, ?, ?, 'en_attente', ?, 0, ?)`
@@ -2679,30 +2682,30 @@ app.post('/api/maintenance/request', async (c) => {
           try {
             await db.prepare(
               `INSERT INTO user_activity_log (client_id, action, category, details) VALUES (?, ?, 'maintenance', ?)`
-            ).bind(clientId, 'Souscription contrat maintenance', `Plan ${planType} — ${cfg.price.toLocaleString()} FCFA — ${cfg.visits} visite(s)`).run()
+            ).bind(clientId, 'Souscription contrat maintenance', `Plan ${planType} â€” ${cfg.price.toLocaleString()} FCFA â€” ${cfg.visits} visite(s)`).run()
           } catch(_) {}
         }
       }
     } catch (error) {
       console.error('Erreur maintenance request:', error)
-      return c.redirect('/contrat-maintenance?error=' + encodeURIComponent("Erreur lors de l'envoi. Veuillez réessayer."))
+      return c.redirect('/contrat-maintenance?error=' + encodeURIComponent("Erreur lors de l'envoi. Veuillez rÃ©essayer."))
     }
   }
 
   // Notifier l'admin de la nouvelle souscription de maintenance
   try {
     const productName = planType ? ` (Plan ${planType})` : "";
-    await notifyAdmin(c.env, 'maintenance', `Nouvelle demande/souscription de maintenance par ${name}${productName}. Tél: ${phone}`);
+    await notifyAdmin(c.env, 'maintenance', `Nouvelle demande/souscription de maintenance par ${name}${productName}. TÃ©l: ${phone}`);
   } catch(ne) {
     console.error('Failed to notify admin on maintenance:', ne);
   }
 
-  // Maintenance request received — logged in D1
+  // Maintenance request received â€” logged in D1
   return c.redirect('/contrat-maintenance?success=1')
 })
 
 // ============================================================
-// ORDER INVOICE (printable HTML → PDF via browser)
+// ORDER INVOICE (printable HTML â†’ PDF via browser)
 // ============================================================
 
 app.get('/api/order/invoice/:id', async (c) => {
@@ -2724,7 +2727,7 @@ app.get('/api/order/invoice/:id', async (c) => {
     } catch {}
   }
   if (!session && !isAdmin) {
-    return c.redirect('/espace-client?error=' + encodeURIComponent('Veuillez vous connecter pour accéder à la facture.'))
+    return c.redirect('/espace-client?error=' + encodeURIComponent('Veuillez vous connecter pour accÃ©der Ã  la facture.'))
   }
 
   try {
@@ -2735,7 +2738,7 @@ app.get('/api/order/invoice/:id', async (c) => {
     if (session && !isAdmin) {
       const clientCheck = await db.prepare('SELECT id, phone FROM clients WHERE id = ?').bind(session.clientId).first() as any
       if (!clientCheck || (clientCheck.phone !== order.client_phone && (!order.client_id || clientCheck.id !== order.client_id))) {
-        return c.text('Accès non autorisé', 403)
+        return c.text('AccÃ¨s non autorisÃ©', 403)
       }
     }
 
@@ -2745,7 +2748,7 @@ app.get('/api/order/invoice/:id', async (c) => {
       : null
 
     let payment: any = null
-    // Pas de paiement en ligne — le paiement se fait directement avec l'équipe MAASGA
+    // Pas de paiement en ligne â€” le paiement se fait directement avec l'Ã©quipe MAASGA
 
     let allDevis: any[] = []
     try {
@@ -2759,7 +2762,7 @@ app.get('/api/order/invoice/:id', async (c) => {
       if (ifuRow?.value) companyIFU = ifuRow.value
     } catch (_) {}
 
-    // Compute amounts — no installation price, no TVA
+    // Compute amounts â€” no installation price, no TVA
     const unitPrice: number = (product?.price) || (order.total_price ? Math.round(order.total_price / (order.quantity || 1)) : 0)
     const qty: number = order.quantity || 1
     const subtotal: number = unitPrice * qty
@@ -2778,16 +2781,16 @@ app.get('/api/order/invoice/:id', async (c) => {
     const invoiceNum = 'MAASGA-CMD-' + String(orderId).padStart(5, '0')
     const orderDate = order.created_at ? fmtDateLong(order.created_at) : invoiceDate
 
-    const STATUS_LABEL: Record<string,string> = { en_attente:'En attente', contacte:'Contacté', confirme:'Confirmée', en_livraison:'En livraison', livre:'Livrée & installée', annule:'Annulée' }
+    const STATUS_LABEL: Record<string,string> = { en_attente:'En attente', contacte:'ContactÃ©', confirme:'ConfirmÃ©e', en_livraison:'En livraison', livre:'LivrÃ©e & installÃ©e', annule:'AnnulÃ©e' }
     const STATUS_COLOR: Record<string,string> = { en_attente:'background:rgba(217,119,6,0.1);color:#d97706', contacte:'background:rgba(59,130,246,0.1);color:#3b82f6', confirme:'background:rgba(16,185,129,0.1);color:#10b981', en_livraison:'background:rgba(14,165,233,0.1);color:#0ea5e9', livre:'background:rgba(22,163,74,0.1);color:#16a34a', annule:'background:rgba(239,68,68,0.1);color:#ef4444' }
-    const DEVIS_STATUS: Record<string,string> = { pending:'En attente', sent:'Envoyé', validated:'Accepté', refused:'Refusé', expired:'Expiré' }
+    const DEVIS_STATUS: Record<string,string> = { pending:'En attente', sent:'EnvoyÃ©', validated:'AcceptÃ©', refused:'RefusÃ©', expired:'ExpirÃ©' }
     const DEVIS_COLOR: Record<string,string> = { pending:'background:rgba(217,119,6,0.1);color:#d97706', sent:'background:rgba(59,130,246,0.1);color:#3b82f6', validated:'background:rgba(22,163,74,0.1);color:#16a34a', refused:'background:rgba(239,68,68,0.1);color:#ef4444', expired:'background:rgba(148,163,184,0.1);color:#94a3b8' }
 
     // Build devis section using string concatenation to avoid nested template literal issues
     let devisSection = ''
     if (allDevis.length > 0) {
       devisSection += '<div style="margin-bottom:30px;">'
-      devisSection += '<div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;font-weight:700;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #e2e8f0;">Devis associés à cette commande</div>'
+      devisSection += '<div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;font-weight:700;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #e2e8f0;">Devis associÃ©s Ã  cette commande</div>'
       for (let di = 0; di < allDevis.length; di++) {
         const d: any = allDevis[di]
         const dStatus = DEVIS_STATUS[d.status] || d.status || ''
@@ -2797,20 +2800,20 @@ app.get('/api/order/invoice/:id', async (c) => {
         devisSection += '<div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:14px;">'
         devisSection += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">'
         devisSection += '<div>'
-        devisSection += '<div style="font-size:14px;font-weight:700;color:#03045e;">Devis #' + (di + 1) + ' — ' + escapeHtml(d.title || 'Devis installation') + '</div>'
-        devisSection += '<div style="font-size:12px;color:#64748b;margin-top:2px;">Créé le ' + dDate + ' · Réf. ' + dRef + '</div>'
+        devisSection += '<div style="font-size:14px;font-weight:700;color:#03045e;">Devis #' + (di + 1) + ' â€” ' + escapeHtml(d.title || 'Devis installation') + '</div>'
+        devisSection += '<div style="font-size:12px;color:#64748b;margin-top:2px;">CrÃ©Ã© le ' + dDate + ' Â· RÃ©f. ' + dRef + '</div>'
         if (d.description) devisSection += '<div style="font-size:12px;color:#475569;margin-top:4px;">' + escapeHtml(d.description) + '</div>'
         devisSection += '</div>'
         devisSection += '<div style="text-align:right;">'
         devisSection += '<span style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;' + dColor + '">' + dStatus + '</span>'
-        if (d.validated_at) devisSection += '<div style="font-size:11px;color:#16a34a;margin-top:4px;">Accepté le ' + fmtDate(d.validated_at) + '</div>'
-        if (d.refused_at) devisSection += '<div style="font-size:11px;color:#ef4444;margin-top:4px;">Refusé le ' + fmtDate(d.refused_at) + '</div>'
+        if (d.validated_at) devisSection += '<div style="font-size:11px;color:#16a34a;margin-top:4px;">AcceptÃ© le ' + fmtDate(d.validated_at) + '</div>'
+        if (d.refused_at) devisSection += '<div style="font-size:11px;color:#ef4444;margin-top:4px;">RefusÃ© le ' + fmtDate(d.refused_at) + '</div>'
         devisSection += '</div></div>'
         let devisItems: any[] = []
         try { devisItems = JSON.parse(d.items || '[]') } catch (_) {}
         if (devisItems.length > 0) {
           devisSection += '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;">'
-          devisSection += '<thead><tr style="background:#f8fafc;"><th style="padding:8px 10px;text-align:left;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Prestation / Article</th><th style="padding:8px 10px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Qté</th><th style="padding:8px 10px;text-align:right;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Prix unit.</th><th style="padding:8px 10px;text-align:right;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Total</th></tr></thead>'
+          devisSection += '<thead><tr style="background:#f8fafc;"><th style="padding:8px 10px;text-align:left;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Prestation / Article</th><th style="padding:8px 10px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">QtÃ©</th><th style="padding:8px 10px;text-align:right;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Prix unit.</th><th style="padding:8px 10px;text-align:right;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Total</th></tr></thead>'
           devisSection += '<tbody>'
           for (const it of devisItems) {
             const itQty: number = it.quantity || 1
@@ -2828,7 +2831,7 @@ app.get('/api/order/invoice/:id', async (c) => {
         devisSection += '<div style="display:flex;justify-content:flex-end;margin-top:10px;">'
         devisSection += '<div style="font-size:14px;font-weight:800;color:#03045e;">Total devis : ' + fmtNum(d.total_amount || 0) + ' FCFA</div>'
         devisSection += '</div>'
-        if (d.client_response_notes) devisSection += '<div style="margin-top:8px;font-size:12px;color:#475569;background:#f8fafc;padding:8px 12px;border-radius:8px;"><strong>Réponse client :</strong> ' + escapeHtml(d.client_response_notes) + '</div>'
+        if (d.client_response_notes) devisSection += '<div style="margin-top:8px;font-size:12px;color:#475569;background:#f8fafc;padding:8px 12px;border-radius:8px;"><strong>RÃ©ponse client :</strong> ' + escapeHtml(d.client_response_notes) + '</div>'
         if (d.admin_notes) devisSection += '<div style="margin-top:6px;font-size:12px;color:#64748b;background:#fffbeb;padding:8px 12px;border-radius:8px;"><strong>Notes admin :</strong> ' + escapeHtml(d.admin_notes) + '</div>'
         devisSection += '</div>'
       }
@@ -2845,19 +2848,19 @@ app.get('/api/order/invoice/:id', async (c) => {
     productRows += '<td style="text-align:right;font-weight:600;">' + fmtNum(subtotal) + ' FCFA</td>'
     productRows += '</tr>'
 
-    // Build summary rows — product only, devis if any, no TVA
+    // Build summary rows â€” product only, devis if any, no TVA
     let summaryRows = ''
     if (devisTotal > 0) {
       summaryRows += '<div class="row"><span>Climatiseur(s)</span><span>' + fmtNum(subtotal) + ' FCFA</span></div>'
-      summaryRows += '<div class="row"><span>Travaux suppl. (devis accepté)</span><span>' + fmtNum(devisTotal) + ' FCFA</span></div>'
+      summaryRows += '<div class="row"><span>Travaux suppl. (devis acceptÃ©)</span><span>' + fmtNum(devisTotal) + ' FCFA</span></div>'
     }
     summaryRows += '<div class="row total"><span>Total</span><span>' + fmtNum(totalFinal) + ' FCFA</span></div>'
 
-    // Modalité de paiement — flux contact commercial (pas de paiement en ligne)
+    // ModalitÃ© de paiement â€” flux contact commercial (pas de paiement en ligne)
     const paymentSection = '<div class="payment-info" style="background:#f0f9ff;border:1px solid rgba(0,119,182,0.2);">' +
-      '<div class="pay-icon" style="background:rgba(0,119,182,0.1);color:#0077b6;">📞</div>' +
-      '<div><div style="font-size:14px;font-weight:700;color:#0077b6;">Paiement à l\'installation</div>' +
-      '<div style="font-size:12px;color:#64748b;">Le paiement et les modalités sont arrangés directement avec l\'équipe MAASGA par email ou WhatsApp.</div></div>' +
+      '<div class="pay-icon" style="background:rgba(0,119,182,0.1);color:#0077b6;">ðŸ“ž</div>' +
+      '<div><div style="font-size:14px;font-weight:700;color:#0077b6;">Paiement Ã  l\'installation</div>' +
+      '<div style="font-size:12px;color:#64748b;">Le paiement et les modalitÃ©s sont arrangÃ©s directement avec l\'Ã©quipe MAASGA par email ou WhatsApp.</div></div>' +
       '</div>'
 
     // Build notes section
@@ -2906,7 +2909,7 @@ app.get('/api/order/invoice/:id', async (c) => {
       '<div style="display:flex;align-items:center;gap:16px;">\n' +
       '<img src="/logo-site.png" alt="MAASGA" style="height:64px;width:auto;border-radius:10px;object-fit:contain;" onerror="this.style.display=\'none\'" />\n' +
       '<div>\n' +
-      '<div style="font-size:26px;font-weight:800;letter-spacing:-0.5px;color:#fff;">MAASGA<span style="color:#00b4d8;"> ❄</span></div>\n' +
+      '<div style="font-size:26px;font-weight:800;letter-spacing:-0.5px;color:#fff;">MAASGA<span style="color:#00b4d8;"> â„</span></div>\n' +
       '<p style="font-size:13px;margin-top:4px;opacity:0.85;">Solutions Climatisation &amp; Froid</p>\n' +
       '<p style="font-size:12px;margin-top:2px;opacity:0.7;">Ouagadougou, Burkina Faso</p>\n' +
       '</div></div>\n' +
@@ -2918,17 +2921,17 @@ app.get('/api/order/invoice/:id', async (c) => {
       '</div>\n</div>\n' +
       '<div class="body">\n' +
       '<div class="parties">\n' +
-      '<div class="party"><h4>Émetteur</h4>\n' +
+      '<div class="party"><h4>Ã‰metteur</h4>\n' +
       '<p class="pname">MAASGA SARL</p>\n' +
-      '<p>Ouagadougou, Burkina Faso<br>Tél : +226 55 99 64 18<br>Email : maasgabf@gmail.com<br>IFU : ' + companyIFU + '</p></div>\n' +
+      '<p>Ouagadougou, Burkina Faso<br>TÃ©l : +226 55 99 64 18<br>Email : maasgabf@gmail.com<br>IFU : ' + companyIFU + '</p></div>\n' +
       '<div class="party"><h4>Client</h4>\n' +
       '<p class="pname">' + escapeHtml(order.client_name) + '</p>\n' +
-      '<p>Tél : ' + escapeHtml(order.client_phone) + '<br>' +
+      '<p>TÃ©l : ' + escapeHtml(order.client_phone) + '<br>' +
       (order.client_email ? 'Email : ' + escapeHtml(order.client_email) + '<br>' : '') +
       (order.quartier ? 'Quartier : ' + escapeHtml(order.quartier) + '<br>' : '') +
-      (order.client_id ? 'Réf. client : CLI-' + String(order.client_id).padStart(5, '0') : '') +
+      (order.client_id ? 'RÃ©f. client : CLI-' + String(order.client_id).padStart(5, '0') : '') +
       '</p></div>\n</div>\n' +
-      '<table>\n<thead><tr><th>Description</th><th style="text-align:center;">Qté</th><th style="text-align:right;">Prix unit.</th><th style="text-align:right;">Total</th></tr></thead>\n' +
+      '<table>\n<thead><tr><th>Description</th><th style="text-align:center;">QtÃ©</th><th style="text-align:right;">Prix unit.</th><th style="text-align:right;">Total</th></tr></thead>\n' +
       '<tbody>' + productRows + '</tbody>\n</table>\n' +
       '<div class="summary">' + summaryRows + '</div>\n' +
       paymentSection + '\n' +
@@ -2936,9 +2939,9 @@ app.get('/api/order/invoice/:id', async (c) => {
       notesSection +
       '</div>\n' +
       '<div class="footer">\n' +
-      '<p><strong>MAASGA SARL</strong> — Solutions Climatisation &amp; Froid · Ouagadougou, Burkina Faso</p>\n' +
-      '<p>Tél : +226 55 99 64 18 · Email : maasgabf@gmail.com · Web : maasga.com</p>\n' +
-      '<p style="margin-top:8px;">Merci pour votre confiance. Ce document fait office de facture pour la commande référencée ci-dessus.</p>\n' +
+      '<p><strong>MAASGA SARL</strong> â€” Solutions Climatisation &amp; Froid Â· Ouagadougou, Burkina Faso</p>\n' +
+      '<p>TÃ©l : +226 55 99 64 18 Â· Email : maasgabf@gmail.com Â· Web : maasga.com</p>\n' +
+      '<p style="margin-top:8px;">Merci pour votre confiance. Ce document fait office de facture pour la commande rÃ©fÃ©rencÃ©e ci-dessus.</p>\n' +
       '</div>\n</div>\n</body>\n</html>'
 
     return c.html(html)
@@ -2952,7 +2955,7 @@ app.get('/api/order/invoice/:id', async (c) => {
 
 
 // ============================================================
-// MAINTENANCE CONTRACT INVOICE (printable HTML → PDF via browser)
+// MAINTENANCE CONTRACT INVOICE (printable HTML â†’ PDF via browser)
 // ============================================================
 
 app.get('/api/maintenance/invoice/:id', async (c) => {
@@ -2965,7 +2968,7 @@ app.get('/api/maintenance/invoice/:id', async (c) => {
   if (!db) return c.text('Service indisponible', 503)
   const session = await getSession(db, sessionToken)
   if (!session) {
-    return c.redirect('/espace-client?error=' + encodeURIComponent('Veuillez vous connecter pour accéder à la facture.'))
+    return c.redirect('/espace-client?error=' + encodeURIComponent('Veuillez vous connecter pour accÃ©der Ã  la facture.'))
   }
 
   // Fetch contract
@@ -2977,7 +2980,7 @@ app.get('/api/maintenance/invoice/:id', async (c) => {
   // Verify ownership via client_phone
   const client = await db.prepare('SELECT * FROM clients WHERE id = ?').bind(session.clientId).first() as any
   if (!client || client.phone !== contract.client_phone) {
-    return c.text('Accès non autorisé', 403)
+    return c.text('AccÃ¨s non autorisÃ©', 403)
   }
 
   // Fetch related visits
@@ -2986,13 +2989,13 @@ app.get('/api/maintenance/invoice/:id', async (c) => {
   ).bind(contractId).all()
   const visitRows = visits?.results || []
 
-  // Pas de paiement en ligne — le paiement se fait directement avec l'équipe MAASGA
+  // Pas de paiement en ligne â€” le paiement se fait directement avec l'Ã©quipe MAASGA
   const payment: any = null
   const payMethodLabels: Record<string, string> = {}
 
   const planLabels: Record<string, string> = { trimestriel: 'Trimestriel (3 mois)', semestriel: 'Semestriel (6 mois)', annuel: 'Annuel Premium (12 mois)', sav_gratuit: 'SAV Gratuit' }
-  const statusLabels: Record<string, string> = { en_attente: 'En attente', contacte: 'Contacté', actif: 'Actif', expire: 'Expiré', annule: 'Annulé' }
-  const visitStatusLabels: Record<string, string> = { planifiee: 'Planifiée', confirmee: 'Confirmée', effectuee: 'Effectuée', annulee: 'Annulée' }
+  const statusLabels: Record<string, string> = { en_attente: 'En attente', contacte: 'ContactÃ©', actif: 'Actif', expire: 'ExpirÃ©', annule: 'AnnulÃ©' }
+  const visitStatusLabels: Record<string, string> = { planifiee: 'PlanifiÃ©e', confirmee: 'ConfirmÃ©e', effectuee: 'EffectuÃ©e', annulee: 'AnnulÃ©e' }
 
   const invoiceDate = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
   const invoiceNum = `MAASGA-MC-${String(contractId).padStart(5, '0')}`
@@ -3005,18 +3008,18 @@ app.get('/api/maintenance/invoice/:id', async (c) => {
   } catch (_) {}
 
   const fmtDate = (d: string) => {
-    if (!d) return '—'
+    if (!d) return 'â€”'
     try { return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) } catch { return d }
   }
 
   const visitRowsHtml = visitRows.map((v: any) => `
     <tr>
       <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155;">${fmtDate(v.visit_date)}</td>
-      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155;">${v.visit_type === 'preventive' ? 'Préventive' : v.visit_type}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155;">${v.visit_type === 'preventive' ? 'PrÃ©ventive' : v.visit_type}</td>
       <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:13px;text-align:center;">
         <span style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;${v.status === 'effectuee' ? 'background:rgba(22,163,74,0.1);color:#16a34a;' : v.status === 'annulee' ? 'background:rgba(239,68,68,0.1);color:#ef4444;' : 'background:rgba(217,119,6,0.1);color:#d97706;'}">${visitStatusLabels[v.status] || v.status}</span>
       </td>
-      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#64748b;">${v.technician || '—'}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#64748b;">${v.technician || 'â€”'}</td>
     </tr>
   `).join('')
 
@@ -3025,7 +3028,7 @@ app.get('/api/maintenance/invoice/:id', async (c) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Facture ${invoiceNum} — MAASGA</title>
+  <title>Facture ${invoiceNum} â€” MAASGA</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -3079,7 +3082,7 @@ app.get('/api/maintenance/invoice/:id', async (c) => {
     <div class="header">
       <div>
         <img src="${SITE_URL}/logo-site.png" alt="MAASGA Logo" style="height:60px;width:auto;border-radius:10px;margin-bottom:8px;display:block;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
-        <div class="logo" style="display:none;">MAASGA<span> ❄️</span></div>
+        <div class="logo" style="display:none;">MAASGA<span> â„ï¸</span></div>
         <p style="font-size:13px;margin-top:6px;opacity:0.85;">Solutions Climatisation & Maintenance</p>
       </div>
       <div class="inv-info">
@@ -3091,20 +3094,20 @@ app.get('/api/maintenance/invoice/:id', async (c) => {
     <div class="body">
       <div class="parties">
         <div class="party">
-          <h4>Émetteur</h4>
+          <h4>Ã‰metteur</h4>
           <p class="name">MAASGA SARL</p>
           <p>Ouagadougou, Burkina Faso<br>
-          Tél : +226 55 99 64 18<br>
+          TÃ©l : +226 55 99 64 18<br>
           Email : maasgabf@gmail.com<br>
           IFU : ${companyIFU}</p>
         </div>
         <div class="party">
           <h4>Client</h4>
           <p class="name">${escapeHtml(contract.client_name)}</p>
-          <p>Tél : ${escapeHtml(contract.client_phone)}<br>
+          <p>TÃ©l : ${escapeHtml(contract.client_phone)}<br>
           ${client.email ? 'Email : ' + escapeHtml(client.email) + '<br>' : ''}
           ${client.quartier ? 'Quartier : ' + escapeHtml(client.quartier) + '<br>' : ''}
-          ${client.id ? 'Réf. client : CLI-' + String(client.id).padStart(5, '0') : ''}</p>
+          ${client.id ? 'RÃ©f. client : CLI-' + String(client.id).padStart(5, '0') : ''}</p>
         </div>
       </div>
 
@@ -3118,17 +3121,17 @@ app.get('/api/maintenance/invoice/:id', async (c) => {
           <div class="value status" style="${contract.status === 'actif' ? 'background:rgba(22,163,74,0.1);color:#16a34a;' : 'background:rgba(148,163,184,0.1);color:#94a3b8;'}">${statusLabels[contract.status] || contract.status}</div>
         </div>
         <div class="detail-card">
-          <div class="label">Période de couverture</div>
-          <div class="value" style="font-size:14px;">${fmtDate(contract.start_date)} → ${fmtDate(contract.end_date)}</div>
+          <div class="label">PÃ©riode de couverture</div>
+          <div class="value" style="font-size:14px;">${fmtDate(contract.start_date)} â†’ ${fmtDate(contract.end_date)}</div>
         </div>
         <div class="detail-card">
           <div class="label">Visites incluses</div>
-          <div class="value">${contract.completed_visits} / ${contract.total_visits} effectuée(s)</div>
+          <div class="value">${contract.completed_visits} / ${contract.total_visits} effectuÃ©e(s)</div>
         </div>
       </div>
 
       ${visitRows.length > 0 ? `
-      <h3 style="font-size:15px;font-weight:700;color:#03045e;margin-bottom:14px;">📅 Planning des visites</h3>
+      <h3 style="font-size:15px;font-weight:700;color:#03045e;margin-bottom:14px;">ðŸ“… Planning des visites</h3>
       <table>
         <thead>
           <tr>
@@ -3145,7 +3148,7 @@ app.get('/api/maintenance/invoice/:id', async (c) => {
       <div class="total-section">
         <div>
           <div class="total-label">Montant total</div>
-          <div style="font-size:12px;color:#94a3b8;margin-top:2px;">Contrat de maintenance — ${planLabels[contract.plan_type] || contract.plan_type}</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:2px;">Contrat de maintenance â€” ${planLabels[contract.plan_type] || contract.plan_type}</div>
         </div>
         <div>
           <span class="total-amount">${contract.plan_price.toLocaleString()}</span>
@@ -3155,26 +3158,26 @@ app.get('/api/maintenance/invoice/:id', async (c) => {
 
       ${payment ? `
       <div class="payment-info">
-        <div class="pay-icon">✓</div>
+        <div class="pay-icon">âœ“</div>
         <div>
-          <div style="font-size:14px;font-weight:700;color:#16a34a;">Paiement ${payment.status === 'completed' ? 'confirmé' : payment.status === 'pending' ? 'en attente' : payment.status}</div>
-          <div style="font-size:12px;color:#64748b;">${payMethodLabels[payment.method] || payment.method || 'Non spécifié'} · ${fmtDate(payment.created_at)}${payment.provider_ref ? ' · Réf: ' + payment.provider_ref : ''}</div>
+          <div style="font-size:14px;font-weight:700;color:#16a34a;">Paiement ${payment.status === 'completed' ? 'confirmÃ©' : payment.status === 'pending' ? 'en attente' : payment.status}</div>
+          <div style="font-size:12px;color:#64748b;">${payMethodLabels[payment.method] || payment.method || 'Non spÃ©cifiÃ©'} Â· ${fmtDate(payment.created_at)}${payment.provider_ref ? ' Â· RÃ©f: ' + payment.provider_ref : ''}</div>
         </div>
       </div>
       ` : `
       <div class="payment-info" style="background:#fffbeb;border-color:rgba(217,119,6,0.15);">
-        <div class="pay-icon" style="background:rgba(217,119,6,0.1);color:#d97706;">⏳</div>
+        <div class="pay-icon" style="background:rgba(217,119,6,0.1);color:#d97706;">â³</div>
         <div>
           <div style="font-size:14px;font-weight:700;color:#d97706;">Paiement en attente de confirmation</div>
-          <div style="font-size:12px;color:#64748b;">Le paiement sera confirmé après vérification par notre équipe.</div>
+          <div style="font-size:12px;color:#64748b;">Le paiement sera confirmÃ© aprÃ¨s vÃ©rification par notre Ã©quipe.</div>
         </div>
       </div>
       `}
     </div>
     <div class="footer">
-      <p><strong>MAASGA SARL</strong> — Solutions Climatisation & Maintenance · Ouagadougou, Burkina Faso</p>
-      <p>Tél : +226 55 99 64 18 · Email : maasgabf@gmail.com · Web : maasga.com</p>
-      <p style="margin-top:8px;">Ce document fait office de facture pour la souscription au contrat de maintenance référencé ci-dessus.</p>
+      <p><strong>MAASGA SARL</strong> â€” Solutions Climatisation & Maintenance Â· Ouagadougou, Burkina Faso</p>
+      <p>TÃ©l : +226 55 99 64 18 Â· Email : maasgabf@gmail.com Â· Web : maasga.com</p>
+      <p style="margin-top:8px;">Ce document fait office de facture pour la souscription au contrat de maintenance rÃ©fÃ©rencÃ© ci-dessus.</p>
     </div>
   </div>
 </body>
@@ -3192,7 +3195,7 @@ app.post('/api/order/create', async (c) => {
   const ipAddr = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
   const rl = rateLimit(`order:${ipAddr}`, 10, 60 * 60 * 1000)
   if (!rl.allowed) {
-    return c.json({ error: 'Trop de commandes. Réessayez plus tard.' }, 429)
+    return c.json({ error: 'Trop de commandes. RÃ©essayez plus tard.' }, 429)
   }
 
   try {
@@ -3221,12 +3224,12 @@ app.post('/api/order/create', async (c) => {
 
     // Validation
     if (!orderData.client_name || !orderData.client_phone) {
-      return c.json({ error: 'Nom et téléphone obligatoires' }, 400)
+      return c.json({ error: 'Nom et tÃ©lÃ©phone obligatoires' }, 400)
     }
 
     // Validate phone
     if (!isValidPhone(str(body['client_phone']).trim())) {
-      return c.json({ error: 'Numéro de téléphone invalide (8 chiffres requis)' }, 400)
+      return c.json({ error: 'NumÃ©ro de tÃ©lÃ©phone invalide (8 chiffres requis)' }, 400)
     }
 
     // Validate email if provided
@@ -3234,7 +3237,7 @@ app.post('/api/order/create', async (c) => {
       return c.json({ error: 'Adresse email invalide' }, 400)
     }
 
-    // Vérifier le stock si un produit est spécifié
+    // VÃ©rifier le stock si un produit est spÃ©cifiÃ©
     if (orderData.product_id) {
       const product = products.find((p: any) => p.id === orderData.product_id)
       if (!product) {
@@ -3245,9 +3248,9 @@ app.post('/api/order/create', async (c) => {
       }
     }
 
-    // Écrire d'abord en D1 pour obtenir l'identifiant AUTOINCREMENT réel : le
-    // Math.max sur le cache mémoire produisait des id déjà pris en base (cache
-    // partiel, un par isolate), donc deux commandes pouvaient partager un numéro.
+    // Ã‰crire d'abord en D1 pour obtenir l'identifiant AUTOINCREMENT rÃ©el : le
+    // Math.max sur le cache mÃ©moire produisait des id dÃ©jÃ  pris en base (cache
+    // partiel, un par isolate), donc deux commandes pouvaient partager un numÃ©ro.
     let orderId = 0
     if (db) {
       try {
@@ -3255,7 +3258,7 @@ app.post('/api/order/create', async (c) => {
         orderId = Number(res?.meta?.last_row_id || 0)
       } catch (error) {
         console.error('Erreur sauvegarde D1 order:', error)
-        return c.json({ error: 'Enregistrement de la commande impossible. Réessayez.' }, 500)
+        return c.json({ error: 'Enregistrement de la commande impossible. RÃ©essayez.' }, 500)
       }
     }
     if (!orderId) orderId = Math.max(...orders.map(o => o.id), 0) + 1
@@ -3268,7 +3271,7 @@ app.post('/api/order/create', async (c) => {
     orders.push(newOrder)
 
     if (db) {
-      // Enregistrer/mettre à jour le client dans D1
+      // Enregistrer/mettre Ã  jour le client dans D1
       try {
         await createClient(db, {
           name: orderData.client_name,
@@ -3297,7 +3300,7 @@ app.post('/api/order/create', async (c) => {
           await logActivity(db, {
             clientId: session.clientId,
             clientPhone: orderData.client_phone,
-            action: 'Nouvelle commande passée',
+            action: 'Nouvelle commande passÃ©e',
             category: 'order',
             details: `Commande #${newOrder.id}` + (orderData.product_id ? ` - Produit #${orderData.product_id}` : ''),
             ip: c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || ''
@@ -3308,17 +3311,17 @@ app.post('/api/order/create', async (c) => {
 
     // Notifier l'admin de la nouvelle commande
     const productName = orderData.product_id ? (products.find((p: any) => p.id === orderData.product_id)?.name || `#${orderData.product_id}`) : 'N/A'
-    await notifyAdmin(c.env, 'order', `${orderData.client_name} — Commande #${newOrder.id}${orderData.product_id ? ' (' + productName + ')' : ''} — ${orderData.total_price ? orderData.total_price.toLocaleString() + ' FCFA' : 'Devis'}. Tél: ${orderData.client_phone}`)
+    await notifyAdmin(c.env, 'order', `${orderData.client_name} â€” Commande #${newOrder.id}${orderData.product_id ? ' (' + productName + ')' : ''} â€” ${orderData.total_price ? orderData.total_price.toLocaleString() + ' FCFA' : 'Devis'}. TÃ©l: ${orderData.client_phone}`)
 
     return c.json({ success: true, order: newOrder, orderId: newOrder.id }, 201)
   } catch (error) {
     console.error('Erreur /api/order/create:', error)
-    return c.json({ error: 'Erreur création commande' }, 500)
+    return c.json({ error: 'Erreur crÃ©ation commande' }, 500)
   }
 })
 
 // ============================================================
-// ORDER FLOW — Client actions (delivery confirmation, devis, cancel)
+// ORDER FLOW â€” Client actions (delivery confirmation, devis, cancel)
 // ============================================================
 
 // Client confirms delivery reception
@@ -3328,7 +3331,7 @@ app.post('/api/order/confirm-delivery', async (c) => {
 
   const sessionToken = getCookie(c, 'maasga_session') || ''
   const session = sessionToken ? await getSession(c.env.DB, sessionToken) : null
-  if (!session) return c.json({ error: 'Non connecté' }, 401)
+  if (!session) return c.json({ error: 'Non connectÃ©' }, 401)
 
   const body = await c.req.json().catch(() => null)
   const orderId = parseInt((body as any)?.order_id || '0')
@@ -3336,14 +3339,14 @@ app.post('/api/order/confirm-delivery', async (c) => {
 
   const order = await db.prepare('SELECT * FROM orders WHERE id = ? AND client_id = ?').bind(orderId, session.clientId).first() as any
   if (!order) return c.json({ error: 'Commande introuvable' }, 404)
-  if (order.status !== 'en_livraison') return c.json({ error: 'Cette commande ne peut pas être confirmée comme livrée' }, 400)
+  if (order.status !== 'en_livraison') return c.json({ error: 'Cette commande ne peut pas Ãªtre confirmÃ©e comme livrÃ©e' }, 400)
 
   const now = new Date().toISOString()
   // Pas de colonne delivery_confirmed_by : la table orders reconstruite par la
-  // migration 0036 ne la contient plus. L'information « confirmé par le client »
-  // est tracée dans notes + le journal d'activité.
+  // migration 0036 ne la contient plus. L'information Â« confirmÃ© par le client Â»
+  // est tracÃ©e dans notes + le journal d'activitÃ©.
   await db.prepare("UPDATE orders SET status = ?, delivered_at = ?, notes = COALESCE(notes, '') || ?, updated_at = ? WHERE id = ?")
-    .bind('livre', now, ' | Réception confirmée par le client le ' + now, now, orderId).run()
+    .bind('livre', now, ' | RÃ©ception confirmÃ©e par le client le ' + now, now, orderId).run()
 
   const memOrder = orders.find(o => o.id === orderId)
   if (memOrder) memOrder.status = 'livre' as any
@@ -3351,11 +3354,11 @@ app.post('/api/order/confirm-delivery', async (c) => {
   await logActivity(db, {
     clientId: session.clientId,
     clientPhone: order.client_phone,
-    action: `Livraison confirmée — Commande #${orderId}`,
+    action: `Livraison confirmÃ©e â€” Commande #${orderId}`,
     category: 'order',
     ip: c.req.header('cf-connecting-ip') || ''
   })
-  await notifyAdmin(c.env, 'order', `Livraison confirmée par client — Commande #${orderId} — ${order.client_name}`)
+  await notifyAdmin(c.env, 'order', `Livraison confirmÃ©e par client â€” Commande #${orderId} â€” ${order.client_name}`)
 
   return c.json({ success: true })
 })
@@ -3367,7 +3370,7 @@ app.post('/api/order/devis/validate', async (c) => {
 
   const sessionToken = getCookie(c, 'maasga_session') || ''
   const session = sessionToken ? await getSession(c.env.DB, sessionToken) : null
-  if (!session) return c.json({ error: 'Non connecté' }, 401)
+  if (!session) return c.json({ error: 'Non connectÃ©' }, 401)
 
   const body = await c.req.json().catch(() => null)
   const devisId = parseInt((body as any)?.devis_id || '0')
@@ -3375,12 +3378,12 @@ app.post('/api/order/devis/validate', async (c) => {
 
   const devis = await db.prepare('SELECT od.*, o.client_id FROM order_devis od JOIN orders o ON od.order_id = o.id WHERE od.id = ? AND o.client_id = ?').bind(devisId, session.clientId).first() as any
   if (!devis) return c.json({ error: 'Devis introuvable' }, 404)
-  if (devis.status !== 'sent' && devis.status !== 'pending') return c.json({ error: 'Ce devis ne peut plus être validé' }, 400)
+  if (devis.status !== 'sent' && devis.status !== 'pending') return c.json({ error: 'Ce devis ne peut plus Ãªtre validÃ©' }, 400)
 
   const now = new Date().toISOString()
   await db.prepare('UPDATE order_devis SET status = ?, validated_at = ?, updated_at = ? WHERE id = ?')
     .bind('validated', now, now, devisId).run()
-  // Devis accepté = transaction confirmée avec le client (statut 0036)
+  // Devis acceptÃ© = transaction confirmÃ©e avec le client (statut 0036)
   await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?')
     .bind('confirme', now, devis.order_id).run()
 
@@ -3390,11 +3393,11 @@ app.post('/api/order/devis/validate', async (c) => {
   await logActivity(db, {
     clientId: session.clientId,
     clientPhone: devis.client_phone || '',
-    action: `Devis validé — Commande #${devis.order_id}`,
+    action: `Devis validÃ© â€” Commande #${devis.order_id}`,
     category: 'order',
     ip: c.req.header('cf-connecting-ip') || ''
   })
-  await notifyAdmin(c.env, 'order', `Devis #${devisId} validé par client — Commande #${devis.order_id}`)
+  await notifyAdmin(c.env, 'order', `Devis #${devisId} validÃ© par client â€” Commande #${devis.order_id}`)
 
   // Email admin via Brevo
   try {
@@ -3435,7 +3438,7 @@ app.post('/api/order/devis/refuse', async (c) => {
 
   const sessionToken = getCookie(c, 'maasga_session') || ''
   const session = sessionToken ? await getSession(c.env.DB, sessionToken) : null
-  if (!session) return c.json({ error: 'Non connecté' }, 401)
+  if (!session) return c.json({ error: 'Non connectÃ©' }, 401)
 
   const body = await c.req.json().catch(() => null)
   const devisId = parseInt((body as any)?.devis_id || '0')
@@ -3444,23 +3447,23 @@ app.post('/api/order/devis/refuse', async (c) => {
 
   const devis = await db.prepare('SELECT od.*, o.client_id FROM order_devis od JOIN orders o ON od.order_id = o.id WHERE od.id = ? AND o.client_id = ?').bind(devisId, session.clientId).first() as any
   if (!devis) return c.json({ error: 'Devis introuvable' }, 404)
-  if (devis.status !== 'sent' && devis.status !== 'pending') return c.json({ error: 'Ce devis ne peut plus être refusé' }, 400)
+  if (devis.status !== 'sent' && devis.status !== 'pending') return c.json({ error: 'Ce devis ne peut plus Ãªtre refusÃ©' }, 400)
 
   const now = new Date().toISOString()
   await db.prepare('UPDATE order_devis SET status = ?, refused_at = ?, client_response_notes = ?, updated_at = ? WHERE id = ?')
     .bind('refused', now, reason, now, devisId).run()
-  // Refus de devis : le statut de la commande ne bouge pas — il n'existe plus de
-  // valeur « devis_refuse » depuis la migration 0036, c'est order_devis.status qui
+  // Refus de devis : le statut de la commande ne bouge pas â€” il n'existe plus de
+  // valeur Â« devis_refuse Â» depuis la migration 0036, c'est order_devis.status qui
   // porte l'information. L'admin relance le client depuis la fiche commande.
 
   await logActivity(db, {
     clientId: session.clientId,
     clientPhone: devis.client_phone || '',
-    action: `Devis refusé — Commande #${devis.order_id}${reason ? ' — ' + reason : ''}`,
+    action: `Devis refusÃ© â€” Commande #${devis.order_id}${reason ? ' â€” ' + reason : ''}`,
     category: 'order',
     ip: c.req.header('cf-connecting-ip') || ''
   })
-  await notifyAdmin(c.env, 'order', `Devis #${devisId} refusé par client — Commande #${devis.order_id}${reason ? ' — Raison: ' + reason : ''}`)
+  await notifyAdmin(c.env, 'order', `Devis #${devisId} refusÃ© par client â€” Commande #${devis.order_id}${reason ? ' â€” Raison: ' + reason : ''}`)
 
   // Email admin via Brevo
   try {
@@ -3492,12 +3495,12 @@ app.post('/api/order/devis/refuse', async (c) => {
   return c.json({ success: true })
 })
 
-// Note : l'ancien endpoint POST /api/order/cancel-installation a été retiré.
+// Note : l'ancien endpoint POST /api/order/cancel-installation a Ã©tÃ© retirÃ©.
 // Son garde-fou n'acceptait que validation_terrain / devis_en_attente /
-// devis_valide / devis_refuse, statuts supprimés par la migration 0036 : aucune
-// commande ne pouvait plus le franchir. Le flux simplifié ne distingue plus la
-// livraison de l'installation (statut unique 'livre'), donc « annuler seulement
-// l'installation » n'a plus de sens ; l'annulation complète passe par
+// devis_valide / devis_refuse, statuts supprimÃ©s par la migration 0036 : aucune
+// commande ne pouvait plus le franchir. Le flux simplifiÃ© ne distingue plus la
+// livraison de l'installation (statut unique 'livre'), donc Â« annuler seulement
+// l'installation Â» n'a plus de sens ; l'annulation complÃ¨te passe par
 // /api/order/cancel-order.
 
 // Client cancels the entire order (refund request)
@@ -3507,7 +3510,7 @@ app.post('/api/order/cancel-order', async (c) => {
 
   const sessionToken = getCookie(c, 'maasga_session') || ''
   const session = sessionToken ? await getSession(c.env.DB, sessionToken) : null
-  if (!session) return c.json({ error: 'Non connecté' }, 401)
+  if (!session) return c.json({ error: 'Non connectÃ©' }, 401)
 
   const body = await c.req.json().catch(() => null)
   const orderId = parseInt((body as any)?.order_id || '0')
@@ -3517,29 +3520,29 @@ app.post('/api/order/cancel-order', async (c) => {
   const order = await db.prepare('SELECT * FROM orders WHERE id = ? AND client_id = ?').bind(orderId, session.clientId).first() as any
   if (!order) return c.json({ error: 'Commande introuvable' }, 404)
 
-  // Statuts annulables — alignés sur le CHECK de la migration 0036
+  // Statuts annulables â€” alignÃ©s sur le CHECK de la migration 0036
   const cancellableStatuses = ['en_attente', 'contacte', 'confirme']
-  if (!cancellableStatuses.includes(order.status)) return c.json({ error: 'Cette commande ne peut plus être annulée' }, 400)
+  if (!cancellableStatuses.includes(order.status)) return c.json({ error: 'Cette commande ne peut plus Ãªtre annulÃ©e' }, 400)
 
   const now = new Date().toISOString()
   await db.prepare(`UPDATE orders SET status = ?, notes = COALESCE(notes, '') || ?, updated_at = ? WHERE id = ?`)
-    .bind('annule', ' | Annulée par client le ' + now + (reason ? ' — ' + reason : ''), now, orderId).run()
+    .bind('annule', ' | AnnulÃ©e par client le ' + now + (reason ? ' â€” ' + reason : ''), now, orderId).run()
 
   const memOrder = orders.find(o => o.id === orderId)
   if (memOrder) memOrder.status = 'annule' as any
 
-  // Pas de paiement en ligne — rien à rembourser automatiquement
+  // Pas de paiement en ligne â€” rien Ã  rembourser automatiquement
 
   await logActivity(db, {
     clientId: session.clientId,
     clientPhone: order.client_phone,
-    action: `Commande annulée — #${orderId}${reason ? ' — ' + reason : ''}`,
+    action: `Commande annulÃ©e â€” #${orderId}${reason ? ' â€” ' + reason : ''}`,
     category: 'order',
     ip: c.req.header('cf-connecting-ip') || ''
   })
-  await notifyAdmin(c.env, 'order', `⚠️ Commande #${orderId} annulée par client — ${order.client_name} — Remboursement à traiter${reason ? ' — Raison: ' + reason : ''}`)
+  await notifyAdmin(c.env, 'order', `âš ï¸ Commande #${orderId} annulÃ©e par client â€” ${order.client_name} â€” Remboursement Ã  traiter${reason ? ' â€” Raison: ' + reason : ''}`)
 
-  return c.json({ success: true, message: 'Commande annulée. Le remboursement sera traité sous 48h.' })
+  return c.json({ success: true, message: 'Commande annulÃ©e. Le remboursement sera traitÃ© sous 48h.' })
 })
 
 // Get order devis for a client
@@ -3549,7 +3552,7 @@ app.get('/api/order/:orderId/devis', async (c) => {
 
   const sessionToken = getCookie(c, 'maasga_session') || ''
   const session = sessionToken ? await getSession(c.env.DB, sessionToken) : null
-  if (!session) return c.json({ error: 'Non connecté' }, 401)
+  if (!session) return c.json({ error: 'Non connectÃ©' }, 401)
 
   const orderId = parseInt(c.req.param('orderId') || '0')
   if (!orderId) return c.json({ error: 'ID commande manquant' }, 400)
@@ -3594,7 +3597,7 @@ app.get('/api/order/:orderId/devis', async (c) => {
 })
 
 // ============================================================
-// ADMIN — Order devis management
+// ADMIN â€” Order devis management
 // ============================================================
 
 // Admin creates a devis for an order
@@ -3604,7 +3607,7 @@ app.post('/api/admin/order/create-devis', adminAuth, async (c) => {
 
   const body = await c.req.parseBody()
   const orderId = parseInt(body['order_id'] as string || '0')
-  if (!orderId) return c.redirect('/admin/commandes?error=Données manquantes')
+  if (!orderId) return c.redirect('/admin/commandes?error=DonnÃ©es manquantes')
 
   const order = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(orderId).first() as any
   if (!order) return c.redirect('/admin/commandes?error=Commande introuvable')
@@ -3654,8 +3657,8 @@ app.post('/api/admin/order/create-devis', adminAuth, async (c) => {
       now, now
     ).run()
 
-    // Devis envoyé au client : la commande passe à « contacte » (le suivi fin du
-    // devis vit dans order_devis.status — 'devis_en_attente' n'existe plus depuis 0036)
+    // Devis envoyÃ© au client : la commande passe Ã  Â« contacte Â» (le suivi fin du
+    // devis vit dans order_devis.status â€” 'devis_en_attente' n'existe plus depuis 0036)
     await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?')
       .bind('contacte', now, orderId).run()
     const memOrder = orders.find(o => o.id === orderId)
@@ -3667,7 +3670,7 @@ app.post('/api/admin/order/create-devis', adminAuth, async (c) => {
         const brevoKey = c.env.BREVO_API_KEY
         if (brevoKey) {
           const climLine = climatiseurNom ? `<tr><td>Climatiseur</td><td>${escapeHtml(climatiseurNom)}</td><td style="text-align:right">${climatiseurPrix.toLocaleString()} FCFA</td></tr>` : ''
-          const mdoLine = mainOeuvrePrix > 0 ? `<tr><td>Main d'œuvre / Installation</td><td></td><td style="text-align:right">${mainOeuvrePrix.toLocaleString()} FCFA</td></tr>` : ''
+          const mdoLine = mainOeuvrePrix > 0 ? `<tr><td>Main d'Å“uvre / Installation</td><td></td><td style="text-align:right">${mainOeuvrePrix.toLocaleString()} FCFA</td></tr>` : ''
           const fLines = fournitures.map(f => `<tr><td>${f.nom}</td><td></td><td style="text-align:right">${f.prix.toLocaleString()} FCFA</td></tr>`).join('')
           await fetch('https://api.brevo.com/v3/smtp/email', {
             method: 'POST',
@@ -3675,19 +3678,19 @@ app.post('/api/admin/order/create-devis', adminAuth, async (c) => {
             body: JSON.stringify({
               sender: { name: 'MAASGA', email: 'maasgabf@gmail.com' },
               to: [{ email: order.client_email, name: order.client_name }],
-              subject: `Devis d'installation — Commande #${orderId} — MAASGA`,
+              subject: `Devis d'installation â€” Commande #${orderId} â€” MAASGA`,
               htmlContent: `<html><body style="font-family:Arial,sans-serif;padding:20px;max-width:600px;margin:0 auto;">
-                <h2 style="color:#d97706;">❄ Devis d'installation disponible</h2>
+                <h2 style="color:#d97706;">â„ Devis d'installation disponible</h2>
                 <p>Bonjour ${order.client_name},</p>
-                <p>Un devis d'installation a été préparé pour votre commande #${orderId}.</p>
+                <p>Un devis d'installation a Ã©tÃ© prÃ©parÃ© pour votre commande #${orderId}.</p>
                 ${motif ? `<p><strong>Motif :</strong> ${escapeHtml(motif)}</p>` : ''}
                 ${messageClient ? `<p style="background:#f0f9ff;border-left:4px solid #0284c7;padding:12px;">${escapeHtml(messageClient)}</p>` : ''}
                 <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">${climLine}${mdoLine}${fLines}
                   <tr style="border-top:2px solid #e5e7eb;"><td colspan="2" style="padding-top:8px;font-weight:700;">TOTAL</td><td style="text-align:right;font-weight:800;color:#d97706;font-size:18px;">${totalAmount.toLocaleString()} FCFA</td></tr>
                 </table>
-                <p>Connectez-vous à votre espace client pour valider ou refuser ce devis :</p>
+                <p>Connectez-vous Ã  votre espace client pour valider ou refuser ce devis :</p>
                 <p><a href="https://maasga.com/espace-client" style="display:inline-block;background:#d97706;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold;">Voir et valider le devis</a></p>
-                <p style="color:#6b7280;font-size:12px;">MAASGA SARL — Solutions Climatisation & Maintenance — Ouagadougou, Burkina Faso</p>
+                <p style="color:#6b7280;font-size:12px;">MAASGA SARL â€” Solutions Climatisation & Maintenance â€” Ouagadougou, Burkina Faso</p>
               </body></html>`
             })
           })
@@ -3695,28 +3698,28 @@ app.post('/api/admin/order/create-devis', adminAuth, async (c) => {
       } catch(emailErr) { console.error('Erreur envoi email devis:', emailErr) }
     }
 
-    await notifyAdmin(c.env, 'order', `Devis d'installation créé — Commande #${orderId} — ${order.client_name} (${order.client_phone}) — ${totalAmount.toLocaleString()} FCFA`)
+    await notifyAdmin(c.env, 'order', `Devis d'installation crÃ©Ã© â€” Commande #${orderId} â€” ${order.client_name} (${order.client_phone}) â€” ${totalAmount.toLocaleString()} FCFA`)
 
     return c.redirect('/admin/commandes?success=devis_created')
   } catch(e: any) {
     console.error('Create order devis error:', e)
-    const errMsg = encodeURIComponent(String(e?.message || 'Erreur lors de la création du devis').substring(0, 150))
+    const errMsg = encodeURIComponent(String(e?.message || 'Erreur lors de la crÃ©ation du devis').substring(0, 150))
     return c.redirect(`/admin/commandes?error=${errMsg}`)
   }
 })
 
-// Note : l'ancien endpoint POST /api/admin/order/terrain-validation a été retiré.
-// Il écrivait orders.status = 'validation_terrain', valeur supprimée par la
+// Note : l'ancien endpoint POST /api/admin/order/terrain-validation a Ã©tÃ© retirÃ©.
+// Il Ã©crivait orders.status = 'validation_terrain', valeur supprimÃ©e par la
 // migration 0036 (le CHECK n'accepte plus que en_attente/contacte/confirme/
 // en_livraison/livre/annule), donc chaque appel violait la contrainte. Aucune vue
-// admin ne le référençait : l'étape « validation terrain » est couverte par le
+// admin ne le rÃ©fÃ©renÃ§ait : l'Ã©tape Â« validation terrain Â» est couverte par le
 // statut 'contacte' et par les RDV.
 
 // ============================================================
 // ADMIN ROUTES
 // ============================================================
 
-// Crée les tables essentielles si elles n'existent pas (garde-fou DB vide en dev local)
+// CrÃ©e les tables essentielles si elles n'existent pas (garde-fou DB vide en dev local)
 async function ensureCoreTables(db: any): Promise<void> {
   try {
     await db.batch([
@@ -3777,14 +3780,14 @@ async function ensureCoreTables(db: any): Promise<void> {
   } catch(e) {
     console.warn('ensureCoreTables batch warning:', (e as any)?.message)
   }
-  // Corrections défensives : si maintenance_requests a client_name/client_phone au lieu de name/phone
+  // Corrections dÃ©fensives : si maintenance_requests a client_name/client_phone au lieu de name/phone
   try { await db.prepare('ALTER TABLE maintenance_requests ADD COLUMN name TEXT NOT NULL DEFAULT ""').run() } catch(_) {}
   try { await db.prepare('ALTER TABLE maintenance_requests ADD COLUMN phone TEXT NOT NULL DEFAULT ""').run() } catch(_) {}
-  // Corrections défensives : si maintenance_requests a name/phone mais pas client_name (alias pour le code)
-  // La requête utilise 'name as client_name' donc name doit exister — on ne fait rien de plus
+  // Corrections dÃ©fensives : si maintenance_requests a name/phone mais pas client_name (alias pour le code)
+  // La requÃªte utilise 'name as client_name' donc name doit exister â€” on ne fait rien de plus
 }
 
-// Recharge toutes les données depuis D1 dans les tableaux mémoire (évite reset au deploy)
+// Recharge toutes les donnÃ©es depuis D1 dans les tableaux mÃ©moire (Ã©vite reset au deploy)
 const refreshAdminCache = async (c: any, next: any) => {
   const db = c.env.DB
   if (db) {
@@ -3913,17 +3916,17 @@ const AdminLoginPage = ({ error }: { error?: string } = {}) => (
               <i class="fas fa-snowflake text-white text-2xl"></i>
             </div>
             <h1 class="text-2xl font-bold text-gray-900">MAASGA Admin</h1>
-            <p class="text-sm text-gray-500 mt-1">Accès back-office sécurisé</p>
+            <p class="text-sm text-gray-500 mt-1">AccÃ¨s back-office sÃ©curisÃ©</p>
           </div>
           {error && (
             <div class="mb-4 rounded-xl p-3 bg-red-50 border border-red-200 flex items-center space-x-2">
               <i class="fas fa-exclamation-circle text-red-500"></i>
               <span class="text-sm text-red-700 font-medium">
                 {error === '1' ? 'Identifiant ou mot de passe incorrect.' :
-                 error === 'logged_out' ? 'Session terminée avec succès.' :
-                 error === 'session_expired' ? 'Session expirée ou révoquée. Reconnectez-vous.' :
-                 error === 'ratelimit' ? 'Trop de tentatives. Réessayez dans 15 minutes.' :
-                 error === 'no_init' ? "Aucun mot de passe admin configuré. Contactez l'administrateur." :
+                 error === 'logged_out' ? 'Session terminÃ©e avec succÃ¨s.' :
+                 error === 'session_expired' ? 'Session expirÃ©e ou rÃ©voquÃ©e. Reconnectez-vous.' :
+                 error === 'ratelimit' ? 'Trop de tentatives. RÃ©essayez dans 15 minutes.' :
+                 error === 'no_init' ? "Aucun mot de passe admin configurÃ©. Contactez l'administrateur." :
                  'Erreur de connexion.'}
               </span>
             </div>
@@ -3936,19 +3939,19 @@ const AdminLoginPage = ({ error }: { error?: string } = {}) => (
             </div>
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-2">Mot de passe</label>
-              <input type="password" name="password" required placeholder="••••••••"
+              <input type="password" name="password" required placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                 class="input-field w-full rounded-xl px-4 py-3 bg-gray-50" />
             </div>
             <button type="submit"
               class="w-full bg-gradient-to-r from-blue-600 to-sky-500 text-white font-bold py-3.5 rounded-xl hover:opacity-90 transition-opacity shadow-md mt-2">
-              <i class="fas fa-lock mr-2"></i>Accéder au back-office
+              <i class="fas fa-lock mr-2"></i>AccÃ©der au back-office
             </button>
           </form>
           <div class="mt-4 text-center text-xs text-gray-400">
-            Accès restreint - MAASGA Froid & Climatisation
+            AccÃ¨s restreint - MAASGA Froid & Climatisation
           </div>
           <a href="/admin/reset-password" class="block text-center text-xs text-blue-500 mt-2 hover:underline">
-            <i class="fas fa-key mr-1"></i>Mot de passe oublié ?
+            <i class="fas fa-key mr-1"></i>Mot de passe oubliÃ© ?
           </a>
         </div>
       </div>
@@ -3962,13 +3965,13 @@ const DEFAULT_ADMIN_USERNAME = 'admin'
 const RESET_TOKEN_MAX_AGE = 15 * 60 * 1000 // 15 minutes
 
 // Le token de reset est stateless (HMAC), donc rejouable autant de fois qu'on veut
-// pendant ses 15 minutes de validité. On garde en D1 le timestamp du dernier token
-// consommé : tout token dont le timestamp est <= ce plancher est refusé. Chaque
-// token devient à usage unique, et consommer le dernier invalide aussi les
-// précédents.
+// pendant ses 15 minutes de validitÃ©. On garde en D1 le timestamp du dernier token
+// consommÃ© : tout token dont le timestamp est <= ce plancher est refusÃ©. Chaque
+// token devient Ã  usage unique, et consommer le dernier invalide aussi les
+// prÃ©cÃ©dents.
 const RESET_FLOOR_KEY = 'admin_reset_min_ts'
 
-// Génère un token de reset HMAC signé (stateless — pas de Map en mémoire)
+// GÃ©nÃ¨re un token de reset HMAC signÃ© (stateless â€” pas de Map en mÃ©moire)
 async function generateAdminResetToken(secret: string): Promise<string> {
   const ts = Date.now().toString()
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
@@ -3977,7 +3980,7 @@ async function generateAdminResetToken(secret: string): Promise<string> {
   return ts + '.' + sigHex
 }
 
-// Vérifie un token de reset HMAC (retourne true si valide et non expiré)
+// VÃ©rifie un token de reset HMAC (retourne true si valide et non expirÃ©)
 async function verifyAdminResetToken(token: string, secret: string): Promise<boolean> {
   try {
     const dot = token.indexOf('.')
@@ -3989,7 +3992,7 @@ async function verifyAdminResetToken(token: string, secret: string): Promise<boo
     const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
     const expected = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode('reset:' + ts))
     const expectedHex = Array.from(new Uint8Array(expected)).map(b => b.toString(16).padStart(2, '0')).join('')
-    // Comparaison à durée constante
+    // Comparaison Ã  durÃ©e constante
     if (sigHex.length !== expectedHex.length) return false
     let diff = 0
     for (let i = 0; i < sigHex.length; i++) diff |= sigHex.charCodeAt(i) ^ expectedHex.charCodeAt(i)
@@ -3999,13 +4002,13 @@ async function verifyAdminResetToken(token: string, secret: string): Promise<boo
 
 app.post('/api/admin/login', async (c) => {
   // Rate limiting: 5 admin login attempts per IP per 15 minutes.
-  // Compteur persistant en D1 : le compteur mémoire est par isolate, donc
-  // contournable en retentant jusqu'à tomber sur un isolate neuf.
+  // Compteur persistant en D1 : le compteur mÃ©moire est par isolate, donc
+  // contournable en retentant jusqu'Ã  tomber sur un isolate neuf.
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
   const rlKey = `admin-login:${ip}`
   const rl = await rateLimitD1(c.env?.DB, rlKey, 5, 15 * 60 * 1000)
   if (!rl.allowed) {
-    logSecurityEvent(c.env?.DB, { event: 'admin_login_rate_limit', severity: 'warn', ip, details: `Login admin limité pour ${ip}` })
+    logSecurityEvent(c.env?.DB, { event: 'admin_login_rate_limit', severity: 'warn', ip, details: `Login admin limitÃ© pour ${ip}` })
     return c.redirect('/admin?error=ratelimit')
   }
 
@@ -4028,15 +4031,15 @@ app.post('/api/admin/login', async (c) => {
       if (userRow?.value) validUsername = userRow.value
     } catch(e) { /* settings table may not exist yet */ }
   }
-  // Si aucun hash en D1, utiliser ADMIN_INITIAL_PASSWORD comme amorçage.
-  // ADMIN_SECRET n'est PLUS accepté ici : c'est la clé de signature HMAC des
-  // cookies, la réutiliser comme mot de passe faisait qu'une seule fuite donnait
-  // à la fois la session et le compte (et le même secret sert au reset).
+  // Si aucun hash en D1, utiliser ADMIN_INITIAL_PASSWORD comme amorÃ§age.
+  // ADMIN_SECRET n'est PLUS acceptÃ© ici : c'est la clÃ© de signature HMAC des
+  // cookies, la rÃ©utiliser comme mot de passe faisait qu'une seule fuite donnait
+  // Ã  la fois la session et le compte (et le mÃªme secret sert au reset).
   if (!validHash) {
     const initPwd = c.env.ADMIN_INITIAL_PASSWORD
     if (!initPwd) return c.redirect('/admin?error=no_init')
     validHash = await hashPassword(initPwd)
-    // Persister immédiatement pour ne plus dépendre de l'env
+    // Persister immÃ©diatement pour ne plus dÃ©pendre de l'env
     if (db) {
       try { await db.prepare('INSERT OR REPLACE INTO admin_settings (key, value, updated_at) VALUES (?, ?, ?)').bind('admin_password_hash', validHash, new Date().toISOString()).run() } catch(_) {}
     }
@@ -4064,19 +4067,19 @@ app.post('/api/admin/login', async (c) => {
     })
     return response
   }
-  logSecurityEvent(db, { event: 'admin_login_failed', severity: 'critical', ip, details: `Échec de connexion admin pour "${username.slice(0, 64)}"` })
+  logSecurityEvent(db, { event: 'admin_login_failed', severity: 'critical', ip, details: `Ã‰chec de connexion admin pour "${username.slice(0, 64)}"` })
   return c.redirect('/admin?error=1')
 })
 
-// Déconnexion admin — efface le cookie ET incrémente l'epoch pour invalider
-// côté serveur tous les cookies déjà émis (un cookie HMAC volé restait sinon
-// valable 24 h même après déconnexion).
+// DÃ©connexion admin â€” efface le cookie ET incrÃ©mente l'epoch pour invalider
+// cÃ´tÃ© serveur tous les cookies dÃ©jÃ  Ã©mis (un cookie HMAC volÃ© restait sinon
+// valable 24 h mÃªme aprÃ¨s dÃ©connexion).
 // En POST : couvert par le middleware CSRF global, donc un site tiers ne peut
-// plus déconnecter l'admin (ni révoquer sa session) via une simple <img>.
+// plus dÃ©connecter l'admin (ni rÃ©voquer sa session) via une simple <img>.
 app.post('/api/admin/logout', adminAuth, async (c) => {
   await bumpAdminTokenEpoch(c.env?.DB)
   const ip = c.req.header('cf-connecting-ip') || 'unknown'
-  logSecurityEvent(c.env?.DB, { event: 'admin_logout', severity: 'info', ip, details: 'Déconnexion admin (sessions révoquées)' })
+  logSecurityEvent(c.env?.DB, { event: 'admin_logout', severity: 'info', ip, details: 'DÃ©connexion admin (sessions rÃ©voquÃ©es)' })
   return new Response(null, {
     status: 302,
     headers: {
@@ -4086,8 +4089,8 @@ app.post('/api/admin/logout', adminAuth, async (c) => {
   })
 })
 
-// Ancien lien GET /api/admin/logout : conservé pour les signets, mais il ne
-// révoque plus rien côté serveur (un GET est déclenchable par un site tiers).
+// Ancien lien GET /api/admin/logout : conservÃ© pour les signets, mais il ne
+// rÃ©voque plus rien cÃ´tÃ© serveur (un GET est dÃ©clenchable par un site tiers).
 // Il efface juste le cookie local et renvoie vers la page de connexion.
 app.get('/api/admin/logout', (c) => {
   return new Response(null, {
@@ -4139,8 +4142,8 @@ app.get('/api/admin/notifications/count', adminAuth, async (c) => {
   }
 })
 
-// Admin password reset — génère un token de reset à usage unique (15 min)
-// Étape 1 : Demander un token de reset (accessible sans auth — page publique)
+// Admin password reset â€” gÃ©nÃ¨re un token de reset Ã  usage unique (15 min)
+// Ã‰tape 1 : Demander un token de reset (accessible sans auth â€” page publique)
 app.get('/admin/reset-password', (c) => {
   const success = c.req.query('success')
   const error = c.req.query('error')
@@ -4150,29 +4153,29 @@ app.get('/admin/reset-password', (c) => {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="robots" content="noindex,nofollow" />
-        <title>Réinitialisation admin — MAASGA</title>
+        <title>RÃ©initialisation admin â€” MAASGA</title>
         <link rel="stylesheet" href="/static/tailwind.css" />
       </head>
       <body class="bg-gray-50 min-h-screen flex items-center justify-center px-4">
         <div class="w-full max-w-md">
           <div class="bg-white rounded-2xl shadow-xl p-8">
             <div class="text-center mb-6">
-              <div class="text-4xl mb-2">🔐</div>
-              <h1 class="text-xl font-bold text-gray-900">Réinitialisation mot de passe admin</h1>
-              <p class="text-gray-500 text-sm mt-1">Entrez le secret de sécurité (ADMIN_SECRET) pour générer un lien de reset.</p>
+              <div class="text-4xl mb-2">ðŸ”</div>
+              <h1 class="text-xl font-bold text-gray-900">RÃ©initialisation mot de passe admin</h1>
+              <p class="text-gray-500 text-sm mt-1">Entrez le secret de sÃ©curitÃ© (ADMIN_SECRET) pour gÃ©nÃ©rer un lien de reset.</p>
             </div>
-            {error === 'invalid' && <div class="mb-4 p-3 rounded-lg bg-red-50 text-red-600 text-sm">❌ Secret invalide. Vérifiez ADMIN_SECRET.</div>}
-            {error === 'expired' && <div class="mb-4 p-3 rounded-lg bg-red-50 text-red-600 text-sm">❌ Token expiré ou déjà utilisé. Recommencez.</div>}
-            {error === 'toomany' && <div class="mb-4 p-3 rounded-lg bg-red-50 text-red-600 text-sm">❌ Trop de tentatives. Réessayez dans 15 min.</div>}
-            {success === 'reset' && <div class="mb-4 p-3 rounded-lg bg-green-50 text-green-600 text-sm">✅ Identifiant et mot de passe réinitialisés. Connectez-vous avec vos nouvelles informations.</div>}
+            {error === 'invalid' && <div class="mb-4 p-3 rounded-lg bg-red-50 text-red-600 text-sm">âŒ Secret invalide. VÃ©rifiez ADMIN_SECRET.</div>}
+            {error === 'expired' && <div class="mb-4 p-3 rounded-lg bg-red-50 text-red-600 text-sm">âŒ Token expirÃ© ou dÃ©jÃ  utilisÃ©. Recommencez.</div>}
+            {error === 'toomany' && <div class="mb-4 p-3 rounded-lg bg-red-50 text-red-600 text-sm">âŒ Trop de tentatives. RÃ©essayez dans 15 min.</div>}
+            {success === 'reset' && <div class="mb-4 p-3 rounded-lg bg-green-50 text-green-600 text-sm">âœ… Identifiant et mot de passe rÃ©initialisÃ©s. Connectez-vous avec vos nouvelles informations.</div>}
             <form method="post" action="/api/admin/generate-reset-token" class="space-y-4">
               <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1">Secret de sécurité</label>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Secret de sÃ©curitÃ©</label>
                 <input type="password" name="admin_secret" required placeholder="Votre ADMIN_SECRET" class="w-full border rounded-xl px-4 py-3 text-sm" />
               </div>
-              <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700">Générer le lien de reset</button>
+              <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700">GÃ©nÃ©rer le lien de reset</button>
             </form>
-            <a href="/admin" class="block text-center text-sm text-blue-600 mt-4 hover:underline">← Retour à la connexion</a>
+            <a href="/admin" class="block text-center text-sm text-blue-600 mt-4 hover:underline">â† Retour Ã  la connexion</a>
           </div>
         </div>
       </body>
@@ -4180,7 +4183,7 @@ app.get('/admin/reset-password', (c) => {
   )
 })
 
-// Étape 2 : Vérifier le secret et générer un token temporaire
+// Ã‰tape 2 : VÃ©rifier le secret et gÃ©nÃ©rer un token temporaire
 app.post('/api/admin/generate-reset-token', async (c) => {
   // Rate limit: 3 attempts per 15 min per IP to prevent brute-force of ADMIN_SECRET
   // (persistant en D1 : ce formulaire est la porte de secours du compte admin)
@@ -4193,8 +4196,8 @@ app.post('/api/admin/generate-reset-token', async (c) => {
   const inputSecret = (body['admin_secret'] as string || '').trim()
   try {
     const realSecret = getAdminSecret(c.env)
-    // Comparaison à durée constante : un !== simple sort au premier octet
-    // différent et laissait deviner ADMIN_SECRET caractère par caractère.
+    // Comparaison Ã  durÃ©e constante : un !== simple sort au premier octet
+    // diffÃ©rent et laissait deviner ADMIN_SECRET caractÃ¨re par caractÃ¨re.
     if (!timingSafeEqualStr(inputSecret, realSecret)) {
       logSecurityEvent(c.env?.DB, { event: 'admin_reset_secret_invalid', severity: 'critical', ip, details: `ADMIN_SECRET incorrect depuis ${ip}` })
       return c.redirect('/admin/reset-password?error=invalid')
@@ -4202,7 +4205,7 @@ app.post('/api/admin/generate-reset-token', async (c) => {
   } catch {
     return c.redirect('/admin/reset-password?error=invalid')
   }
-  // Générer un token HMAC signé (stateless — valide 15 min)
+  // GÃ©nÃ©rer un token HMAC signÃ© (stateless â€” valide 15 min)
   const realSecret2 = getAdminSecret(c.env)
   const resetToken = await generateAdminResetToken(realSecret2)
   // Afficher le formulaire de nouveau mot de passe
@@ -4212,14 +4215,14 @@ app.post('/api/admin/generate-reset-token', async (c) => {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="robots" content="noindex,nofollow" />
-        <title>Nouveau mot de passe — MAASGA</title>
+        <title>Nouveau mot de passe â€” MAASGA</title>
         <link rel="stylesheet" href="/static/tailwind.css" />
       </head>
       <body class="bg-gray-50 min-h-screen flex items-center justify-center px-4">
         <div class="w-full max-w-md">
           <div class="bg-white rounded-2xl shadow-xl p-8">
             <div class="text-center mb-6">
-              <div class="text-4xl mb-2">🔑</div>
+              <div class="text-4xl mb-2">ðŸ”‘</div>
               <h1 class="text-xl font-bold text-gray-900">Nouveau mot de passe</h1>
               <p class="text-gray-500 text-sm mt-1">Ce lien expire dans 15 minutes.</p>
             </div>
@@ -4228,17 +4231,17 @@ app.post('/api/admin/generate-reset-token', async (c) => {
               <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Nouvel identifiant (email ou pseudo)</label>
                 <input type="text" name="new_username" required minlength={3} maxlength={64} placeholder="Ex: maasgabf@gmail.com" autocomplete="username" class="w-full border rounded-xl px-4 py-3 text-sm" />
-                <p class="text-xs text-gray-400 mt-1">Email, lettres, chiffres, tirets acceptés</p>
+                <p class="text-xs text-gray-400 mt-1">Email, lettres, chiffres, tirets acceptÃ©s</p>
               </div>
               <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Nouveau mot de passe</label>
-                <input type="password" name="new_password" required minlength={8} placeholder="Min. 8 caractères" autocomplete="new-password" class="w-full border rounded-xl px-4 py-3 text-sm" />
+                <input type="password" name="new_password" required minlength={8} placeholder="Min. 8 caractÃ¨res" autocomplete="new-password" class="w-full border rounded-xl px-4 py-3 text-sm" />
               </div>
               <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Confirmer le mot de passe</label>
                 <input type="password" name="confirm_password" required minlength={8} placeholder="Retapez le mot de passe" autocomplete="new-password" class="w-full border rounded-xl px-4 py-3 text-sm" />
               </div>
-              <button type="submit" class="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700">Réinitialiser identifiant &amp; mot de passe</button>
+              <button type="submit" class="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700">RÃ©initialiser identifiant &amp; mot de passe</button>
             </form>
           </div>
         </div>
@@ -4247,7 +4250,7 @@ app.post('/api/admin/generate-reset-token', async (c) => {
   )
 })
 
-// Étape 3 : Appliquer le reset avec le token temporaire
+// Ã‰tape 3 : Appliquer le reset avec le token temporaire
 app.post('/api/admin/reset-password', async (c) => {
   // Rate limit: 5 attempts per 15 min per IP (persistant en D1)
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
@@ -4261,7 +4264,7 @@ app.post('/api/admin/reset-password', async (c) => {
   const newPwd = (body['new_password'] as string || '').trim()
   const confirmPwd = (body['confirm_password'] as string || '').trim()
 
-  // Vérifier le token HMAC (stateless)
+  // VÃ©rifier le token HMAC (stateless)
   let resetSecret: string
   try { resetSecret = getAdminSecret(c.env) } catch { return c.redirect('/admin/reset-password?error=expired') }
   const tokenValid = await verifyAdminResetToken(resetToken, resetSecret)
@@ -4269,7 +4272,7 @@ app.post('/api/admin/reset-password', async (c) => {
     return c.redirect('/admin/reset-password?error=expired')
   }
 
-  // Usage unique : refuser un token déjà consommé (voir RESET_FLOOR_KEY)
+  // Usage unique : refuser un token dÃ©jÃ  consommÃ© (voir RESET_FLOOR_KEY)
   const db = c.env.DB
   const tokenTs = parseInt(resetToken.slice(0, resetToken.indexOf('.')), 10)
   if (isNaN(tokenTs)) return c.redirect('/admin/reset-password?error=expired')
@@ -4279,13 +4282,13 @@ app.post('/api/admin/reset-password', async (c) => {
       const floorRow = await db.prepare('SELECT value FROM admin_settings WHERE key = ?').bind(RESET_FLOOR_KEY).first() as any
       const floor = parseInt(floorRow?.value ?? '0', 10) || 0
       if (tokenTs <= floor) {
-        logSecurityEvent(db, { event: 'admin_reset_token_replay', severity: 'critical', ip, details: `Token de reset déjà consommé, rejeu depuis ${ip}` })
+        logSecurityEvent(db, { event: 'admin_reset_token_replay', severity: 'critical', ip, details: `Token de reset dÃ©jÃ  consommÃ©, rejeu depuis ${ip}` })
         return c.redirect('/admin/reset-password?error=expired')
       }
     } catch (e) { console.error('Reset token floor check error:', e) }
   }
 
-  // Valider l'identifiant : 3-64 caractères, email ou alphanumérique
+  // Valider l'identifiant : 3-64 caractÃ¨res, email ou alphanumÃ©rique
   if (!newUsername || newUsername.length < 3 || newUsername.length > 64 || /[<>"'`\\]/.test(newUsername)) {
     return c.redirect('/admin/reset-password?error=invalid')
   }
@@ -4297,15 +4300,15 @@ app.post('/api/admin/reset-password', async (c) => {
   if (db) {
     try {
       await db.prepare('CREATE TABLE IF NOT EXISTS admin_settings (key TEXT PRIMARY KEY, value TEXT, updated_at TEXT)').run()
-      // Consommer le token AVANT d'écrire le nouveau hash : les validations
-      // ci-dessus sont pures, donc une simple faute de frappe ne brûle pas le lien.
+      // Consommer le token AVANT d'Ã©crire le nouveau hash : les validations
+      // ci-dessus sont pures, donc une simple faute de frappe ne brÃ»le pas le lien.
       await db.prepare('INSERT OR REPLACE INTO admin_settings (key, value, updated_at) VALUES (?, ?, ?)').bind(RESET_FLOOR_KEY, String(tokenTs), new Date().toISOString()).run()
       await db.prepare('INSERT OR REPLACE INTO admin_settings (key, value, updated_at) VALUES (?, ?, ?)').bind('admin_password_hash', newHash, new Date().toISOString()).run()
       await db.prepare('INSERT OR REPLACE INTO admin_settings (key, value, updated_at) VALUES (?, ?, ?)').bind('admin_username', newUsername, new Date().toISOString()).run()
-      // Révoquer les sessions admin en cours : après un reset, un cookie encore
-      // valide 24 h aurait laissé l'accès à qui avait provoqué le reset.
+      // RÃ©voquer les sessions admin en cours : aprÃ¨s un reset, un cookie encore
+      // valide 24 h aurait laissÃ© l'accÃ¨s Ã  qui avait provoquÃ© le reset.
       await bumpAdminTokenEpoch(db)
-      logSecurityEvent(db, { event: 'admin_password_reset', severity: 'critical', ip, details: `Identifiant et mot de passe admin réinitialisés depuis ${ip}` })
+      logSecurityEvent(db, { event: 'admin_password_reset', severity: 'critical', ip, details: `Identifiant et mot de passe admin rÃ©initialisÃ©s depuis ${ip}` })
     } catch(e) {
       console.error('Reset password error:', e)
       return c.redirect('/admin/reset-password?error=invalid')
@@ -4470,15 +4473,15 @@ app.post('/admin/maintenance/validate-visit', adminAuth, async (c) => {
         .bind(completedCount, nextVisit?.visit_date || null, visit.contract_id).run()
     }
   } catch(e) {
-    // Ne plus avaler l'erreur : le try/catch silencieux redirigeait vers un écran
-    // de succès alors que la visite n'était pas enregistrée (colonnes manquantes).
+    // Ne plus avaler l'erreur : le try/catch silencieux redirigeait vers un Ã©cran
+    // de succÃ¨s alors que la visite n'Ã©tait pas enregistrÃ©e (colonnes manquantes).
     console.error('Visit validation error:', e)
     return c.redirect('/admin/maintenance?error=visite_echec')
   }
   return c.redirect('/admin/maintenance?success=visite_validee')
 })
 
-// ── Valider un contrat de maintenance (pending → active) ──
+// â”€â”€ Valider un contrat de maintenance (pending â†’ active) â”€â”€
 app.post('/api/admin/maintenance/validate-contract', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB unavailable' }, 503)
@@ -4503,19 +4506,19 @@ app.post('/api/admin/maintenance/validate-contract', adminAuth, async (c) => {
     // depuis un statut en attente, et l'UPDATE conditionnel sert de verrou.
     if (contract.status === 'actif') {
       return c.req.header('content-type')?.includes('application/json')
-        ? c.json({ success: true, message: 'Contrat déjà actif — aucune action' })
+        ? c.json({ success: true, message: 'Contrat dÃ©jÃ  actif â€” aucune action' })
         : c.redirect('/admin/maintenance?success=contract_already_active')
     }
     if (contract.status !== 'en_attente' && contract.status !== 'contacte') {
       return c.json({ error: `Contrat au statut "${contract.status}" : activation impossible` }, 400)
     }
 
-    // Activer le contrat (garde conditionnelle : si une requête concurrente est
-    // passée avant, changes vaut 0 et on s'arrête sans replanifier)
+    // Activer le contrat (garde conditionnelle : si une requÃªte concurrente est
+    // passÃ©e avant, changes vaut 0 et on s'arrÃªte sans replanifier)
     const activation = await db.prepare("UPDATE maintenance_contracts SET status = 'actif', updated_at = datetime('now') WHERE id = ? AND status IN ('en_attente','contacte')").bind(contractId).run()
     if (!activation?.meta?.changes) {
       return c.req.header('content-type')?.includes('application/json')
-        ? c.json({ success: true, message: 'Contrat déjà activé par une autre requête' })
+        ? c.json({ success: true, message: 'Contrat dÃ©jÃ  activÃ© par une autre requÃªte' })
         : c.redirect('/admin/maintenance?success=contract_already_active')
     }
 
@@ -4541,26 +4544,26 @@ app.post('/api/admin/maintenance/validate-contract', adminAuth, async (c) => {
           contract.client_name,
           contract.client_phone,
           vd.toISOString().split('T')[0],
-          `Visite préventive — Contrat ${contract.plan_type}`
+          `Visite prÃ©ventive â€” Contrat ${contract.plan_type}`
         ).run()
       }
-      // Mettre à jour la prochaine visite
+      // Mettre Ã  jour la prochaine visite
       const firstVisit = new Date(startDate)
       firstVisit.setMonth(firstVisit.getMonth() + intervalMonths)
       await db.prepare("UPDATE maintenance_contracts SET next_visit_date = ? WHERE id = ?").bind(firstVisit.toISOString().split('T')[0], contractId).run()
     }
 
     // Notification admin
-    await notifyAdmin(c.env as any, 'maintenance', `Contrat #${contractId} (${contract.plan_type}) VALIDÉ — ${contract.client_name} (${contract.client_phone})`)
+    await notifyAdmin(c.env as any, 'maintenance', `Contrat #${contractId} (${contract.plan_type}) VALIDÃ‰ â€” ${contract.client_name} (${contract.client_phone})`)
 
     // Log SMS WhatsApp pour le client
     await sendSmsWithLog(c.env, db, contract.client_phone,
-      `Bonjour ${contract.client_name}, votre contrat de maintenance MAASGA (${contract.plan_type}) a été validé ! Les dates d'intervention seront confirmées sous peu. Merci de votre confiance.`
+      `Bonjour ${contract.client_name}, votre contrat de maintenance MAASGA (${contract.plan_type}) a Ã©tÃ© validÃ© ! Les dates d'intervention seront confirmÃ©es sous peu. Merci de votre confiance.`
     )
 
     const isJson = c.req.header('content-type')?.includes('application/json')
     if (isJson) {
-      return c.json({ success: true, message: 'Contrat activé et visites planifiées' })
+      return c.json({ success: true, message: 'Contrat activÃ© et visites planifiÃ©es' })
     } else {
       return c.redirect('/admin/maintenance?success=contract_validated')
     }
@@ -4570,7 +4573,7 @@ app.post('/api/admin/maintenance/validate-contract', adminAuth, async (c) => {
   }
 })
 
-// ── Refuser un contrat de maintenance (pending → cancelled) ──
+// â”€â”€ Refuser un contrat de maintenance (pending â†’ cancelled) â”€â”€
 app.post('/api/admin/maintenance/refuse-contract', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB unavailable' }, 503)
@@ -4592,17 +4595,17 @@ app.post('/api/admin/maintenance/refuse-contract', adminAuth, async (c) => {
     if (!contract) return c.json({ error: 'Contrat introuvable' }, 404)
 
     await db.prepare("UPDATE maintenance_contracts SET status = 'annule', notes = ?, updated_at = datetime('now') WHERE id = ?")
-      .bind(reason ? `Refusé : ${reason}` : 'Refusé par admin', contractId).run()
+      .bind(reason ? `RefusÃ© : ${reason}` : 'RefusÃ© par admin', contractId).run()
 
-    await notifyAdmin(c.env as any, 'maintenance', `Contrat #${contractId} (${contract.plan_type}) REFUSÉ — ${contract.client_name}`)
+    await notifyAdmin(c.env as any, 'maintenance', `Contrat #${contractId} (${contract.plan_type}) REFUSÃ‰ â€” ${contract.client_name}`)
 
     await sendSmsWithLog(c.env, db, contract.client_phone,
-      `Bonjour ${contract.client_name}, votre demande de contrat de maintenance MAASGA (${contract.plan_type}) ne peut pas être traitée pour le moment. Contactez-nous au +226 55 99 64 18 pour plus d'informations.`
+      `Bonjour ${contract.client_name}, votre demande de contrat de maintenance MAASGA (${contract.plan_type}) ne peut pas Ãªtre traitÃ©e pour le moment. Contactez-nous au +226 55 99 64 18 pour plus d'informations.`
     )
 
     const isJson = c.req.header('content-type')?.includes('application/json')
     if (isJson) {
-      return c.json({ success: true, message: 'Contrat refusé' })
+      return c.json({ success: true, message: 'Contrat refusÃ©' })
     } else {
       return c.redirect('/admin/maintenance?success=contract_refused')
     }
@@ -4612,7 +4615,7 @@ app.post('/api/admin/maintenance/refuse-contract', adminAuth, async (c) => {
   }
 })
 
-// ── Supprimer définitivement un contrat de maintenance et ses visites ──
+// â”€â”€ Supprimer dÃ©finitivement un contrat de maintenance et ses visites â”€â”€
 app.post('/api/admin/maintenance/delete-contract', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB unavailable' }, 503)
@@ -4629,18 +4632,18 @@ app.post('/api/admin/maintenance/delete-contract', adminAuth, async (c) => {
   if (!contractId) return c.json({ error: 'contract_id requis' }, 400)
 
   try {
-    // Supprimer les visites associées d'abord
+    // Supprimer les visites associÃ©es d'abord
     await db.prepare("DELETE FROM maintenance_visits WHERE contract_id = ?").bind(contractId).run()
     
     // Supprimer le contrat
     await db.prepare("DELETE FROM maintenance_contracts WHERE id = ?").bind(contractId).run()
 
     // Notification admin
-    await notifyAdmin(c.env as any, 'maintenance', `Contrat #${contractId} SUPPRIMÉ définitivement par admin`)
+    await notifyAdmin(c.env as any, 'maintenance', `Contrat #${contractId} SUPPRIMÃ‰ dÃ©finitivement par admin`)
 
     const isJson = c.req.header('content-type')?.includes('application/json')
     if (isJson) {
-      return c.json({ success: true, message: 'Contrat et visites supprimés définitivement' })
+      return c.json({ success: true, message: 'Contrat et visites supprimÃ©s dÃ©finitivement' })
     } else {
       return c.redirect('/admin/maintenance?success=contract_deleted')
     }
@@ -4731,7 +4734,7 @@ app.post('/api/admin/messages/:id/delete', adminAuth, async (c) => {
 })
 
 // ============================================================
-// ADMIN RÉALISATIONS — CRUD
+// ADMIN RÃ‰ALISATIONS â€” CRUD
 // ============================================================
 
 app.get('/admin/realisations', adminAuth, refreshAdminCache, async (c) => {
@@ -4821,7 +4824,7 @@ app.post('/api/admin/realisations/delete', adminAuth, async (c) => {
   }
 })
 
-// Public API: réalisations list for public page
+// Public API: rÃ©alisations list for public page
 app.get('/api/realisations', async (c) => {
   const db = c.env.DB
   if (!db) return c.json([])
@@ -4833,17 +4836,17 @@ app.get('/api/realisations', async (c) => {
 })
 
 // ============================================================
-// EXPORTS CSV — Admin only
+// EXPORTS CSV â€” Admin only
 // ============================================================
 
 function csvEscape(val: any): string {
   if (val == null) return ''
   let s = String(val)
-  // Injection de formule : Excel et LibreOffice évaluent une cellule qui commence
-  // par = + - @ (ou tabulation / retour chariot), ce qui permet à un client
-  // d'exécuter du code sur le poste de l'admin qui ouvre l'export (=cmd|...).
-  // On préfixe par une apostrophe pour forcer l'interprétation en texte, sauf pour
-  // les nombres (les prix négatifs restent lisibles).
+  // Injection de formule : Excel et LibreOffice Ã©valuent une cellule qui commence
+  // par = + - @ (ou tabulation / retour chariot), ce qui permet Ã  un client
+  // d'exÃ©cuter du code sur le poste de l'admin qui ouvre l'export (=cmd|...).
+  // On prÃ©fixe par une apostrophe pour forcer l'interprÃ©tation en texte, sauf pour
+  // les nombres (les prix nÃ©gatifs restent lisibles).
   if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+(?:[.,]\d+)?$/.test(s)) s = "'" + s
   s = s.replace(/"/g, '""')
   return /[",\n\r]/.test(s) ? `"${s}"` : s
@@ -4904,7 +4907,7 @@ app.get('/admin/sav', adminAuth, refreshAdminCache, async (c) => {
   return c.html(<AdminSAVPage tickets={tickets} filterStatus={statusFilter} />)
 })
 
-// Admin: détail d'un ticket
+// Admin: dÃ©tail d'un ticket
 app.get('/admin/sav/:id', adminAuth, refreshAdminCache, async (c) => {
   const db = c.env.DB
   if (!db) return c.text('DB non disponible', 503)
@@ -4915,7 +4918,7 @@ app.get('/admin/sav/:id', adminAuth, refreshAdminCache, async (c) => {
   return c.html(<AdminSAVDetailPage ticket={ticket} messages={messages} />)
 })
 
-// Admin: créer un ticket
+// Admin: crÃ©er un ticket
 app.post('/api/admin/sav/create', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB non disponible' }, 503)
@@ -4938,7 +4941,7 @@ app.post('/api/admin/sav/create', adminAuth, async (c) => {
   return c.redirect('/admin/sav?success=ticket_cree')
 })
 
-// Admin: mettre à jour le statut d'un ticket
+// Admin: mettre Ã  jour le statut d'un ticket
 app.post('/api/admin/sav/update-status', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB non disponible' }, 503)
@@ -4951,7 +4954,7 @@ app.post('/api/admin/sav/update-status', adminAuth, async (c) => {
   return c.redirect(`/admin/sav/${id}?success=statut_modifie`)
 })
 
-// Admin: ajouter un message à un ticket
+// Admin: ajouter un message Ã  un ticket
 app.post('/api/admin/sav/message', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB non disponible' }, 503)
@@ -4970,7 +4973,7 @@ app.post('/api/client/sav/create', async (c) => {
   if (!db) return c.json({ error: 'DB non disponible' }, 503)
   const sessionToken = getCookie(c, 'maasga_session') || ''
   const session = sessionToken ? await getSession(c.env.DB, sessionToken) : null
-  if (!session) return c.json({ error: 'Non connecté' }, 401)
+  if (!session) return c.json({ error: 'Non connectÃ©' }, 401)
   // Use phone/name from DB (trusted) to prevent impersonation via body
   const clientRow = await db.prepare('SELECT phone, name FROM clients WHERE id = ?').bind(session.clientId).first() as any
   await ensureSavTables(db)
@@ -4995,7 +4998,7 @@ app.get('/api/client/sav/list', async (c) => {
   if (!db) return c.json([])
   const sessionToken = getCookie(c, 'maasga_session') || ''
   const session = sessionToken ? await getSession(c.env.DB, sessionToken) : null
-  if (!session) return c.json({ error: 'Non connecté' }, 401)
+  if (!session) return c.json({ error: 'Non connectÃ©' }, 401)
   const clientRow = await db.prepare('SELECT phone FROM clients WHERE id = ?').bind(session.clientId).first() as any
   if (!clientRow?.phone) return c.json([])
   await ensureSavTables(db)
@@ -5081,13 +5084,13 @@ app.get('/api/admin/stock/low', adminAuth, async (c) => {
 app.get('/api/admin/backup', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB non disponible' }, 503)
-  // Cet export contient l'intégralité des données clients : on le limite en débit
-  // et on le trace, sinon une session volée pouvait aspirer la base en silence.
+  // Cet export contient l'intÃ©gralitÃ© des donnÃ©es clients : on le limite en dÃ©bit
+  // et on le trace, sinon une session volÃ©e pouvait aspirer la base en silence.
   const ip = c.req.header('cf-connecting-ip') || 'unknown'
   const backupRl = await rateLimitD1(db, `admin-backup:${ip}`, 3, 60 * 60 * 1000)
   if (!backupRl.allowed) {
-    logSecurityEvent(db, { event: 'admin_backup_rate_limit', severity: 'warn', ip, details: `Export de sauvegarde limité pour ${ip}` })
-    return c.json({ error: 'Trop d\'exports. Réessayez dans une heure.' }, 429)
+    logSecurityEvent(db, { event: 'admin_backup_rate_limit', severity: 'warn', ip, details: `Export de sauvegarde limitÃ© pour ${ip}` })
+    return c.json({ error: 'Trop d\'exports. RÃ©essayez dans une heure.' }, 429)
   }
   const tables = ['products', 'clients', 'appointments', 'orders', 'reviews', 'contact_messages', 'maintenance_contracts', 'sav_tickets', 'sav_ticket_messages', 'stock_movements', 'site_settings', 'user_activity_log', 'realisations']
   const backup: Record<string, any[]> = {}
@@ -5113,7 +5116,7 @@ app.get('/api/admin/backup', adminAuth, async (c) => {
 
 // ============================================================
 // ============================================================
-// GLOBAL SEARCH — Admin
+// GLOBAL SEARCH â€” Admin
 // ============================================================
 app.get('/api/admin/search', adminAuth, async (c) => {
   const q = (c.req.query('q') || '').trim().toLowerCase()
@@ -5121,7 +5124,7 @@ app.get('/api/admin/search', adminAuth, async (c) => {
   const results: { type: string; label: string; sub: string; url: string }[] = []
   // Search products
   products.filter(p => p.name.toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q) || (p.model || '').toLowerCase().includes(q)).slice(0, 5).forEach(p => {
-    results.push({ type: 'Produit', label: p.name, sub: `${p.brand} · ${p.stock} en stock`, url: '/admin/produits' })
+    results.push({ type: 'Produit', label: p.name, sub: `${p.brand} Â· ${p.stock} en stock`, url: '/admin/produits' })
   })
   // Search clients
   clients.filter(cl => cl.name.toLowerCase().includes(q) || cl.phone.includes(q) || (cl.email || '').toLowerCase().includes(q)).slice(0, 5).forEach(cl => {
@@ -5129,11 +5132,11 @@ app.get('/api/admin/search', adminAuth, async (c) => {
   })
   // Search appointments
   appointments.filter(a => a.name.toLowerCase().includes(q) || a.phone.includes(q) || (a.quartier || '').toLowerCase().includes(q)).slice(0, 5).forEach(a => {
-    results.push({ type: 'RDV', label: a.name, sub: `${a.date} · ${a.quartier}`, url: '/admin/rdv' })
+    results.push({ type: 'RDV', label: a.name, sub: `${a.date} Â· ${a.quartier}`, url: '/admin/rdv' })
   })
   // Search orders
   orders.filter(o => (o.client_name || '').toLowerCase().includes(q) || (o.client_phone || '').includes(q) || String(o.id).includes(q)).slice(0, 5).forEach(o => {
-    results.push({ type: 'Commande', label: `#${o.id} ${o.client_name || ''}`, sub: `${o.total_price?.toLocaleString() || 0} F · ${o.status}`, url: '/admin/commandes' })
+    results.push({ type: 'Commande', label: `#${o.id} ${o.client_name || ''}`, sub: `${o.total_price?.toLocaleString() || 0} F Â· ${o.status}`, url: '/admin/commandes' })
   })
   // Search SAV tickets in DB
   const db = c.env.DB
@@ -5148,7 +5151,7 @@ app.get('/api/admin/search', adminAuth, async (c) => {
   return c.json(results.slice(0, 20))
 })
 
-// AUDIT LOG — Admin page
+// AUDIT LOG â€” Admin page
 // ============================================================
 app.get('/admin/audit-log', adminAuth, refreshAdminCache, async (c) => {
   const db = c.env.DB
@@ -5170,7 +5173,7 @@ app.get('/api/admin/audit-log', adminAuth, async (c) => {
   } catch(_) { return c.json([]) }
 })
 
-// NOTIFICATIONS — Admin page
+// NOTIFICATIONS â€” Admin page
 // ============================================================
 app.get('/admin/notifications', adminAuth, refreshAdminCache, async (c) => {
   const db = c.env.DB
@@ -5236,7 +5239,7 @@ app.post('/api/admin/change-password', adminAuth, async (c) => {
     } catch(e) { /* table may not exist */ }
   }
   if (!storedHash) {
-    // ADMIN_SECRET n'est plus accepté comme mot de passe d'amorçage (cf. /api/admin/login)
+    // ADMIN_SECRET n'est plus acceptÃ© comme mot de passe d'amorÃ§age (cf. /api/admin/login)
     const initPwd = c.env.ADMIN_INITIAL_PASSWORD
     if (initPwd) storedHash = await hashPassword(initPwd)
     else return c.redirect('/admin/parametres?error=no_init')
@@ -5262,25 +5265,25 @@ app.post('/api/admin/change-password', adminAuth, async (c) => {
   }
   // Audit log: password change successful
   logSecurityEvent(db, { event: 'admin_pwd_changed', severity: 'warn', ip, details: `Admin password changed successfully from ${ip}` })
-  logActivity(db, { type: 'admin', action: 'Mot de passe admin modifié', details: `Depuis IP: ${ip}`, ip })
-  await logAdminAudit(db, { action: 'admin_password_changed', detail: newUsername ? `Identifiant également modifié` : 'Mot de passe seul', ip, userAgent: c.req.header('User-Agent') })
-  // Révoquer toutes les sessions admin : changer de mot de passe doit déconnecter
-  // un éventuel intrus dont le cookie serait encore valable 24 h. La session
-  // courante est réémise juste en dessous avec la nouvelle epoch.
+  logActivity(db, { type: 'admin', action: 'Mot de passe admin modifiÃ©', details: `Depuis IP: ${ip}`, ip })
+  await logAdminAudit(db, { action: 'admin_password_changed', detail: newUsername ? `Identifiant Ã©galement modifiÃ©` : 'Mot de passe seul', ip, userAgent: c.req.header('User-Agent') })
+  // RÃ©voquer toutes les sessions admin : changer de mot de passe doit dÃ©connecter
+  // un Ã©ventuel intrus dont le cookie serait encore valable 24 h. La session
+  // courante est rÃ©Ã©mise juste en dessous avec la nouvelle epoch.
   await bumpAdminTokenEpoch(db)
   const freshEpoch = await getAdminTokenEpoch(db)
   let freshCookie = ''
   try {
     const token = await signToken(`admin_${freshEpoch}_${Date.now()}`, getAdminSecret(c.env))
     freshCookie = `maasga_admin=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=86400`
-  } catch { /* ADMIN_SECRET absent : l'admin sera simplement renvoyé au login */ }
+  } catch { /* ADMIN_SECRET absent : l'admin sera simplement renvoyÃ© au login */ }
   const headers: Record<string, string> = { 'Location': '/admin/parametres?success=pwd' }
   if (freshCookie) headers['Set-Cookie'] = freshCookie
   return new Response(null, { status: 302, headers })
 })
 
 // ============================================================
-// DEVIS — HELPER FUNCTIONS
+// DEVIS â€” HELPER FUNCTIONS
 // ============================================================
 async function ensureDevisTable(db: any) {
   await db.prepare(`CREATE TABLE IF NOT EXISTS devis (
@@ -5377,12 +5380,12 @@ function buildClientDevisHTML(d: any): string {
     savingsHtml = `
     <div style="background:linear-gradient(135deg,rgba(52,211,153,0.08),rgba(16,185,129,0.05)); border:1px solid rgba(52,211,153,0.2); border-radius:16px; padding:20px; margin:24px 0;">
       <div style="display:flex; align-items:flex-start; gap:14px;">
-        <div style="width:44px; height:44px; background:rgba(52,211,153,0.15); border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:20px;">💡</div>
+        <div style="width:44px; height:44px; background:rgba(52,211,153,0.15); border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:20px;">ðŸ’¡</div>
         <div style="flex:1;">
-          <div style="font-weight:700; color:#34d399; margin-bottom:4px;">Économies estimées avec Inverter</div>
-          <div style="font-size:13px; color:#6b7280; line-height:1.6;">Pour un climatiseur ${btu.toLocaleString('fr-FR')} BTU, la technologie Inverter réduit votre consommation d'environ <strong style="color:#34d399;">30%</strong>, soit une économie annuelle estimée à :</div>
+          <div style="font-weight:700; color:#34d399; margin-bottom:4px;">Ã‰conomies estimÃ©es avec Inverter</div>
+          <div style="font-size:13px; color:#6b7280; line-height:1.6;">Pour un climatiseur ${btu.toLocaleString('fr-FR')} BTU, la technologie Inverter rÃ©duit votre consommation d'environ <strong style="color:#34d399;">30%</strong>, soit une Ã©conomie annuelle estimÃ©e Ã  :</div>
           <div style="font-size:28px; font-weight:800; color:#34d399; margin:8px 0;">${savings.toLocaleString('fr-FR')} FCFA <span style="font-size:14px; font-weight:500; color:#6b7280;">/ an</span></div>
-          <div style="font-size:11px; color:#9ca3af;">Estimation basée sur 8h/jour, 300 jours/an et un tarif de 100 FCFA/kWh</div>
+          <div style="font-size:11px; color:#9ca3af;">Estimation basÃ©e sur 8h/jour, 300 jours/an et un tarif de 100 FCFA/kWh</div>
         </div>
       </div>
     </div>`
@@ -5390,27 +5393,27 @@ function buildClientDevisHTML(d: any): string {
 
   const acceptFormHtml = !isAccepted && !isExpired ? `
     <div style="text-align:center; padding:32px 20px; background:linear-gradient(135deg,rgba(56,189,248,0.06),rgba(99,102,241,0.06)); border-radius:16px; border:1px solid rgba(56,189,248,0.15); margin:24px 0;">
-      <div style="font-size:18px; font-weight:700; color:#e2e8f0; margin-bottom:8px;">✅ Accepter ce devis ?</div>
-      <p style="color:#94a3b8; font-size:14px; margin-bottom:20px;">En acceptant, vous confirmez votre accord sur les conditions ci-dessus.<br>Notre équipe vous contactera sous 24h pour planifier l'intervention.</p>
+      <div style="font-size:18px; font-weight:700; color:#e2e8f0; margin-bottom:8px;">âœ… Accepter ce devis ?</div>
+      <p style="color:#94a3b8; font-size:14px; margin-bottom:20px;">En acceptant, vous confirmez votre accord sur les conditions ci-dessus.<br>Notre Ã©quipe vous contactera sous 24h pour planifier l'intervention.</p>
       <form method="post" action="/api/devis/${d.token}/accept" style="display:inline;">
         <button type="submit" style="background:linear-gradient(135deg,#059669,#10b981); color:white; font-weight:700; font-size:15px; padding:14px 32px; border-radius:12px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:10px; box-shadow:0 4px 15px rgba(16,185,129,0.3);">
-          J'accepte ce devis — ${total.toLocaleString('fr-FR')} FCFA
+          J'accepte ce devis â€” ${total.toLocaleString('fr-FR')} FCFA
         </button>
       </form>
       <div style="margin-top:16px;">
         <a href="https://wa.me/22655996418?text=${encodeURIComponent('Bonjour, je souhaite discuter du devis ' + d.numero)}" style="display:inline-flex; align-items:center; gap:8px; background:rgba(37,211,102,0.1); color:#25D366; font-weight:600; font-size:13px; padding:10px 20px; border-radius:10px; text-decoration:none; border:1px solid rgba(37,211,102,0.25);">
-          <span style="font-size:18px;">💬</span> Poser une question par WhatsApp
+          <span style="font-size:18px;">ðŸ’¬</span> Poser une question par WhatsApp
         </a>
       </div>
     </div>` : isAccepted ? `
     <div style="text-align:center; padding:24px; background:rgba(52,211,153,0.08); border-radius:16px; border:1px solid rgba(52,211,153,0.2); margin:24px 0;">
-      <div style="font-size:24px; margin-bottom:8px;">🎉</div>
-      <div style="font-size:18px; font-weight:700; color:#34d399;">Devis accepté — Merci !</div>
-      <p style="color:#94a3b8; font-size:13px; margin-top:6px;">Notre équipe va vous contacter très prochainement.</p>
+      <div style="font-size:24px; margin-bottom:8px;">ðŸŽ‰</div>
+      <div style="font-size:18px; font-weight:700; color:#34d399;">Devis acceptÃ© â€” Merci !</div>
+      <p style="color:#94a3b8; font-size:13px; margin-top:6px;">Notre Ã©quipe va vous contacter trÃ¨s prochainement.</p>
     </div>` : `
     <div style="text-align:center; padding:24px; background:rgba(239,68,68,0.08); border-radius:16px; border:1px solid rgba(239,68,68,0.2); margin:24px 0;">
-      <div style="font-size:18px; font-weight:700; color:#f87171;">⚠️ Ce devis est expiré</div>
-      <p style="color:#94a3b8; font-size:13px; margin-top:6px;">Contactez-nous pour un nouveau devis actualisé.</p>
+      <div style="font-size:18px; font-weight:700; color:#f87171;">âš ï¸ Ce devis est expirÃ©</div>
+      <p style="color:#94a3b8; font-size:13px; margin-top:6px;">Contactez-nous pour un nouveau devis actualisÃ©.</p>
     </div>`
 
   return `<!DOCTYPE html>
@@ -5418,14 +5421,14 @@ function buildClientDevisHTML(d: any): string {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${escapeHtml(d.numero)} · Devis MAASGA</title>
+<title>${escapeHtml(d.numero)} Â· Devis MAASGA</title>
 <meta name="robots" content="noindex,nofollow">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; background: #0b1120; color: #e2e8f0; min-height: 100vh; }
   .container { max-width: 680px; margin: 0 auto; padding: 20px 16px 60px; }
   .header { background: linear-gradient(135deg, #1e3a8a 0%, #0c4a6e 50%, #0ea5e9 100%); border-radius: 20px; padding: 28px 24px; margin-bottom: 24px; position: relative; overflow: hidden; }
-  .header::before { content: '❄️'; position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 64px; opacity: 0.12; }
+  .header::before { content: 'â„ï¸'; position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 64px; opacity: 0.12; }
   .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
   .logo-icon { width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
   .logo-text { font-weight: 800; font-size: 20px; color: white; }
@@ -5460,51 +5463,51 @@ function buildClientDevisHTML(d: any): string {
 
   <div class="header">
     <div class="logo">
-      <div class="logo-icon">❄️</div>
+      <div class="logo-icon">â„ï¸</div>
       <div>
         <div class="logo-text">MAASGA</div>
-        <div class="logo-sub">Froid & Climatisation · Ouagadougou</div>
+        <div class="logo-sub">Froid & Climatisation Â· Ouagadougou</div>
       </div>
     </div>
     <div class="devis-num">${escapeHtml(d.numero)}</div>
-    <div class="devis-date">Émis le ${createdStr}</div>
+    <div class="devis-date">Ã‰mis le ${createdStr}</div>
     <div>
       <span class="status-pill ${isAccepted ? 'status-accepted' : isExpired ? 'status-expired' : 'status-sent'}">
-        ${isAccepted ? '✓ Devis accepté' : isExpired ? '⚠ Expiré' : '⏳ En attente de validation'}
+        ${isAccepted ? 'âœ“ Devis acceptÃ©' : isExpired ? 'âš  ExpirÃ©' : 'â³ En attente de validation'}
       </span>
     </div>
   </div>
 
   ${!isAccepted && !isExpired && daysLeft <= 7 ? `
   <div class="expiry-banner">
-    <span style="font-size:18px;">⏰</span>
-    <span>Ce devis expire dans <strong>${daysLeft} jour${daysLeft > 1 ? 's' : ''}</strong> — ${expiryStr}. Acceptez avant cette date.</span>
+    <span style="font-size:18px;">â°</span>
+    <span>Ce devis expire dans <strong>${daysLeft} jour${daysLeft > 1 ? 's' : ''}</strong> â€” ${expiryStr}. Acceptez avant cette date.</span>
   </div>` : !isAccepted && !isExpired && expiryStr ? `
   <div style="background:rgba(56,189,248,0.05); border:1px solid rgba(56,189,248,0.12); border-radius:12px; padding:10px 16px; font-size:12px; color:#38bdf8; margin-bottom:16px;">
-    ✓ Devis valable jusqu'au ${expiryStr} · ${daysLeft} jours restants
+    âœ“ Devis valable jusqu'au ${expiryStr} Â· ${daysLeft} jours restants
   </div>` : ''}
 
   <div class="section">
-    <div class="section-title">👤 Client</div>
+    <div class="section-title">ðŸ‘¤ Client</div>
     <div class="info-row"><span class="info-label">Nom</span><span class="info-val">${escapeHtml(d.client_name || '')}</span></div>
-    <div class="info-row"><span class="info-label">Téléphone</span><span class="info-val">${escapeHtml(d.client_phone || '')}</span></div>
+    <div class="info-row"><span class="info-label">TÃ©lÃ©phone</span><span class="info-val">${escapeHtml(d.client_phone || '')}</span></div>
     ${d.client_email ? `<div class="info-row"><span class="info-label">Email</span><span class="info-val">${escapeHtml(d.client_email)}</span></div>` : ''}
     ${d.client_quartier ? `<div class="info-row"><span class="info-label">Adresse</span><span class="info-val">${escapeHtml(d.client_quartier)}, Ouagadougou</span></div>` : ''}
   </div>
 
   ${(d.surface || d.btu_recommande) ? `
   <div class="section">
-    <div class="section-title">📐 Données techniques</div>
-    ${d.surface ? `<div class="info-row"><span class="info-label">Surface à climatiser</span><span class="info-val">${Number(d.surface).toLocaleString('fr-FR')} m²</span></div>` : ''}
-    ${d.btu_recommande ? `<div class="info-row"><span class="info-label">Puissance recommandée</span><span class="info-val">${Number(d.btu_recommande).toLocaleString('fr-FR')} BTU / ${Number(d.btu_recommande) === 9000 ? '1' : Number(d.btu_recommande) === 12000 ? '1,5' : Number(d.btu_recommande) === 18000 ? '2' : Number(d.btu_recommande) === 24000 ? '3' : '5'} CV</span></div>` : ''}
+    <div class="section-title">ðŸ“ DonnÃ©es techniques</div>
+    ${d.surface ? `<div class="info-row"><span class="info-label">Surface Ã  climatiser</span><span class="info-val">${Number(d.surface).toLocaleString('fr-FR')} mÂ²</span></div>` : ''}
+    ${d.btu_recommande ? `<div class="info-row"><span class="info-label">Puissance recommandÃ©e</span><span class="info-val">${Number(d.btu_recommande).toLocaleString('fr-FR')} BTU / ${Number(d.btu_recommande) === 9000 ? '1' : Number(d.btu_recommande) === 12000 ? '1,5' : Number(d.btu_recommande) === 18000 ? '2' : Number(d.btu_recommande) === 24000 ? '3' : '5'} CV</span></div>` : ''}
   </div>` : ''}
 
   <div class="section">
-    <div class="section-title">📋 Détail du devis</div>
+    <div class="section-title">ðŸ“‹ DÃ©tail du devis</div>
     <table>
       <thead><tr>
-        <th style="width:50%">Désignation</th>
-        <th style="width:15%">Qté</th>
+        <th style="width:50%">DÃ©signation</th>
+        <th style="width:15%">QtÃ©</th>
         <th style="width:20%">P.U.</th>
         <th style="width:15%">Total</th>
       </tr></thead>
@@ -5516,13 +5519,13 @@ function buildClientDevisHTML(d: any): string {
           <td class="td-right">${prodTotal.toLocaleString('fr-FR')}</td>
         </tr>` : ''}
         <tr>
-          <td>Main d'œuvre &amp; installation</td>
+          <td>Main d'Å“uvre &amp; installation</td>
           <td class="td-right">1</td>
           <td class="td-right">${installTotal.toLocaleString('fr-FR')}</td>
           <td class="td-right">${installTotal.toLocaleString('fr-FR')}</td>
         </tr>
         <tr>
-          <td colspan="3" style="padding-top:4px; padding-bottom:4px; font-size:11px; color:#4b5563; font-style:italic;">Mise en service · Test complet · Vérification étanchéité · Formation utilisation</td>
+          <td colspan="3" style="padding-top:4px; padding-bottom:4px; font-size:11px; color:#4b5563; font-style:italic;">Mise en service Â· Test complet Â· VÃ©rification Ã©tanchÃ©itÃ© Â· Formation utilisation</td>
           <td></td>
         </tr>
         ${accs.filter((a:any) => a.nom).map((a:any) => `<tr>
@@ -5536,8 +5539,8 @@ function buildClientDevisHTML(d: any): string {
           <td class="td-right" style="padding-top:12px;">${sousTotal.toLocaleString('fr-FR')}</td>
         </tr>
         ${remisePct > 0 ? `<tr class="discount-row">
-          <td colspan="3" style="padding-bottom:8px; font-size:12px;">Remise accordée (${remisePct}%)</td>
-          <td class="td-right" style="padding-bottom:8px;">− ${remiseMt.toLocaleString('fr-FR')}</td>
+          <td colspan="3" style="padding-bottom:8px; font-size:12px;">Remise accordÃ©e (${remisePct}%)</td>
+          <td class="td-right" style="padding-bottom:8px;">âˆ’ ${remiseMt.toLocaleString('fr-FR')}</td>
         </tr>` : ''}
         <tr class="total-row">
           <td colspan="3"><span class="total-label">TOTAL TTC</span><div style="font-size:10px; color:#6b7280; margin-top:2px;">Toutes taxes comprises</div></td>
@@ -5553,18 +5556,18 @@ function buildClientDevisHTML(d: any): string {
 
   ${d.message_client ? `
   <div class="section" style="border-color:rgba(99,102,241,0.2);">
-    <div class="section-title" style="color:#a78bfa;">💬 Message de l'équipe MAASGA</div>
+    <div class="section-title" style="color:#a78bfa;">ðŸ’¬ Message de l'Ã©quipe MAASGA</div>
     <p style="font-size:14px; color:#cbd5e1; line-height:1.7; white-space:pre-wrap;">${escapeHtml(d.message_client)}</p>
   </div>` : ''}
 
   <div class="section" style="background:rgba(56,189,248,0.03);">
-    <div class="section-title">✅ Nos engagements</div>
+    <div class="section-title">âœ… Nos engagements</div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
       ${[
-        ['🔧', 'Techniciens certifiés', 'Équipe qualifiée'],
-        ['🛡️', 'Garantie installation', "12 mois pièces et main d'œuvre"],
-        ['📞', 'SAV rapide', 'Intervention sous 48h'],
-        ['💯', 'Satisfaction garantie', 'Ou intervention gratuite']
+        ['ðŸ”§', 'Techniciens certifiÃ©s', 'Ã‰quipe qualifiÃ©e'],
+        ['ðŸ›¡ï¸', 'Garantie installation', "12 mois piÃ¨ces et main d'Å“uvre"],
+        ['ðŸ“ž', 'SAV rapide', 'Intervention sous 48h'],
+        ['ðŸ’¯', 'Satisfaction garantie', 'Ou intervention gratuite']
       ].map(([icon, title, sub]) => `
       <div style="background:rgba(56,189,248,0.04); border:1px solid rgba(56,189,248,0.08); border-radius:10px; padding:12px;">
         <div style="font-size:20px; margin-bottom:6px;">${icon}</div>
@@ -5577,13 +5580,13 @@ function buildClientDevisHTML(d: any): string {
   <div class="footer">
     <div style="margin-bottom:16px;">
       <a href="/devis/${escapeHtml(d.token)}/pdf" style="display:inline-flex; align-items:center; gap:8px; background:linear-gradient(135deg,#0077b6,#0ea5e9); color:white; font-weight:700; font-size:14px; padding:12px 28px; border-radius:12px; text-decoration:none; box-shadow:0 4px 15px rgba(0,119,182,0.3);">
-        🖨️ Télécharger le devis en PDF
+        ðŸ–¨ï¸ TÃ©lÃ©charger le devis en PDF
       </a>
     </div>
-    <strong>MAASGA — Froid &amp; Climatisation</strong><br>
-    📞 +226 55 99 64 18 &nbsp;|&nbsp; Ouagadougou, Burkina Faso<br>
-    Lundi–Dimanche · 8h00–18h00<br><br>
-    <em>Ce devis est valable jusqu'au ${expiryStr || '30 jours'}. Aucun paiement n'est requis avant accord et signature du client. Le montant définitif peut être ajusté après visite technique si les conditions réelles diffèrent.</em>
+    <strong>MAASGA â€” Froid &amp; Climatisation</strong><br>
+    ðŸ“ž +226 55 99 64 18 &nbsp;|&nbsp; Ouagadougou, Burkina Faso<br>
+    Lundiâ€“Dimanche Â· 8h00â€“18h00<br><br>
+    <em>Ce devis est valable jusqu'au ${expiryStr || '30 jours'}. Aucun paiement n'est requis avant accord et signature du client. Le montant dÃ©finitif peut Ãªtre ajustÃ© aprÃ¨s visite technique si les conditions rÃ©elles diffÃ¨rent.</em>
   </div>
 </div>
 </body>
@@ -5591,7 +5594,7 @@ function buildClientDevisHTML(d: any): string {
 }
 
 // ============================================================
-// DEVIS ROUTES — ADMIN
+// DEVIS ROUTES â€” ADMIN
 // ============================================================
 
 app.get('/admin/devis', adminAuth, refreshAdminCache, async (c) => {
@@ -5604,7 +5607,7 @@ app.get('/admin/devis', adminAuth, refreshAdminCache, async (c) => {
       devisData = (rows.results as any[]) || []
     } catch(e) { console.error('Devis list error:', e) }
   }
-  // RDVs de type 'devis' sans devis associé
+  // RDVs de type 'devis' sans devis associÃ©
   const devisRdvIds = new Set(devisData.filter(d => d.rdv_id).map(d => d.rdv_id))
   const rdvsPending = appointments.filter((a: any) => a.type === 'devis' && !devisRdvIds.has(a.id))
   return c.html(<AdminDevisListPage devisData={devisData} rdvsPending={rdvsPending} />)
@@ -5631,7 +5634,7 @@ app.get('/admin/devis/new', adminAuth, refreshAdminCache, async (c) => {
   let surface = c.req.query('surface') || ''
   let btu = c.req.query('btu') || ''
   if (rdv?.notes && (!surface || !btu)) {
-    const surfMatch = rdv.notes.match(/(\d+(?:\.\d+)?)\s*m²/)
+    const surfMatch = rdv.notes.match(/(\d+(?:\.\d+)?)\s*mÂ²/)
     const btuMatch = rdv.notes.match(/(\d{4,5})\s*BTU/)
     if (surfMatch && !surface) surface = surfMatch[1]
     if (btuMatch && !btu) btu = btuMatch[1]
@@ -5679,8 +5682,8 @@ app.post('/api/admin/devis/create', adminAuth, async (c) => {
     let notesInternes = (body['notes_internes'] as string || '').trim()
     const origine = (body['origine'] as string || '').trim()
     const urgence = (body['urgence'] as string || '').trim()
-    const origineLabels: Record<string, string> = { appel: 'Appel entrant', visite: 'Visite physique', recommandation: 'Recommandation', reseaux: 'Réseaux sociaux', publicite: 'Publicité', bouche_a_oreille: 'Bouche-à-oreille' }
-    const urgenceLabels: Record<string, string> = { urgent: '⚡ Urgent', tres_urgent: '🔴 Très urgent' }
+    const origineLabels: Record<string, string> = { appel: 'Appel entrant', visite: 'Visite physique', recommandation: 'Recommandation', reseaux: 'RÃ©seaux sociaux', publicite: 'PublicitÃ©', bouche_a_oreille: 'Bouche-Ã -oreille' }
+    const urgenceLabels: Record<string, string> = { urgent: 'âš¡ Urgent', tres_urgent: 'ðŸ”´ TrÃ¨s urgent' }
     const ctxParts: string[] = []
     if (origine && origineLabels[origine]) ctxParts.push(`Origine: ${origineLabels[origine]}`)
     if (urgence && urgenceLabels[urgence]) ctxParts.push(urgenceLabels[urgence])
@@ -5691,7 +5694,7 @@ app.post('/api/admin/devis/create', adminAuth, async (c) => {
       .run()
 
     // If linked to an order, always sync to order_devis so client can see it in their portal
-    // Draft → 'pending' status in order_devis (visible but client can act); Sent → 'sent'
+    // Draft â†’ 'pending' status in order_devis (visible but client can act); Sent â†’ 'sent'
     if (orderId) {
       const linkedOrder = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(orderId).first() as any
       if (linkedOrder) {
@@ -5715,7 +5718,7 @@ app.post('/api/admin/devis/create', adminAuth, async (c) => {
               existing.id
             ).run()
         } else {
-          // No existing order_devis — insert fresh
+          // No existing order_devis â€” insert fresh
           await db.prepare(`INSERT INTO order_devis (order_id, client_id, client_name, client_phone, client_email, title, description, items, total_amount, status, climatiseur_nom, climatiseur_prix, main_oeuvre_prix, fournitures, motif, message_client, admin_notes, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, '', '[]', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
             .bind(
@@ -5737,7 +5740,7 @@ app.post('/api/admin/devis/create', adminAuth, async (c) => {
               now, now
             ).run()
         }
-        // Envoi effectif du devis : la commande passe à « contacte »
+        // Envoi effectif du devis : la commande passe Ã  Â« contacte Â»
         // ('devis_en_attente' n'existe plus dans le CHECK depuis la migration 0036)
         if (isSendAction) {
           await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?')
@@ -5755,35 +5758,35 @@ app.post('/api/admin/devis/create', adminAuth, async (c) => {
                   body: JSON.stringify({
                     sender: { name: 'MAASGA', email: 'maasgabf@gmail.com' },
                     to: [{ email: linkedOrder.client_email, name: linkedOrder.client_name }],
-                    subject: `Devis d'installation disponible — Commande #${orderId} — MAASGA`,
-                    htmlContent: `<html><body style="font-family:Arial,sans-serif;padding:20px;max-width:600px;margin:0 auto;"><h2 style="color:#d97706;">❄ Devis d'installation disponible</h2><p>Bonjour ${escapeHtml(linkedOrder.client_name)},</p><p>Un devis d'installation a été préparé pour votre commande #${orderId}. Connectez-vous à votre espace client pour le consulter et le valider :</p><p><a href="https://maasga.com/espace-client" style="display:inline-block;background:#d97706;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold;">Voir et valider le devis</a></p><p style="color:#6b7280;font-size:12px;">MAASGA SARL — Solutions Climatisation & Maintenance — Ouagadougou, Burkina Faso</p></body></html>`
+                    subject: `Devis d'installation disponible â€” Commande #${orderId} â€” MAASGA`,
+                    htmlContent: `<html><body style="font-family:Arial,sans-serif;padding:20px;max-width:600px;margin:0 auto;"><h2 style="color:#d97706;">â„ Devis d'installation disponible</h2><p>Bonjour ${escapeHtml(linkedOrder.client_name)},</p><p>Un devis d'installation a Ã©tÃ© prÃ©parÃ© pour votre commande #${orderId}. Connectez-vous Ã  votre espace client pour le consulter et le valider :</p><p><a href="https://maasga.com/espace-client" style="display:inline-block;background:#d97706;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold;">Voir et valider le devis</a></p><p style="color:#6b7280;font-size:12px;">MAASGA SARL â€” Solutions Climatisation & Maintenance â€” Ouagadougou, Burkina Faso</p></body></html>`
                   })
                 })
               }
             } catch(emailErr) { console.error('Email notification error:', emailErr) }
           }
-          await notifyAdmin(c.env, 'order', `Devis d'installation envoyé — Commande #${orderId} — ${linkedOrder.client_name} — ${totalHt.toLocaleString()} FCFA`)
+          await notifyAdmin(c.env, 'order', `Devis d'installation envoyÃ© â€” Commande #${orderId} â€” ${linkedOrder.client_name} â€” ${totalHt.toLocaleString()} FCFA`)
         }
       }
     }
 
-    // Handle send_email — send via Brevo
+    // Handle send_email â€” send via Brevo
     let emailOk = false, emailErrMsg = ''
     if (action === 'send_email') {
       const clientEmail = (body['client_email'] as string || '').trim()
       if (!clientEmail) {
-        emailErrMsg = 'Email client non renseigné dans le formulaire'
+        emailErrMsg = 'Email client non renseignÃ© dans le formulaire'
       } else {
         const brevoKey = c.env.BREVO_API_KEY
         if (!brevoKey) {
-          emailErrMsg = 'Service email non configuré'
+          emailErrMsg = 'Service email non configurÃ©'
         } else {
           try {
             const publicUrl = `https://maasga.com/devis/${token}`
             const prodRow = (body['produit_nom'] as string || '').trim()
-              ? `<tr><td style="padding:8px 12px;">${escapeHtml(body['produit_nom'] as string)} × ${prodQty}</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${(prodPrix * prodQty).toLocaleString('fr-FR')} FCFA</td></tr>` : ''
+              ? `<tr><td style="padding:8px 12px;">${escapeHtml(body['produit_nom'] as string)} Ã— ${prodQty}</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${(prodPrix * prodQty).toLocaleString('fr-FR')} FCFA</td></tr>` : ''
             const installRow = installPrix > 0
-              ? `<tr><td style="padding:8px 12px;">Main d'œuvre / Installation</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${installPrix.toLocaleString('fr-FR')} FCFA</td></tr>` : ''
+              ? `<tr><td style="padding:8px 12px;">Main d'Å“uvre / Installation</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${installPrix.toLocaleString('fr-FR')} FCFA</td></tr>` : ''
             const accRows = accs.map((a: any) => `<tr><td style="padding:8px 12px;">${escapeHtml(a.nom)}</td><td style="padding:8px 12px;text-align:right;">${Number(a.prix || 0).toLocaleString('fr-FR')} FCFA</td></tr>`).join('')
             const msgBlock = (body['message_client'] as string || '').trim()
               ? `<p style="background:#f0f9ff;border-left:4px solid #0077b6;padding:14px;margin:20px 0;border-radius:0 8px 8px 0;">${escapeHtml(body['message_client'] as string)}</p>` : ''
@@ -5793,14 +5796,14 @@ app.post('/api/admin/devis/create', adminAuth, async (c) => {
               body: JSON.stringify({
                 sender: { name: 'MAASGA', email: 'maasgabf@gmail.com' },
                 to: [{ email: clientEmail, name: (body['client_name'] as string) || 'Client' }],
-                subject: `Votre devis MAASGA — ${numero}`,
+                subject: `Votre devis MAASGA â€” ${numero}`,
                 htmlContent: `<html><body style="font-family:Arial,sans-serif;padding:20px;max-width:600px;margin:0 auto;color:#1a1a2e;">
                   <h2 style="color:#0077b6;border-bottom:2px solid #e2e8f0;padding-bottom:16px;">Devis ${escapeHtml(numero)}</h2>
                   <p>Bonjour <strong>${escapeHtml((body['client_name'] as string) || '')}</strong>,</p>
-                  <p>MAASGA vous a préparé un devis personnalisé.</p>
+                  <p>MAASGA vous a prÃ©parÃ© un devis personnalisÃ©.</p>
                   ${msgBlock}
                   <table style="width:100%;border-collapse:collapse;font-size:14px;margin:20px 0;border:1px solid #e2e8f0;">
-                    <thead><tr style="background:#0077b6;color:white;"><th style="padding:10px 12px;text-align:left;">Désignation</th><th style="padding:10px 12px;text-align:right;">Montant</th></tr></thead>
+                    <thead><tr style="background:#0077b6;color:white;"><th style="padding:10px 12px;text-align:left;">DÃ©signation</th><th style="padding:10px 12px;text-align:right;">Montant</th></tr></thead>
                     <tbody>${prodRow}${installRow}${accRows}
                       <tr style="border-top:2px solid #0077b6;"><td style="padding:12px;font-weight:700;font-size:15px;">Total HT</td><td style="padding:12px;text-align:right;font-weight:800;color:#0077b6;font-size:18px;">${totalHt.toLocaleString('fr-FR')} FCFA</td></tr>
                     </tbody>
@@ -5808,7 +5811,7 @@ app.post('/api/admin/devis/create', adminAuth, async (c) => {
                   <div style="text-align:center;margin:24px 0;">
                     <a href="${publicUrl}" style="display:inline-block;background:#0077b6;color:white;padding:14px 32px;text-decoration:none;border-radius:10px;font-weight:bold;font-size:15px;">Consulter et valider le devis</a>
                   </div>
-                  <p style="color:#6b7280;font-size:12px;border-top:1px solid #e2e8f0;padding-top:16px;">MAASGA SARL — Froid & Climatisation — Ouagadougou, Burkina Faso — +226 55 99 64 18</p>
+                  <p style="color:#6b7280;font-size:12px;border-top:1px solid #e2e8f0;padding-top:16px;">MAASGA SARL â€” Froid & Climatisation â€” Ouagadougou, Burkina Faso â€” +226 55 99 64 18</p>
                 </body></html>`
               })
             })
@@ -5830,18 +5833,18 @@ app.post('/api/admin/devis/create', adminAuth, async (c) => {
       return c.redirect(`/admin/devis/detail/${token}`)
     }
     if (action === 'send_whatsapp') return c.redirect(`/admin/devis/detail/${token}?notify=whatsapp`)
-    // generate, send (legacy), default → show detail page
+    // generate, send (legacy), default â†’ show detail page
     return c.redirect(`/admin/devis/detail/${token}`)
   } catch(e: any) {
     console.error('Devis create error:', e)
-    const errMsg = encodeURIComponent(String(e?.message || 'Erreur lors de la création du devis').substring(0, 150))
+    const errMsg = encodeURIComponent(String(e?.message || 'Erreur lors de la crÃ©ation du devis').substring(0, 150))
     const oidParam = body['order_id'] ? `&order_id=${body['order_id']}` : ''
     return c.redirect(`/admin/devis/new?error=${errMsg}${oidParam}`)
   }
 })
 
 // ============================================================
-// DEVIS DETAIL — Admin view of a single devis with share/send options
+// DEVIS DETAIL â€” Admin view of a single devis with share/send options
 // ============================================================
 app.get('/admin/devis/detail/:token', adminAuth, async (c) => {
   const token = c.req.param('token')
@@ -5864,27 +5867,27 @@ app.get('/admin/devis/detail/:token', adminAuth, async (c) => {
 })
 
 // ============================================================
-// DEVIS SEND EMAIL — Sends devis email from the detail page
+// DEVIS SEND EMAIL â€” Sends devis email from the detail page
 // ============================================================
 app.post('/api/admin/devis/send-email', adminAuth, async (c) => {
   const body = await c.req.parseBody()
   const db = c.env.DB
   const token = (body['token'] as string || '').trim()
-  if (!db || !token) return c.redirect('/admin/devis?error=Paramètres manquants')
+  if (!db || !token) return c.redirect('/admin/devis?error=ParamÃ¨tres manquants')
   try {
     await ensureDevisTable(db)
     const devis = await db.prepare('SELECT * FROM devis WHERE token = ?').bind(token).first() as any
     if (!devis) return c.redirect(`/admin/devis?error=Devis introuvable`)
-    if (!devis.client_email) return c.redirect(`/admin/devis/detail/${token}?email_err=${encodeURIComponent('Email client non renseigné')}`)
+    if (!devis.client_email) return c.redirect(`/admin/devis/detail/${token}?email_err=${encodeURIComponent('Email client non renseignÃ©')}`)
     const brevoKey = c.env.BREVO_API_KEY
-    if (!brevoKey) return c.redirect(`/admin/devis/detail/${token}?email_err=${encodeURIComponent('Service email non configuré')}`)
+    if (!brevoKey) return c.redirect(`/admin/devis/detail/${token}?email_err=${encodeURIComponent('Service email non configurÃ©')}`)
 
     const host = c.req.header('host') || 'maasga.com'
     const publicUrl = `https://${host}/devis/${token}`
     const accs: any[] = JSON.parse(devis.accessoires || '[]')
     const prodTotal = Number(devis.produit_prix || 0) * Number(devis.produit_quantite || 1)
-    const prodRow = devis.produit_nom ? `<tr><td style="padding:8px 12px;">${escapeHtml(devis.produit_nom)} × ${Number(devis.produit_quantite) || 1}</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${prodTotal.toLocaleString('fr-FR')} FCFA</td></tr>` : ''
-    const installRow = Number(devis.installation_prix) > 0 ? `<tr><td style="padding:8px 12px;">Main d'œuvre / Installation</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${Number(devis.installation_prix).toLocaleString('fr-FR')} FCFA</td></tr>` : ''
+    const prodRow = devis.produit_nom ? `<tr><td style="padding:8px 12px;">${escapeHtml(devis.produit_nom)} Ã— ${Number(devis.produit_quantite) || 1}</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${prodTotal.toLocaleString('fr-FR')} FCFA</td></tr>` : ''
+    const installRow = Number(devis.installation_prix) > 0 ? `<tr><td style="padding:8px 12px;">Main d'Å“uvre / Installation</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${Number(devis.installation_prix).toLocaleString('fr-FR')} FCFA</td></tr>` : ''
     const accRows = accs.filter((a: any) => a.nom).map((a: any) => `<tr><td style="padding:8px 12px;">${escapeHtml(a.nom)}</td><td style="padding:8px 12px;text-align:right;">${Number(a.prix || 0).toLocaleString('fr-FR')} FCFA</td></tr>`).join('')
     const msgBlock = devis.message_client ? `<p style="background:#f0f9ff;border-left:4px solid #0077b6;padding:14px;margin:20px 0;border-radius:0 8px 8px 0;">${escapeHtml(devis.message_client)}</p>` : ''
 
@@ -5894,14 +5897,14 @@ app.post('/api/admin/devis/send-email', adminAuth, async (c) => {
       body: JSON.stringify({
         sender: { name: 'MAASGA', email: 'maasgabf@gmail.com' },
         to: [{ email: devis.client_email, name: devis.client_name }],
-        subject: `Votre devis MAASGA — ${devis.numero}`,
+        subject: `Votre devis MAASGA â€” ${devis.numero}`,
         htmlContent: `<html><body style="font-family:Arial,sans-serif;padding:20px;max-width:600px;margin:0 auto;color:#1a1a2e;">
           <h2 style="color:#0077b6;border-bottom:2px solid #e2e8f0;padding-bottom:16px;">Devis ${escapeHtml(devis.numero)}</h2>
           <p>Bonjour <strong>${escapeHtml(devis.client_name)}</strong>,</p>
-          <p>MAASGA vous a préparé un devis personnalisé.</p>
+          <p>MAASGA vous a prÃ©parÃ© un devis personnalisÃ©.</p>
           ${msgBlock}
           <table style="width:100%;border-collapse:collapse;font-size:14px;margin:20px 0;border:1px solid #e2e8f0;">
-            <thead><tr style="background:#0077b6;color:white;"><th style="padding:10px 12px;text-align:left;">Désignation</th><th style="padding:10px 12px;text-align:right;">Montant</th></tr></thead>
+            <thead><tr style="background:#0077b6;color:white;"><th style="padding:10px 12px;text-align:left;">DÃ©signation</th><th style="padding:10px 12px;text-align:right;">Montant</th></tr></thead>
             <tbody>${prodRow}${installRow}${accRows}
               <tr style="border-top:2px solid #0077b6;"><td style="padding:12px;font-weight:700;font-size:15px;">Total HT</td><td style="padding:12px;text-align:right;font-weight:800;color:#0077b6;font-size:18px;">${Number(devis.total_ht || 0).toLocaleString('fr-FR')} FCFA</td></tr>
             </tbody>
@@ -5909,7 +5912,7 @@ app.post('/api/admin/devis/send-email', adminAuth, async (c) => {
           <div style="text-align:center;margin:24px 0;">
             <a href="${publicUrl}" style="display:inline-block;background:#0077b6;color:white;padding:14px 32px;text-decoration:none;border-radius:10px;font-weight:bold;font-size:15px;">Consulter et valider le devis</a>
           </div>
-          <p style="color:#6b7280;font-size:12px;border-top:1px solid #e2e8f0;padding-top:16px;">MAASGA SARL — Froid & Climatisation — Ouagadougou, Burkina Faso — +226 55 99 64 18</p>
+          <p style="color:#6b7280;font-size:12px;border-top:1px solid #e2e8f0;padding-top:16px;">MAASGA SARL â€” Froid & Climatisation â€” Ouagadougou, Burkina Faso â€” +226 55 99 64 18</p>
         </body></html>`
       })
     })
@@ -5930,7 +5933,7 @@ app.post('/api/admin/devis/send-email', adminAuth, async (c) => {
 })
 
 // ============================================================
-// DEVIS PREVIEW — Returns PDF HTML without saving to DB
+// DEVIS PREVIEW â€” Returns PDF HTML without saving to DB
 // ============================================================
 app.post('/api/admin/devis/preview', adminAuth, async (c) => {
   const body = await c.req.parseBody()
@@ -6006,17 +6009,17 @@ app.post('/api/admin/devis/delete', adminAuth, async (c) => {
 })
 
 // ============================================================
-// DEVIS — CLIENT VIEW (public)
+// DEVIS â€” CLIENT VIEW (public)
 // ============================================================
 
 app.get('/devis/:token', async (c) => {
   const token = c.req.param('token')
   const db = c.env.DB
-  if (!db) return c.html('<h1>Erreur: base de données indisponible</h1>', 500)
+  if (!db) return c.html('<h1>Erreur: base de donnÃ©es indisponible</h1>', 500)
   try {
     await ensureDevisTable(db)
     const devis = await db.prepare('SELECT * FROM devis WHERE token = ?').bind(token).first() as any
-    if (!devis) return c.html('<html><body style="background:#0b1120;color:#fff;font-family:sans-serif;text-align:center;padding:80px 20px;"><h1>Devis introuvable</h1><p style="color:#6b7280;">Ce lien est invalide ou expiré.</p><br><a href="/" style="color:#38bdf8;">← MAASGA</a></body></html>', 404)
+    if (!devis) return c.html('<html><body style="background:#0b1120;color:#fff;font-family:sans-serif;text-align:center;padding:80px 20px;"><h1>Devis introuvable</h1><p style="color:#6b7280;">Ce lien est invalide ou expirÃ©.</p><br><a href="/" style="color:#38bdf8;">â† MAASGA</a></body></html>', 404)
     return c.html(buildClientDevisHTML(devis as any))
   } catch(e) {
     console.error('Devis view error:', e)
@@ -6036,12 +6039,12 @@ app.post('/api/devis/:token/accept', async (c) => {
 })
 
 // ============================================================
-// DEVIS PDF — Version imprimable avec logo, infos entreprise & client
+// DEVIS PDF â€” Version imprimable avec logo, infos entreprise & client
 // ============================================================
 app.get('/devis/:token/pdf', async (c) => {
   const token = c.req.param('token')
   const db = c.env.DB
-  if (!db) return c.text('Base de données indisponible', 500)
+  if (!db) return c.text('Base de donnÃ©es indisponible', 500)
   try {
     await ensureDevisTable(db)
     const d = await db.prepare('SELECT * FROM devis WHERE token = ?').bind(token).first() as any
@@ -6049,7 +6052,7 @@ app.get('/devis/:token/pdf', async (c) => {
     return c.html(buildDevisPDF(d))
   } catch(e) {
     console.error('Devis PDF error:', e)
-    return c.text('Erreur lors de la génération du PDF', 500)
+    return c.text('Erreur lors de la gÃ©nÃ©ration du PDF', 500)
   }
 })
 
@@ -6073,7 +6076,7 @@ function buildDevisPDF(d: any): string {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${escapeHtml(d.numero)} — Devis PDF MAASGA</title>
+<title>${escapeHtml(d.numero)} â€” Devis PDF MAASGA</title>
 <meta name="robots" content="noindex,nofollow">
 <style>
   @page { margin: 15mm 12mm; size: A4; }
@@ -6157,8 +6160,8 @@ function buildDevisPDF(d: any): string {
 </head>
 <body>
 <div class="print-bar">
-  <button class="print-btn print-btn-primary" onclick="window.print()">🖨️ Imprimer / Télécharger PDF</button>
-  <a class="print-btn print-btn-secondary" href="/devis/${escapeHtml(d.token)}">← Retour au devis</a>
+  <button class="print-btn print-btn-primary" onclick="window.print()">ðŸ–¨ï¸ Imprimer / TÃ©lÃ©charger PDF</button>
+  <a class="print-btn print-btn-secondary" href="/devis/${escapeHtml(d.token)}">â† Retour au devis</a>
 </div>
 
 <div class="page">
@@ -6170,10 +6173,10 @@ function buildDevisPDF(d: any): string {
         <div class="company-name">MAASGA</div>
         <div class="company-tagline">Froid & Climatisation</div>
         <div class="company-info">
-          📍 Ouagadougou, Burkina Faso<br>
-          📞 +226 55 99 64 18<br>
-          ✉️ maasgabf@gmail.com<br>
-          🕐 Lun–Dim · 8h00–18h00
+          ðŸ“ Ouagadougou, Burkina Faso<br>
+          ðŸ“ž +226 55 99 64 18<br>
+          âœ‰ï¸ maasgabf@gmail.com<br>
+          ðŸ• Lunâ€“Dim Â· 8h00â€“18h00
         </div>
       </div>
     </div>
@@ -6182,10 +6185,10 @@ function buildDevisPDF(d: any): string {
       <div class="devis-num">${escapeHtml(d.numero)}</div>
       <div class="devis-meta">
         Date : ${createdStr}<br>
-        ${expiryStr ? `Valable jusqu'au : ${expiryStr}` : 'Validité : 30 jours'}
+        ${expiryStr ? `Valable jusqu'au : ${expiryStr}` : 'ValiditÃ© : 30 jours'}
       </div>
       <span class="status-badge ${isAccepted ? 'status-accepted' : d.status === 'sent' ? 'status-sent' : 'status-expired'}">
-        ${isAccepted ? '✓ Accepté' + (acceptedStr ? ' le ' + acceptedStr : '') : d.status === 'sent' ? '⏳ En attente' : '📋 ' + (d.status || 'Brouillon')}
+        ${isAccepted ? 'âœ“ AcceptÃ©' + (acceptedStr ? ' le ' + acceptedStr : '') : d.status === 'sent' ? 'â³ En attente' : 'ðŸ“‹ ' + (d.status || 'Brouillon')}
       </span>
     </div>
   </div>
@@ -6193,35 +6196,35 @@ function buildDevisPDF(d: any): string {
   <!-- CLIENT + TECHNIQUE -->
   <div class="info-grid">
     <div class="info-card">
-      <div class="info-card-title">👤 Informations client</div>
+      <div class="info-card-title">ðŸ‘¤ Informations client</div>
       <div class="info-row"><span class="info-label">Nom</span><span class="info-val">${escapeHtml(d.client_name || '')}</span></div>
-      <div class="info-row"><span class="info-label">Téléphone</span><span class="info-val">${escapeHtml(d.client_phone || '')}</span></div>
+      <div class="info-row"><span class="info-label">TÃ©lÃ©phone</span><span class="info-val">${escapeHtml(d.client_phone || '')}</span></div>
       ${d.client_email ? `<div class="info-row"><span class="info-label">Email</span><span class="info-val">${escapeHtml(d.client_email)}</span></div>` : ''}
       ${d.client_quartier ? `<div class="info-row"><span class="info-label">Adresse</span><span class="info-val">${escapeHtml(d.client_quartier)}, Ouagadougou</span></div>` : ''}
     </div>
     <div class="info-card">
-      <div class="info-card-title">🏢 Émetteur</div>
+      <div class="info-card-title">ðŸ¢ Ã‰metteur</div>
       <div class="info-row"><span class="info-label">Entreprise</span><span class="info-val">MAASGA</span></div>
-      <div class="info-row"><span class="info-label">Activité</span><span class="info-val">Froid & Climatisation</span></div>
+      <div class="info-row"><span class="info-label">ActivitÃ©</span><span class="info-val">Froid & Climatisation</span></div>
       <div class="info-row"><span class="info-label">Ville</span><span class="info-val">Ouagadougou, BF</span></div>
-      <div class="info-row"><span class="info-label">Tél</span><span class="info-val">+226 55 99 64 18</span></div>
+      <div class="info-row"><span class="info-label">TÃ©l</span><span class="info-val">+226 55 99 64 18</span></div>
       <div class="info-row"><span class="info-label">Email</span><span class="info-val">maasgabf@gmail.com</span></div>
     </div>
   </div>
 
   ${(d.surface || d.btu_recommande) ? `
-  <!-- DONNÉES TECHNIQUES -->
+  <!-- DONNÃ‰ES TECHNIQUES -->
   <div class="tech-grid">
-    ${d.surface ? `<div class="tech-card"><div class="tech-val">${Number(d.surface).toLocaleString('fr-FR')} m²</div><div class="tech-label">Surface</div></div>` : ''}
-    ${d.btu_recommande ? `<div class="tech-card"><div class="tech-val">${Number(d.btu_recommande).toLocaleString('fr-FR')} BTU</div><div class="tech-label">Puissance recommandée</div></div>` : ''}
-    ${d.btu_recommande ? `<div class="tech-card"><div class="tech-val">${btuCvMap[Number(d.btu_recommande)] || '—'} CV</div><div class="tech-label">Chevaux vapeur</div></div>` : ''}
+    ${d.surface ? `<div class="tech-card"><div class="tech-val">${Number(d.surface).toLocaleString('fr-FR')} mÂ²</div><div class="tech-label">Surface</div></div>` : ''}
+    ${d.btu_recommande ? `<div class="tech-card"><div class="tech-val">${Number(d.btu_recommande).toLocaleString('fr-FR')} BTU</div><div class="tech-label">Puissance recommandÃ©e</div></div>` : ''}
+    ${d.btu_recommande ? `<div class="tech-card"><div class="tech-val">${btuCvMap[Number(d.btu_recommande)] || 'â€”'} CV</div><div class="tech-label">Chevaux vapeur</div></div>` : ''}
   </div>` : ''}
 
   <!-- TABLEAU DES PRESTATIONS -->
   <table>
     <thead><tr>
-      <th style="width:45%">Désignation</th>
-      <th style="width:10%">Qté</th>
+      <th style="width:45%">DÃ©signation</th>
+      <th style="width:10%">QtÃ©</th>
       <th style="width:22%">Prix unitaire</th>
       <th style="width:23%">Total</th>
     </tr></thead>
@@ -6233,7 +6236,7 @@ function buildDevisPDF(d: any): string {
         <td class="right">${prodTotal.toLocaleString('fr-FR')} FCFA</td>
       </tr>` : ''}
       <tr>
-        <td>Installation professionnelle<br><span style="font-size:10px;color:#64748b;">Mise en service · Test · Vérification étanchéité · Formation</span></td>
+        <td>Installation professionnelle<br><span style="font-size:10px;color:#64748b;">Mise en service Â· Test Â· VÃ©rification Ã©tanchÃ©itÃ© Â· Formation</span></td>
         <td class="right">1</td>
         <td class="right">${installTotal.toLocaleString('fr-FR')} FCFA</td>
         <td class="right">${installTotal.toLocaleString('fr-FR')} FCFA</td>
@@ -6250,7 +6253,7 @@ function buildDevisPDF(d: any): string {
       </tr>
       ${remisePct > 0 ? `<tr class="discount-row">
         <td colspan="3" style="text-align:right;">Remise (${remisePct}%)</td>
-        <td class="right">− ${remiseMt.toLocaleString('fr-FR')} FCFA</td>
+        <td class="right">âˆ’ ${remiseMt.toLocaleString('fr-FR')} FCFA</td>
       </tr>` : ''}
       <tr class="total-row">
         <td colspan="3"><span class="total-label">TOTAL TTC</span></td>
@@ -6261,34 +6264,34 @@ function buildDevisPDF(d: any): string {
 
   <!-- ENGAGEMENTS -->
   <div class="engagements">
-    <div class="engage-item"><span class="engage-icon">🔧</span><span><strong>Techniciens certifiés</strong> — Équipe qualifiée et expérimentée</span></div>
-    <div class="engage-item"><span class="engage-icon">🛡️</span><span><strong>Garantie 12 mois</strong> — Pièces et main d'œuvre</span></div>
-    <div class="engage-item"><span class="engage-icon">📞</span><span><strong>SAV rapide</strong> — Intervention sous 48h</span></div>
-    <div class="engage-item"><span class="engage-icon">💯</span><span><strong>Satisfaction garantie</strong> — Ou reprise gratuite</span></div>
+    <div class="engage-item"><span class="engage-icon">ðŸ”§</span><span><strong>Techniciens certifiÃ©s</strong> â€” Ã‰quipe qualifiÃ©e et expÃ©rimentÃ©e</span></div>
+    <div class="engage-item"><span class="engage-icon">ðŸ›¡ï¸</span><span><strong>Garantie 12 mois</strong> â€” PiÃ¨ces et main d'Å“uvre</span></div>
+    <div class="engage-item"><span class="engage-icon">ðŸ“ž</span><span><strong>SAV rapide</strong> â€” Intervention sous 48h</span></div>
+    <div class="engage-item"><span class="engage-icon">ðŸ’¯</span><span><strong>Satisfaction garantie</strong> â€” Ou reprise gratuite</span></div>
   </div>
 
   ${d.message_client ? `
   <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:10px; padding:16px; margin:20px 0;">
-    <div style="font-size:11px; font-weight:700; color:#0077b6; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">💬 Message de l'équipe</div>
+    <div style="font-size:11px; font-weight:700; color:#0077b6; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">ðŸ’¬ Message de l'Ã©quipe</div>
     <p style="font-size:13px; color:#334155; line-height:1.7; white-space:pre-wrap;">${escapeHtml(d.message_client)}</p>
   </div>` : ''}
 
   <!-- CONDITIONS -->
   <div class="conditions">
-    <div class="conditions-title">📋 Conditions générales</div>
-    • Ce devis est valable ${expiryStr ? `jusqu'au ` + expiryStr : `30 jours à compter de la date d'émission`}.<br>
-    • Aucun paiement n'est requis avant accord du client et visite technique sur site.<br>
-    • Le montant définitif peut être ajusté si les conditions réelles diffèrent du dimensionnement initial.<br>
-    • TVA non applicable (régime simplifié).<br>
-    • L'installation comprend : mise en service, test complet et formation d'utilisation.
+    <div class="conditions-title">ðŸ“‹ Conditions gÃ©nÃ©rales</div>
+    â€¢ Ce devis est valable ${expiryStr ? `jusqu'au ` + expiryStr : `30 jours Ã  compter de la date d'Ã©mission`}.<br>
+    â€¢ Aucun paiement n'est requis avant accord du client et visite technique sur site.<br>
+    â€¢ Le montant dÃ©finitif peut Ãªtre ajustÃ© si les conditions rÃ©elles diffÃ¨rent du dimensionnement initial.<br>
+    â€¢ TVA non applicable (rÃ©gime simplifiÃ©).<br>
+    â€¢ L'installation comprend : mise en service, test complet et formation d'utilisation.
   </div>
 
   <!-- FOOTER -->
   <div class="footer">
-    <strong>MAASGA — Froid & Climatisation</strong><br>
-    📍 Ouagadougou, Burkina Faso &nbsp;|&nbsp; 📞 +226 55 99 64 18 &nbsp;|&nbsp; ✉️ maasgabf@gmail.com<br>
-    🕐 Lundi – Dimanche · 8h00 – 18h00<br><br>
-    <em>Merci pour votre confiance. L'équipe MAASGA reste à votre disposition.</em>
+    <strong>MAASGA â€” Froid & Climatisation</strong><br>
+    ðŸ“ Ouagadougou, Burkina Faso &nbsp;|&nbsp; ðŸ“ž +226 55 99 64 18 &nbsp;|&nbsp; âœ‰ï¸ maasgabf@gmail.com<br>
+    ðŸ• Lundi â€“ Dimanche Â· 8h00 â€“ 18h00<br><br>
+    <em>Merci pour votre confiance. L'Ã©quipe MAASGA reste Ã  votre disposition.</em>
   </div>
 </div>
 
@@ -6312,7 +6315,7 @@ app.post('/api/admin/rdv/update', adminAuth, async (c) => {
   }
   const rdv = appointments.find(a => a.id === id)
 
-  // Modifier status en D1 (référence) avant le cache mémoire
+  // Modifier status en D1 (rÃ©fÃ©rence) avant le cache mÃ©moire
   const db = c.env.DB
   if (db) {
     try {
@@ -6320,7 +6323,7 @@ app.post('/api/admin/rdv/update', adminAuth, async (c) => {
       if (!res?.meta?.changes) return c.redirect('/admin/rdv?error=' + encodeURIComponent('Rendez-vous introuvable'))
     } catch (error) {
       console.error('Erreur D1 rdv update:', error)
-      return c.redirect('/admin/rdv?error=' + encodeURIComponent('Mise à jour impossible (base de données)'))
+      return c.redirect('/admin/rdv?error=' + encodeURIComponent('Mise Ã  jour impossible (base de donnÃ©es)'))
     }
   } else if (!rdv) {
     return c.redirect('/admin/rdv?error=' + encodeURIComponent('Rendez-vous introuvable'))
@@ -6330,7 +6333,7 @@ app.post('/api/admin/rdv/update', adminAuth, async (c) => {
   return c.redirect('/admin/rdv?success=1')
 })
 
-// API Admin - Valider la visite (marquer RDV done SANS créer de commande)
+// API Admin - Valider la visite (marquer RDV done SANS crÃ©er de commande)
 app.post('/api/admin/rdv/validate-visit', adminAuth, async (c) => {
   const body = await c.req.json().catch(() => ({} as any))
   const appointment_id = parseInt(body.appointment_id) || 0
@@ -6343,17 +6346,17 @@ app.post('/api/admin/rdv/validate-visit', adminAuth, async (c) => {
       const res = await db.prepare('UPDATE appointments SET status = ? WHERE id = ?').bind('done', appointment_id).run()
       if (!res?.meta?.changes) return c.json({ success: false, error: 'Rendez-vous introuvable' }, 404)
     } catch (error) {
-      // Ne plus avaler l'erreur : l'admin voyait « Visite validée » alors que le
-      // statut restait inchangé en base.
+      // Ne plus avaler l'erreur : l'admin voyait Â« Visite validÃ©e Â» alors que le
+      // statut restait inchangÃ© en base.
       console.error('Erreur D1 validate-visit:', error)
-      return c.json({ success: false, error: 'Validation impossible (base de données)' }, 500)
+      return c.json({ success: false, error: 'Validation impossible (base de donnÃ©es)' }, 500)
     }
   } else if (!rdv) {
     return c.json({ success: false, error: 'Rendez-vous introuvable' }, 404)
   }
   if (rdv) rdv.status = 'done'
 
-  return c.json({ success: true, message: 'Visite validée avec succès' })
+  return c.json({ success: true, message: 'Visite validÃ©e avec succÃ¨s' })
 })
 
 // API Admin - Approuver avis
@@ -6430,7 +6433,7 @@ app.get('/api/admin/clients/by-phone', adminAuth, async (c) => {
 })
 
 // ==============================================================
-// API Admin - Détail complet d'un client (historique)
+// API Admin - DÃ©tail complet d'un client (historique)
 // ==============================================================
 app.get('/api/admin/clients/:id/detail', adminAuth, async (c) => {
   const id = parseInt(c.req.param('id') || '0')
@@ -6486,7 +6489,7 @@ app.get('/api/admin/reset-codes/:token/whatsapp', adminAuth, async (c) => {
   try {
     const row = await db.prepare('SELECT phone, code FROM password_reset_codes WHERE token = ? AND used = 0').bind(tkn).first() as any
     if (!row || !row.phone) return c.json({ error: 'not_found' }, 404)
-    const waUrl = 'https://wa.me/' + row.phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent(`Bonjour! Voici votre code de réinitialisation MAASGA: ${row.code}\nCe code expire dans 15 minutes.`)
+    const waUrl = 'https://wa.me/' + row.phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent(`Bonjour! Voici votre code de rÃ©initialisation MAASGA: ${row.code}\nCe code expire dans 15 minutes.`)
     return c.json({ url: waUrl })
   } catch (e) {
     return c.json({ error: 'failed' }, 500)
@@ -6544,13 +6547,13 @@ app.post('/api/admin/produit/add', adminAuth, async (c) => {
     }
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
     if (!allowedTypes.includes(file.type)) {
-      return c.redirect('/admin/produits?error=' + encodeURIComponent('Type de fichier non autorisé. Utilisez JPEG, PNG ou WebP.'))
+      return c.redirect('/admin/produits?error=' + encodeURIComponent('Type de fichier non autorisÃ©. Utilisez JPEG, PNG ou WebP.'))
     }
     const buffer = await file.arrayBuffer()
     const bytes = new Uint8Array(buffer)
     // Validate magic bytes to prevent spoofed Content-Type
     if (!validateImageMagicBytes(bytes)) {
-      return c.redirect('/admin/produits?error=' + encodeURIComponent('Le fichier ne semble pas être une image valide.'))
+      return c.redirect('/admin/produits?error=' + encodeURIComponent('Le fichier ne semble pas Ãªtre une image valide.'))
     }
     // Upload vers ImgBB
     const imgbbKey2 = (c.env as any).IMGBB_API_KEY as string
@@ -6574,9 +6577,9 @@ app.post('/api/admin/produit/add', adminAuth, async (c) => {
     media = []
   }
 
-  // Écrire en D1 d'abord : l'identifiant vient de l'AUTOINCREMENT, pas d'un
-  // Math.max sur le cache mémoire (partiel et par isolate, donc source de
-  // collisions d'id) ; le produit n'est mis en cache qu'en cas de succès.
+  // Ã‰crire en D1 d'abord : l'identifiant vient de l'AUTOINCREMENT, pas d'un
+  // Math.max sur le cache mÃ©moire (partiel et par isolate, donc source de
+  // collisions d'id) ; le produit n'est mis en cache qu'en cas de succÃ¨s.
   const db = c.env.DB
   let newId = 0
   if (db) {
@@ -6588,13 +6591,13 @@ app.post('/api/admin/produit/add', adminAuth, async (c) => {
         name, brand, model, btu, price, stock, surface_min, surface_max, energy_class,
         description, inverter ? 1 : 0, available ? 1 : 0, '1 an constructeur',
         features.length > 0 ? JSON.stringify(features) : null,
-        '❄️', imageUrl || null, techSpecsJson,
+        'â„ï¸', imageUrl || null, techSpecsJson,
         media.length > 0 ? JSON.stringify(media) : null
       ).run()
       newId = Number(res?.meta?.last_row_id || 0)
     } catch (error) {
       console.error('Erreur D1 produit add:', error)
-      return c.redirect('/admin/produits?error=' + encodeURIComponent('Enregistrement impossible (base de données)'))
+      return c.redirect('/admin/produits?error=' + encodeURIComponent('Enregistrement impossible (base de donnÃ©es)'))
     }
   }
   if (!newId) newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1
@@ -6604,7 +6607,7 @@ app.post('/api/admin/produit/add', adminAuth, async (c) => {
     name, brand, model, btu, price, price_install: 0, stock,
     surface_min, surface_max, energy_class, description,
     inverter, available,
-    image: '❄️',
+    image: 'â„ï¸',
     imageUrl,
     features,
     warranty: '1 an constructeur',
@@ -6613,7 +6616,7 @@ app.post('/api/admin/produit/add', adminAuth, async (c) => {
   }
   products.push(newProduct)
 
-  await notifyAdmin((c as any).env, 'product', `${name} — ${brand}, ${btu.toLocaleString()} BTU — ${price.toLocaleString()} FCFA (stock: ${stock})`)
+  await notifyAdmin((c as any).env, 'product', `${name} â€” ${brand}, ${btu.toLocaleString()} BTU â€” ${price.toLocaleString()} FCFA (stock: ${stock})`)
   return c.redirect('/admin/produits?success=1')
 })
 
@@ -6630,7 +6633,7 @@ app.post('/api/admin/produit/add', adminAuth, async (c) => {
 //
 // L'apercu montre donc litteralement ce qui sera enregistre. La version
 // precedente dupliquait la validation cote navigateur et cote serveur, avec deux
-// copies des referentiels vouees a diverger — et exigeait un fichier modele qui
+// copies des referentiels vouees a diverger â€” et exigeait un fichier modele qui
 // n'existe pas dans le depot.
 // ============================================================
 
@@ -6699,24 +6702,24 @@ function apporteValeur(champ: keyof ChampsProduit, produit: ProduitDerive): bool
 app.post('/api/admin/produits/import', adminAuth, async (c) => {
   const body = await c.req.json<CorpsImportProduits>().catch(() => null)
   if (!body || typeof body !== 'object') {
-    return c.json({ succes: false, message: 'Corps de requête illisible.' }, 400)
+    return c.json({ succes: false, message: 'Corps de requÃªte illisible.' }, 400)
   }
 
   const mode: ModeImport = body.mode === 'execution' ? 'execution' : 'analyse'
   const lignesBrutes = Array.isArray(body.lignes) ? body.lignes : []
   if (lignesBrutes.length === 0) {
-    return c.json({ succes: false, message: 'Aucune ligne reçue.' }, 400)
+    return c.json({ succes: false, message: 'Aucune ligne reÃ§ue.' }, 400)
   }
-  // Marge au-dessus du plafond : l'UI renvoie les lignes d'en-tête avec chaque
-  // lot pour que la détection reste serveur. Le vrai plafond porte sur les
-  // lignes de données, vérifié après analyse.
+  // Marge au-dessus du plafond : l'UI renvoie les lignes d'en-tÃªte avec chaque
+  // lot pour que la dÃ©tection reste serveur. Le vrai plafond porte sur les
+  // lignes de donnÃ©es, vÃ©rifiÃ© aprÃ¨s analyse.
   if (lignesBrutes.length > MAX_LIGNES_PAR_LOT + 20) {
     return c.json({ succes: false, message: `Maximum ${MAX_LIGNES_PAR_LOT} lignes par lot.` }, 400)
   }
 
   const db = c.env.DB
   if (!db) {
-    return c.json({ succes: false, message: 'Base de données indisponible.' }, 500)
+    return c.json({ succes: false, message: 'Base de donnÃ©es indisponible.' }, 500)
   }
 
   const analyse = analyserClasseur(lignesBrutes, {
@@ -6727,11 +6730,11 @@ app.post('/api/admin/produits/import', adminAuth, async (c) => {
   })
 
   if (analyse.nbLignesDonnees > MAX_LIGNES_PAR_LOT) {
-    return c.json({ succes: false, message: `Maximum ${MAX_LIGNES_PAR_LOT} lignes de données par lot.` }, 400)
+    return c.json({ succes: false, message: `Maximum ${MAX_LIGNES_PAR_LOT} lignes de donnÃ©es par lot.` }, 400)
   }
 
   // Rapprochement des doublons : une seule lecture du catalogue, puis une Map en
-  // mémoire — pas une requête par ligne.
+  // mÃ©moire â€” pas une requÃªte par ligne.
   const existants = new Map<string, { id: number; nom: string }>()
   try {
     const res = await db.prepare('SELECT id, name, brand, model, btu FROM products').all()
@@ -6747,8 +6750,8 @@ app.post('/api/admin/produits/import', adminAuth, async (c) => {
   const strategie: StrategieDoublon =
     body.strategieDoublon === 'ignorer' || body.strategieDoublon === 'creer' ? body.strategieDoublon : 'maj'
 
-  // Rapprochement, plus détection des doublons internes au fichier : deux lignes
-  // identiques dans le même tableau ne doivent pas créer deux fiches.
+  // Rapprochement, plus dÃ©tection des doublons internes au fichier : deux lignes
+  // identiques dans le mÃªme tableau ne doivent pas crÃ©er deux fiches.
   const vues = new Set<string>()
   const preparees = analyse.produits.map((produit) => {
     const cle = cleProduit(produit.champs.marque, produit.champs.puissanceBtu, produit.champs.modele, produit.champs.nom)
@@ -6773,7 +6776,7 @@ app.post('/api/admin/produits/import', adminAuth, async (c) => {
         champs: produit.champs,
         origines: produit.origines,
         alertes: doublonFichier
-          ? produit.alertes.concat('Ligne déjà présente plus haut dans le fichier : elle sera ignorée.')
+          ? produit.alertes.concat('Ligne dÃ©jÃ  prÃ©sente plus haut dans le fichier : elle sera ignorÃ©e.')
           : produit.alertes,
         erreurs: produit.erreurs,
         doublon: existant ? { id: existant.id, nom: existant.nom } : null
@@ -6812,12 +6815,12 @@ app.post('/api/admin/produits/import', adminAuth, async (c) => {
       continue
     }
     if (doublonFichier) {
-      ignorees.push({ ligne: produit.ligne, raison: 'Doublon dans le fichier importé.' })
+      ignorees.push({ ligne: produit.ligne, raison: 'Doublon dans le fichier importÃ©.' })
       continue
     }
 
     if (existant && strategie === 'ignorer') {
-      ignorees.push({ ligne: produit.ligne, raison: `Déjà au catalogue (fiche #${existant.id}), conservée telle quelle.` })
+      ignorees.push({ ligne: produit.ligne, raison: `DÃ©jÃ  au catalogue (fiche #${existant.id}), conservÃ©e telle quelle.` })
       continue
     }
 
@@ -6830,7 +6833,7 @@ app.post('/api/admin/produits/import', adminAuth, async (c) => {
         valeurs.push(valeurSqlImport(champ, produit.champs))
       }
       if (colonnes.length === 0) {
-        ignorees.push({ ligne: produit.ligne, raison: `Fiche #${existant.id} inchangée : le fichier n'apporte aucune valeur.` })
+        ignorees.push({ ligne: produit.ligne, raison: `Fiche #${existant.id} inchangÃ©e : le fichier n'apporte aucune valeur.` })
         continue
       }
       colonnes.push('updated_at = ?')
@@ -6841,10 +6844,10 @@ app.post('/api/admin/produits/import', adminAuth, async (c) => {
       continue
     }
 
-    // Création : les valeurs de repli ont ici toute leur place, c'est ce qui
-    // permet à un simple libellé + prix de produire une fiche complète.
+    // CrÃ©ation : les valeurs de repli ont ici toute leur place, c'est ce qui
+    // permet Ã  un simple libellÃ© + prix de produire une fiche complÃ¨te.
     const valeurs = COLONNES_IMPORT.map(([champ]) => valeurSqlImport(champ, produit.champs))
-    batch.push(stmtInsert.bind(...valeurs, '❄️', maintenant, maintenant))
+    batch.push(stmtInsert.bind(...valeurs, 'â„ï¸', maintenant, maintenant))
     crees++
   }
 
@@ -6853,8 +6856,8 @@ app.post('/api/admin/produits/import', adminAuth, async (c) => {
       succes: false,
       mode: 'execution',
       message: erreurs.length > 0
-        ? 'Aucune ligne exploitable : rien n\'a été enregistré.'
-        : 'Rien à enregistrer : toutes les lignes étaient déjà au catalogue.',
+        ? 'Aucune ligne exploitable : rien n\'a Ã©tÃ© enregistrÃ©.'
+        : 'Rien Ã  enregistrer : toutes les lignes Ã©taient dÃ©jÃ  au catalogue.',
       crees: 0,
       misAJour: 0,
       ignorees,
@@ -6864,15 +6867,15 @@ app.post('/api/admin/produits/import', adminAuth, async (c) => {
   }
 
   try {
-    // db.batch est transactionnel côté D1 : tout ou rien.
+    // db.batch est transactionnel cÃ´tÃ© D1 : tout ou rien.
     await db.batch(batch)
   } catch (err) {
     console.error('Erreur import produits:', err)
-    return c.json({ succes: false, message: "Erreur serveur pendant l'écriture. Rien n'a été enregistré." }, 500)
+    return c.json({ succes: false, message: "Erreur serveur pendant l'Ã©criture. Rien n'a Ã©tÃ© enregistrÃ©." }, 500)
   }
 
-  // Un upsert ne peut pas être reflété par un products.push (il dupliquerait les
-  // fiches mises à jour en mémoire) : on invalide le cache, refreshAdminCache
+  // Un upsert ne peut pas Ãªtre reflÃ©tÃ© par un products.push (il dupliquerait les
+  // fiches mises Ã  jour en mÃ©moire) : on invalide le cache, refreshAdminCache
   // rechargera depuis D1 au prochain GET.
   _d1LoadPromise = null
 
@@ -6892,9 +6895,9 @@ app.post('/api/admin/produits/import', adminAuth, async (c) => {
   })
 
   const parts: string[] = []
-  if (crees > 0) parts.push(`${crees} créé(s)`)
-  if (misAJour > 0) parts.push(`${misAJour} mis à jour`)
-  if (ignorees.length > 0) parts.push(`${ignorees.length} ignoré(s)`)
+  if (crees > 0) parts.push(`${crees} crÃ©Ã©(s)`)
+  if (misAJour > 0) parts.push(`${misAJour} mis Ã  jour`)
+  if (ignorees.length > 0) parts.push(`${ignorees.length} ignorÃ©(s)`)
   if (erreurs.length > 0) parts.push(`${erreurs.length} en erreur`)
 
   await notifyAdmin((c as any).env, 'product', `Import en masse : ${parts.join(', ')}.`)
@@ -6907,7 +6910,7 @@ app.post('/api/admin/produits/import', adminAuth, async (c) => {
     ignorees,
     erreurs,
     avertissements: analyse.avertissements,
-    message: `Import terminé : ${parts.join(', ')}.` + (crees > 0 ? ' Pense à ajouter les photos depuis chaque fiche produit.' : '')
+    message: `Import terminÃ© : ${parts.join(', ')}.` + (crees > 0 ? ' Pense Ã  ajouter les photos depuis chaque fiche produit.' : '')
   })
 })
 
@@ -6954,20 +6957,47 @@ app.post('/api/admin/produit/update', adminAuth, async (c) => {
   })
   const techSpecsJson2 = Object.keys(techSpecs2).length > 0 ? JSON.stringify(techSpecs2) : null
   
-  // Parse media JSON
+  // Parse media JSON et uploader les nouvelles images (data: URLs) vers ImgBB.
+  // Les items dont l'URL est déjà HTTPS sont conservés tels quels — aucun
+  // blob base64 n'est jamais écrit en D1, ce qui évite de dépasser la limite
+  // de taille de ligne SQLite et de dégrader les performances de lecture.
   let media: any[] = []
   try {
     const mediaJson = body['media_json'] as string
     if (mediaJson) {
-      media = JSON.parse(mediaJson)
+      const parsed: any[] = JSON.parse(mediaJson)
+      const imgbbKey = (c.env as any).IMGBB_API_KEY as string
+      for (const item of parsed) {
+        if (typeof item.url === 'string' && item.url.startsWith('data:image/')) {
+          if (imgbbKey) {
+            try {
+              const base64Data = item.url.split(',')[1]
+              const mimeMatch = item.url.match(/data:(image\/[^;]+)/)
+              const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg'
+              const binaryStr = atob(base64Data)
+              const bytes = new Uint8Array(binaryStr.length)
+              for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i)
+              const result = await uploadToImgBB(imgbbKey, bytes.buffer, mime)
+              media.push({ type: 'image', url: result.url, deleteUrl: result.deleteUrl, caption: item.caption || '' })
+            } catch (uploadErr) {
+              console.error('ImgBB upload for media item failed:', uploadErr)
+              // En cas d'échec on ignore l'item — on ne stocke pas de blob en D1
+            }
+          }
+          // Sans clé ImgBB, les data: URLs sont ignorés silencieusement
+        } else {
+          // URL HTTPS déjà hébergée (ImgBB ou autre) : conserver l'item intact
+          media.push(item)
+        }
+      }
     } else {
-      // Keep existing media if not updated
+      // Aucun media_json envoyé : conserver les médias existants du produit
       media = products[productIndex].media || []
     }
   } catch (e) {
     media = products[productIndex].media || []
   }
-  
+
   products[productIndex] = {
     ...products[productIndex],
     name, brand, model, btu, price, stock,
@@ -6977,7 +7007,7 @@ app.post('/api/admin/produit/update', adminAuth, async (c) => {
     media: media.length > 0 ? media : undefined
   }
 
-  // Écrire en D1 aussi
+  // Ã‰crire en D1 aussi
   const db = c.env.DB
   if (db) {
     try {
@@ -7022,7 +7052,7 @@ app.post('/api/admin/produit/delete', adminAuth, async (c) => {
   const imgbbApiKey = (c.env as any).IMGBB_API_KEY as string
   if (imgbbApiKey) {
     try {
-      // Récupérer le delete_url depuis D1
+      // RÃ©cupÃ©rer le delete_url depuis D1
       const dbForDel = c.env.DB
       if (dbForDel) {
         const prod = await dbForDel.prepare('SELECT imgbb_delete_url FROM products WHERE id = ?').bind(id).first() as any
@@ -7043,6 +7073,11 @@ app.post('/api/admin/produit/delete', adminAuth, async (c) => {
       console.error('Erreur D1 produit delete:', error)
     }
   }
+
+  // Invalider le cache en mémoire pour forcer un rechargement depuis D1
+  // au prochain démarrage d'isolate — garantit qu'un produit supprimé ne
+  // réapparaît pas après un redéploiement ou une mise en veille du Worker.
+  _d1LoadPromise = null
   
   return c.redirect('/admin/produits?deleted=1')
 })
@@ -7078,13 +7113,13 @@ app.post('/api/admin/produit/image', adminAuth, async (c) => {
     }
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
     if (!allowedTypes.includes(file.type)) {
-      return c.redirect('/admin/produits?error=' + encodeURIComponent('Type non autorisé. Utilisez JPEG, PNG ou WebP.'))
+      return c.redirect('/admin/produits?error=' + encodeURIComponent('Type non autorisÃ©. Utilisez JPEG, PNG ou WebP.'))
     }
     const buffer = await file.arrayBuffer()
     const bytes = new Uint8Array(buffer)
     // Validate magic bytes to prevent spoofed Content-Type
     if (!validateImageMagicBytes(bytes)) {
-      return c.redirect('/admin/produits?error=' + encodeURIComponent('Le fichier ne semble pas être une image valide.'))
+      return c.redirect('/admin/produits?error=' + encodeURIComponent('Le fichier ne semble pas Ãªtre une image valide.'))
     }
     // Upload vers ImgBB (remplace le stockage base64 en D1)
     const imgbbKey = (c.env as any).IMGBB_API_KEY as string
@@ -7119,7 +7154,7 @@ app.post('/api/admin/produit/image', adminAuth, async (c) => {
 })
 
 // ============================================================
-// API GALERIE PRODUIT — ajouter/supprimer une image ImgBB
+// API GALERIE PRODUIT â€” ajouter/supprimer une image ImgBB
 // ============================================================
 
 // Ajouter une image a la galerie d'un produit
@@ -7193,12 +7228,114 @@ app.get('/api/admin/produit/gallery/:id', adminAuth, async (c) => {
   }
 })
 
+// ============================================================
+// MÉDIATHÈQUE CENTRALISÉE PAR MARQUE
+// Permet d'uploader des images une fois, taguées par marque,
+// puis de les affecter à n'importe quel produit (image principale ou galerie).
+// ============================================================
 
-// API Génération devis PDF (simulation)
+// Lister toutes les images (optionnel : filtrer par brand)
+app.get('/api/admin/media/brand', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ images: [] })
+  const brand = c.req.query('brand') || ''
+  try {
+    const sql = brand
+      ? 'SELECT * FROM brand_media_library WHERE brand = ? ORDER BY created_at DESC'
+      : 'SELECT * FROM brand_media_library ORDER BY brand ASC, created_at DESC'
+    const res = brand
+      ? await db.prepare(sql).bind(brand).all()
+      : await db.prepare(sql).all()
+    return c.json({ images: (res as any)?.results || [] })
+  } catch (e) {
+    return c.json({ images: [] })
+  }
+})
+
+// Uploader une image dans la médiathèque (taguée par marque)
+app.post('/api/admin/media/brand/upload', adminAuth, async (c) => {
+  const body = await c.req.parseBody()
+  const brand = sanitizeText(body['brand'] as string, 120)
+  const label = sanitizeText(body['label'] as string, 200) || ''
+  const file = body['image'] as File | null
+  if (!brand) return c.json({ error: 'Marque requise' }, 400)
+  if (!file || !(file instanceof File) || file.size === 0) return c.json({ error: 'Fichier manquant' }, 400)
+  const MAX = 5 * 1024 * 1024
+  if (file.size > MAX) return c.json({ error: 'Image trop grande (max 5 MB)' }, 400)
+  const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+  if (!allowed.includes(file.type)) return c.json({ error: 'Format non autorisé' }, 400)
+  const imgbbKey = (c.env as any).IMGBB_API_KEY as string
+  if (!imgbbKey) return c.json({ error: 'IMGBB_API_KEY manquante' }, 500)
+  const buffer = await file.arrayBuffer()
+  try {
+    const r = await uploadToImgBB(imgbbKey, buffer, file.type)
+    const db = c.env.DB
+    if (!db) return c.json({ error: 'DB indisponible' }, 500)
+    const row = await db.prepare(
+      'INSERT INTO brand_media_library (brand, url, delete_url, label) VALUES (?, ?, ?, ?) RETURNING *'
+    ).bind(brand, r.url, r.deleteUrl, label).first() as any
+    return c.json({ success: true, image: row })
+  } catch (e) {
+    console.error('Brand media upload error:', e)
+    return c.json({ error: 'Upload ImgBB échoué' }, 500)
+  }
+})
+
+// Supprimer une image de la médiathèque
+app.post('/api/admin/media/brand/delete', adminAuth, async (c) => {
+  const body = await c.req.parseBody()
+  const id = parseInt(body['id'] as string)
+  if (!id) return c.json({ error: 'ID manquant' }, 400)
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'DB indisponible' }, 500)
+  try {
+    const row = await db.prepare('SELECT delete_url FROM brand_media_library WHERE id = ?').bind(id).first() as any
+    await db.prepare('DELETE FROM brand_media_library WHERE id = ?').bind(id).run()
+    if (row?.delete_url) { await fetch(row.delete_url).catch(() => {}) }
+    return c.json({ success: true })
+  } catch (e) {
+    return c.json({ error: 'Erreur DB' }, 500)
+  }
+})
+
+// Affecter une image de la médiathèque à un produit (image principale ou galerie)
+app.post('/api/admin/media/brand/assign', adminAuth, async (c) => {
+  const body = await c.req.parseBody()
+  const productId = parseInt(body['product_id'] as string)
+  const mediaId = parseInt(body['media_id'] as string)
+  const target = (body['target'] as string) === 'gallery' ? 'gallery' : 'main'
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'DB indisponible' }, 500)
+  try {
+    const mediaRow = await db.prepare('SELECT * FROM brand_media_library WHERE id = ?').bind(mediaId).first() as any
+    if (!mediaRow) return c.json({ error: 'Image introuvable dans la médiathèque' }, 404)
+    if (target === 'main') {
+      await db.prepare('UPDATE products SET imageUrl = ? WHERE id = ?').bind(mediaRow.url, productId).run()
+      const p = products.find(p => p.id === productId)
+      if (p) (p as any).imageUrl = mediaRow.url
+    } else {
+      const prodRow = await db.prepare('SELECT media_urls FROM products WHERE id = ?').bind(productId).first() as any
+      let gallery: any[] = []
+      try { gallery = JSON.parse(prodRow?.media_urls || '[]') } catch (_) {}
+      gallery.push({ url: mediaRow.url, deleteUrl: mediaRow.delete_url || '', type: 'image', caption: mediaRow.label || '' })
+      await db.prepare('UPDATE products SET media_urls = ? WHERE id = ?').bind(JSON.stringify(gallery), productId).run()
+      // Mettre à jour le cache en mémoire
+      const p = products.find(p => p.id === productId)
+      if (p) p.media = gallery
+    }
+    return c.json({ success: true, url: mediaRow.url })
+  } catch (e) {
+    console.error('Brand media assign error:', e)
+    return c.json({ error: 'Erreur DB' }, 500)
+  }
+})
+
+
+// API GÃ©nÃ©ration devis PDF (simulation)
 app.get('/api/devis/:rdvId', adminAuth, (c) => {
   const rdvId = parseInt(c.req.param('rdvId'))
   const rdv = appointments.find(a => a.id === rdvId)
-  if (!rdv) return c.json({ error: 'RDV non trouvé' }, 404)
+  if (!rdv) return c.json({ error: 'RDV non trouvÃ©' }, 404)
 
   const html = `
     <!DOCTYPE html>
@@ -7218,31 +7355,31 @@ app.get('/api/devis/:rdvId', adminAuth, (c) => {
       </style>
     </head><body>
       <div class="header">
-        <div class="title">❄️ MAASGA - Devis Technique</div>
-        <div class="subtitle">Froid & Climatisation · Ouagadougou, Burkina Faso</div>
+        <div class="title">â„ï¸ MAASGA - Devis Technique</div>
+        <div class="subtitle">Froid & Climatisation Â· Ouagadougou, Burkina Faso</div>
       </div>
-      <h2>Devis N° DEV-${rdvId.toString().padStart(4,'0')}-${new Date().getFullYear()}</h2>
+      <h2>Devis NÂ° DEV-${rdvId.toString().padStart(4,'0')}-${new Date().getFullYear()}</h2>
       <p><strong>Date :</strong> ${new Date().toLocaleDateString('fr-FR')}</p>
       <p><strong>Client :</strong> ${escapeHtml(rdv.name || '')}</p>
-      <p><strong>Téléphone :</strong> ${escapeHtml(rdv.phone || '')}</p>
+      <p><strong>TÃ©lÃ©phone :</strong> ${escapeHtml(rdv.phone || '')}</p>
       <p><strong>Quartier :</strong> ${escapeHtml(rdv.quartier || '')}</p>
-      <p><strong>Type :</strong> ${{ devis: 'Dimensionnement / Devis', installation: 'Installation', entretien: 'Entretien / Maintenance', depannage: 'Dépannage / Réparation urgente' }[rdv.type as string] || rdv.type}</p>
+      <p><strong>Type :</strong> ${{ devis: 'Dimensionnement / Devis', installation: 'Installation', entretien: 'Entretien / Maintenance', depannage: 'DÃ©pannage / RÃ©paration urgente' }[rdv.type as string] || rdv.type}</p>
       ${rdv.notes ? `<p><strong>Notes :</strong> ${escapeHtml(rdv.notes || '')}</p>` : ''}
       <table>
-        <thead><tr><th>Prestation</th><th>Détails</th><th>Montant</th></tr></thead>
+        <thead><tr><th>Prestation</th><th>DÃ©tails</th><th>Montant</th></tr></thead>
         <tbody>
           <tr><td>Visite technique sur site</td><td>Dimensionnement et conseil</td><td>GRATUIT</td></tr>
-          <tr><td>Climatiseur recommandé</td><td>À définir après visite technique</td><td>Sur devis</td></tr>
-          <tr><td>Installation professionnelle</td><td>Main d'œuvre + accessoires</td><td>Sur devis</td></tr>
-          <tr><td>Mise en service + test</td><td>Vérification complète</td><td>Inclus</td></tr>
+          <tr><td>Climatiseur recommandÃ©</td><td>Ã€ dÃ©finir aprÃ¨s visite technique</td><td>Sur devis</td></tr>
+          <tr><td>Installation professionnelle</td><td>Main d'Å“uvre + accessoires</td><td>Sur devis</td></tr>
+          <tr><td>Mise en service + test</td><td>VÃ©rification complÃ¨te</td><td>Inclus</td></tr>
         </tbody>
       </table>
       <div class="notice">
-        ⚠️ Ce devis est indicatif. Le montant définitif sera déterminé après la visite technique sur site. Aucun paiement n'est requis avant Visite technique gratuite et accord du client.
+        âš ï¸ Ce devis est indicatif. Le montant dÃ©finitif sera dÃ©terminÃ© aprÃ¨s la visite technique sur site. Aucun paiement n'est requis avant Visite technique gratuite et accord du client.
       </div>
       <div class="footer">
         MAASGA - Froid & Climatisation | maasgabf@gmail.com | +226 55 99 64 18<br/>
-        Ouagadougou, Burkina Faso | Techniciens certifiés
+        Ouagadougou, Burkina Faso | Techniciens certifiÃ©s
       </div>
     </body></html>
   `
@@ -7250,14 +7387,14 @@ app.get('/api/devis/:rdvId', adminAuth, (c) => {
 })
 
 // ============================================================
-// API JSON (pour intégration app mobile future)
+// API JSON (pour intÃ©gration app mobile future)
 // ============================================================
 
 app.get('/api/products', async (c) => {
   const available = c.req.query('available')
   const brand = c.req.query('brand')
   
-  // Mode hybride: essayer D1 d'abord, fallback à la mémoire
+  // Mode hybride: essayer D1 d'abord, fallback Ã  la mÃ©moire
   let list = [...products]
   const db = c.env.DB
   
@@ -7266,7 +7403,7 @@ app.get('/api/products', async (c) => {
       const dbProducts = await getProducts(db)
       list = dbProducts as any[]
     } catch (error) {
-      console.error('Erreur D1 produits, fallback mémoire:', error)
+      console.error('Erreur D1 produits, fallback mÃ©moire:', error)
     }
   }
   
@@ -7287,16 +7424,16 @@ app.get('/api/products/:id', async (c) => {
       const dbProducts = await getProducts(db)
       product = (dbProducts as any[]).find((p: any) => p.id === id)
     } catch (error) {
-      console.error('Erreur D1 produit, fallback mémoire:', error)
+      console.error('Erreur D1 produit, fallback mÃ©moire:', error)
       product = products.find(p => p.id === id)
     }
   }
   
-  if (!product) return c.json({ error: 'Produit non trouvé' }, 404)
+  if (!product) return c.json({ error: 'Produit non trouvÃ©' }, 404)
   return c.json(product)
 })
 
-// POST /api/products — Create a product (requires Bearer token = ADMIN_SECRET)
+// POST /api/products â€” Create a product (requires Bearer token = ADMIN_SECRET)
 app.post('/api/products', async (c) => {
   const env = c.env
   // Token auth via Authorization header
@@ -7305,7 +7442,7 @@ app.post('/api/products', async (c) => {
   let secret: string
   try { secret = getAdminSecret(env) } catch { return c.json({ error: 'Server misconfigured' }, 503) }
   if (!token || token !== secret) {
-    return c.json({ error: 'Non autorisé' }, 401)
+    return c.json({ error: 'Non autorisÃ©' }, 401)
   }
 
   let data: any
@@ -7319,7 +7456,7 @@ app.post('/api/products', async (c) => {
   }
 
   const db = env.DB as any
-  if (!db) return c.json({ error: 'Base de données indisponible' }, 503)
+  if (!db) return c.json({ error: 'Base de donnÃ©es indisponible' }, 503)
 
   try {
     const result = await db.prepare(`
@@ -7362,7 +7499,7 @@ app.get('/api/reviews', async (c) => {
       const dbReviews = await getReviews(db, true)
       list = dbReviews as any[]
     } catch (error) {
-      console.error('Erreur D1 avis, fallback mémoire:', error)
+      console.error('Erreur D1 avis, fallback mÃ©moire:', error)
       list = reviews.filter(r => r.approved)
     }
   }
@@ -7379,7 +7516,7 @@ app.get('/api/quartiers', async (c) => {
     try {
       list = await getQuartiers(db) as any
     } catch (error) {
-      console.error('Erreur D1 quartiers, fallback mémoire:', error)
+      console.error('Erreur D1 quartiers, fallback mÃ©moire:', error)
       list = quartiers
     }
   }
@@ -7387,7 +7524,7 @@ app.get('/api/quartiers', async (c) => {
   return c.json(list)
 })
 
-// API Admin - Créer une commande depuis un RDV
+// API Admin - CrÃ©er une commande depuis un RDV
 app.post('/api/admin/create-order', adminAuth, async (c) => {
   const body = await c.req.json()
   const appointment_id = body.appointment_id as number
@@ -7396,19 +7533,19 @@ app.post('/api/admin/create-order', adminAuth, async (c) => {
   const quartier = (body.quartier as string || '').trim()
   const type = body.type as 'devis' | 'installation'
 
-  // Vérifier que le RDV existe. D1 fait référence : ce POST ne passe pas par
-  // refreshAdminCache, donc le tableau `appointments` de cet isolate peut être vide
+  // VÃ©rifier que le RDV existe. D1 fait rÃ©fÃ©rence : ce POST ne passe pas par
+  // refreshAdminCache, donc le tableau `appointments` de cet isolate peut Ãªtre vide
   // et un appointments.find() refusait des rendez-vous qui existent bien en base.
   const db = c.env.DB
   const cachedAppointment = appointments.find(a => a.id === appointment_id)
   if (db) {
     const row = await getAppointmentById(db, appointment_id).catch(() => null)
-    if (!row) return c.json({ success: false, error: 'Rendez-vous non trouvé' }, 404)
+    if (!row) return c.json({ success: false, error: 'Rendez-vous non trouvÃ©' }, 404)
   } else if (!cachedAppointment) {
-    return c.json({ success: false, error: 'Rendez-vous non trouvé' }, 404)
+    return c.json({ success: false, error: 'Rendez-vous non trouvÃ©' }, 404)
   }
 
-  // Créer une nouvelle commande — l'identifiant vient de l'AUTOINCREMENT D1
+  // CrÃ©er une nouvelle commande â€” l'identifiant vient de l'AUTOINCREMENT D1
   let newOrderId = 0
   if (db) {
     try {
@@ -7423,13 +7560,13 @@ app.post('/api/admin/create-order', adminAuth, async (c) => {
       })
       newOrderId = Number(res?.meta?.last_row_id || 0)
     } catch (error) {
-      console.error('Erreur lors de la création de la commande en D1:', error)
-      return c.json({ success: false, error: 'Création de la commande impossible (base de données)' }, 500)
+      console.error('Erreur lors de la crÃ©ation de la commande en D1:', error)
+      return c.json({ success: false, error: 'CrÃ©ation de la commande impossible (base de donnÃ©es)' }, 500)
     }
   }
   if (!newOrderId) newOrderId = orders.length > 0 ? Math.max(...orders.map(o => o.id)) + 1 : 1
 
-  // Mettre à jour le statut du RDV en mémoire (si présent dans cet isolate)
+  // Mettre Ã  jour le statut du RDV en mÃ©moire (si prÃ©sent dans cet isolate)
   if (cachedAppointment) cachedAppointment.status = 'confirmed'
 
   const newOrder = {
@@ -7440,7 +7577,7 @@ app.post('/api/admin/create-order', adminAuth, async (c) => {
     quartier,
     type,
     // 'validation_terrain' n'existe plus dans la contrainte CHECK depuis la
-    // migration 0036 : une commande créée depuis un RDV démarre en attente.
+    // migration 0036 : une commande crÃ©Ã©e depuis un RDV dÃ©marre en attente.
     status: 'en_attente' as const,
     created_at: new Date().toISOString()
   }
@@ -7449,11 +7586,11 @@ app.post('/api/admin/create-order', adminAuth, async (c) => {
   return c.json({
     success: true,
     order_id: newOrder.id,
-    message: `✅ Commande #${newOrder.id} créée avec succès. Statut du RDV mis à jour.`
+    message: `âœ… Commande #${newOrder.id} crÃ©Ã©e avec succÃ¨s. Statut du RDV mis Ã  jour.`
   })
 })
 
-// API Admin - Récupérer les commandes par RDV
+// API Admin - RÃ©cupÃ©rer les commandes par RDV
 app.get('/api/admin/orders-by-appointment/:id', adminAuth, async (c) => {
   const appointment_id = parseInt(c.req.param('id'))
   const appointmentOrders = orders.filter(o => o.appointment_id === appointment_id)
@@ -7478,7 +7615,7 @@ app.get('/api/stats', adminAuth, (c) => {
   return c.json({
     rdv: { total: totalRdv, pending: pendingRdv, confirmed: confirmedRdv, done: doneRdv },
     products: { total: totalProducts, available: availableProducts, lowStock: lowStockProducts, outOfStock: outOfStockProducts },
-    // Les compteurs d'avis étaient calculés puis oubliés dans la réponse.
+    // Les compteurs d'avis Ã©taient calculÃ©s puis oubliÃ©s dans la rÃ©ponse.
     reviews: { total: totalReviews, pending: pendingReviews, avgNote },
   })
 })
@@ -7487,7 +7624,7 @@ app.get('/api/stats', adminAuth, (c) => {
 // API CLIENTS - CRUD COMPLET
 // ============================================================
 
-// Réinitialiser la base de données (supprimer toutes les données)
+// RÃ©initialiser la base de donnÃ©es (supprimer toutes les donnÃ©es)
 app.post('/api/admin/reset-db', adminAuth, async (c) => {
   const db = c.env.DB
   const ip = c.req.header('cf-connecting-ip') || 'unknown'
@@ -7495,30 +7632,30 @@ app.post('/api/admin/reset-db', adminAuth, async (c) => {
     return c.json({ success: false, error: 'D1 non disponible' }, 400)
   }
 
-  // Vérifier le token de confirmation pour éviter les suppressions accidentelles
+  // VÃ©rifier le token de confirmation pour Ã©viter les suppressions accidentelles
   const body = await c.req.json().catch(() => ({} as any))
   if (body.confirm !== 'REINITIALISER') {
     return c.json({ success: false, error: 'Confirmation requise. Envoyez {"confirm": "REINITIALISER"} pour confirmer.' }, 400)
   }
 
-  // Ré-authentification : action irréversible qui vide produits, clients et
-  // commandes. Un cookie admin volé ne doit pas suffire à détruire la base.
+  // RÃ©-authentification : action irrÃ©versible qui vide produits, clients et
+  // commandes. Un cookie admin volÃ© ne doit pas suffire Ã  dÃ©truire la base.
   const resetRl = await rateLimitD1(db, `admin-reset-db:${ip}`, 3, 60 * 60 * 1000)
   if (!resetRl.allowed) {
-    logSecurityEvent(db, { event: 'admin_reset_db_rate_limit', severity: 'critical', ip, details: `Réinitialisation limitée pour ${ip}` })
-    return c.json({ success: false, error: 'Trop de tentatives. Réessayez dans une heure.' }, 429)
+    logSecurityEvent(db, { event: 'admin_reset_db_rate_limit', severity: 'critical', ip, details: `RÃ©initialisation limitÃ©e pour ${ip}` })
+    return c.json({ success: false, error: 'Trop de tentatives. RÃ©essayez dans une heure.' }, 429)
   }
   const pwdOk = await verifyAdminPassword(c.env, typeof body.password === 'string' ? body.password : '')
   if (!pwdOk) {
-    logSecurityEvent(db, { event: 'admin_reset_db_wrong_password', severity: 'critical', ip, details: `Tentative de réinitialisation sans mot de passe valide depuis ${ip}` })
+    logSecurityEvent(db, { event: 'admin_reset_db_wrong_password', severity: 'critical', ip, details: `Tentative de rÃ©initialisation sans mot de passe valide depuis ${ip}` })
     return c.json({ success: false, error: 'Mot de passe admin requis ou incorrect.' }, 403)
   }
 
   try {
-    // Désactiver les contraintes de clés étrangères pour permettre la suppression
+    // DÃ©sactiver les contraintes de clÃ©s Ã©trangÃ¨res pour permettre la suppression
     await db.prepare('PRAGMA foreign_keys = OFF').run()
     
-    // Vider toutes les tables (ordonnéé pour éviter les FK conflicts)
+    // Vider toutes les tables (ordonnÃ©Ã© pour Ã©viter les FK conflicts)
     await db.prepare('DELETE FROM orders').run()
     await db.prepare('DELETE FROM appointments').run()
     await db.prepare('DELETE FROM admin_sessions').run()
@@ -7527,29 +7664,29 @@ app.post('/api/admin/reset-db', adminAuth, async (c) => {
     await db.prepare('DELETE FROM products').run()
     await db.prepare('DELETE FROM quartiers').run()
     
-    // Réactiver les contraintes
+    // RÃ©activer les contraintes
     await db.prepare('PRAGMA foreign_keys = ON').run()
     
-    // Réinitialiser les compteurs autoincrement
+    // RÃ©initialiser les compteurs autoincrement
     await db.prepare('DELETE FROM sqlite_sequence').run()
     
-    // Vider aussi les données en mémoire
+    // Vider aussi les donnÃ©es en mÃ©moire
     appointments.length = 0
     reviews.length = 0
     orders.length = 0
     clients.length = 0
 
-    logSecurityEvent(db, { event: 'admin_reset_db', severity: 'critical', ip, details: `Base réinitialisée depuis ${ip}` })
-    await logAdminAudit(db, { action: 'database_reset', detail: 'orders, appointments, admin_sessions, reviews, clients, products, quartiers vidées', ip, userAgent: c.req.header('User-Agent') })
+    logSecurityEvent(db, { event: 'admin_reset_db', severity: 'critical', ip, details: `Base rÃ©initialisÃ©e depuis ${ip}` })
+    await logAdminAudit(db, { action: 'database_reset', detail: 'orders, appointments, admin_sessions, reviews, clients, products, quartiers vidÃ©es', ip, userAgent: c.req.header('User-Agent') })
 
     return c.json({
       success: true, 
-      message: '✅ Base de données complètement réinitialisée (D1 + mémoire + sqlite_sequence)'
+      message: 'âœ… Base de donnÃ©es complÃ¨tement rÃ©initialisÃ©e (D1 + mÃ©moire + sqlite_sequence)'
     })
   } catch (error) {
     return c.json({ 
       success: false, 
-      error: `Erreur lors de la réinitialisation: ${error}`
+      error: `Erreur lors de la rÃ©initialisation: ${error}`
     }, 500)
   }
 })
@@ -7562,10 +7699,10 @@ app.post('/api/admin/client/add', adminAuth, async (c) => {
   const rawQuartier = (body['quartier'] as string || '').trim()
 
   if (!rawName || !rawPhone) {
-    return c.json({ success: false, error: 'Nom et téléphone requis' }, 400)
+    return c.json({ success: false, error: 'Nom et tÃ©lÃ©phone requis' }, 400)
   }
   if (!isValidPhone(rawPhone)) {
-    return c.json({ success: false, error: 'Numéro de téléphone invalide (8 chiffres requis)' }, 400)
+    return c.json({ success: false, error: 'NumÃ©ro de tÃ©lÃ©phone invalide (8 chiffres requis)' }, 400)
   }
   if (rawEmail && !isValidEmail(rawEmail)) {
     return c.json({ success: false, error: 'Adresse email invalide' }, 400)
@@ -7577,8 +7714,8 @@ app.post('/api/admin/client/add', adminAuth, async (c) => {
   const quartier = sanitizeText(rawQuartier, 120)
 
   // L'identifiant vient de D1 (AUTOINCREMENT), pas d'un Math.max sur le cache
-  // mémoire : ce cache est partiel et par isolate, donc il produisait des id déjà
-  // pris en base et le client ajouté restait introuvable depuis les autres écrans.
+  // mÃ©moire : ce cache est partiel et par isolate, donc il produisait des id dÃ©jÃ 
+  // pris en base et le client ajoutÃ© restait introuvable depuis les autres Ã©crans.
   const db = c.env.DB
   const createdAt = new Date().toISOString().split('T')[0]
   let newId = 0
@@ -7590,10 +7727,10 @@ app.post('/api/admin/client/add', adminAuth, async (c) => {
       `).bind(name, email, phone, quartier, 'pending', createdAt).run()
       newId = Number(res?.meta?.last_row_id || 0)
     } catch (error) {
-      // Ne plus avaler l'erreur : l'admin voyait « succès » et le client
-      // n'existait qu'en mémoire, jusqu'au recyclage de l'isolate.
+      // Ne plus avaler l'erreur : l'admin voyait Â« succÃ¨s Â» et le client
+      // n'existait qu'en mÃ©moire, jusqu'au recyclage de l'isolate.
       console.error('Erreur D1 client add:', error)
-      return c.redirect('/admin/clients?error=' + encodeURIComponent("Enregistrement impossible (base de données)"))
+      return c.redirect('/admin/clients?error=' + encodeURIComponent("Enregistrement impossible (base de donnÃ©es)"))
     }
   }
   if (!newId) newId = clients.length > 0 ? Math.max(...clients.map(c => c.id)) + 1 : 1
@@ -7621,7 +7758,7 @@ app.post('/api/admin/client/update', adminAuth, async (c) => {
   const rawQuartier = (body['quartier'] as string || '').trim()
 
   if (rawPhone && !isValidPhone(rawPhone)) {
-    return c.redirect('/admin/clients?error=' + encodeURIComponent('Numéro de téléphone invalide'))
+    return c.redirect('/admin/clients?error=' + encodeURIComponent('NumÃ©ro de tÃ©lÃ©phone invalide'))
   }
   if (rawEmail && !isValidEmail(rawEmail)) {
     return c.redirect('/admin/clients?error=' + encodeURIComponent('Adresse email invalide'))
@@ -7632,8 +7769,8 @@ app.post('/api/admin/client/update', adminAuth, async (c) => {
   const phone = sanitizeText(rawPhone, 20)
   const quartier = sanitizeText(rawQuartier, 120)
 
-  // D1 fait référence, pas le cache mémoire : celui-ci ne contient qu'une partie
-  // des clients selon l'isolate, donc un findIndex à -1 refusait des modifications
+  // D1 fait rÃ©fÃ©rence, pas le cache mÃ©moire : celui-ci ne contient qu'une partie
+  // des clients selon l'isolate, donc un findIndex Ã  -1 refusait des modifications
   // de clients qui existent bel et bien en base.
   const db = c.env.DB
   if (db) {
@@ -7644,7 +7781,7 @@ app.post('/api/admin/client/update', adminAuth, async (c) => {
       if (!res?.meta?.changes) return c.redirect('/admin/clients?error=notfound')
     } catch (error) {
       console.error('Erreur D1 client update:', error)
-      return c.redirect('/admin/clients?error=' + encodeURIComponent('Modification impossible (base de données)'))
+      return c.redirect('/admin/clients?error=' + encodeURIComponent('Modification impossible (base de donnÃ©es)'))
     }
   }
 
@@ -7665,7 +7802,7 @@ app.post('/api/admin/client/delete', adminAuth, async (c) => {
 
   const db = c.env.DB
 
-  // Récupérer les infos du client avant suppression (pour Firebase UID)
+  // RÃ©cupÃ©rer les infos du client avant suppression (pour Firebase UID)
   let firebaseUid: string | null = null
   let clientPhone: string | null = null
   if (db) {
@@ -7705,11 +7842,11 @@ app.post('/api/admin/client/delete', adminAuth, async (c) => {
 
   if (db) {
     try {
-      // 2. Cascade : supprimer toutes les données liées
+      // 2. Cascade : supprimer toutes les donnÃ©es liÃ©es
       await db.prepare('DELETE FROM client_sessions WHERE client_id = ?').bind(id).run()
       await db.prepare('DELETE FROM user_activity_log WHERE client_id = ?').bind(id).run()
 
-      // Supprimer via téléphone si connu
+      // Supprimer via tÃ©lÃ©phone si connu
       if (clientPhone) {
         await db.prepare('DELETE FROM appointments WHERE phone = ?').bind(clientPhone).run()
         await db.prepare('DELETE FROM orders WHERE client_phone = ?').bind(clientPhone).run()
@@ -7722,17 +7859,17 @@ app.post('/api/admin/client/delete', adminAuth, async (c) => {
           await db.prepare('DELETE FROM maintenance_contracts WHERE client_phone = ?').bind(clientPhone).run()
         }
         await db.prepare('DELETE FROM sav_tickets WHERE client_phone = ?').bind(clientPhone).run()
-        // Pas de table payments à anonymiser
+        // Pas de table payments Ã  anonymiser
       }
 
-      // 3. Supprimer le client lui-même
+      // 3. Supprimer le client lui-mÃªme
       await db.prepare('DELETE FROM clients WHERE id = ?').bind(id).run()
     } catch (error) {
       console.error('Erreur D1 client delete cascade:', error)
     }
   }
 
-  // 4. Supprimer du store mémoire
+  // 4. Supprimer du store mÃ©moire
   const idx = clients.findIndex(cl => cl.id === id)
   if (idx !== -1) clients.splice(idx, 1)
 
@@ -7779,10 +7916,10 @@ app.post('/api/admin/rdv/add', adminAuth, async (c) => {
   const longitude = parseFloat(body['longitude'] as string) || null
 
   if (!rawName || !rawPhone || !rawQuartier || !date) {
-    return c.json({ success: false, error: 'Champs requis: nom, téléphone, quartier, date' }, 400)
+    return c.json({ success: false, error: 'Champs requis: nom, tÃ©lÃ©phone, quartier, date' }, 400)
   }
   if (!isValidPhone(rawPhone)) {
-    return c.json({ success: false, error: 'Numéro de téléphone invalide (8 chiffres requis)' }, 400)
+    return c.json({ success: false, error: 'NumÃ©ro de tÃ©lÃ©phone invalide (8 chiffres requis)' }, 400)
   }
 
   const name = sanitizeText(rawName, 120)
@@ -7790,7 +7927,7 @@ app.post('/api/admin/rdv/add', adminAuth, async (c) => {
   const quartier = sanitizeText(rawQuartier, 120)
   const notes = sanitizeText(rawNotes, 2000)
 
-  // Écrire en D1 d'abord : l'identifiant vient de l'AUTOINCREMENT
+  // Ã‰crire en D1 d'abord : l'identifiant vient de l'AUTOINCREMENT
   const db = c.env.DB
   let newRdvId = 0
   if (db) {
@@ -7802,7 +7939,7 @@ app.post('/api/admin/rdv/add', adminAuth, async (c) => {
       newRdvId = Number(res?.meta?.last_row_id || 0)
     } catch (error) {
       console.error('Erreur D1 rdv add:', error)
-      return c.redirect('/admin/rdv?error=' + encodeURIComponent('Enregistrement impossible (base de données)'))
+      return c.redirect('/admin/rdv?error=' + encodeURIComponent('Enregistrement impossible (base de donnÃ©es)'))
     }
   }
   if (!newRdvId) newRdvId = appointments.length > 0 ? Math.max(...appointments.map(a => a.id)) + 1 : 1
@@ -7865,7 +8002,7 @@ app.post('/api/admin/commande/update-statut', adminAuth, async (c) => {
   const status = body['status'] as string
   const adminNotes = ((body['admin_notes'] as string) || '').trim()
 
-  // Nouveaux statuts simplifiés (flux contact commercial)
+  // Nouveaux statuts simplifiÃ©s (flux contact commercial)
   const allowedStatuses = ['en_attente', 'contacte', 'confirme', 'en_livraison', 'livre', 'annule']
   if (!allowedStatuses.includes(status)) {
     return c.json({ error: 'Statut invalide' }, 400)
@@ -7889,15 +8026,15 @@ app.post('/api/admin/commande/update-statut', adminAuth, async (c) => {
       }
       if (!res?.meta?.changes) return c.json({ error: 'Commande introuvable' }, 404)
     } catch (error) {
-      // Ne plus avaler l'erreur : un statut refusé par la contrainte CHECK
-      // renvoyait quand même un succès, et le cache mémoire divergeait de la base.
+      // Ne plus avaler l'erreur : un statut refusÃ© par la contrainte CHECK
+      // renvoyait quand mÃªme un succÃ¨s, et le cache mÃ©moire divergeait de la base.
       console.error('Erreur D1 commande update:', error)
-      return c.json({ error: 'Mise à jour impossible (base de données)' }, 500)
+      return c.json({ error: 'Mise Ã  jour impossible (base de donnÃ©es)' }, 500)
     }
-    // Le cache mémoire n'est aligné qu'après une écriture D1 réussie
+    // Le cache mÃ©moire n'est alignÃ© qu'aprÃ¨s une Ã©criture D1 rÃ©ussie
     if (order) order.status = status as any
 
-    // Auto-create SAV gratuit when order is marked as livre (livré + installé)
+    // Auto-create SAV gratuit when order is marked as livre (livrÃ© + installÃ©)
     if (status === 'livre') {
       try {
         const orderRow = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(id).first() as any
@@ -7911,7 +8048,7 @@ app.post('/api/admin/commande/update-statut', adminAuth, async (c) => {
           const endDate = new Date(twelveMonths)
           endDate.setMonth(endDate.getMonth() + 1)
 
-          // Vérifier si un SAV gratuit existe déjà pour cette commande
+          // VÃ©rifier si un SAV gratuit existe dÃ©jÃ  pour cette commande
           const existingSav = await db.prepare("SELECT id FROM maintenance_contracts WHERE order_id = ? AND plan_type = 'sav_gratuit'").bind(id).first()
           if (!existingSav) {
             await db.prepare(
@@ -7925,35 +8062,35 @@ app.post('/api/admin/commande/update-statut', adminAuth, async (c) => {
               now.split('T')[0],
               endDate.toISOString().split('T')[0],
               sixMonths.toISOString().split('T')[0],
-              `SAV gratuit - Commande #${id} - 2 visites (6 et 12 mois après installation)`
+              `SAV gratuit - Commande #${id} - 2 visites (6 et 12 mois aprÃ¨s installation)`
             ).run()
 
             const contract = await db.prepare('SELECT id FROM maintenance_contracts WHERE order_id = ? ORDER BY id DESC LIMIT 1').bind(id).first() as any
             if (contract) {
               await db.prepare(
                 `INSERT INTO maintenance_visits (contract_id, client_id, client_name, client_phone, visit_type, visit_date, status, description)
-                 VALUES (?, ?, ?, ?, 'preventive', ?, 'planifiee', 'Visite SAV gratuit - 6 mois après installation')`
+                 VALUES (?, ?, ?, ?, 'preventive', ?, 'planifiee', 'Visite SAV gratuit - 6 mois aprÃ¨s installation')`
               ).bind(contract.id, orderRow.client_id || 0, orderRow.client_name, orderRow.client_phone, sixMonths.toISOString().split('T')[0]).run()
               await db.prepare(
                 `INSERT INTO maintenance_visits (contract_id, client_id, client_name, client_phone, visit_type, visit_date, status, description)
-                 VALUES (?, ?, ?, ?, 'preventive', ?, 'planifiee', 'Visite SAV gratuit - 12 mois après installation')`
+                 VALUES (?, ?, ?, ?, 'preventive', ?, 'planifiee', 'Visite SAV gratuit - 12 mois aprÃ¨s installation')`
               ).bind(contract.id, orderRow.client_id || 0, orderRow.client_name, orderRow.client_phone, twelveMonths.toISOString().split('T')[0]).run()
             }
-            await notifyAdmin(c.env, 'maintenance', `SAV gratuit créé pour commande #${id} — ${orderRow.client_name} (${orderRow.client_phone}) — 2 visites planifiées`)
+            await notifyAdmin(c.env, 'maintenance', `SAV gratuit crÃ©Ã© pour commande #${id} â€” ${orderRow.client_name} (${orderRow.client_phone}) â€” 2 visites planifiÃ©es`)
           }
         }
       } catch (e) {
-        console.error('Erreur création SAV gratuit:', e)
+        console.error('Erreur crÃ©ation SAV gratuit:', e)
       }
     }
 
     // Notification WhatsApp client selon le statut
     const STATUS_CLIENT_MSG: Record<string, string> = {
-      contacte:     `Bonjour, c'est l'équipe MAASGA ! Nous avons bien reçu votre commande #${id} et nous vous contactons pour finaliser les détails. Répondez à ce message ou appelez le +226 55 99 64 18.`,
-      confirme:     `Votre commande MAASGA #${id} est confirmée ! Nous préparons votre livraison et installation. Nous vous tiendrons informé(e).`,
-      en_livraison: `Bonne nouvelle ! Votre commande MAASGA #${id} est en cours de livraison. Notre équipe vous contactera pour convenir de l'heure d'installation.`,
-      livre:        `🎉 Votre climatiseur (commande #${id}) a été livré et installé avec succès. Merci de votre confiance chez MAASGA ! Votre SAV gratuit est activé.`,
-      annule:       `Votre commande MAASGA #${id} a été annulée. Contactez-nous au +226 55 99 64 18 pour plus d'informations.`,
+      contacte:     `Bonjour, c'est l'Ã©quipe MAASGA ! Nous avons bien reÃ§u votre commande #${id} et nous vous contactons pour finaliser les dÃ©tails. RÃ©pondez Ã  ce message ou appelez le +226 55 99 64 18.`,
+      confirme:     `Votre commande MAASGA #${id} est confirmÃ©e ! Nous prÃ©parons votre livraison et installation. Nous vous tiendrons informÃ©(e).`,
+      en_livraison: `Bonne nouvelle ! Votre commande MAASGA #${id} est en cours de livraison. Notre Ã©quipe vous contactera pour convenir de l'heure d'installation.`,
+      livre:        `ðŸŽ‰ Votre climatiseur (commande #${id}) a Ã©tÃ© livrÃ© et installÃ© avec succÃ¨s. Merci de votre confiance chez MAASGA ! Votre SAV gratuit est activÃ©.`,
+      annule:       `Votre commande MAASGA #${id} a Ã©tÃ© annulÃ©e. Contactez-nous au +226 55 99 64 18 pour plus d'informations.`,
     }
     const clientMsg = STATUS_CLIENT_MSG[status]
     if (clientMsg) {
@@ -7965,7 +8102,7 @@ app.post('/api/admin/commande/update-statut', adminAuth, async (c) => {
       } catch(e) { console.error('Notification client order error:', e) }
     }
   } else if (order) {
-    // Pas de D1 (dev sans binding) : on ne met à jour que le cache mémoire
+    // Pas de D1 (dev sans binding) : on ne met Ã  jour que le cache mÃ©moire
     order.status = status as any
   }
 
@@ -7982,7 +8119,7 @@ app.get('/api/cron/maintenance-reminders', async (c) => {
   const env = c.env as HonoEnv['Bindings']
   // Auth: require ADMIN_SECRET or custom cron key
   const key = c.req.query('key') || ''
-  if (!env.ADMIN_SECRET) return c.json({ error: 'Cron endpoint non configuré (ADMIN_SECRET manquant)' }, 500)
+  if (!env.ADMIN_SECRET) return c.json({ error: 'Cron endpoint non configurÃ© (ADMIN_SECRET manquant)' }, 500)
   if (key !== env.ADMIN_SECRET) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
@@ -8000,7 +8137,7 @@ app.get('/api/cron/maintenance-reminders', async (c) => {
 // 404
 // ============================================================
 
-// Global error handler — catch unhandled exceptions and display nice error page
+// Global error handler â€” catch unhandled exceptions and display nice error page
 app.onError((err, c) => {
   console.error('Unhandled error:', err.message, err.stack)
   return c.html(
@@ -8014,11 +8151,11 @@ app.onError((err, c) => {
       </head>
       <body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
         <div class="text-center max-w-md">
-          <div class="text-6xl mb-6">⚠️</div>
+          <div class="text-6xl mb-6">âš ï¸</div>
           <h1 class="text-2xl font-bold text-gray-900 mb-3">Erreur serveur</h1>
-          <p class="text-gray-500 mb-8">Une erreur inattendue s'est produite. Veuillez réessayer.</p>
+          <p class="text-gray-500 mb-8">Une erreur inattendue s'est produite. Veuillez rÃ©essayer.</p>
           <a href="/" class="bg-blue-600 text-white font-semibold px-8 py-3 rounded-xl hover:bg-blue-700 transition-colors inline-flex items-center space-x-2">
-            <span>Retour à l'accueil</span>
+            <span>Retour Ã  l'accueil</span>
           </a>
         </div>
       </body>
@@ -8034,17 +8171,17 @@ app.notFound((c) => {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="robots" content="noindex,nofollow" />
-        <title>Page non trouvée - MAASGA</title>
+        <title>Page non trouvÃ©e - MAASGA</title>
         <link rel="stylesheet" href="/static/tailwind.css" />
       </head>
       <body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
         <div class="text-center max-w-md">
           <div class="text-8xl font-black text-blue-100 mb-4">404</div>
-          <div class="text-6xl mb-6">❄️</div>
+          <div class="text-6xl mb-6">â„ï¸</div>
           <h1 class="text-2xl font-bold text-gray-900 mb-3">Page introuvable</h1>
-          <p class="text-gray-500 mb-8">Cette page n'existe pas ou a été déplacée.</p>
+          <p class="text-gray-500 mb-8">Cette page n'existe pas ou a Ã©tÃ© dÃ©placÃ©e.</p>
           <a href="/" class="bg-blue-600 text-white font-semibold px-8 py-3 rounded-xl hover:bg-blue-700 transition-colors inline-flex items-center space-x-2">
-            <span>Retour à l'accueil</span>
+            <span>Retour Ã  l'accueil</span>
           </a>
         </div>
       </body>
@@ -8090,31 +8227,31 @@ function buildMaintenanceReminderHtml(clientName: string, visitDate: string, pla
   <div style="padding:32px;">
     <div style="text-align:center;margin-bottom:24px;">
       <div style="display:inline-block;background:${urgencyColor}15;border:2px solid ${urgencyColor}30;border-radius:16px;padding:16px 32px;">
-        <div style="font-size:32px;font-weight:900;color:${urgencyColor};">🔔</div>
+        <div style="font-size:32px;font-weight:900;color:${urgencyColor};">ðŸ””</div>
         <div style="font-size:18px;font-weight:800;color:${urgencyColor};margin-top:4px;">Maintenance ${urgencyText} !</div>
       </div>
     </div>
     <h2 style="font-size:18px;font-weight:700;color:#03045e;margin:0 0 16px;">Bonjour ${clientName},</h2>
     <p style="font-size:14px;color:#475569;line-height:1.7;margin:0 0 20px;">
-      Nous vous rappelons que votre visite de maintenance préventive est prévue <strong style="color:${urgencyColor};">${urgencyText}</strong>.
+      Nous vous rappelons que votre visite de maintenance prÃ©ventive est prÃ©vue <strong style="color:${urgencyColor};">${urgencyText}</strong>.
     </p>
     <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:20px;margin-bottom:24px;">
       <table style="width:100%;font-size:14px;color:#334155;">
-        <tr><td style="padding:6px 0;font-weight:600;">📅 Date</td><td style="padding:6px 0;">${fmtD}</td></tr>
-        <tr><td style="padding:6px 0;font-weight:600;">📋 Contrat</td><td style="padding:6px 0;">${planLabels[planType] || planType}</td></tr>
-        <tr><td style="padding:6px 0;font-weight:600;">🔧 Type</td><td style="padding:6px 0;">Visite préventive</td></tr>
+        <tr><td style="padding:6px 0;font-weight:600;">ðŸ“… Date</td><td style="padding:6px 0;">${fmtD}</td></tr>
+        <tr><td style="padding:6px 0;font-weight:600;">ðŸ“‹ Contrat</td><td style="padding:6px 0;">${planLabels[planType] || planType}</td></tr>
+        <tr><td style="padding:6px 0;font-weight:600;">ðŸ”§ Type</td><td style="padding:6px 0;">Visite prÃ©ventive</td></tr>
       </table>
     </div>
     <p style="font-size:13px;color:#64748b;line-height:1.6;margin:0 0 20px;">
-      Merci de vous assurer que l'accès à vos équipements est possible. En cas d'empêchement, contactez-nous au plus vite.
+      Merci de vous assurer que l'accÃ¨s Ã  vos Ã©quipements est possible. En cas d'empÃªchement, contactez-nous au plus vite.
     </p>
     <div style="text-align:center;">
       <a href="https://wa.me/22655996418?text=Bonjour%20MAASGA%2C%20concernant%20ma%20maintenance%20du%20${encodeURIComponent(fmtD)}" style="display:inline-block;background:#25d366;color:white;font-weight:700;font-size:14px;padding:12px 28px;border-radius:10px;text-decoration:none;">
-        <span style="margin-right:6px;">📱</span>Contacter via WhatsApp
+        <span style="margin-right:6px;">ðŸ“±</span>Contacter via WhatsApp
       </a>
     </div>
     <div style="margin-top:24px;padding-top:20px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center;">
-      MAASGA — Froid &amp; Climatisation - Ouagadougou, Burkina Faso<br>
+      MAASGA â€” Froid &amp; Climatisation - Ouagadougou, Burkina Faso<br>
       Tel: +226 55 99 64 18 - maasgabf@gmail.com
     </div>
   </div>
@@ -8160,7 +8297,7 @@ async function handleScheduled(env: HonoEnv['Bindings']) {
             env.BREVO_API_KEY,
             client.email,
             client.name || clientName,
-            `🔔 Rappel : Maintenance ${label} — MAASGA`,
+            `ðŸ”” Rappel : Maintenance ${label} â€” MAASGA`,
             buildMaintenanceReminderHtml(client.name || clientName, visit.visit_date, planType, isToday)
           )
         }
@@ -8174,7 +8311,7 @@ async function handleScheduled(env: HonoEnv['Bindings']) {
           env.BREVO_API_KEY,
           env.ADMIN_EMAIL,
           'Admin MAASGA',
-          `🔧 [ADMIN] Maintenance ${label} — ${clientName}`,
+          `ðŸ”§ [ADMIN] Maintenance ${label} â€” ${clientName}`,
           buildMaintenanceReminderHtml(clientName, visit.visit_date, planType, isToday)
         )
       } catch (e) { console.error('[CRON] Email admin error:', e) }
@@ -8188,7 +8325,7 @@ async function handleScheduled(env: HonoEnv['Bindings']) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: env.TELEGRAM_CHAT_ID,
-            text: `🔔 *RAPPEL MAINTENANCE — ${label}*\n\n👤 Client: ${clientName}\n📱 Tél: ${visit.client_phone || '—'}\n📅 Date: ${visit.visit_date}\n📋 Contrat: ${planType}\n\n${isToday ? "⚠️ La visite est prévue AUJOURD\'HUI !" : '📌 La visite est prévue DEMAIN.'}`,
+            text: `ðŸ”” *RAPPEL MAINTENANCE â€” ${label}*\n\nðŸ‘¤ Client: ${clientName}\nðŸ“± TÃ©l: ${visit.client_phone || 'â€”'}\nðŸ“… Date: ${visit.visit_date}\nðŸ“‹ Contrat: ${planType}\n\n${isToday ? "âš ï¸ La visite est prÃ©vue AUJOURD\'HUI !" : 'ðŸ“Œ La visite est prÃ©vue DEMAIN.'}`,
             parse_mode: 'Markdown'
           })
         })
@@ -8200,7 +8337,7 @@ async function handleScheduled(env: HonoEnv['Bindings']) {
       await ensureNotificationsTable(db)
       await db.prepare(
         'INSERT INTO admin_notifications (type, summary) VALUES (?, ?)'
-      ).bind('maintenance', `🔔 Rappel maintenance ${label}: ${clientName} (${visit.visit_date}) — Contrat ${planType}`).run()
+      ).bind('maintenance', `ðŸ”” Rappel maintenance ${label}: ${clientName} (${visit.visit_date}) â€” Contrat ${planType}`).run()
     } catch(_) {}
   }
 
@@ -8208,12 +8345,12 @@ async function handleScheduled(env: HonoEnv['Bindings']) {
 }
 
 // ============================================================
-// TELEGRAM BOT WEBHOOK — Admin control commands
+// TELEGRAM BOT WEBHOOK â€” Admin control commands
 // ============================================================
 
 // sendTelegramMessage imported from ./utils/notifications
 
-// Endpoint to setup/verify webhook (call once after deployment — admin only)
+// Endpoint to setup/verify webhook (call once after deployment â€” admin only)
 app.get('/api/telegram/setup', adminAuth, async (c) => {
   const env = c.env
   if (!env.TELEGRAM_BOT_TOKEN) {
@@ -8277,7 +8414,7 @@ app.get('/api/telegram/setup', adminAuth, async (c) => {
       ok: true,
       webhook_set: setData,
       webhook_info: infoData?.result,
-      message: 'Webhook configuré ! Envoyez /start à votre bot.'
+      message: 'Webhook configurÃ© ! Envoyez /start Ã  votre bot.'
     })
   } catch (err: any) {
     return c.json({ ok: false, error: err.message }, 500)
@@ -8320,48 +8457,48 @@ app.post('/api/telegram/webhook', async (c) => {
       
       if (action === 'confirm' && type === 'rdv' && db) {
         await db.prepare(`UPDATE appointments SET status='confirmed' WHERE id=?`).bind(parseInt(id)).run()
-        await sendTelegramMessage(token, chatId, `✅ RDV #${id} confirmé !`)
+        await sendTelegramMessage(token, chatId, `âœ… RDV #${id} confirmÃ© !`)
       } else if (action === 'cancel' && type === 'rdv' && db) {
         await db.prepare(`UPDATE appointments SET status='cancelled' WHERE id=?`).bind(parseInt(id)).run()
-        await sendTelegramMessage(token, chatId, `❌ RDV #${id} annulé.`)
+        await sendTelegramMessage(token, chatId, `âŒ RDV #${id} annulÃ©.`)
       } else if (action === 'done' && type === 'rdv' && db) {
         await db.prepare(`UPDATE appointments SET status='done' WHERE id=?`).bind(parseInt(id)).run()
-        await sendTelegramMessage(token, chatId, `☑️ RDV #${id} marqué terminé.`)
+        await sendTelegramMessage(token, chatId, `â˜‘ï¸ RDV #${id} marquÃ© terminÃ©.`)
       } else if (action === 'validate' && type === 'order' && db) {
         await db.prepare(`UPDATE orders SET status='livre', delivered_at=datetime('now') WHERE id=?`).bind(parseInt(id)).run()
-        await sendTelegramMessage(token, chatId, `✅ Commande #${id} livrée !`)
+        await sendTelegramMessage(token, chatId, `âœ… Commande #${id} livrÃ©e !`)
       } else if (action === 'cancel' && type === 'order' && db) {
         await db.prepare(`UPDATE orders SET status='annule' WHERE id=?`).bind(parseInt(id)).run()
-        await sendTelegramMessage(token, chatId, `❌ Commande #${id} annulée.`)
+        await sendTelegramMessage(token, chatId, `âŒ Commande #${id} annulÃ©e.`)
       } else if (action === 'installed' && type === 'order' && db) {
         await db.prepare(`UPDATE orders SET status='livre', installed_at=datetime('now') WHERE id=?`).bind(parseInt(id)).run()
-        await sendTelegramMessage(token, chatId, `📦 Commande #${id} installée !`)
+        await sendTelegramMessage(token, chatId, `ðŸ“¦ Commande #${id} installÃ©e !`)
       } else if (action === 'complete' && type === 'visit' && db) {
         await db.prepare(`UPDATE maintenance_visits SET status='effectuee', updated_at=datetime('now') WHERE id=?`).bind(parseInt(id)).run()
-        await sendTelegramMessage(token, chatId, `✅ Visite #${id} complétée !`)
+        await sendTelegramMessage(token, chatId, `âœ… Visite #${id} complÃ©tÃ©e !`)
       } else if (action === 'read' && type === 'msg' && db) {
         await db.prepare(`UPDATE contact_messages SET is_read=1 WHERE id=?`).bind(parseInt(id)).run()
-        await sendTelegramMessage(token, chatId, `📖 Message #${id} marqué lu.`)
+        await sendTelegramMessage(token, chatId, `ðŸ“– Message #${id} marquÃ© lu.`)
       } else if (action === 'resolve' && type === 'sav' && db) {
         await db.prepare(`UPDATE sav_tickets SET status='resolved', updated_at=datetime('now') WHERE id=?`).bind(parseInt(id)).run()
-        await sendTelegramMessage(token, chatId, `✅ Ticket SAV #${id} résolu !`)
+        await sendTelegramMessage(token, chatId, `âœ… Ticket SAV #${id} rÃ©solu !`)
       } else if (action === 'approve' && type === 'review' && db) {
         await db.prepare(`UPDATE reviews SET approved=1 WHERE id=?`).bind(parseInt(id)).run()
-        await sendTelegramMessage(token, chatId, `✅ Avis #${id} approuvé et publié !`)
+        await sendTelegramMessage(token, chatId, `âœ… Avis #${id} approuvÃ© et publiÃ© !`)
       } else if (action === 'reject' && type === 'review' && db) {
         await db.prepare(`DELETE FROM reviews WHERE id=?`).bind(parseInt(id)).run()
-        await sendTelegramMessage(token, chatId, `🗑️ Avis #${id} supprimé.`)
+        await sendTelegramMessage(token, chatId, `ðŸ—‘ï¸ Avis #${id} supprimÃ©.`)
       } else if (action === 'menu') {
         // Show main menu
         await sendTelegramMessage(token, chatId, 
-          `🏠 *Menu Principal MAASGA*\n\nChoisissez une section :`,
+          `ðŸ  *Menu Principal MAASGA*\n\nChoisissez une section :`,
           { inline_keyboard: [
-            [{ text: '📊 Dashboard', callback_data: 'show:stats' }, { text: '📆 RDV', callback_data: 'show:rdv' }],
-            [{ text: '🛒 Commandes', callback_data: 'show:orders' }, { text: '📄 Devis', callback_data: 'show:devis' }],
-            [{ text: '📋 Contrats', callback_data: 'show:contracts' }, { text: '📅 Visites', callback_data: 'show:visits' }],
-            [{ text: '💬 Messages', callback_data: 'show:messages' }, { text: '💳 Paiements', callback_data: 'show:payments' }],
-            [{ text: '🎧 SAV', callback_data: 'show:sav' }, { text: '⭐ Avis', callback_data: 'show:avis' }],
-            [{ text: '👤 Clients', callback_data: 'show:clients' }, { text: '📦 Stock', callback_data: 'show:stock' }]
+            [{ text: 'ðŸ“Š Dashboard', callback_data: 'show:stats' }, { text: 'ðŸ“† RDV', callback_data: 'show:rdv' }],
+            [{ text: 'ðŸ›’ Commandes', callback_data: 'show:orders' }, { text: 'ðŸ“„ Devis', callback_data: 'show:devis' }],
+            [{ text: 'ðŸ“‹ Contrats', callback_data: 'show:contracts' }, { text: 'ðŸ“… Visites', callback_data: 'show:visits' }],
+            [{ text: 'ðŸ’¬ Messages', callback_data: 'show:messages' }, { text: 'ðŸ’³ Paiements', callback_data: 'show:payments' }],
+            [{ text: 'ðŸŽ§ SAV', callback_data: 'show:sav' }, { text: 'â­ Avis', callback_data: 'show:avis' }],
+            [{ text: 'ðŸ‘¤ Clients', callback_data: 'show:clients' }, { text: 'ðŸ“¦ Stock', callback_data: 'show:stock' }]
           ]}
         )
       } else if (action === 'search' && db) {
@@ -8377,14 +8514,14 @@ app.post('/api/telegram/webhook', async (c) => {
         if (bindings.length) stmt = stmt.bind(...bindings)
         const rows = await stmt.all()
         if (!rows.results?.length) {
-          await sendTelegramMessage(token, chatId, `🔍 Aucun produit disponible pour ${btuFilter ? btuFilter.toLocaleString() + ' BTU' : ''}.`)
+          await sendTelegramMessage(token, chatId, `ðŸ” Aucun produit disponible pour ${btuFilter ? btuFilter.toLocaleString() + ' BTU' : ''}.`)
         } else {
-          let txt = `🔍 *Produits ${btuFilter ? btuFilter.toLocaleString() + ' BTU' : ''}*\n\n`
+          let txt = `ðŸ” *Produits ${btuFilter ? btuFilter.toLocaleString() + ' BTU' : ''}*\n\n`
           for (const p of rows.results as any[]) {
-            const stk = p.stock <= 0 ? '🔴 Rupture' : p.stock <= 2 ? `🟡 ${p.stock} rest.` : `🟢 ${p.stock} en stock`
-            txt += `*${p.brand}* — ${(p.btu || 0).toLocaleString()} BTU\n   💰 ${(p.price || 0).toLocaleString()} FCFA | ${p.inverter ? '⚡ Inverter' : 'Standard'} | ${stk}\n\n`
+            const stk = p.stock <= 0 ? 'ðŸ”´ Rupture' : p.stock <= 2 ? `ðŸŸ¡ ${p.stock} rest.` : `ðŸŸ¢ ${p.stock} en stock`
+            txt += `*${p.brand}* â€” ${(p.btu || 0).toLocaleString()} BTU\n   ðŸ’° ${(p.price || 0).toLocaleString()} FCFA | ${p.inverter ? 'âš¡ Inverter' : 'Standard'} | ${stk}\n\n`
           }
-          await sendTelegramMessage(token, chatId, txt, { inline_keyboard: [[{ text: '📦 Tout le stock', callback_data: 'show:stock' }]] })
+          await sendTelegramMessage(token, chatId, txt, { inline_keyboard: [[{ text: 'ðŸ“¦ Tout le stock', callback_data: 'show:stock' }]] })
         }
         return c.json({ ok: true })
       } else if (action === 'show') {
@@ -8398,27 +8535,27 @@ app.post('/api/telegram/webhook', async (c) => {
       } else if (action === 'detail' && type === 'rdv' && db) {
         const rdv = await db.prepare(`SELECT * FROM appointments WHERE id=?`).bind(parseInt(id)).first()
         if (rdv) {
-          const stMap: Record<string, string> = { pending: '⏳ En attente', confirmed: '✅ Confirmé', done: '☑️ Terminé', cancelled: '❌ Annulé' }
+          const stMap: Record<string, string> = { pending: 'â³ En attente', confirmed: 'âœ… ConfirmÃ©', done: 'â˜‘ï¸ TerminÃ©', cancelled: 'âŒ AnnulÃ©' }
           await sendTelegramMessage(token, chatId,
-            `📆 *RDV #${rdv.id}*\n\n` +
-            `👤 *${rdv.name}*\n` +
-            `📱 ${rdv.phone}\n` +
-            `📅 ${rdv.date} | ${rdv.heure_debut || '—'}–${rdv.heure_fin || '—'}\n` +
-            `📍 ${rdv.quartier || '—'}\n` +
-            `🏷️ ${rdv.type || 'standard'}\n` +
-            `📊 ${stMap[rdv.status] || rdv.status}\n` +
-            (rdv.notes ? `\n📝 ${rdv.notes}` : ''),
+            `ðŸ“† *RDV #${rdv.id}*\n\n` +
+            `ðŸ‘¤ *${rdv.name}*\n` +
+            `ðŸ“± ${rdv.phone}\n` +
+            `ðŸ“… ${rdv.date} | ${rdv.heure_debut || 'â€”'}â€“${rdv.heure_fin || 'â€”'}\n` +
+            `ðŸ“ ${rdv.quartier || 'â€”'}\n` +
+            `ðŸ·ï¸ ${rdv.type || 'standard'}\n` +
+            `ðŸ“Š ${stMap[rdv.status] || rdv.status}\n` +
+            (rdv.notes ? `\nðŸ“ ${rdv.notes}` : ''),
             { inline_keyboard: [
               [
-                { text: '✅ Confirmer', callback_data: `confirm:rdv:${id}` },
-                { text: '☑️ Terminer', callback_data: `done:rdv:${id}` },
-                { text: '❌ Annuler', callback_data: `cancel:rdv:${id}` }
+                { text: 'âœ… Confirmer', callback_data: `confirm:rdv:${id}` },
+                { text: 'â˜‘ï¸ Terminer', callback_data: `done:rdv:${id}` },
+                { text: 'âŒ Annuler', callback_data: `cancel:rdv:${id}` }
               ],
               [
-                { text: `📱 Appeler`, url: `tel:${rdv.phone}` },
-                { text: `💬 WhatsApp`, url: `https://wa.me/${(rdv.phone || '').replace(/\D/g, '')}` }
+                { text: `ðŸ“± Appeler`, url: `tel:${rdv.phone}` },
+                { text: `ðŸ’¬ WhatsApp`, url: `https://wa.me/${(rdv.phone || '').replace(/\D/g, '')}` }
               ],
-              [{ text: '« Retour RDV', callback_data: 'show:rdv' }]
+              [{ text: 'Â« Retour RDV', callback_data: 'show:rdv' }]
             ]}
           )
         }
@@ -8426,23 +8563,23 @@ app.post('/api/telegram/webhook', async (c) => {
       } else if (action === 'detail' && type === 'order' && db) {
         const o = await db.prepare(`SELECT o.*, c.name as client FROM orders o LEFT JOIN clients c ON o.client_id=c.id WHERE o.id=?`).bind(parseInt(id)).first()
         if (o) {
-          const stMap: Record<string, string> = { pending: '⏳ En attente', paid: '💰 Payée', livre: '🚚 Livrée', validation_terrain: '🔍 Validation', devis_en_attente: '📄 Devis envoyé', devis_valide: '✅ Devis accepté', installed: '📦 Installé', cancelled: '❌ Annulé' }
+          const stMap: Record<string, string> = { pending: 'â³ En attente', paid: 'ðŸ’° PayÃ©e', livre: 'ðŸšš LivrÃ©e', validation_terrain: 'ðŸ” Validation', devis_en_attente: 'ðŸ“„ Devis envoyÃ©', devis_valide: 'âœ… Devis acceptÃ©', installed: 'ðŸ“¦ InstallÃ©', cancelled: 'âŒ AnnulÃ©' }
           await sendTelegramMessage(token, chatId,
-            `🛒 *Commande #${o.id}*\n\n` +
-            `👤 *${o.client || o.client_name || 'Anonyme'}*\n` +
-            `📱 ${o.client_phone || '—'}\n` +
-            `💰 ${(o.total_price || 0).toLocaleString()} FCFA\n` +
-            `📦 Produit: ${o.product_name || '—'} × ${o.quantity || 1}\n` +
-            `📊 ${stMap[o.status] || o.status}\n` +
-            `📅 ${(o.created_at || '').slice(0, 10)}`,
+            `ðŸ›’ *Commande #${o.id}*\n\n` +
+            `ðŸ‘¤ *${o.client || o.client_name || 'Anonyme'}*\n` +
+            `ðŸ“± ${o.client_phone || 'â€”'}\n` +
+            `ðŸ’° ${(o.total_price || 0).toLocaleString()} FCFA\n` +
+            `ðŸ“¦ Produit: ${o.product_name || 'â€”'} Ã— ${o.quantity || 1}\n` +
+            `ðŸ“Š ${stMap[o.status] || o.status}\n` +
+            `ðŸ“… ${(o.created_at || '').slice(0, 10)}`,
             { inline_keyboard: [
               [
-                { text: '🚚 Livrée', callback_data: `validate:order:${id}` },
-                { text: '📦 Installé', callback_data: `installed:order:${id}` },
-                { text: '❌ Annuler', callback_data: `cancel:order:${id}` }
+                { text: 'ðŸšš LivrÃ©e', callback_data: `validate:order:${id}` },
+                { text: 'ðŸ“¦ InstallÃ©', callback_data: `installed:order:${id}` },
+                { text: 'âŒ Annuler', callback_data: `cancel:order:${id}` }
               ],
-              o.client_phone ? [{ text: `📱 Appeler`, url: `tel:${o.client_phone}` }, { text: `💬 WhatsApp`, url: `https://wa.me/${(o.client_phone || '').replace(/\D/g, '')}` }] : [],
-              [{ text: '« Retour Commandes', callback_data: 'show:orders' }]
+              o.client_phone ? [{ text: `ðŸ“± Appeler`, url: `tel:${o.client_phone}` }, { text: `ðŸ’¬ WhatsApp`, url: `https://wa.me/${(o.client_phone || '').replace(/\D/g, '')}` }] : [],
+              [{ text: 'Â« Retour Commandes', callback_data: 'show:orders' }]
             ].filter(r => r.length > 0)}
           )
         }
@@ -8450,7 +8587,7 @@ app.post('/api/telegram/webhook', async (c) => {
       }
     } catch (err: any) {
       console.error('[TELEGRAM CB]', err)
-      await sendTelegramMessage(token, chatId, `❌ Erreur: ${err.message}`)
+      await sendTelegramMessage(token, chatId, `âŒ Erreur: ${err.message}`)
     }
     
     // If not a 'show:' action that needs to fall through
@@ -8481,45 +8618,45 @@ app.post('/api/telegram/webhook', async (c) => {
       case '/start':
       case '/help': {
         await reply(
-          `🤖 *MAASGA Bot Admin*\n\n` +
-          `━━━ 📊 TABLEAU DE BORD ━━━\n` +
-          `/stats — Tableau de bord complet\n` +
-          `/clients — Derniers clients inscrits\n\n` +
-          `━━━ 📆 RDV ━━━\n` +
-          `/rdv — Rendez-vous à venir\n` +
-          `/confirmer <id> — Confirmer un RDV\n` +
-          `/terminer <id> — Marquer terminé\n` +
-          `/annuler <id> — Annuler un RDV\n\n` +
-          `━━━ 🛒 COMMANDES & DEVIS ━━━\n` +
-          `/commandes — Commandes récentes\n` +
-          `/devis — Devis en attente\n` +
-          `/paiements — Paiements récents\n\n` +
-          `━━━ 🔧 MAINTENANCE ━━━\n` +
-          `/contrats — Contrats actifs\n` +
-          `/visites — Prochaines visites\n` +
-          `/valider <id> — Valider une visite\n\n` +
-          `━━━ 🎧 SAV & AVIS ━━━\n` +
-          `/sav — Tickets SAV ouverts\n` +
-          `/avis — Avis en attente d'approbation\n` +
-          `/approuver <id> — Approuver un avis\n\n` +
-          `━━━ 💬 MESSAGES ━━━\n` +
-          `/messages — Messages non lus\n\n` +
-          `━━━ 📦 PRODUITS ━━━\n` +
-          `/stock — État du stock\n` +
-          `/stock_update <id> <qté> — Modifier stock\n` +
-          `/recherche [marque] [BTU] — Chercher produit\n` +
-          `/convertir <cv> — CV vers BTU\n\n` +
-          `━━━ 🗃️ SYSTÈME ━━━\n` +
-          `/client <nom> — Rechercher client\n` +
-          `/backup — Résumé base de données\n\n` +
-          `💡 *Actions rapides :*`,
+          `ðŸ¤– *MAASGA Bot Admin*\n\n` +
+          `â”â”â” ðŸ“Š TABLEAU DE BORD â”â”â”\n` +
+          `/stats â€” Tableau de bord complet\n` +
+          `/clients â€” Derniers clients inscrits\n\n` +
+          `â”â”â” ðŸ“† RDV â”â”â”\n` +
+          `/rdv â€” Rendez-vous Ã  venir\n` +
+          `/confirmer <id> â€” Confirmer un RDV\n` +
+          `/terminer <id> â€” Marquer terminÃ©\n` +
+          `/annuler <id> â€” Annuler un RDV\n\n` +
+          `â”â”â” ðŸ›’ COMMANDES & DEVIS â”â”â”\n` +
+          `/commandes â€” Commandes rÃ©centes\n` +
+          `/devis â€” Devis en attente\n` +
+          `/paiements â€” Paiements rÃ©cents\n\n` +
+          `â”â”â” ðŸ”§ MAINTENANCE â”â”â”\n` +
+          `/contrats â€” Contrats actifs\n` +
+          `/visites â€” Prochaines visites\n` +
+          `/valider <id> â€” Valider une visite\n\n` +
+          `â”â”â” ðŸŽ§ SAV & AVIS â”â”â”\n` +
+          `/sav â€” Tickets SAV ouverts\n` +
+          `/avis â€” Avis en attente d'approbation\n` +
+          `/approuver <id> â€” Approuver un avis\n\n` +
+          `â”â”â” ðŸ’¬ MESSAGES â”â”â”\n` +
+          `/messages â€” Messages non lus\n\n` +
+          `â”â”â” ðŸ“¦ PRODUITS â”â”â”\n` +
+          `/stock â€” Ã‰tat du stock\n` +
+          `/stock_update <id> <qtÃ©> â€” Modifier stock\n` +
+          `/recherche [marque] [BTU] â€” Chercher produit\n` +
+          `/convertir <cv> â€” CV vers BTU\n\n` +
+          `â”â”â” ðŸ—ƒï¸ SYSTÃˆME â”â”â”\n` +
+          `/client <nom> â€” Rechercher client\n` +
+          `/backup â€” RÃ©sumÃ© base de donnÃ©es\n\n` +
+          `ðŸ’¡ *Actions rapides :*`,
           { inline_keyboard: [
-            [{ text: '📊 Dashboard', callback_data: 'show:stats' }, { text: '📆 RDV', callback_data: 'show:rdv' }],
-            [{ text: '🛒 Commandes', callback_data: 'show:orders' }, { text: '📄 Devis', callback_data: 'show:devis' }],
-            [{ text: '📋 Contrats', callback_data: 'show:contracts' }, { text: '📅 Visites', callback_data: 'show:visits' }],
-            [{ text: '💬 Messages', callback_data: 'show:messages' }, { text: '💳 Paiements', callback_data: 'show:payments' }],
-            [{ text: '🎧 SAV', callback_data: 'show:sav' }, { text: '⭐ Avis', callback_data: 'show:avis' }],
-            [{ text: '👤 Clients', callback_data: 'show:clients' }, { text: '📦 Stock', callback_data: 'show:stock' }]
+            [{ text: 'ðŸ“Š Dashboard', callback_data: 'show:stats' }, { text: 'ðŸ“† RDV', callback_data: 'show:rdv' }],
+            [{ text: 'ðŸ›’ Commandes', callback_data: 'show:orders' }, { text: 'ðŸ“„ Devis', callback_data: 'show:devis' }],
+            [{ text: 'ðŸ“‹ Contrats', callback_data: 'show:contracts' }, { text: 'ðŸ“… Visites', callback_data: 'show:visits' }],
+            [{ text: 'ðŸ’¬ Messages', callback_data: 'show:messages' }, { text: 'ðŸ’³ Paiements', callback_data: 'show:payments' }],
+            [{ text: 'ðŸŽ§ SAV', callback_data: 'show:sav' }, { text: 'â­ Avis', callback_data: 'show:avis' }],
+            [{ text: 'ðŸ‘¤ Clients', callback_data: 'show:clients' }, { text: 'ðŸ“¦ Stock', callback_data: 'show:stock' }]
           ]}
         )
         break
@@ -8527,7 +8664,7 @@ app.post('/api/telegram/webhook', async (c) => {
 
       // ---- /stats ----
       case '/stats': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
         const [contracts, visits, rdvs, orders, devis, contacts, products] = await Promise.all([
           db.prepare(`SELECT COUNT(*) as c FROM maintenance_contracts WHERE status='actif'`).first(),
           db.prepare(`SELECT COUNT(*) as c FROM maintenance_visits WHERE status='planifiee' AND visit_date >= date('now')`).first(),
@@ -8538,20 +8675,20 @@ app.post('/api/telegram/webhook', async (c) => {
           db.prepare(`SELECT COUNT(*) as c, SUM(CASE WHEN stock <= 2 THEN 1 ELSE 0 END) as low FROM products`).first(),
         ])
         await reply(
-          `📊 *Tableau de bord MAASGA*\n\n` +
-          `📆 RDV à venir: *${rdvs?.c || 0}*\n` +
-          `🛒 Commandes en attente: *${orders?.c || 0}*\n` +
-          `📄 Devis envoyés: *${devis?.c || 0}*\n` +
-          `💬 Messages non lus: *${contacts?.c || 0}*\n` +
-          `🔧 Contrats actifs: *${contracts?.c || 0}*\n` +
-          `📅 Visites à venir: *${visits?.c || 0}*\n` +
-          `📦 Produits stock bas: *${products?.low || 0}*`,
+          `ðŸ“Š *Tableau de bord MAASGA*\n\n` +
+          `ðŸ“† RDV Ã  venir: *${rdvs?.c || 0}*\n` +
+          `ðŸ›’ Commandes en attente: *${orders?.c || 0}*\n` +
+          `ðŸ“„ Devis envoyÃ©s: *${devis?.c || 0}*\n` +
+          `ðŸ’¬ Messages non lus: *${contacts?.c || 0}*\n` +
+          `ðŸ”§ Contrats actifs: *${contracts?.c || 0}*\n` +
+          `ðŸ“… Visites Ã  venir: *${visits?.c || 0}*\n` +
+          `ðŸ“¦ Produits stock bas: *${products?.low || 0}*`,
           { inline_keyboard: [
-            [{ text: '📆 Voir RDV', callback_data: 'show:rdv' }, { text: '🛒 Commandes', callback_data: 'show:orders' }],
-            [{ text: '💬 Messages', callback_data: 'show:messages' }, { text: '💳 Paiements', callback_data: 'show:payments' }],
-            [{ text: '🎧 SAV', callback_data: 'show:sav' }, { text: '⭐ Avis', callback_data: 'show:avis' }],
-            [{ text: '👤 Clients', callback_data: 'show:clients' }, { text: '📦 Stock', callback_data: 'show:stock' }],
-            [{ text: '🔄 Actualiser', callback_data: 'show:stats' }]
+            [{ text: 'ðŸ“† Voir RDV', callback_data: 'show:rdv' }, { text: 'ðŸ›’ Commandes', callback_data: 'show:orders' }],
+            [{ text: 'ðŸ’¬ Messages', callback_data: 'show:messages' }, { text: 'ðŸ’³ Paiements', callback_data: 'show:payments' }],
+            [{ text: 'ðŸŽ§ SAV', callback_data: 'show:sav' }, { text: 'â­ Avis', callback_data: 'show:avis' }],
+            [{ text: 'ðŸ‘¤ Clients', callback_data: 'show:clients' }, { text: 'ðŸ“¦ Stock', callback_data: 'show:stock' }],
+            [{ text: 'ðŸ”„ Actualiser', callback_data: 'show:stats' }]
           ]}
         )
         break
@@ -8559,23 +8696,23 @@ app.post('/api/telegram/webhook', async (c) => {
 
       // ---- /stock ----
       case '/stock': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
         const rows = await db.prepare(
           `SELECT id, name, stock, price FROM products ORDER BY stock ASC LIMIT 15`
         ).all()
         if (!rows.results?.length) { await reply('Aucun produit.'); break }
-        let txt = `📦 *État du Stock*\n\n`
+        let txt = `ðŸ“¦ *Ã‰tat du Stock*\n\n`
         for (const p of rows.results as any[]) {
-          const icon = p.stock <= 0 ? '🔴' : p.stock <= 2 ? '🟡' : '🟢'
+          const icon = p.stock <= 0 ? 'ðŸ”´' : p.stock <= 2 ? 'ðŸŸ¡' : 'ðŸŸ¢'
           txt += `${icon} *${p.name}*\n   Stock: ${p.stock} | ${(p.price || 0).toLocaleString()} FCFA\n\n`
         }
-        await reply(txt, { inline_keyboard: [[{ text: '🔄 Actualiser', callback_data: 'show:stock' }]] })
+        await reply(txt, { inline_keyboard: [[{ text: 'ðŸ”„ Actualiser', callback_data: 'show:stock' }]] })
         break
       }
 
       // ---- /contrats ----
       case '/contrats': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
         const rows = await db.prepare(
           `SELECT mc.id, mc.plan_type, mc.status, mc.start_date, mc.end_date, c.name as client
            FROM maintenance_contracts mc
@@ -8584,18 +8721,18 @@ app.post('/api/telegram/webhook', async (c) => {
            ORDER BY mc.start_date DESC LIMIT 10`
         ).all()
         if (!rows.results?.length) { await reply('Aucun contrat actif.'); break }
-        let txt = `📋 *Contrats maintenance actifs*\n\n`
+        let txt = `ðŸ“‹ *Contrats maintenance actifs*\n\n`
         for (const r of rows.results as any[]) {
-          const plan = r.plan_type === 'trimestriel' ? '3×/an' : r.plan_type === 'semestriel' ? '2×/an' : '1×/an'
-          txt += `#${r.id} — *${r.client}*\n   ${r.plan_type} (${plan}) | ${r.start_date} → ${r.end_date}\n\n`
+          const plan = r.plan_type === 'trimestriel' ? '3Ã—/an' : r.plan_type === 'semestriel' ? '2Ã—/an' : '1Ã—/an'
+          txt += `#${r.id} â€” *${r.client}*\n   ${r.plan_type} (${plan}) | ${r.start_date} â†’ ${r.end_date}\n\n`
         }
-        await reply(txt, { inline_keyboard: [[{ text: '📅 Visites', callback_data: 'show:visits' }, { text: '🔄 Actualiser', callback_data: 'show:contracts' }]] })
+        await reply(txt, { inline_keyboard: [[{ text: 'ðŸ“… Visites', callback_data: 'show:visits' }, { text: 'ðŸ”„ Actualiser', callback_data: 'show:contracts' }]] })
         break
       }
 
       // ---- /visites ----
       case '/visites': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
         const rows = await db.prepare(
           `SELECT mv.id, mv.visit_date, mv.status, c.name as client, c.phone as client_phone, mc.plan_type
            FROM maintenance_visits mv
@@ -8604,147 +8741,147 @@ app.post('/api/telegram/webhook', async (c) => {
            WHERE mv.status IN ('planifiee','confirmee') AND mv.visit_date >= date('now')
            ORDER BY mv.visit_date ASC LIMIT 10`
         ).all()
-        if (!rows.results?.length) { await reply('Aucune visite à venir.'); break }
-        let txt = `📅 *Prochaines visites maintenance*\n\n`
+        if (!rows.results?.length) { await reply('Aucune visite Ã  venir.'); break }
+        let txt = `ðŸ“… *Prochaines visites maintenance*\n\n`
         const buttons: any[] = []
         for (const r of rows.results as any[]) {
-          txt += `🔹 #${r.id} — *${r.client}*\n   📆 ${r.visit_date} | ${r.plan_type}\n   📱 ${r.client_phone || '—'}\n\n`
-          buttons.push([{ text: `✅ Valider #${r.id}`, callback_data: `complete:visit:${r.id}` }])
+          txt += `ðŸ”¹ #${r.id} â€” *${r.client}*\n   ðŸ“† ${r.visit_date} | ${r.plan_type}\n   ðŸ“± ${r.client_phone || 'â€”'}\n\n`
+          buttons.push([{ text: `âœ… Valider #${r.id}`, callback_data: `complete:visit:${r.id}` }])
         }
-        buttons.push([{ text: '🔄 Actualiser', callback_data: 'show:visits' }])
+        buttons.push([{ text: 'ðŸ”„ Actualiser', callback_data: 'show:visits' }])
         await reply(txt, { inline_keyboard: buttons.slice(0, 6) })
         break
       }
 
       // ---- /valider <id> ----
       case '/valider': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
         const visitId = parseInt(args[0])
-        if (!visitId) { await reply('⚠️ Usage: /valider <id\\_visite>'); break }
+        if (!visitId) { await reply('âš ï¸ Usage: /valider <id\\_visite>'); break }
         const visit = await db.prepare(
           `SELECT mv.*, c.name as client_name FROM maintenance_visits mv
            JOIN maintenance_contracts mc ON mv.contract_id = mc.id
            JOIN clients c ON mc.client_id = c.id
            WHERE mv.id = ?`
         ).bind(visitId).first() as any
-        if (!visit) { await reply(`❌ Visite #${visitId} introuvable.`); break }
-        if (visit.status === 'effectuee') { await reply(`✅ Visite #${visitId} est déjà complétée.`); break }
+        if (!visit) { await reply(`âŒ Visite #${visitId} introuvable.`); break }
+        if (visit.status === 'effectuee') { await reply(`âœ… Visite #${visitId} est dÃ©jÃ  complÃ©tÃ©e.`); break }
         await db.prepare(
-          `UPDATE maintenance_visits SET status='effectuee', updated_at=datetime('now'), notes='Validée via Telegram Bot' WHERE id=?`
+          `UPDATE maintenance_visits SET status='effectuee', updated_at=datetime('now'), notes='ValidÃ©e via Telegram Bot' WHERE id=?`
         ).bind(visitId).run()
         await reply(
-          `✅ *Visite #${visitId} validée !*\n\n` +
-          `👤 Client: ${visit.client_name}\n` +
-          `📅 Date prévue: ${visit.visit_date}\n` +
-          `🕐 Complétée: ${new Date().toISOString().replace('T', ' ').slice(0, 16)}`
+          `âœ… *Visite #${visitId} validÃ©e !*\n\n` +
+          `ðŸ‘¤ Client: ${visit.client_name}\n` +
+          `ðŸ“… Date prÃ©vue: ${visit.visit_date}\n` +
+          `ðŸ• ComplÃ©tÃ©e: ${new Date().toISOString().replace('T', ' ').slice(0, 16)}`
         )
         break
       }
 
       // ---- /rdv ----
       case '/rdv': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
         const today = new Date().toISOString().split('T')[0]
         const rows = await db.prepare(
           `SELECT id, name, phone, date, heure_debut, heure_fin, type, quartier, status FROM appointments
            WHERE date >= ? AND status != 'cancelled' ORDER BY date ASC, heure_debut ASC LIMIT 10`
         ).bind(today).all()
-        if (!rows.results?.length) { await reply('Aucun RDV à venir.', { inline_keyboard: [[{ text: '🔄 Actualiser', callback_data: 'show:rdv' }]] }); break }
-        let txt = `📆 *Prochains rendez-vous*\n\n`
+        if (!rows.results?.length) { await reply('Aucun RDV Ã  venir.', { inline_keyboard: [[{ text: 'ðŸ”„ Actualiser', callback_data: 'show:rdv' }]] }); break }
+        let txt = `ðŸ“† *Prochains rendez-vous*\n\n`
         const buttons: any[] = []
         for (const r of rows.results as any[]) {
-          const dateStr = r.date === today ? "📍 AUJOURD'HUI" : `📅 ${r.date}`
-          const horaire = r.heure_debut ? `${r.heure_debut}–${r.heure_fin || '18:00'}` : '—'
-          const stIcon = r.status === 'confirmed' ? '✅' : r.status === 'done' ? '☑️' : '⏳'
-          txt += `${stIcon} #${r.id} — *${r.name}*\n   ${dateStr} | ${horaire}\n   📱 ${r.phone} | 📍 ${r.quartier || '—'}\n\n`
+          const dateStr = r.date === today ? "ðŸ“ AUJOURD'HUI" : `ðŸ“… ${r.date}`
+          const horaire = r.heure_debut ? `${r.heure_debut}â€“${r.heure_fin || '18:00'}` : 'â€”'
+          const stIcon = r.status === 'confirmed' ? 'âœ…' : r.status === 'done' ? 'â˜‘ï¸' : 'â³'
+          txt += `${stIcon} #${r.id} â€” *${r.name}*\n   ${dateStr} | ${horaire}\n   ðŸ“± ${r.phone} | ðŸ“ ${r.quartier || 'â€”'}\n\n`
           if (r.status === 'pending') {
-            buttons.push([{ text: `👁️ #${r.id} ${r.name}`, callback_data: `detail:rdv:${r.id}` }])
+            buttons.push([{ text: `ðŸ‘ï¸ #${r.id} ${r.name}`, callback_data: `detail:rdv:${r.id}` }])
           }
         }
-        buttons.push([{ text: '🔄 Actualiser', callback_data: 'show:rdv' }])
+        buttons.push([{ text: 'ðŸ”„ Actualiser', callback_data: 'show:rdv' }])
         await reply(txt, { inline_keyboard: buttons.slice(0, 6) })
         break
       }
 
       // ---- /commandes ----
       case '/commandes': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
         const rows = await db.prepare(
           `SELECT o.id, o.total_price, o.client_name, o.client_phone, o.status, o.created_at, c.name as client
            FROM orders o LEFT JOIN clients c ON o.client_id = c.id
            ORDER BY o.created_at DESC LIMIT 10`
         ).all()
-        if (!rows.results?.length) { await reply('Aucune commande.', { inline_keyboard: [[{ text: '🔄 Actualiser', callback_data: 'show:orders' }]] }); break }
-        let txt = `🛒 *Commandes récentes*\n\n`
+        if (!rows.results?.length) { await reply('Aucune commande.', { inline_keyboard: [[{ text: 'ðŸ”„ Actualiser', callback_data: 'show:orders' }]] }); break }
+        let txt = `ðŸ›’ *Commandes rÃ©centes*\n\n`
         const buttons: any[] = []
         for (const r of rows.results as any[]) {
-          const st = r.status === 'en_attente' ? '⏳' : r.status === 'contacte' ? '📞' : r.status === 'confirme' ? '✅' : r.status === 'en_livraison' ? '🚚' : r.status === 'livre' ? '📦' : r.status === 'annule' ? '❌' : '🔄'
+          const st = r.status === 'en_attente' ? 'â³' : r.status === 'contacte' ? 'ðŸ“ž' : r.status === 'confirme' ? 'âœ…' : r.status === 'en_livraison' ? 'ðŸšš' : r.status === 'livre' ? 'ðŸ“¦' : r.status === 'annule' ? 'âŒ' : 'ðŸ”„'
           const nom = r.client || r.client_name || 'Anonyme'
-          txt += `${st} #${r.id} — *${nom}*\n   ${(r.total_price || 0).toLocaleString()} FCFA | ${r.status}\n\n`
+          txt += `${st} #${r.id} â€” *${nom}*\n   ${(r.total_price || 0).toLocaleString()} FCFA | ${r.status}\n\n`
           if (r.status === 'pending') {
-            buttons.push([{ text: `👁️ #${r.id} ${nom}`, callback_data: `detail:order:${r.id}` }])
+            buttons.push([{ text: `ðŸ‘ï¸ #${r.id} ${nom}`, callback_data: `detail:order:${r.id}` }])
           }
         }
-        buttons.push([{ text: '🔄 Actualiser', callback_data: 'show:orders' }])
+        buttons.push([{ text: 'ðŸ”„ Actualiser', callback_data: 'show:orders' }])
         await reply(txt, { inline_keyboard: buttons.slice(0, 6) })
         break
       }
 
       // ---- /messages ----
       case '/messages': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
         const rows = await db.prepare(
           `SELECT id, name, phone, email, message, created_at FROM contact_messages
            WHERE is_read = 0 ORDER BY created_at DESC LIMIT 10`
         ).all()
-        if (!rows.results?.length) { await reply('✅ Aucun message non lu.', { inline_keyboard: [[{ text: '🔄 Actualiser', callback_data: 'show:messages' }]] }); break }
-        let txt = `💬 *Messages non lus*\n\n`
+        if (!rows.results?.length) { await reply('âœ… Aucun message non lu.', { inline_keyboard: [[{ text: 'ðŸ”„ Actualiser', callback_data: 'show:messages' }]] }); break }
+        let txt = `ðŸ’¬ *Messages non lus*\n\n`
         const buttons: any[] = []
         for (const r of rows.results as any[]) {
-          txt += `🔹 #${r.id} — *${r.name}*\n   📱 ${r.phone || r.email || '—'}\n   💬 ${(r.message || '').slice(0, 80)}...\n\n`
+          txt += `ðŸ”¹ #${r.id} â€” *${r.name}*\n   ðŸ“± ${r.phone || r.email || 'â€”'}\n   ðŸ’¬ ${(r.message || '').slice(0, 80)}...\n\n`
           buttons.push([
-            { text: `📖 Lu #${r.id}`, callback_data: `read:msg:${r.id}` },
-            r.phone ? { text: `💬 WhatsApp`, url: `https://wa.me/${(r.phone || '').replace(/\D/g, '')}` } : { text: `📧 Email`, url: `mailto:${r.email || ''}` }
+            { text: `ðŸ“– Lu #${r.id}`, callback_data: `read:msg:${r.id}` },
+            r.phone ? { text: `ðŸ’¬ WhatsApp`, url: `https://wa.me/${(r.phone || '').replace(/\D/g, '')}` } : { text: `ðŸ“§ Email`, url: `mailto:${r.email || ''}` }
           ])
         }
-        buttons.push([{ text: '🔄 Actualiser', callback_data: 'show:messages' }])
+        buttons.push([{ text: 'ðŸ”„ Actualiser', callback_data: 'show:messages' }])
         await reply(txt, { inline_keyboard: buttons.slice(0, 8) })
         break
       }
 
       // ---- /devis ----
       case '/devis': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
         const rows = await db.prepare(
           `SELECT id, numero, client_name, total_ht, status, created_at, expires_at FROM devis
            WHERE status IN ('sent','draft') ORDER BY created_at DESC LIMIT 10`
         ).all()
-        if (!rows.results?.length) { await reply('Aucun devis en attente.', { inline_keyboard: [[{ text: '🔄 Actualiser', callback_data: 'show:devis' }]] }); break }
-        let txt = `📄 *Devis en attente*\n\n`
+        if (!rows.results?.length) { await reply('Aucun devis en attente.', { inline_keyboard: [[{ text: 'ðŸ”„ Actualiser', callback_data: 'show:devis' }]] }); break }
+        let txt = `ðŸ“„ *Devis en attente*\n\n`
         for (const r of rows.results as any[]) {
-          const st = r.status === 'sent' ? '📤' : '📝'
-          txt += `${st} ${r.numero} — *${r.client_name}*\n   💰 ${(r.total_ht || 0).toLocaleString()} FCFA\n   📅 Expire: ${(r.expires_at || '').slice(0, 10)}\n\n`
+          const st = r.status === 'sent' ? 'ðŸ“¤' : 'ðŸ“'
+          txt += `${st} ${r.numero} â€” *${r.client_name}*\n   ðŸ’° ${(r.total_ht || 0).toLocaleString()} FCFA\n   ðŸ“… Expire: ${(r.expires_at || '').slice(0, 10)}\n\n`
         }
-        await reply(txt, { inline_keyboard: [[{ text: '🔄 Actualiser', callback_data: 'show:devis' }]] })
+        await reply(txt, { inline_keyboard: [[{ text: 'ðŸ”„ Actualiser', callback_data: 'show:devis' }]] })
         break
       }
 
       // ---- /client <nom> ----
       case '/client': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
         const search = args.join(' ')
-        if (!search) { await reply('⚠️ Usage: /client <nom ou téléphone>'); break }
+        if (!search) { await reply('âš ï¸ Usage: /client <nom ou tÃ©lÃ©phone>'); break }
         const rows = await db.prepare(
           `SELECT id, name, phone, email, quartier FROM clients
            WHERE name LIKE ? OR phone LIKE ? LIMIT 5`
         ).bind(`%${search}%`, `%${search}%`).all()
-        if (!rows.results?.length) { await reply(`🔍 Aucun client trouvé pour "${search}".`); break }
-        let txt = `🔍 *Résultats pour "${search}"*\n\n`
+        if (!rows.results?.length) { await reply(`ðŸ” Aucun client trouvÃ© pour "${search}".`); break }
+        let txt = `ðŸ” *RÃ©sultats pour "${search}"*\n\n`
         const buttons: any[] = []
         for (const r of rows.results as any[]) {
-          txt += `👤 #${r.id} — *${r.name}*\n   📱 ${r.phone || '—'} | 📧 ${r.email || '—'}\n   📍 ${r.quartier || '—'}\n\n`
+          txt += `ðŸ‘¤ #${r.id} â€” *${r.name}*\n   ðŸ“± ${r.phone || 'â€”'} | ðŸ“§ ${r.email || 'â€”'}\n   ðŸ“ ${r.quartier || 'â€”'}\n\n`
           if (r.phone) {
-            buttons.push([{ text: `💬 WhatsApp ${r.name}`, url: `https://wa.me/${(r.phone || '').replace(/\D/g, '')}` }])
+            buttons.push([{ text: `ðŸ’¬ WhatsApp ${r.name}`, url: `https://wa.me/${(r.phone || '').replace(/\D/g, '')}` }])
           }
         }
         await reply(txt, buttons.length ? { inline_keyboard: buttons.slice(0, 4) } : undefined)
@@ -8753,21 +8890,21 @@ app.post('/api/telegram/webhook', async (c) => {
 
       // ---- /confirmer <id> (RDV) ----
       case '/confirmer': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
         const rdvId = parseInt(args[0])
-        if (!rdvId) { await reply('⚠️ Usage: /confirmer <id\\_rdv>'); break }
+        if (!rdvId) { await reply('âš ï¸ Usage: /confirmer <id\\_rdv>'); break }
         await db.prepare(`UPDATE appointments SET status='confirmed' WHERE id=?`).bind(rdvId).run()
-        await reply(`✅ RDV #${rdvId} confirmé !`)
+        await reply(`âœ… RDV #${rdvId} confirmÃ© !`)
         break
       }
 
       // ---- /annuler <id> (RDV) ----
       case '/annuler': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
         const rdvId = parseInt(args[0])
-        if (!rdvId) { await reply('⚠️ Usage: /annuler <id\\_rdv>'); break }
+        if (!rdvId) { await reply('âš ï¸ Usage: /annuler <id\\_rdv>'); break }
         await db.prepare(`UPDATE appointments SET status='cancelled' WHERE id=?`).bind(rdvId).run()
-        await reply(`❌ RDV #${rdvId} annulé.`)
+        await reply(`âŒ RDV #${rdvId} annulÃ©.`)
         break
       }
 
@@ -8778,16 +8915,16 @@ app.post('/api/telegram/webhook', async (c) => {
           '2.5': 24000, '3': 24000, '3.5': 30000, '4': 36000, '5': 48000
         }
         const SURFACE: Record<number, string> = {
-          7000: '≈ 7–10 m²', 9000: '≈ 9–15 m²', 12000: '≈ 15–23 m²',
-          18000: '≈ 25–40 m²', 24000: '≈ 40–60 m²', 30000: '≈ 60–80 m²',
-          36000: '≈ 80–100 m²', 48000: '≈ 100–130 m²'
+          7000: 'â‰ˆ 7â€“10 mÂ²', 9000: 'â‰ˆ 9â€“15 mÂ²', 12000: 'â‰ˆ 15â€“23 mÂ²',
+          18000: 'â‰ˆ 25â€“40 mÂ²', 24000: 'â‰ˆ 40â€“60 mÂ²', 30000: 'â‰ˆ 60â€“80 mÂ²',
+          36000: 'â‰ˆ 80â€“100 mÂ²', 48000: 'â‰ˆ 100â€“130 mÂ²'
         }
         if (!args[0]) {
-          let txt = `🔄 *Conversion CV → BTU*\n\n`
+          let txt = `ðŸ”„ *Conversion CV â†’ BTU*\n\n`
           for (const [cv, btu] of Object.entries(CV_TO_BTU)) {
-            txt += `*${cv} CV* = ${btu.toLocaleString()} BTU — ${SURFACE[btu] || ''}\n`
+            txt += `*${cv} CV* = ${btu.toLocaleString()} BTU â€” ${SURFACE[btu] || ''}\n`
           }
-          txt += `\n💡 Usage: /convertir 2`
+          txt += `\nðŸ’¡ Usage: /convertir 2`
           await reply(txt)
           break
         }
@@ -8795,22 +8932,22 @@ app.post('/api/telegram/webhook', async (c) => {
         const key = cv.toString()
         const btu = CV_TO_BTU[key]
         if (!btu) {
-          await reply(`⚠️ Valeur non reconnue: ${args[0]} CV\n\n🔢 Valeurs valides: 0.75, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5`)
+          await reply(`âš ï¸ Valeur non reconnue: ${args[0]} CV\n\nðŸ”¢ Valeurs valides: 0.75, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5`)
           break
         }
         await reply(
-          `🔄 *Conversion CV → BTU*\n\n` +
+          `ðŸ”„ *Conversion CV â†’ BTU*\n\n` +
           `*${cv} CV* = *${btu.toLocaleString()} BTU*\n` +
-          `📐 Surface couverte: ${SURFACE[btu] || '—'}\n\n` +
-          `💡 Tapez /recherche ${btu} pour voir les produits disponibles.`,
-          { inline_keyboard: [[{ text: `🔍 Voir produits ${btu} BTU`, callback_data: `search:${btu}:` }]] }
+          `ðŸ“ Surface couverte: ${SURFACE[btu] || 'â€”'}\n\n` +
+          `ðŸ’¡ Tapez /recherche ${btu} pour voir les produits disponibles.`,
+          { inline_keyboard: [[{ text: `ðŸ” Voir produits ${btu} BTU`, callback_data: `search:${btu}:` }]] }
         )
         break
       }
 
       // ---- /recherche [marques...] [BTU...] ----
       case '/recherche': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
 
         const KNOWN_BRANDS = ['LG', 'SAMSUNG', 'GREE', 'MIDEA', 'HAIER', 'DAIKIN', 'CARRIER', 'TOSHIBA', 'FUJITSU', 'PANASONIC', 'HISENSE']
         const CV_TO_BTU_MAP: Record<number, number> = { 1: 9000, 2: 18000, 3: 24000, 4: 36000, 5: 48000 }
@@ -8830,7 +8967,7 @@ app.post('/api/telegram/webhook', async (c) => {
                 // Direct BTU value
                 btuValues.push(num)
               } else {
-                // CV value — convert to BTU
+                // CV value â€” convert to BTU
                 const btu = CV_FLOAT[num.toString()] || Math.round(num) in CV_TO_BTU_MAP ? CV_TO_BTU_MAP[Math.round(num)] : null
                 const resolved = CV_FLOAT[num.toString()] || btu
                 if (resolved) btuValues.push(resolved)
@@ -8859,131 +8996,131 @@ app.post('/api/telegram/webhook', async (c) => {
 
         if (!rows.results?.length) {
           const what = [...brands, ...btuValues.map(b => `${b} BTU`)].join(', ') || 'tous produits'
-          await reply(`🔍 Aucun produit disponible pour: *${what}*\n\nEssayez /stock pour voir tout le catalogue.`)
+          await reply(`ðŸ” Aucun produit disponible pour: *${what}*\n\nEssayez /stock pour voir tout le catalogue.`)
           break
         }
 
         const filterDesc = [
           brands.length ? `Marques: *${brands.join(', ')}*` : '',
           btuValues.length ? `BTU: *${btuValues.map(b => b.toLocaleString()).join(', ')}*` : ''
-        ].filter(Boolean).join(' · ') || '*Tout le catalogue*'
+        ].filter(Boolean).join(' Â· ') || '*Tout le catalogue*'
 
-        let txt = `🔍 *Recherche produits* — ${filterDesc}\n📦 ${rows.results.length} résultat(s)\n\n`
+        let txt = `ðŸ” *Recherche produits* â€” ${filterDesc}\nðŸ“¦ ${rows.results.length} rÃ©sultat(s)\n\n`
         for (const p of rows.results as any[]) {
-          const stockIcon = p.stock <= 0 ? '🔴 Rupture' : p.stock <= 2 ? `🟡 ${p.stock} restant(s)` : `🟢 En stock (${p.stock})`
-          const inv = p.inverter ? '⚡ Inverter' : 'Standard'
-          txt += `*${p.brand}* — ${(p.btu || 0).toLocaleString()} BTU\n`
-          txt += `   💰 ${(p.price || 0).toLocaleString()} FCFA | ${inv} | ${p.energy_class || '—'}\n`
+          const stockIcon = p.stock <= 0 ? 'ðŸ”´ Rupture' : p.stock <= 2 ? `ðŸŸ¡ ${p.stock} restant(s)` : `ðŸŸ¢ En stock (${p.stock})`
+          const inv = p.inverter ? 'âš¡ Inverter' : 'Standard'
+          txt += `*${p.brand}* â€” ${(p.btu || 0).toLocaleString()} BTU\n`
+          txt += `   ðŸ’° ${(p.price || 0).toLocaleString()} FCFA | ${inv} | ${p.energy_class || 'â€”'}\n`
           txt += `   ${stockIcon}\n\n`
         }
-        await reply(txt, { inline_keyboard: [[{ text: '🔄 Tout le catalogue', callback_data: 'show:stock' }]] })
+        await reply(txt, { inline_keyboard: [[{ text: 'ðŸ”„ Tout le catalogue', callback_data: 'show:stock' }]] })
         break
       }
 
-      // ---- /paiements → redirigé vers commandes ----
+      // ---- /paiements â†’ redirigÃ© vers commandes ----
       case '/paiements': {
-        await reply('💡 Le système de paiement en ligne a été remplacé par un flux contact direct.\nConsultez les commandes avec /commandes.')
+        await reply('ðŸ’¡ Le systÃ¨me de paiement en ligne a Ã©tÃ© remplacÃ© par un flux contact direct.\nConsultez les commandes avec /commandes.')
         break
       }
 
       // ---- /sav ----
       case '/sav': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
         const rows = await db.prepare(
           `SELECT id, ticket_ref, subject, priority, status, client_name, client_phone, created_at
            FROM sav_tickets WHERE status NOT IN ('resolved','closed') ORDER BY created_at DESC LIMIT 10`
         ).all()
-        if (!rows.results?.length) { await reply('✅ Aucun ticket SAV ouvert.'); break }
-        let txt = `🎧 *Tickets SAV ouverts*\n\n`
+        if (!rows.results?.length) { await reply('âœ… Aucun ticket SAV ouvert.'); break }
+        let txt = `ðŸŽ§ *Tickets SAV ouverts*\n\n`
         const buttons: any[] = []
         for (const r of rows.results as any[]) {
-          const pIcon = r.priority==='urgent'?'🔴':r.priority==='high'?'🟠':r.priority==='normal'?'🟡':'⚪'
-          const stIcon = r.status==='open'?'📬':r.status==='in_progress'?'🔧':'📋'
-          txt += `${stIcon} ${r.ticket_ref} — *${r.client_name||'?'}*\n   ${pIcon} ${r.priority||'normal'} | ${r.subject||'—'}\n   📱 ${r.client_phone||'—'}\n\n`
-          buttons.push([{ text: `✅ Résoudre ${r.ticket_ref}`, callback_data: `resolve:sav:${r.id}` }])
+          const pIcon = r.priority==='urgent'?'ðŸ”´':r.priority==='high'?'ðŸŸ ':r.priority==='normal'?'ðŸŸ¡':'âšª'
+          const stIcon = r.status==='open'?'ðŸ“¬':r.status==='in_progress'?'ðŸ”§':'ðŸ“‹'
+          txt += `${stIcon} ${r.ticket_ref} â€” *${r.client_name||'?'}*\n   ${pIcon} ${r.priority||'normal'} | ${r.subject||'â€”'}\n   ðŸ“± ${r.client_phone||'â€”'}\n\n`
+          buttons.push([{ text: `âœ… RÃ©soudre ${r.ticket_ref}`, callback_data: `resolve:sav:${r.id}` }])
         }
-        buttons.push([{ text: '🔄 Actualiser', callback_data: 'show:sav' }])
+        buttons.push([{ text: 'ðŸ”„ Actualiser', callback_data: 'show:sav' }])
         await reply(txt, { inline_keyboard: buttons.slice(0,6) })
         break
       }
 
       // ---- /avis ----
       case '/avis': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
         const rows = await db.prepare(
           `SELECT id, client_name, rating, comment, service, created_at FROM reviews WHERE approved=0 ORDER BY created_at DESC LIMIT 10`
         ).all()
-        if (!rows.results?.length) { await reply("✅ Aucun avis en attente d'approbation."); break }
-        let txt = `⭐ *Avis en attente*\n\n`
+        if (!rows.results?.length) { await reply("âœ… Aucun avis en attente d'approbation."); break }
+        let txt = `â­ *Avis en attente*\n\n`
         const buttons: any[] = []
         for (const r of rows.results as any[]) {
-          const stars = '⭐'.repeat(Math.min(r.rating||5,5))
-          txt += `#${r.id} ${stars} — *${r.client_name||'?'}*\n   💬 ${(r.comment||'').slice(0,80)}${r.comment?.length>80?'…':''}\n\n`
+          const stars = 'â­'.repeat(Math.min(r.rating||5,5))
+          txt += `#${r.id} ${stars} â€” *${r.client_name||'?'}*\n   ðŸ’¬ ${(r.comment||'').slice(0,80)}${r.comment?.length>80?'â€¦':''}\n\n`
           buttons.push([
-            { text: `✅ Approuver #${r.id}`, callback_data: `approve:review:${r.id}` },
-            { text: `❌ Rejeter #${r.id}`, callback_data: `reject:review:${r.id}` }
+            { text: `âœ… Approuver #${r.id}`, callback_data: `approve:review:${r.id}` },
+            { text: `âŒ Rejeter #${r.id}`, callback_data: `reject:review:${r.id}` }
           ])
         }
-        buttons.push([{ text: '🔄 Actualiser', callback_data: 'show:avis' }])
+        buttons.push([{ text: 'ðŸ”„ Actualiser', callback_data: 'show:avis' }])
         await reply(txt, { inline_keyboard: buttons.slice(0,6) })
         break
       }
 
       // ---- /approuver <id> (avis) ----
       case '/approuver': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
         const reviewId = parseInt(args[0])
-        if (!reviewId) { await reply('⚠️ Usage: /approuver <id\_avis>'); break }
+        if (!reviewId) { await reply('âš ï¸ Usage: /approuver <id\_avis>'); break }
         await db.prepare(`UPDATE reviews SET approved=1 WHERE id=?`).bind(reviewId).run()
-        await reply(`✅ Avis #${reviewId} approuvé et publié !`)
+        await reply(`âœ… Avis #${reviewId} approuvÃ© et publiÃ© !`)
         break
       }
 
-      // ---- /terminer <id> (RDV → done) ----
+      // ---- /terminer <id> (RDV â†’ done) ----
       case '/terminer': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
         const rdvId = parseInt(args[0])
-        if (!rdvId) { await reply('⚠️ Usage: /terminer <id\_rdv>'); break }
+        if (!rdvId) { await reply('âš ï¸ Usage: /terminer <id\_rdv>'); break }
         const rdv = await db.prepare(`SELECT name FROM appointments WHERE id=?`).bind(rdvId).first() as any
-        if (!rdv) { await reply(`❌ RDV #${rdvId} introuvable.`); break }
+        if (!rdv) { await reply(`âŒ RDV #${rdvId} introuvable.`); break }
         await db.prepare(`UPDATE appointments SET status='done' WHERE id=?`).bind(rdvId).run()
-        await reply(`☑️ RDV #${rdvId} (${rdv.name}) marqué comme *terminé* !`)
+        await reply(`â˜‘ï¸ RDV #${rdvId} (${rdv.name}) marquÃ© comme *terminÃ©* !`)
         break
       }
 
       // ---- /stock_update <id> <quantite> ----
       case '/stock_update': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
         const prodId = parseInt(args[0])
         const qty = parseInt(args[1])
-        if (!prodId || isNaN(qty)) { await reply('⚠️ Usage: /stock\_update <id\_produit> <nouvelle\_quantité>\nEx: /stock\_update 3 10'); break }
+        if (!prodId || isNaN(qty)) { await reply('âš ï¸ Usage: /stock\_update <id\_produit> <nouvelle\_quantitÃ©>\nEx: /stock\_update 3 10'); break }
         const prod = await db.prepare(`SELECT id, name, stock FROM products WHERE id=?`).bind(prodId).first() as any
-        if (!prod) { await reply(`❌ Produit #${prodId} introuvable. Tapez /stock pour voir les IDs.`); break }
+        if (!prod) { await reply(`âŒ Produit #${prodId} introuvable. Tapez /stock pour voir les IDs.`); break }
         await db.prepare(`UPDATE products SET stock=?, updated_at=datetime('now') WHERE id=?`).bind(qty, prodId).run()
-        await reply(`📦 Stock mis à jour !\n\n*${prod.name}*\n   Ancien stock: ${prod.stock} → Nouveau: *${qty}*`)
+        await reply(`ðŸ“¦ Stock mis Ã  jour !\n\n*${prod.name}*\n   Ancien stock: ${prod.stock} â†’ Nouveau: *${qty}*`)
         break
       }
 
       // ---- /clients (derniers inscrits) ----
       case '/clients': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
         const rows = await db.prepare(
           `SELECT id, name, phone, email, quartier, created_at FROM clients ORDER BY created_at DESC LIMIT 10`
         ).all()
         if (!rows.results?.length) { await reply('Aucun client.'); break }
-        let txt = `👤 *Derniers clients inscrits*\n\n`
+        let txt = `ðŸ‘¤ *Derniers clients inscrits*\n\n`
         for (const r of rows.results as any[]) {
-          txt += `#${r.id} — *${r.name}*\n   📱 ${r.phone||'—'} | 📍 ${r.quartier||'—'}\n   📅 ${(r.created_at||'').slice(0,10)}\n\n`
+          txt += `#${r.id} â€” *${r.name}*\n   ðŸ“± ${r.phone||'â€”'} | ðŸ“ ${r.quartier||'â€”'}\n   ðŸ“… ${(r.created_at||'').slice(0,10)}\n\n`
         }
         const totalRes = await db.prepare(`SELECT COUNT(*) as c FROM clients`).first() as any
-        txt += `📊 Total: *${totalRes?.c||0}* clients`
-        await reply(txt, { inline_keyboard: [[{ text: '🔄 Actualiser', callback_data: 'show:clients' }]] })
+        txt += `ðŸ“Š Total: *${totalRes?.c||0}* clients`
+        await reply(txt, { inline_keyboard: [[{ text: 'ðŸ”„ Actualiser', callback_data: 'show:clients' }]] })
         break
       }
 
       // ---- /backup ----
       case '/backup': {
-        if (!db) { await reply('❌ Base de données indisponible'); break }
+        if (!db) { await reply('âŒ Base de donnÃ©es indisponible'); break }
         const backupTables = ['products', 'clients', 'appointments', 'orders', 'reviews', 'contact_messages', 'maintenance_contracts', 'sav_tickets', 'site_settings']
         const counts: string[] = []
         let totalRows = 0
@@ -8994,37 +9131,37 @@ app.post('/api/telegram/webhook', async (c) => {
             totalRows += count
             counts.push(`  ${table}: *${count}* lignes`)
           } catch (_) {
-            counts.push(`  ${table}: ⚠️ erreur`)
+            counts.push(`  ${table}: âš ï¸ erreur`)
           }
         }
         await reply(
-          `💾 *Backup D1 — Résumé*\n\n` +
-          `📊 Total: *${totalRows.toLocaleString()}* lignes\n` +
-          `📋 Tables:\n${counts.join('\n')}\n\n` +
-          `🔗 *Pour télécharger le backup JSON complet:*\n` +
-          `Allez sur /admin → Paramètres → Backup\n` +
-          `ou: \`/api/admin/backup\` (authentifié)`,
-          { inline_keyboard: [[{ text: '📊 Dashboard', callback_data: 'show:stats' }]] }
+          `ðŸ’¾ *Backup D1 â€” RÃ©sumÃ©*\n\n` +
+          `ðŸ“Š Total: *${totalRows.toLocaleString()}* lignes\n` +
+          `ðŸ“‹ Tables:\n${counts.join('\n')}\n\n` +
+          `ðŸ”— *Pour tÃ©lÃ©charger le backup JSON complet:*\n` +
+          `Allez sur /admin â†’ ParamÃ¨tres â†’ Backup\n` +
+          `ou: \`/api/admin/backup\` (authentifiÃ©)`,
+          { inline_keyboard: [[{ text: 'ðŸ“Š Dashboard', callback_data: 'show:stats' }]] }
         )
         break
       }
 
       default: {
         if (cmd.startsWith('/')) {
-          await reply(`❓ Commande inconnue: ${cmd}\n\nTapez /help pour voir les commandes disponibles.`)
+          await reply(`â“ Commande inconnue: ${cmd}\n\nTapez /help pour voir les commandes disponibles.`)
         }
       }
     }
   } catch (err: any) {
     console.error('[TELEGRAM BOT]', err)
-    await reply(`❌ Erreur: ${err.message || 'interne'}`)
+    await reply(`âŒ Erreur: ${err.message || 'interne'}`)
   }
 
   return c.json({ ok: true })
 })
 
 // ============================================================
-// API MOBILE — Firebase Auth JWT verification (JWKS)
+// API MOBILE â€” Firebase Auth JWT verification (JWKS)
 // ============================================================
 
 const FIREBASE_PROJECT_ID = 'maasga-83b35'
@@ -9040,7 +9177,7 @@ async function getFirebasePublicKeys(): Promise<any[]> {
     return _jwksCache.keys
   }
   const res = await fetch(FIREBASE_JWKS_URL)
-  if (!res.ok) throw new Error('Impossible de récupérer les clés JWKS Firebase')
+  if (!res.ok) throw new Error('Impossible de rÃ©cupÃ©rer les clÃ©s JWKS Firebase')
   const data = await res.json() as { keys: any[] }
   _jwksCache = { keys: data.keys, fetchedAt: now }
   return data.keys
@@ -9064,41 +9201,41 @@ async function importJwkPublicKey(jwk: any): Promise<CryptoKey> {
 }
 
 /**
- * Vérifie un Firebase ID token (JWT RS256).
- * Retourne le payload décodé si valide, sinon lance une exception.
+ * VÃ©rifie un Firebase ID token (JWT RS256).
+ * Retourne le payload dÃ©codÃ© si valide, sinon lance une exception.
  */
 async function verifyFirebaseToken(idToken: string): Promise<Record<string, any>> {
   const parts = idToken.split('.')
-  if (parts.length !== 3) throw new Error('JWT malformé')
+  if (parts.length !== 3) throw new Error('JWT malformÃ©')
 
   const [headerB64, payloadB64, signatureB64] = parts
 
-  // Décoder le header pour trouver le kid
+  // DÃ©coder le header pour trouver le kid
   const header = JSON.parse(atob(headerB64.replace(/-/g, '+').replace(/_/g, '/')))
-  if (header.alg !== 'RS256') throw new Error('Algorithme JWT non supporté')
+  if (header.alg !== 'RS256') throw new Error('Algorithme JWT non supportÃ©')
 
-  // Décoder le payload
+  // DÃ©coder le payload
   const payload = JSON.parse(
     new TextDecoder().decode(base64urlToUint8Array(payloadB64))
   ) as Record<string, any>
 
-  // Vérifier les claims standard
+  // VÃ©rifier les claims standard
   const now = Math.floor(Date.now() / 1000)
-  if (payload.exp && payload.exp < now) throw new Error('Token expiré')
-  if (payload.iat && payload.iat > now + 300) throw new Error('Token émis dans le futur')
+  if (payload.exp && payload.exp < now) throw new Error('Token expirÃ©')
+  if (payload.iat && payload.iat > now + 300) throw new Error('Token Ã©mis dans le futur')
   if (payload.aud !== FIREBASE_PROJECT_ID) throw new Error('Audience invalide')
-  if (payload.iss !== `https://securetoken.google.com/${FIREBASE_PROJECT_ID}`) throw new Error('Émetteur invalide')
+  if (payload.iss !== `https://securetoken.google.com/${FIREBASE_PROJECT_ID}`) throw new Error('Ã‰metteur invalide')
   if (!payload.sub) throw new Error('Subject manquant')
 
-  // Trouver la clé publique correspondant au kid
+  // Trouver la clÃ© publique correspondant au kid
   const keys = await getFirebasePublicKeys()
   const jwk = keys.find((k: any) => k.kid === header.kid)
   if (!jwk) {
-    // kid inconnu → invalider le cache et réessayer une fois
+    // kid inconnu â†’ invalider le cache et rÃ©essayer une fois
     _jwksCache = null
     const freshKeys = await getFirebasePublicKeys()
     const freshJwk = freshKeys.find((k: any) => k.kid === header.kid)
-    if (!freshJwk) throw new Error('Clé publique introuvable pour ce token')
+    if (!freshJwk) throw new Error('ClÃ© publique introuvable pour ce token')
     const key = await importJwkPublicKey(freshJwk)
     const sig = base64urlToUint8Array(signatureB64)
     const data = new TextEncoder().encode(`${headerB64}.${payloadB64}`)
@@ -9116,14 +9253,14 @@ async function verifyFirebaseToken(idToken: string): Promise<Record<string, any>
   return payload
 }
 
-// ─── Middleware auth mobile (Firebase JWT) ────────────────────────────────────
+// â”€â”€â”€ Middleware auth mobile (Firebase JWT) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const mobileAuth = async (c: any, next: any) => {
   const auth = c.req.header('Authorization') || ''
   const token = auth.replace('Bearer ', '').trim()
   if (!token) return c.json({ error: 'Token manquant' }, 401)
   try {
     const payload = await verifyFirebaseToken(token)
-    // Stocker uid + email dans le contexte de la requête
+    // Stocker uid + email dans le contexte de la requÃªte
     c.set('mobileUser', {
       uid: payload.sub,
       email: payload.email || '',
@@ -9133,20 +9270,20 @@ const mobileAuth = async (c: any, next: any) => {
     return next()
   } catch (e: any) {
     console.warn('[mobileAuth] Token invalide:', e.message)
-    return c.json({ error: 'Token invalide ou expiré' }, 401)
+    return c.json({ error: 'Token invalide ou expirÃ©' }, 401)
   }
 }
 
-// ─── Middleware admin mobile (vérifie le claim custom "role":"admin") ─────────
+// â”€â”€â”€ Middleware admin mobile (vÃ©rifie le claim custom "role":"admin") â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const mobileAdminAuth = async (c: any, next: any) => {
   const auth = c.req.header('Authorization') || ''
   const token = auth.replace('Bearer ', '').trim()
   if (!token) return c.json({ error: 'Token manquant' }, 401)
   try {
     const payload = await verifyFirebaseToken(token)
-    // Le rôle admin est stocké dans les custom claims Firebase
+    // Le rÃ´le admin est stockÃ© dans les custom claims Firebase
     const isAdmin = payload['role'] === 'admin' || payload['https://maasga.app/role'] === 'admin'
-    if (!isAdmin) return c.json({ error: 'Accès admin requis' }, 403)
+    if (!isAdmin) return c.json({ error: 'AccÃ¨s admin requis' }, 403)
     c.set('mobileUser', { uid: payload.sub, email: payload.email || '', name: payload.name || '', role: 'admin' })
     return next()
   } catch {
@@ -9154,15 +9291,15 @@ const mobileAdminAuth = async (c: any, next: any) => {
   }
 }
 
-// ── POST /api/mobile/login ────────────────────────────────────
-// Firebase Auth gère la connexion côté client.
+// â”€â”€ POST /api/mobile/login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Firebase Auth gÃ¨re la connexion cÃ´tÃ© client.
 // Cette route permet de synchroniser le profil Firebase dans D1.
 app.post('/api/mobile/login', mobileAuth, async (c) => {
   const user = c.get('mobileUser')
   const db = c.env.DB
   if (db) {
     try {
-      // Upsert le client dans D1 à partir du profil Firebase
+      // Upsert le client dans D1 Ã  partir du profil Firebase
       const existing = await db.prepare(
         'SELECT id FROM clients WHERE firebase_uid = ? OR email = ?'
       ).bind(user.uid, user.email || '__none__').first() as any
@@ -9182,9 +9319,9 @@ app.post('/api/mobile/login', mobileAuth, async (c) => {
   return c.json({ success: true, uid: user.uid, role: user.role })
 })
 
-// ── POST /api/mobile/register ─────────────────────────────────
-// Firebase Auth gère l'inscription côté client.
-// Cette route synchronise les données supplémentaires (phone, quartier) dans D1.
+// â”€â”€ POST /api/mobile/register â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Firebase Auth gÃ¨re l'inscription cÃ´tÃ© client.
+// Cette route synchronise les donnÃ©es supplÃ©mentaires (phone, quartier) dans D1.
 app.post('/api/mobile/register', mobileAuth, async (c) => {
   const user = c.get('mobileUser')
   const body = await c.req.json().catch(() => ({})) as any
@@ -9215,7 +9352,7 @@ app.post('/api/mobile/register', mobileAuth, async (c) => {
   return c.json({ success: true, uid: user.uid })
 })
 
-// ── GET /api/mobile/profile ───────────────────────────────────
+// â”€â”€ GET /api/mobile/profile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/api/mobile/profile', mobileAuth, async (c) => {
   const user = c.get('mobileUser')
   const db = c.env.DB
@@ -9231,7 +9368,7 @@ app.get('/api/mobile/profile', mobileAuth, async (c) => {
   return c.json({ uid: user.uid, name: user.name, email: user.email, role: user.role })
 })
 
-// ── GET /api/mobile/client-dashboard ─────────────────────────
+// â”€â”€ GET /api/mobile/client-dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/api/mobile/client-dashboard', mobileAuth, async (c) => {
   const user = c.get('mobileUser')
   const db = c.env.DB
@@ -9245,7 +9382,7 @@ app.get('/api/mobile/client-dashboard', mobileAuth, async (c) => {
 
   if (db) {
     try {
-      // Récupérer le profil client depuis D1 via firebase_uid OU email
+      // RÃ©cupÃ©rer le profil client depuis D1 via firebase_uid OU email
       const clientRow = await db.prepare(
         'SELECT id, name, phone, email, quartier, created_at FROM clients WHERE firebase_uid = ? OR email = ? LIMIT 1'
       ).bind(user.uid, user.email || '__none__').first() as any
@@ -9300,7 +9437,7 @@ app.get('/api/mobile/client-dashboard', mobileAuth, async (c) => {
   })
 })
 
-// ── POST /api/mobile/order/:id/devis-action ───────────────────
+// â”€â”€ POST /api/mobile/order/:id/devis-action â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.post('/api/mobile/order/:id/devis-action', mobileAuth, async (c) => {
   const orderId = c.req.param('id')
   const body = await c.req.json().catch(() => ({})) as any
@@ -9326,7 +9463,7 @@ app.get('/api/mobile/products', async (c) => {
   return c.json(list)
 })
 
-// ── GET /api/mobile/products/:id ──────────────────────────────
+// â”€â”€ GET /api/mobile/products/:id â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/api/mobile/products/:id', async (c) => {
   const id = parseInt(c.req.param('id'))
   const db = c.env.DB
@@ -9337,11 +9474,11 @@ app.get('/api/mobile/products/:id', async (c) => {
       if (p) product = p
     } catch (_) {}
   }
-  if (!product) return c.json({ error: 'Produit non trouvé' }, 404)
+  if (!product) return c.json({ error: 'Produit non trouvÃ©' }, 404)
   return c.json(product)
 })
 
-// ── GET /api/mobile/reviews ───────────────────────────────────
+// â”€â”€ GET /api/mobile/reviews â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/api/mobile/reviews', async (c) => {
   const db = c.env.DB
   let list = reviews.filter((r: any) => r.approved)
@@ -9354,7 +9491,7 @@ app.get('/api/mobile/reviews', async (c) => {
   return c.json(list)
 })
 
-// ── GET /api/mobile/quartiers ─────────────────────────────────
+// â”€â”€ GET /api/mobile/quartiers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/api/mobile/quartiers', async (c) => {
   const db = c.env.DB
   let list = quartiers
@@ -9364,7 +9501,7 @@ app.get('/api/mobile/quartiers', async (c) => {
   return c.json(list)
 })
 
-// ── POST /api/mobile/rdv ─────────────────────────────────────
+// â”€â”€ POST /api/mobile/rdv â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.post('/api/mobile/rdv', mobileAuth, async (c) => {
   const body = await c.req.json()
   const name = (body.name || '').trim()
@@ -9399,7 +9536,7 @@ app.post('/api/mobile/rdv', mobileAuth, async (c) => {
   return c.json({ success: true, id: newRdv.id })
 })
 
-// ── GET /api/mobile/my-rdvs ──────────────────────────────────
+// â”€â”€ GET /api/mobile/my-rdvs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/api/mobile/my-rdvs', mobileAuth, async (c) => {
   const user = c.get('mobileUser')
   const db = c.env.DB
@@ -9412,7 +9549,7 @@ app.get('/api/mobile/my-rdvs', mobileAuth, async (c) => {
   } catch (e) { console.error('Mobile my-rdvs error:', e); return c.json([]) }
 })
 
-// ── GET /api/mobile/my-orders ─────────────────────────────────
+// â”€â”€ GET /api/mobile/my-orders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/api/mobile/my-orders', mobileAuth, async (c) => {
   const user = c.get('mobileUser')
   const db = c.env.DB
@@ -9427,7 +9564,7 @@ app.get('/api/mobile/my-orders', mobileAuth, async (c) => {
   } catch (e) { console.error('Mobile my-orders error:', e); return c.json([]) }
 })
 
-// ── POST /api/mobile/commandes ────────────────────────────────
+// â”€â”€ POST /api/mobile/commandes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.post('/api/mobile/commandes', mobileAuth, async (c) => {
   const body = await c.req.json()
   const user = c.get('mobileUser')
@@ -9438,16 +9575,16 @@ app.post('/api/mobile/commandes', mobileAuth, async (c) => {
   const quartier = (body.quartier || '').trim()
   const productId = body.product_id ? parseInt(body.product_id) : null
   const quantity = Math.max(1, parseInt(body.quantity) || 1)
-  const paymentMethod = body.payment_method || 'Téléphone'
+  const paymentMethod = body.payment_method || 'TÃ©lÃ©phone'
   const notes = body.notes || ''
-  // Le total_price envoyé par le client est volontairement ignoré.
-  // On recalcule depuis le prix officiel en base pour éviter toute falsification.
+  // Le total_price envoyÃ© par le client est volontairement ignorÃ©.
+  // On recalcule depuis le prix officiel en base pour Ã©viter toute falsification.
 
-  if (!clientName || !clientPhone) return c.json({ error: 'Nom et téléphone requis' }, 400)
+  if (!clientName || !clientPhone) return c.json({ error: 'Nom et tÃ©lÃ©phone requis' }, 400)
 
   if (db) {
     try {
-      // Recalcul du prix unitaire depuis D1 (source de vérité)
+      // Recalcul du prix unitaire depuis D1 (source de vÃ©ritÃ©)
       let unitPrice = 0
       if (productId) {
         const product = await db.prepare(
@@ -9467,7 +9604,7 @@ app.post('/api/mobile/commandes', mobileAuth, async (c) => {
   return c.json({ success: true })
 })
 
-// ── POST /api/mobile/maintenance ─────────────────────────────
+// â”€â”€ POST /api/mobile/maintenance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.post('/api/mobile/maintenance', mobileAuth, async (c) => {
   const body = await c.req.json()
   const user = c.get('mobileUser')
@@ -9486,8 +9623,8 @@ app.post('/api/mobile/maintenance', mobileAuth, async (c) => {
   const notes = [
     `Formule: ${planType}`,
     `Type: ${requestType}`,
-    `Équipement: ${equipmentType}`,
-    preferredDate ? `Date souhaitée: ${preferredDate}` : '',
+    `Ã‰quipement: ${equipmentType}`,
+    preferredDate ? `Date souhaitÃ©e: ${preferredDate}` : '',
     description,
   ].filter(Boolean).join(' | ')
 
@@ -9502,7 +9639,7 @@ app.post('/api/mobile/maintenance', mobileAuth, async (c) => {
   return c.json({ success: true })
 })
 
-// ── GET /api/mobile/activity ─────────────────────────────────
+// â”€â”€ GET /api/mobile/activity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/api/mobile/activity', mobileAuth, async (c) => {
   const user = c.get('mobileUser')
   const db = c.env.DB
@@ -9526,9 +9663,43 @@ app.get('/api/mobile/activity', mobileAuth, async (c) => {
   } catch (e) { console.error('Mobile activity error:', e); return c.json([]) }
 })
 
-// ── POST /api/mobile/commandes/:id/annuler ────────────────────
+
+// ── GET /api/mobile/banners ───────────────────────────────────
+// Retourne les bannières actives triées par display_order.
+// Pas d'auth requise : les bannières sont publiques.
+app.get('/api/mobile/banners', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    const result = await db.prepare(
+      'SELECT id, title, subtitle, image_url, target_page, display_order FROM banners WHERE is_active = 1 ORDER BY display_order ASC'
+    ).all()
+    return c.json(result.results || [])
+  } catch (e) {
+    console.error('Mobile banners error:', e)
+    return c.json([])
+  }
+})
+
+// ── GET /api/mobile/brands ────────────────────────────────────
+// Retourne les marques actives triées par display_order.
+// L'app Flutter utilise asset_key (fallback local) ou logo_url (distant).
+app.get('/api/mobile/brands', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    const result = await db.prepare(
+      'SELECT id, name, logo_url, asset_key, display_order FROM brands WHERE is_active = 1 ORDER BY display_order ASC'
+    ).all()
+    return c.json(result.results || [])
+  } catch (e) {
+    console.error('Mobile brands error:', e)
+    return c.json([])
+  }
+})
+// â”€â”€ POST /api/mobile/commandes/:id/annuler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Annulation d'une commande par le client mobile (Firebase Auth).
-// Logique identique à /api/order/cancel-order mais authentifiée via mobileAuth.
+// Logique identique Ã  /api/order/cancel-order mais authentifiÃ©e via mobileAuth.
 app.post('/api/mobile/commandes/:id/annuler', mobileAuth, async (c) => {
   const user = c.get('mobileUser')
   const db = c.env.DB
@@ -9540,24 +9711,24 @@ app.post('/api/mobile/commandes/:id/annuler', mobileAuth, async (c) => {
   const body = await c.req.json().catch(() => ({})) as any
   const reason = sanitizeText(body?.reason, 1000)
 
-  // Vérifier que la commande appartient bien à cet utilisateur Firebase
+  // VÃ©rifier que la commande appartient bien Ã  cet utilisateur Firebase
   const order = await db.prepare(
     'SELECT * FROM orders WHERE id = ? AND client_phone = ?'
   ).bind(orderId, user.phone).first() as any
 
   if (!order) return c.json({ error: 'Commande introuvable' }, 404)
 
-  // Statuts annulables — alignés sur le CHECK de la migration 0036
+  // Statuts annulables â€” alignÃ©s sur le CHECK de la migration 0036
   const cancellableStatuses = ['en_attente', 'contacte', 'confirme', 'pending']
   if (!cancellableStatuses.includes(order.status)) {
-    return c.json({ error: 'Cette commande ne peut plus être annulée' }, 400)
+    return c.json({ error: 'Cette commande ne peut plus Ãªtre annulÃ©e' }, 400)
   }
 
   const now = new Date().toISOString()
   await db.prepare(
     `UPDATE orders SET status = 'annule', notes = COALESCE(notes, '') || ?, updated_at = ? WHERE id = ?`
   ).bind(
-    ' | Annulée par client (mobile) le ' + now + (reason ? ' — ' + reason : ''),
+    ' | AnnulÃ©e par client (mobile) le ' + now + (reason ? ' â€” ' + reason : ''),
     now,
     orderId
   ).run()
@@ -9565,20 +9736,159 @@ app.post('/api/mobile/commandes/:id/annuler', mobileAuth, async (c) => {
   await logActivity(db, {
     clientId: user.id,
     clientPhone: user.phone,
-    action: `Commande annulée — #${orderId}${reason ? ' — ' + reason : ''}`,
+    action: `Commande annulÃ©e â€” #${orderId}${reason ? ' â€” ' + reason : ''}`,
     category: 'order',
     ip: c.req.header('cf-connecting-ip') || ''
   })
   await notifyAdmin(
     c.env,
     'order',
-    `⚠️ Commande #${orderId} annulée par client (mobile) — ${order.client_name}${reason ? ' — Raison: ' + reason : ''}`
+    `âš ï¸ Commande #${orderId} annulÃ©e par client (mobile) â€” ${order.client_name}${reason ? ' â€” Raison: ' + reason : ''}`
   )
 
-  return c.json({ success: true, message: 'Commande annulée.' })
+  return c.json({ success: true, message: 'Commande annulÃ©e.' })
 })
 
-// ── POST /api/client/push-token ───────────────────────────────
+// ── Admin CRUD bannières ──────────────────────────────────────
+
+// GET /admin/banners — page d'administration
+app.get('/admin/banners', adminAuth, async (c) => {
+  const db = c.env.DB
+  let banners: any[] = []
+  let brands: any[] = []
+  if (db) {
+    try {
+      const [br, bl] = await Promise.all([
+        db.prepare('SELECT * FROM banners ORDER BY display_order ASC').all(),
+        db.prepare('SELECT * FROM brands ORDER BY display_order ASC').all(),
+      ])
+      banners = (br.results || []) as any[]
+      brands = (bl.results || []) as any[]
+    } catch (e) { console.error('Admin banners load:', e) }
+  }
+  const success = c.req.query('success') ? decodeURIComponent(c.req.query('success') || '') : undefined
+  const error   = c.req.query('error')   ? decodeURIComponent(c.req.query('error')   || '') : undefined
+  return c.html(<AdminBannersPage banners={banners} brands={brands} success={success} error={error} />)
+})
+
+// POST /api/admin/banners/create
+app.post('/api/admin/banners/create', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.redirect('/admin/banners?error=' + encodeURIComponent('Base de données indisponible'))
+  const body = await c.req.parseBody()
+  const title        = ((body['title']         as string) || '').trim()
+  const subtitle     = ((body['subtitle']       as string) || '').trim() || null
+  const image_url    = ((body['image_url']      as string) || '').trim()
+  const target_page  = ((body['target_page']    as string) || '').trim() || null
+  const display_order = parseInt((body['display_order'] as string) || '0') || 0
+  const is_active    = body['is_active'] ? 1 : 0
+  if (!title || !image_url) return c.redirect('/admin/banners?error=' + encodeURIComponent('Titre et URL image obligatoires'))
+  try {
+    await db.prepare(
+      'INSERT INTO banners (title, subtitle, image_url, target_page, display_order, is_active, updated_at) VALUES (?,?,?,?,?,?,datetime(\'now\'))'
+    ).bind(title, subtitle, image_url, target_page, display_order, is_active).run()
+    return c.redirect('/admin/banners?success=' + encodeURIComponent('Bannière créée avec succès'))
+  } catch (e) {
+    console.error('Banners create:', e)
+    return c.redirect('/admin/banners?error=' + encodeURIComponent('Erreur lors de la création'))
+  }
+})
+
+// POST /api/admin/banners/:id/update
+app.post('/api/admin/banners/:id/update', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.redirect('/admin/banners?error=' + encodeURIComponent('Base de données indisponible'))
+  const id = parseInt(c.req.param('id'))
+  const body = await c.req.parseBody()
+  const title        = ((body['title']         as string) || '').trim()
+  const subtitle     = ((body['subtitle']       as string) || '').trim() || null
+  const image_url    = ((body['image_url']      as string) || '').trim()
+  const target_page  = ((body['target_page']    as string) || '').trim() || null
+  const display_order = parseInt((body['display_order'] as string) || '0') || 0
+  const is_active    = body['is_active'] ? 1 : 0
+  if (!title || !image_url) return c.redirect('/admin/banners?error=' + encodeURIComponent('Titre et URL image obligatoires'))
+  try {
+    await db.prepare(
+      'UPDATE banners SET title=?,subtitle=?,image_url=?,target_page=?,display_order=?,is_active=?,updated_at=datetime(\'now\') WHERE id=?'
+    ).bind(title, subtitle, image_url, target_page, display_order, is_active, id).run()
+    return c.redirect('/admin/banners?success=' + encodeURIComponent('Bannière mise à jour'))
+  } catch (e) {
+    return c.redirect('/admin/banners?error=' + encodeURIComponent('Erreur lors de la mise à jour'))
+  }
+})
+
+// POST /api/admin/banners/:id/delete
+app.post('/api/admin/banners/:id/delete', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.redirect('/admin/banners?error=' + encodeURIComponent('Base de données indisponible'))
+  const id = parseInt(c.req.param('id'))
+  try {
+    await db.prepare('DELETE FROM banners WHERE id=?').bind(id).run()
+    return c.redirect('/admin/banners?success=' + encodeURIComponent('Bannière supprimée'))
+  } catch (e) {
+    return c.redirect('/admin/banners?error=' + encodeURIComponent('Erreur lors de la suppression'))
+  }
+})
+
+// ── Admin CRUD marques ────────────────────────────────────────
+
+// POST /api/admin/brands/create
+app.post('/api/admin/brands/create', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.redirect('/admin/banners?error=' + encodeURIComponent('Base de données indisponible'))
+  const body = await c.req.parseBody()
+  const name          = ((body['name']          as string) || '').trim().toUpperCase()
+  const asset_key     = ((body['asset_key']      as string) || '').trim().toLowerCase() || null
+  const logo_url      = ((body['logo_url']       as string) || '').trim() || null
+  const display_order = parseInt((body['display_order'] as string) || '0') || 0
+  const is_active     = body['is_active'] ? 1 : 0
+  if (!name) return c.redirect('/admin/banners?error=' + encodeURIComponent('Nom de marque obligatoire'))
+  try {
+    await db.prepare(
+      'INSERT INTO brands (name, asset_key, logo_url, display_order, is_active, updated_at) VALUES (?,?,?,?,?,datetime(\'now\'))'
+    ).bind(name, asset_key, logo_url, display_order, is_active).run()
+    return c.redirect('/admin/banners?success=' + encodeURIComponent('Marque ajoutée'))
+  } catch (e: any) {
+    const msg = e?.message?.includes('UNIQUE') ? 'Cette marque existe déjà' : 'Erreur lors de l\'ajout'
+    return c.redirect('/admin/banners?error=' + encodeURIComponent(msg))
+  }
+})
+
+// POST /api/admin/brands/:id/update
+app.post('/api/admin/brands/:id/update', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.redirect('/admin/banners?error=' + encodeURIComponent('Base de données indisponible'))
+  const id = parseInt(c.req.param('id'))
+  const body = await c.req.parseBody()
+  const name          = ((body['name']          as string) || '').trim().toUpperCase()
+  const asset_key     = ((body['asset_key']      as string) || '').trim().toLowerCase() || null
+  const logo_url      = ((body['logo_url']       as string) || '').trim() || null
+  const display_order = parseInt((body['display_order'] as string) || '0') || 0
+  const is_active     = body['is_active'] ? 1 : 0
+  if (!name) return c.redirect('/admin/banners?error=' + encodeURIComponent('Nom obligatoire'))
+  try {
+    await db.prepare(
+      'UPDATE brands SET name=?,asset_key=?,logo_url=?,display_order=?,is_active=?,updated_at=datetime(\'now\') WHERE id=?'
+    ).bind(name, asset_key, logo_url, display_order, is_active, id).run()
+    return c.redirect('/admin/banners?success=' + encodeURIComponent('Marque mise à jour'))
+  } catch (e) {
+    return c.redirect('/admin/banners?error=' + encodeURIComponent('Erreur lors de la mise à jour'))
+  }
+})
+
+// POST /api/admin/brands/:id/delete
+app.post('/api/admin/brands/:id/delete', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.redirect('/admin/banners?error=' + encodeURIComponent('Base de données indisponible'))
+  const id = parseInt(c.req.param('id'))
+  try {
+    await db.prepare('DELETE FROM brands WHERE id=?').bind(id).run()
+    return c.redirect('/admin/banners?success=' + encodeURIComponent('Marque supprimée'))
+  } catch (e) {
+    return c.redirect('/admin/banners?error=' + encodeURIComponent('Erreur lors de la suppression'))
+  }
+})
+// â”€â”€ POST /api/client/push-token â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Enregistre ou renouvelle le token FCM d'un appareil mobile.
 // L'authentification passe par le Bearer Firebase (mobileAuth).
 app.post('/api/client/push-token', mobileAuth, async (c) => {
@@ -9593,7 +9903,7 @@ app.post('/api/client/push-token', mobileAuth, async (c) => {
 
   if (!token) return c.json({ error: 'Token FCM manquant' }, 400)
 
-  // Upsert : un même appareil peut changer de token (rotation FCM)
+  // Upsert : un mÃªme appareil peut changer de token (rotation FCM)
   await db.prepare(`
     INSERT INTO push_tokens (client_id, token, platform, app_version, updated_at)
     VALUES (?, ?, ?, ?, ?)
@@ -9607,8 +9917,8 @@ app.post('/api/client/push-token', mobileAuth, async (c) => {
   return c.json({ success: true })
 })
 
-// ── DELETE /api/client/push-token ────────────────────────────
-// Révoque le token FCM à la déconnexion pour ne plus recevoir de notifications.
+// â”€â”€ DELETE /api/client/push-token â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// RÃ©voque le token FCM Ã  la dÃ©connexion pour ne plus recevoir de notifications.
 app.delete('/api/client/push-token', mobileAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
@@ -9630,3 +9940,4 @@ app.delete('/api/client/push-token', mobileAuth, async (c) => {
 
 
 export default app
+

@@ -196,7 +196,10 @@ const SYNONYMES: Array<[ChampCible, string[]]> = [
 ]
 
 // Champs que l'admin peut corriger a la main depuis l'apercu.
-export const CHAMPS_CORRIGEABLES: ChampCible[] = ['nom', 'marque', 'categorie', 'puissanceBtu', 'prixFcfa', 'stockInitial']
+export const CHAMPS_CORRIGEABLES: ChampCible[] = [
+  'nom', 'marque', 'categorie', 'puissanceBtu', 'prixFcfa', 'stockInitial',
+  'modele', 'prixGrossisteFcfa', 'disponible', 'garantie'
+]
 
 // Libelles des champs cibles, pour le selecteur de l'ecran de correspondance.
 // Exportes depuis le moteur plutot que recopies dans l'UI : la liste des champs
@@ -240,6 +243,7 @@ export const COLONNES_MODELE: Array<[string, string]> = [
   ['Quantité', '5'],
   ['Classe énergétique', 'A++'],
   ['Inverter', 'oui'],
+  ['Disponible', 'oui'],
   ['Fluide réfrigérant', 'R32'],
   ['Compresseur', 'Rotatif'],
   ['Garantie', '2 ans constructeur'],

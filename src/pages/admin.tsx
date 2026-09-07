@@ -1,4 +1,4 @@
-import { products } from '../data/products'
+﻿import { products } from '../data/products'
 import { reviews, appointments, orders, clients, maintenanceDueCount, notifications } from '../data/store'
 import { SITE_URL } from '../types'
 // Référentiels de l'import produits, injectés dans le <script> de la modale plutôt
@@ -178,6 +178,7 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
             { href: "/admin/avis", icon: "fa-star", label: "Avis clients", key: "avis" },
             { href: "/admin/audit-log", icon: "fa-clipboard-list", label: "Audit / Logs", key: "audit-log" },
             { href: "/admin/notifications", icon: "fa-bell", label: "Notifications", key: "notifications" },
+                        { href: "/admin/banners", icon: "fa-images", label: "Bannières & Marques", key: "banners" },
             { href: "/admin/parametres", icon: "fa-cog", label: "Paramètres", key: "parametres" },
           ].map(n => (
             <a href={n.href} class={`nav-item ${activePage === n.key ? 'active' : ''}`}>
@@ -250,7 +251,8 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
                  activePage === 'rdv' ? 'Rendez-vous' :
                  activePage === 'clients' ? 'Clients' :
                  activePage === 'commandes' ? 'Commandes' :
-                 activePage === 'avis' ? 'Avis Clients' : 'MAASGA Admin'}
+                 activePage === 'avis' ? 'Avis Clients' :
+                 activePage === 'banners' ? 'Bannières & Marques' : 'MAASGA Admin'}
               </h1>
               <div class="text-xs text-gray-400 mt-0.5">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
             </div>
@@ -1011,6 +1013,251 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
         </button>
       </div>
     </div>
+
+    {/* ===== MÉDIATHÈQUE CENTRALISÉE PAR MARQUE ===== */}
+    <div class="mb-6 rounded-2xl card-shadow overflow-hidden" style="background:#111827; border:1px solid rgba(168,85,247,0.2);">
+      <button type="button" onclick="toggleMediatheque()"
+        class="w-full flex items-center justify-between px-5 py-4 text-left">
+        <div class="flex items-center gap-3">
+          <i class="fas fa-photo-video text-purple-400"></i>
+          <span class="font-semibold text-white text-sm">Médiathèque par marque</span>
+          <span class="text-xs text-purple-300/70 hidden sm:inline">Uploadez des images une fois, affectez-les à n'importe quel produit</span>
+        </div>
+        <i id="mediatheque-chevron" class="fas fa-chevron-down text-gray-500 text-xs" style="transition:transform 0.2s;"></i>
+      </button>
+      <div id="mediatheque-panel" class="hidden p-5" style="border-top:1px solid rgba(168,85,247,0.1);">
+        {/* Upload form */}
+        <div class="flex flex-wrap gap-3 mb-5 items-end">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Marque</label>
+            <input id="mediatheque-brand" type="text" placeholder="LG, Samsung…" list="mediatheque-brands-list"
+              class="rounded-xl px-3 py-2 text-xs text-white w-32" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.2);" />
+            <datalist id="mediatheque-brands-list">
+              {['LG', 'Samsung', 'Daikin', 'Midea', 'Panasonic', 'Gree', 'Hisense', 'TCL', 'Airwell', 'Carrier', 'Fujitsu', 'Mitsubishi', 'Toshiba', 'Hitachi'].map(b => <option value={b} />)}
+            </datalist>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Libellé (optionnel)</label>
+            <input id="mediatheque-label" type="text" placeholder="Logo officiel 2024"
+              class="rounded-xl px-3 py-2 text-xs text-white w-44" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.2);" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Image(s)</label>
+            <label class="cursor-pointer flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold" style="background:rgba(168,85,247,0.12); color:#d8b4fe; border:1px solid rgba(168,85,247,0.3);">
+              <i class="fas fa-cloud-upload-alt"></i>
+              <span>Choisir les fichiers</span>
+              <input id="mediatheque-files" type="file" accept="image/*" multiple class="hidden" onchange="uploadMediatheque()" />
+            </label>
+          </div>
+          <div id="mediatheque-uploading" class="hidden text-xs text-purple-300 flex items-center gap-1">
+            <i class="fas fa-spinner fa-spin"></i>Upload…
+          </div>
+        </div>
+        {/* Filtres par marque */}
+        <div class="flex items-center gap-2 mb-4 flex-wrap">
+          <span class="text-xs text-gray-500">Filtrer :</span>
+          <button onclick="filterMediatheque('')" data-brand-filter="" class="brand-filter-btn text-xs px-2.5 py-1 rounded-lg font-semibold" style="background:rgba(168,85,247,0.2); color:#d8b4fe;">Toutes</button>
+          {['LG', 'Samsung', 'Daikin', 'Midea', 'Panasonic', 'Gree', 'Hisense', 'TCL', 'Airwell', 'Carrier'].map(b => (
+            <button onclick={`filterMediatheque('${b}')`} data-brand-filter={b} class="brand-filter-btn text-xs px-2.5 py-1 rounded-lg font-semibold" style="background:rgba(148,163,184,0.08); color:#94a3b8;">{b}</button>
+          ))}
+        </div>
+        {/* Grille d'images */}
+        <div id="mediatheque-grid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 max-h-64 overflow-y-auto"></div>
+        <p id="mediatheque-empty" class="hidden text-center text-xs text-gray-500 py-6">Aucune image dans la médiathèque. Uploadez des images ci-dessus.</p>
+      </div>
+    </div>
+
+    {/* Modal affectation d'une image médiathèque à un produit */}
+    <div id="assign-media-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.75); backdrop-filter:blur(4px);">
+      <div class="rounded-2xl p-6 w-full max-w-sm shadow-2xl" style="background:#111827; border:1px solid rgba(168,85,247,0.2);">
+        <h3 class="font-bold text-white mb-4 flex items-center gap-2">
+          <i class="fas fa-link text-purple-400"></i>
+          Affecter à un produit
+        </h3>
+        <div class="mb-4 flex justify-center">
+          <img id="assign-media-preview" src="" class="w-28 h-28 object-contain rounded-xl" style="background:#0a1628; border:1px solid rgba(148,163,184,0.1);" />
+        </div>
+        <input type="hidden" id="assign-media-id" />
+        <div class="mb-4">
+          <label class="block text-xs text-gray-400 mb-1">Produit cible</label>
+          <select id="assign-product-select" class="w-full rounded-xl px-3 py-2 text-xs text-white" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.2);">
+            {products.map(p => <option value={String(p.id)}>{p.name} — {p.brand}</option>)}
+          </select>
+        </div>
+        <div class="mb-5">
+          <label class="block text-xs text-gray-400 mb-2">Utiliser comme</label>
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="assign-target" value="main" checked class="accent-purple-500" />
+              <span class="text-xs text-gray-300">Image principale</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="assign-target" value="gallery" class="accent-purple-500" />
+              <span class="text-xs text-gray-300">Galerie</span>
+            </label>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <button type="button" onclick="document.getElementById('assign-media-modal').classList.add('hidden')"
+            class="flex-1 py-2.5 rounded-xl text-xs font-semibold" style="background:rgba(148,163,184,0.1); color:#94a3b8;">Annuler</button>
+          <button type="button" onclick="confirmAssignMedia()"
+            class="flex-1 py-2.5 rounded-xl text-xs font-semibold" style="background:rgba(168,85,247,0.2); color:#d8b4fe; border:1px solid rgba(168,85,247,0.3);">
+            <i class="fas fa-check mr-1"></i>Affecter
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script dangerouslySetInnerHTML={{ __html: `
+      ${CLIENT_ESC_HELPER}
+      // ===== MÉDIATHÈQUE CENTRALISÉE =====
+      var _mediathequeFilter = '';
+
+      function toggleMediatheque() {
+        var panel = document.getElementById('mediatheque-panel');
+        var chevron = document.getElementById('mediatheque-chevron');
+        var wasHidden = panel.classList.contains('hidden');
+        panel.classList.toggle('hidden', !wasHidden);
+        chevron.style.transform = wasHidden ? 'rotate(180deg)' : '';
+        if (wasHidden) loadMediatheque();
+      }
+
+      function loadMediatheque() {
+        var url = '/api/admin/media/brand' + (_mediathequeFilter ? '?brand=' + encodeURIComponent(_mediathequeFilter) : '');
+        fetch(url).then(function(r){ return r.json(); }).then(function(d) {
+          renderMediatheque(d.images || []);
+        }).catch(function() { renderMediatheque([]); });
+      }
+
+      function renderMediatheque(images) {
+        var grid = document.getElementById('mediatheque-grid');
+        var empty = document.getElementById('mediatheque-empty');
+        grid.innerHTML = '';
+        if (!images.length) { empty.classList.remove('hidden'); return; }
+        empty.classList.add('hidden');
+        images.forEach(function(img) {
+          var div = document.createElement('div');
+          div.className = 'relative group rounded-xl overflow-hidden cursor-pointer';
+          div.style.cssText = 'aspect-ratio:1/1; background:#0a1628;';
+          var image = document.createElement('img');
+          image.src = img.url;
+          image.className = 'w-full h-full object-cover';
+          image.title = (img.label || '') + (img.label && img.brand ? ' — ' : '') + (img.brand || '');
+          var overlay = document.createElement('div');
+          overlay.className = 'absolute inset-0 flex flex-col items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity';
+          overlay.style.cssText = 'background:rgba(0,0,0,0.65);';
+          var badge = document.createElement('span');
+          badge.className = 'text-xs font-bold px-2 py-0.5 rounded-full';
+          badge.style.cssText = 'background:rgba(168,85,247,0.4); color:#d8b4fe;';
+          badge.textContent = img.brand;
+          var btnAssign = document.createElement('button');
+          btnAssign.type = 'button';
+          btnAssign.className = 'text-xs px-2.5 py-1 rounded-lg font-semibold';
+          btnAssign.style.cssText = 'background:rgba(16,185,129,0.35); color:#34d399;';
+          btnAssign.textContent = 'Affecter';
+          btnAssign.addEventListener('click', (function(i) { return function(e) { e.stopPropagation(); openAssignModal(i); }; })(img));
+          var btnDel = document.createElement('button');
+          btnDel.type = 'button';
+          btnDel.className = 'text-xs px-2.5 py-1 rounded-lg font-semibold';
+          btnDel.style.cssText = 'background:rgba(239,68,68,0.35); color:#f87171;';
+          btnDel.textContent = 'Supprimer';
+          btnDel.addEventListener('click', (function(i) { return function(e) { e.stopPropagation(); deleteFromMediatheque(i.id); }; })(img));
+          overlay.appendChild(badge);
+          overlay.appendChild(btnAssign);
+          overlay.appendChild(btnDel);
+          div.appendChild(image);
+          div.appendChild(overlay);
+          grid.appendChild(div);
+        });
+      }
+
+      function filterMediatheque(brand) {
+        _mediathequeFilter = brand;
+        document.querySelectorAll('.brand-filter-btn').forEach(function(btn) {
+          var active = btn.getAttribute('data-brand-filter') === brand;
+          btn.style.background = active ? 'rgba(168,85,247,0.2)' : 'rgba(148,163,184,0.08)';
+          btn.style.color = active ? '#d8b4fe' : '#94a3b8';
+        });
+        loadMediatheque();
+      }
+
+      function uploadMediatheque() {
+        var brand = document.getElementById('mediatheque-brand').value.trim();
+        var label = document.getElementById('mediatheque-label').value.trim();
+        var input = document.getElementById('mediatheque-files');
+        if (!brand) { showToast('Saisissez une marque avant d\\'uploader.', 'warning'); input.value = ''; return; }
+        if (!input.files || !input.files.length) return;
+        var upl = document.getElementById('mediatheque-uploading');
+        upl.classList.remove('hidden');
+        var files = Array.from(input.files);
+        var done = 0;
+        var errors = 0;
+        files.forEach(function(file) {
+          var fd = new FormData();
+          fd.append('brand', brand);
+          fd.append('label', label);
+          fd.append('image', file);
+          fetch('/api/admin/media/brand/upload', { method: 'POST', body: fd })
+            .then(function(r){ return r.json(); })
+            .then(function(d) {
+              if (d.error) errors++;
+              done++;
+              if (done === files.length) {
+                upl.classList.add('hidden');
+                input.value = '';
+                if (errors > 0) showToast(errors + ' erreur(s) d\\'upload.', 'error');
+                else showToast(files.length + ' image(s) uploadée(s) dans la médiathèque.', 'success');
+                loadMediatheque();
+              }
+            })
+            .catch(function() {
+              errors++; done++;
+              if (done === files.length) { upl.classList.add('hidden'); input.value = ''; showToast('Erreur upload.', 'error'); loadMediatheque(); }
+            });
+        });
+      }
+
+      function deleteFromMediatheque(id) {
+        if (!confirm('Supprimer cette image de la médiathèque ?')) return;
+        var fd = new FormData();
+        fd.append('id', String(id));
+        fetch('/api/admin/media/brand/delete', { method: 'POST', body: fd })
+          .then(function(r){ return r.json(); })
+          .then(function(d) {
+            if (d.success) { showToast('Image supprimée.', 'success'); loadMediatheque(); }
+            else showToast('Erreur : ' + (d.error || ''), 'error');
+          }).catch(function() { showToast('Erreur réseau.', 'error'); });
+      }
+
+      function openAssignModal(img) {
+        document.getElementById('assign-media-preview').src = img.url;
+        document.getElementById('assign-media-id').value = String(img.id);
+        document.getElementById('assign-media-modal').classList.remove('hidden');
+      }
+
+      function confirmAssignMedia() {
+        var mediaId = document.getElementById('assign-media-id').value;
+        var productId = document.getElementById('assign-product-select').value;
+        var targetEl = document.querySelector('input[name="assign-target"]:checked');
+        var target = targetEl ? targetEl.value : 'main';
+        var fd = new FormData();
+        fd.append('media_id', mediaId);
+        fd.append('product_id', productId);
+        fd.append('target', target);
+        fetch('/api/admin/media/brand/assign', { method: 'POST', body: fd })
+          .then(function(r){ return r.json(); })
+          .then(function(d) {
+            document.getElementById('assign-media-modal').classList.add('hidden');
+            if (d.success) showToast('Image affectée au produit.', 'success');
+            else showToast('Erreur : ' + (d.error || ''), 'error');
+          }).catch(function() { showToast('Erreur réseau.', 'error'); });
+      }
+
+      // Fermer modal affectation sur clic extérieur
+      document.getElementById('assign-media-modal').addEventListener('click', function(e) {
+        if (e.target === this) this.classList.add('hidden');
+      });
+    `}} />
 
     {/* Résumé stock */}
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -1818,66 +2065,73 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
         });
       }
 
-      function previewMediaEdit() {
-        const input = document.getElementById('media-edit-input');
-        const previewContainer = document.getElementById('media-edit-preview');
+      // Rendu centralisé des miniatures du modal d'édition.
+      // TOUTES les modifications (ajout, suppression, chargement initial) passent ici.
+      // Utilise exclusivement l'API DOM — jamais innerHTML avec des données utilisateur.
+      function renderEditMediaThumbs() {
+        var previewContainer = document.getElementById('media-edit-preview');
+        if (!previewContainer) return;
         previewContainer.innerHTML = '';
-        window.editMediaArray = [];
-
-        if (!input.files || input.files.length === 0) return;
-
-        Array.from(input.files).slice(0, 10).forEach((file, idx) => {
-          // Validate file size
-          if (!validateMediaFile(file)) {
-            return;
+        window.editMediaArray.forEach(function(item, idx) {
+          var thumb = document.createElement('div');
+          thumb.className = 'relative rounded-lg overflow-hidden group';
+          thumb.style.cssText = 'aspect-ratio:1/1; background:#0a1628;';
+          if (item.type === 'image') {
+            var img = document.createElement('img');
+            img.src = item.url;
+            img.className = 'w-full h-full object-cover';
+            thumb.appendChild(img);
+          } else {
+            var vidBox = document.createElement('div');
+            vidBox.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#000;';
+            var icon = document.createElement('i');
+            icon.className = 'fas fa-play';
+            icon.style.cssText = 'color:#38bdf8;font-size:1.5rem;';
+            vidBox.appendChild(icon);
+            thumb.appendChild(vidBox);
           }
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs';
+          btn.textContent = '\u00d7';
+          btn.addEventListener('click', (function(i) { return function() { removeMediaEdit(i); }; })(idx));
+          var badge = document.createElement('span');
+          badge.className = 'absolute bottom-1 left-1 text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded';
+          badge.textContent = item.type === 'image' ? 'IMG' : 'VID';
+          thumb.appendChild(btn);
+          thumb.appendChild(badge);
+          previewContainer.appendChild(thumb);
+        });
+      }
 
+      function previewMediaEdit() {
+        var input = document.getElementById('media-edit-input');
+        if (!input.files || input.files.length === 0) return;
+        // CORRIGÉ : on ne réinitialise PAS editMediaArray — les médias existants
+        // sont conservés, les nouveaux fichiers sont ajoutés par-dessus.
+        Array.from(input.files).slice(0, 10).forEach(function(file) {
+          if (!validateMediaFile(file)) return;
           if (file.type.startsWith('image/')) {
-            compressImage(file).then(compressedFile => {
-              const reader = new FileReader();
-              reader.onload = (e) => {
-                const mediaItem = {
-                  type: 'image',
-                  url: e.target.result,
-                  caption: ''
-                };
-                window.editMediaArray.push(mediaItem);
+            compressImage(file).then(function(compressedFile) {
+              var reader = new FileReader();
+              reader.onload = function(e) {
+                window.editMediaArray.push({ type: 'image', url: e.target.result, caption: '' });
                 document.getElementById('edit-media-json').value = JSON.stringify(window.editMediaArray);
-
-                const thumb = document.createElement('div');
-                thumb.className = 'relative rounded-lg overflow-hidden group';
-                thumb.style.aspectRatio = '1/1';
-                thumb.style.background = '#0a1628';
-                thumb.innerHTML = '<img src="' + e.target.result + '" class="w-full h-full object-cover" />' +
-                  '<button type="button" onclick="removeMediaEdit(' + (window.editMediaArray.length - 1) + ')" class="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs">&times;</button>' +
-                  '<span class="absolute bottom-1 left-1 text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded">IMG</span>';
-                previewContainer.appendChild(thumb);
+                renderEditMediaThumbs();
               };
               reader.readAsDataURL(compressedFile);
             });
           } else {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              const mediaItem = {
-                type: 'video',
-                url: e.target.result,
-                caption: ''
-              };
-              window.editMediaArray.push(mediaItem);
+            var reader = new FileReader();
+            reader.onload = function(e) {
+              window.editMediaArray.push({ type: 'video', url: e.target.result, caption: '' });
               document.getElementById('edit-media-json').value = JSON.stringify(window.editMediaArray);
-
-              const thumb = document.createElement('div');
-              thumb.className = 'relative rounded-lg overflow-hidden group';
-              thumb.style.aspectRatio = '1/1';
-              thumb.style.background = '#0a1628';
-              thumb.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#000;"><i class="fas fa-play" style="color:#38bdf8;font-size:1.5rem;"></i></div>' +
-                '<button type="button" onclick="removeMediaEdit(' + (window.editMediaArray.length - 1) + ')" class="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs">&times;</button>' +
-                '<span class="absolute bottom-1 left-1 text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded">VID</span>';
-              previewContainer.appendChild(thumb);
+              renderEditMediaThumbs();
             };
             reader.readAsDataURL(file);
           }
         });
+        input.value = '';
       }
 
       function removeMediaAdd(index) {
@@ -1889,33 +2143,14 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
       function removeMediaEdit(index) {
         window.editMediaArray.splice(index, 1);
         document.getElementById('edit-media-json').value = JSON.stringify(window.editMediaArray);
-        previewMediaEdit();
+        // CORRIGÉ : appel direct à renderEditMediaThumbs, PAS previewMediaEdit
+        renderEditMediaThumbs();
       }
 
       function loadMediaForEdit(mediaJson) {
         window.editMediaArray = JSON.parse(mediaJson || '[]');
-        const previewContainer = document.getElementById('media-edit-preview');
-        previewContainer.innerHTML = '';
-
-        window.editMediaArray.forEach((item, idx) => {
-          const thumb = document.createElement('div');
-          thumb.className = 'relative rounded-lg overflow-hidden group';
-          thumb.style.aspectRatio = '1/1';
-          thumb.style.background = '#0a1628';
-          thumb.innerHTML = \`
-            \${item.type === 'image' 
-              ? '<img src="' + _esc(item.url) + '" class="w-full h-full object-cover" />'
-              : '<video src="' + _esc(item.url) + '" class="w-full h-full object-cover" style="background:#000;"></video>'
-            }
-            <button type="button" onclick="removeMediaEdit(\${idx})" 
-              class="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs">
-              ·
-            </button>
-            <span class="absolute bottom-1 left-1 text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded">\${item.type === 'image' ? 'IMG' : 'VID'}</span>
-          \`;
-          previewContainer.appendChild(thumb);
-        });
         document.getElementById('edit-media-json').value = JSON.stringify(window.editMediaArray);
+        renderEditMediaThumbs();
       }
     `}} />
 
@@ -2141,6 +2376,14 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
                   <th class="px-3 py-2">Surfaces m²</th>
                   <th class="px-3 py-2">Classe</th>
                   <th class="px-3 py-2">Inverter</th>
+                  <th class="px-3 py-2">Modèle</th>
+                  <th class="px-3 py-2">Prix gros.</th>
+                  <th class="px-3 py-2">Dispo</th>
+                  <th class="px-3 py-2">Description</th>
+                  <th class="px-3 py-2">Mentions</th>
+                  <th class="px-3 py-2">Réfrigérant</th>
+                  <th class="px-3 py-2">Compresseur</th>
+                  <th class="px-3 py-2">Garantie</th>
                   <th class="px-3 py-2">État</th>
                 </tr>
               </thead>
@@ -2497,13 +2740,29 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
               controle.appendChild(opt);
             });
             controle.value = valeur || '';
+          } else if (champ === 'disponible') {
+            controle = document.createElement('select');
+            ['oui', 'non'].forEach(function (label) {
+              var opt = document.createElement('option');
+              opt.value = label;
+              opt.textContent = label;
+              controle.appendChild(opt);
+            });
+            controle.value = valeur ? 'oui' : 'non';
+            controle.className = 'rounded-lg px-2 py-1 text-xs text-white w-20';
+            controle.style.cssText = 'background:#0b1220; border:1px solid rgba(148,163,184,0.2);';
           } else {
             controle = document.createElement('input');
             controle.type = type || 'text';
             controle.value = valeur === null || valeur === undefined ? '' : String(valeur);
           }
-          controle.className = 'rounded-lg px-2 py-1 text-xs text-white ' + (type === 'number' ? 'w-24' : 'w-44');
-          controle.style.cssText = 'background:#0b1220; border:1px solid rgba(148,163,184,0.2);';
+          if (champ !== 'disponible') {
+            var largeur = (champ === 'modele' || champ === 'garantie') ? 'w-32'
+              : champ === 'prixGrossisteFcfa' ? 'w-28'
+              : (type === 'number' ? 'w-24' : 'w-44');
+            controle.className = 'rounded-lg px-2 py-1 text-xs text-white ' + largeur;
+            controle.style.cssText = 'background:#0b1220; border:1px solid rgba(148,163,184,0.2);';
+          }
           controle.addEventListener('change', function () {
             var cle = String(produit.ligne);
             if (!etat.corrections[cle]) etat.corrections[cle] = {};
@@ -2512,6 +2771,18 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
           });
           td.appendChild(controle);
           td.appendChild(pastille(produit.origines[champ]));
+          return td;
+        }
+
+        // Cellule en lecture seule avec troncature à 80 caractères et tooltip natif.
+        function celluleTronquee(texte, origine) {
+          var td = document.createElement('td');
+          td.className = 'px-3 py-2';
+          var s = (texte === null || texte === undefined || texte === '') ? '—' : String(texte);
+          var affiche = s.length > 80 ? s.slice(0, 80) + '…' : s;
+          td.textContent = affiche;
+          if (s !== '—' && s.length > 80) td.title = s;
+          if (origine) td.appendChild(pastille(origine));
           return td;
         }
 
@@ -2540,6 +2811,21 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
             var tdInv = cellule(p.champs.inverter ? 'oui' : 'non', 'px-3 py-2');
             tdInv.appendChild(pastille(p.origines.inverter));
             tr.appendChild(tdInv);
+
+            // --- Champs optionnels : éditables ---
+            tr.appendChild(celluleEditable(p, 'modele', 'text'));
+            tr.appendChild(celluleEditable(p, 'prixGrossisteFcfa', 'number'));
+            tr.appendChild(celluleEditable(p, 'disponible', 'bool'));
+
+            // --- Champs optionnels : lecture seule avec troncature ---
+            tr.appendChild(celluleTronquee(p.champs.description, p.origines.description));
+            var mentionsTexte = Array.isArray(p.champs.mentions) ? p.champs.mentions.join(', ') : (p.champs.mentions || '');
+            tr.appendChild(celluleTronquee(mentionsTexte, p.origines.mentions));
+            tr.appendChild(celluleTronquee(p.champs.refrigerant, p.origines.refrigerant));
+            tr.appendChild(celluleTronquee(p.champs.compresseur, p.origines.compresseur));
+
+            // --- Garantie : éditable ---
+            tr.appendChild(celluleEditable(p, 'garantie', 'text'));
 
             var tdEtat = document.createElement('td');
             tdEtat.className = 'px-3 py-2 space-y-1';
