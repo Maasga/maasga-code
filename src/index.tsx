@@ -7118,6 +7118,82 @@ app.post('/api/admin/produit/image', adminAuth, async (c) => {
   return c.redirect('/admin/produits?success=1')
 })
 
+// ============================================================
+// API GALERIE PRODUIT — ajouter/supprimer une image ImgBB
+// ============================================================
+
+// Ajouter une image a la galerie d'un produit
+app.post('/api/admin/produit/gallery/add', adminAuth, async (c) => {
+  const body = await c.req.parseBody()
+  const id = parseInt(body['id'] as string)
+  const file = body['image'] as File | null
+  if (!file || !(file instanceof File) || file.size === 0) return c.json({ error: 'Fichier manquant' }, 400)
+  const MAX = 5 * 1024 * 1024
+  if (file.size > MAX) return c.json({ error: 'Image trop grande (max 5 MB)' }, 400)
+  const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+  if (!allowed.includes(file.type)) return c.json({ error: 'Format non autorise' }, 400)
+  const buffer = await file.arrayBuffer()
+  const imgbbKey = (c.env as any).IMGBB_API_KEY as string
+  if (!imgbbKey) return c.json({ error: 'IMGBB_API_KEY manquante' }, 500)
+  let imgUrl = '', imgDelUrl = ''
+  try {
+    const r = await uploadToImgBB(imgbbKey, buffer, file.type)
+    imgUrl = r.url; imgDelUrl = r.deleteUrl
+  } catch(e) { return c.json({ error: 'Upload ImgBB echoue' }, 500) }
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'DB indisponible' }, 500)
+  try {
+    const row = await db.prepare('SELECT media_urls FROM products WHERE id = ?').bind(id).first() as any
+    let gallery: any[] = []
+    try { gallery = JSON.parse(row?.media_urls || '[]') } catch(_) {}
+    gallery.push({ url: imgUrl, deleteUrl: imgDelUrl, type: 'image' })
+    await db.prepare('UPDATE products SET media_urls = ? WHERE id = ?').bind(JSON.stringify(gallery), id).run()
+    return c.json({ success: true, url: imgUrl, deleteUrl: imgDelUrl, gallery })
+  } catch(e) {
+    console.error('Gallery add error:', e)
+    return c.json({ error: 'Erreur DB' }, 500)
+  }
+})
+
+// Supprimer une image de la galerie d'un produit
+app.post('/api/admin/produit/gallery/remove', adminAuth, async (c) => {
+  const body = await c.req.parseBody()
+  const id = parseInt(body['id'] as string)
+  const urlToRemove = body['url'] as string
+  const deleteUrl = body['delete_url'] as string
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'DB indisponible' }, 500)
+  try {
+    const row = await db.prepare('SELECT media_urls FROM products WHERE id = ?').bind(id).first() as any
+    let gallery: any[] = []
+    try { gallery = JSON.parse(row?.media_urls || '[]') } catch(_) {}
+    gallery = gallery.filter((item: any) => item.url !== urlToRemove)
+    await db.prepare('UPDATE products SET media_urls = ? WHERE id = ?').bind(JSON.stringify(gallery), id).run()
+    // Supprimer sur ImgBB
+    if (deleteUrl) { await fetch(deleteUrl).catch(() => {}) }
+    return c.json({ success: true, gallery })
+  } catch(e) {
+    console.error('Gallery remove error:', e)
+    return c.json({ error: 'Erreur DB' }, 500)
+  }
+})
+
+// GET galerie d'un produit (pour le modal JS)
+app.get('/api/admin/produit/gallery/:id', adminAuth, async (c) => {
+  const id = parseInt(c.req.param('id'))
+  const db = c.env.DB
+  if (!db) return c.json({ gallery: [] })
+  try {
+    const row = await db.prepare('SELECT media_urls FROM products WHERE id = ?').bind(id).first() as any
+    let gallery: any[] = []
+    try { gallery = JSON.parse(row?.media_urls || '[]') } catch(_) {}
+    return c.json({ gallery })
+  } catch(e) {
+    return c.json({ gallery: [] })
+  }
+})
+
+
 // API Génération devis PDF (simulation)
 app.get('/api/devis/:rdvId', adminAuth, (c) => {
   const rdvId = parseInt(c.req.param('rdvId'))

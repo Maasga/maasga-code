@@ -1174,6 +1174,11 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
                       <span class="text-xs text-green-600 font-medium">?</span>
                     )}
                   </form>
+                  <button type="button" data-gallery-id={String(p.id)}
+                    class="flex items-center space-x-1 text-xs text-cyan-400 hover:text-cyan-300 px-2 py-1.5 rounded-lg font-semibold transition-colors mt-1" style="background:rgba(14,165,233,0.1); border:1px solid rgba(14,165,233,0.2);">
+                    <i class="fas fa-images text-xs"></i>
+                    <span>Galerie</span>
+                  </button>
                 </td>
                 <td class="py-4 px-4">
                   <div class="flex items-center space-x-1">
@@ -1914,6 +1919,129 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
       }
     `}} />
 
+    {/* ===== MODAL GALERIE PRODUIT ===== */}
+    <div id="gallery-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.75); backdrop-filter:blur(4px);">
+      <div class="w-full max-w-2xl rounded-2xl p-6 shadow-2xl" style="background:#111827; border:1px solid rgba(14,165,233,0.2);">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-white text-lg flex items-center gap-2">
+            <i class="fas fa-images" style="color:#38bdf8;"></i>
+            <span>Galerie photos — <span id="gallery-modal-name"></span></span>
+          </h3>
+          <button type="button" onclick="closeGalleryModal()" class="text-gray-400 hover:text-white text-xl">&times;</button>
+        </div>
+        <label class="cursor-pointer block border-2 border-dashed rounded-xl p-4 text-center hover:border-cyan-400 transition-all mb-4" style="border-color:rgba(14,165,233,0.3);">
+          <i class="fas fa-cloud-upload-alt text-cyan-400 text-2xl mb-1"></i>
+          <p class="text-sm text-cyan-400 font-semibold">Cliquer pour ajouter des photos</p>
+          <p class="text-xs text-gray-400 mt-0.5">JPG, PNG, WebP — max 5 MB chacune — plusieurs fichiers acceptés</p>
+          <input type="file" id="gallery-file-input" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(this)" />
+        </label>
+        <div id="gallery-uploading" class="hidden mb-3 text-xs text-cyan-400 text-center">
+          <i class="fas fa-spinner fa-spin mr-1"></i>Upload en cours...
+        </div>
+        <div id="gallery-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-72 overflow-y-auto"></div>
+        <p id="gallery-empty" class="hidden text-center text-gray-500 text-sm py-6">Aucune photo dans la galerie</p>
+        <div class="flex justify-end mt-4">
+          <button type="button" onclick="closeGalleryModal()" class="px-4 py-2 rounded-xl text-sm font-semibold" style="background:rgba(255,255,255,0.06); color:#94a3b8;">Fermer</button>
+        </div>
+      </div>
+    </div>
+    <script dangerouslySetInnerHTML={{ __html: `
+      var _galleryProdId = null;
+
+      function openGalleryModal(productId, productName) {
+        _galleryProdId = productId;
+        document.getElementById('gallery-modal-name').textContent = productName || ('Produit #' + productId);
+        document.getElementById('gallery-modal').classList.remove('hidden');
+        loadGallery(productId);
+      }
+
+      function closeGalleryModal() {
+        document.getElementById('gallery-modal').classList.add('hidden');
+        _galleryProdId = null;
+      }
+
+      function loadGallery(productId) {
+        fetch('/api/admin/produit/gallery/' + productId)
+          .then(function(r){ return r.json(); })
+          .then(function(d){ renderGallery(d.gallery || []); })
+          .catch(function(){ renderGallery([]); });
+      }
+
+      function renderGallery(gallery) {
+        var grid = document.getElementById('gallery-grid');
+        var empty = document.getElementById('gallery-empty');
+        grid.innerHTML = '';
+        if (!gallery.length) { empty.classList.remove('hidden'); return; }
+        empty.classList.add('hidden');
+        gallery.forEach(function(item, idx) {
+          var div = document.createElement('div');
+          div.className = 'relative group rounded-xl overflow-hidden';
+          div.style.cssText = 'aspect-ratio:1/1;background:#0a1628;';
+          var img = document.createElement('img');
+          img.src = item.url;
+          img.className = 'w-full h-full object-cover';
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'absolute top-1 right-1 bg-red-600 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity';
+          btn.innerHTML = '<i class="fas fa-trash" style="font-size:0.6rem;"></i>';
+          btn.onclick = function(){ removeGalleryImg(item.url, item.deleteUrl || ''); };
+          div.appendChild(img);
+          div.appendChild(btn);
+          grid.appendChild(div);
+        });
+      }
+
+      function handleGalleryUpload(input) {
+        var files = Array.from(input.files);
+        if (!files.length) return;
+        var upl = document.getElementById('gallery-uploading');
+        upl.classList.remove('hidden');
+        var done = 0;
+        var lastGallery = null;
+        files.forEach(function(file) {
+          var fd = new FormData();
+          fd.append('id', String(_galleryProdId));
+          fd.append('image', file);
+          fetch('/api/admin/produit/gallery/add', { method: 'POST', body: fd })
+            .then(function(r){ return r.json(); })
+            .then(function(d){
+              if (d.gallery) lastGallery = d.gallery;
+              done++;
+              if (done === files.length) {
+                upl.classList.add('hidden');
+                input.value = '';
+                if (lastGallery) renderGallery(lastGallery);
+                else loadGallery(_galleryProdId);
+              }
+            })
+            .catch(function(){
+              done++;
+              if (done === files.length) { upl.classList.add('hidden'); input.value = ''; }
+            });
+        });
+      }
+
+      function removeGalleryImg(url, deleteUrl) {
+        if (!confirm('Supprimer cette photo de la galerie ?')) return;
+        var fd = new FormData();
+        fd.append('id', String(_galleryProdId));
+        fd.append('url', url);
+        fd.append('delete_url', deleteUrl);
+        fetch('/api/admin/produit/gallery/remove', { method: 'POST', body: fd })
+          .then(function(r){ return r.json(); })
+          .then(function(d){ if (d.gallery) renderGallery(d.gallery); })
+          .catch(function(){ alert('Erreur suppression'); });
+      }
+
+      document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-gallery-id]');
+        if (!btn) return;
+        var id = parseInt(btn.getAttribute('data-gallery-id'));
+        var row = btn.closest('tr');
+        var nameEl = row ? row.querySelector('td .font-semibold') : null;
+        openGalleryModal(id, nameEl ? nameEl.textContent : '');
+      });
+    ` }} />
     {/* Import en masse — Produits (tableur quelconque) */}
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <div id="modal-import-masse" class="hidden fixed inset-0 bg-black/60 z-50 items-center justify-center p-4">
