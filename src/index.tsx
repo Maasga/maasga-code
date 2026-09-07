@@ -6534,6 +6534,7 @@ app.post('/api/admin/produit/add', adminAuth, async (c) => {
   })
   const techSpecsJson = Object.keys(techSpecs).length > 0 ? JSON.stringify(techSpecs) : null
   let imageUrl = ''
+  let imgbbDeleteUrlCreate = ''
   const file = body['image'] as File | null
   if (file && file instanceof File && file.size > 0) {
     // Limit image size to 500KB to prevent bloating D1
@@ -6555,7 +6556,9 @@ app.post('/api/admin/produit/add', adminAuth, async (c) => {
     const imgbbKey2 = (c.env as any).IMGBB_API_KEY as string
     try {
       if (!imgbbKey2) throw new Error('IMGBB_API_KEY manquante')
-      imageUrl = await uploadToImgBB(imgbbKey2, buffer, file.type)
+      const r2 = await uploadToImgBB(imgbbKey2, buffer, file.type)
+      imageUrl = r2.url
+      imgbbDeleteUrlCreate = r2.deleteUrl
     } catch(imgbbErr2) {
       console.error('ImgBB upload error (create):', imgbbErr2)
       return c.redirect('/admin/produits?error=' + encodeURIComponent('Upload image echoue.'))
@@ -7015,6 +7018,22 @@ app.post('/api/admin/produit/delete', adminAuth, async (c) => {
   const idx = products.findIndex(p => p.id === id)
   if (idx !== -1) products.splice(idx, 1)
   
+  // Supprimer l'image ImgBB si elle existe
+  const imgbbApiKey = (c.env as any).IMGBB_API_KEY as string
+  if (imgbbApiKey) {
+    try {
+      // Récupérer le delete_url depuis D1
+      const dbForDel = c.env.DB
+      if (dbForDel) {
+        const prod = await dbForDel.prepare('SELECT imgbb_delete_url FROM products WHERE id = ?').bind(id).first() as any
+        if (prod?.imgbb_delete_url) {
+          // ImgBB delete_url est une URL GET directe
+          await fetch(prod.imgbb_delete_url).catch(() => {})
+        }
+      }
+    } catch(e) { console.warn('ImgBB delete warning:', e) }
+  }
+
   // Supprimer en D1 aussi
   const db = c.env.DB
   if (db) {
@@ -7031,7 +7050,7 @@ app.post('/api/admin/produit/delete', adminAuth, async (c) => {
 // ============================================================
 // IMGBB IMAGE UPLOAD HELPER
 // ============================================================
-async function uploadToImgBB(apiKey: string, fileBuffer: ArrayBuffer, mimeType: string): Promise<string> {
+async function uploadToImgBB(apiKey: string, fileBuffer: ArrayBuffer, mimeType: string): Promise<{url: string, deleteUrl: string}> {
   const bytes = new Uint8Array(fileBuffer)
   let binary = ''
   for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
@@ -7043,7 +7062,7 @@ async function uploadToImgBB(apiKey: string, fileBuffer: ArrayBuffer, mimeType: 
   if (!res.ok) throw new Error('ImgBB upload failed: ' + res.status)
   const json = await res.json() as any
   if (!json?.data?.url) throw new Error('ImgBB: no URL in response')
-  return json.data.url as string
+  return { url: json.data.url as string, deleteUrl: (json.data.delete_url || '') as string }
 }
 
 // API Admin - Uploader/changer l'image d'un produit
@@ -7072,7 +7091,9 @@ app.post('/api/admin/produit/image', adminAuth, async (c) => {
     let uploadedUrl = ''
     try {
       if (!imgbbKey) throw new Error('IMGBB_API_KEY manquante')
-      uploadedUrl = await uploadToImgBB(imgbbKey, buffer, file.type)
+    const r1 = await uploadToImgBB(imgbbKey, buffer, file.type)
+    uploadedUrl = r1.url
+    const imgbbDelUrl = r1.deleteUrl
     } catch(imgbbErr) {
       console.error('ImgBB upload error:', imgbbErr)
       return c.redirect('/admin/produits?error=' + encodeURIComponent('Upload image echoue. Verifiez la cle ImgBB.'))
@@ -7080,7 +7101,7 @@ app.post('/api/admin/produit/image', adminAuth, async (c) => {
     const db = c.env.DB
     if (db) {
       try {
-        const res = await db.prepare('UPDATE products SET imageUrl = ? WHERE id = ?').bind(uploadedUrl, id).run()
+        const res = await db.prepare('UPDATE products SET imageUrl = ?, imgbb_delete_url = ? WHERE id = ?').bind(uploadedUrl, imgbbDelUrl, id).run()
         if (!res?.meta?.changes) {
           return c.redirect('/admin/produits?error=' + encodeURIComponent('Produit introuvable.'))
         }
@@ -7090,8 +7111,7 @@ app.post('/api/admin/produit/image', adminAuth, async (c) => {
       }
     }
     const product = products.find(p => p.id === id)
-    if (product) (product as any).imageUrl = uploadedUrl
-    else if (!db) return c.redirect('/admin/produits?error=' + encodeURIComponent('Produit introuvable.'))
+    if (product) { (product as any).imageUrl = uploadedUrl; (product as any).imgbbDeleteUrl = imgbbDelUrl }
     else if (!db) return c.redirect('/admin/produits?error=' + encodeURIComponent('Produit introuvable.'))
   }
   
@@ -9531,5 +9551,6 @@ app.delete('/api/client/push-token', mobileAuth, async (c) => {
 // EXPORT : Hono app (Pages-compatible)
 // For Workers with cron, use: export default { fetch: app.fetch, scheduled(...) { ... } }
 // ============================================================
+
 
 export default app
