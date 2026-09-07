@@ -1,0 +1,73 @@
+/* Admin UI Light Theme — Design Tokens
+   Toutes les variables sont scopées sous .admin-ui — jamais sous :root
+   Cela garantit l'isolation totale du thème admin par rapport au site public. */
+
+.admin-ui {
+  /* ── Backgrounds ── */
+  --admin-bg: #f8fafc;
+  --admin-bg-elevated: #f1f5f9;
+  --admin-sidebar-bg: #0f172a;        /* navy — identité de marque MAASGA */
+  --admin-card-bg: #ffffff;
+
+  /* ── Borders ── */
+  --admin-border: #e2e8f0;
+
+  /* ── Typography ── */
+  --admin-text-primary: #0f172a;
+  --admin-text-muted: #94a3b8;
+  --admin-font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* ── Accent ── */
+  --admin-accent: #0369a1;
+  --admin-accent-hover: #0284c7;
+  --admin-accent-light: #e0f2fe;
+
+  /* ── Semantic colors ── */
+  --admin-success: #059669;
+  --admin-success-light: #d1fae5;
+  --admin-warning: #d97706;
+  --admin-warning-light: #fef3c7;
+  --admin-danger: #dc2626;
+  --admin-danger-light: #fee2e2;
+  --admin-info: #2563eb;
+  --admin-info-light: #dbeafe;
+
+  /* ── Status badge colors ── */
+  --admin-status-pending: #d97706;
+  --admin-status-confirmed: #059669;
+  --admin-status-processing: #2563eb;
+  --admin-status-delivered: #0369a1;
+  --admin-status-cancelled: #dc2626;
+
+  /* ── Layout helpers ── */
+  --admin-radius: 0.75rem;
+  --admin-shadow-card: 0 1px 4px rgba(15,23,42,0.06), 0 0 0 1px rgba(15,23,42,0.04);
+  --admin-btn-primary-bg: linear-gradient(135deg, #0369a1, #0284c7);
+
+  /* ── Police appliquée au scope admin ── */
+  font-family: var(--admin-font-sans);
+}
+
+/* ── Scrollbar thème clair ── */
+.admin-ui ::-webkit-scrollbar { width: 6px; height: 6px; }
+.admin-ui ::-webkit-scrollbar-track { background: #f1f5f9; }
+.admin-ui ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+.admin-ui ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ── Neutraliser le min-height 44px de app.css ── */
+.admin-ui a,
+.admin-ui button { min-height: unset; }
+
+/* ── Préserver les min-height des boutons principaux ── */
+.admin-ui .btn-primary,
+.admin-ui .btn-secondary { min-height: 2.5rem; }
+
+/* ── Override mobile : cibler uniquement les modales, pas les sections ── */
+@media (max-width: 639px) {
+  .admin-ui .modal .rounded-3xl,
+  .admin-ui .modal .rounded-2xl,
+  .admin-ui [role="dialog"] .rounded-3xl,
+  .admin-ui [role="dialog"] .rounded-2xl {
+    max-width: calc(100vw - 1rem) !important;
+  }
+}

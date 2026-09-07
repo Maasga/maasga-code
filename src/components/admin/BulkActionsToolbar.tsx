@@ -15,8 +15,8 @@ interface BulkActionsToolbarProps {
 export const BulkActionsToolbar = ({ selectedCount, totalCount }: BulkActionsToolbarProps) => {
   if (selectedCount === 0) return null;
   return (
-    <div class="flex items-center justify-between gap-4 px-4 py-3 rounded-xl" style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.15);">
-      <span class="text-sm font-medium text-white">
+    <div class="flex items-center justify-between gap-4 px-4 py-3 rounded-xl" style="background: var(--admin-accent-light); border: 1px solid var(--admin-border)">
+      <span class="text-sm font-medium" style="color: var(--admin-text-primary);">
         {selectedCount} / {totalCount} commande{selectedCount > 1 ? 's' : ''} sélectionnée{selectedCount > 1 ? 's' : ''}
       </span>
       <div class="flex items-center gap-2">
@@ -24,7 +24,7 @@ export const BulkActionsToolbar = ({ selectedCount, totalCount }: BulkActionsToo
           type="button"
           onclick="adminBulkAction('status')"
           class="text-xs px-3 py-1.5 rounded-lg font-semibold"
-          style="background:rgba(245,158,11,0.12); color:#f59e0b; border:1px solid rgba(245,158,11,0.2);"
+          style="background: var(--admin-warning-light); color: var(--admin-warning); border: 1px solid rgba(217,119,6,0.25);"
         >
           <i class="fas fa-exchange-alt mr-1"></i>Statut en lot
         </button>
@@ -32,7 +32,7 @@ export const BulkActionsToolbar = ({ selectedCount, totalCount }: BulkActionsToo
           type="button"
           onclick="adminBulkAction('export')"
           class="text-xs px-3 py-1.5 rounded-lg font-semibold"
-          style="background:rgba(59,130,246,0.12); color:#60a5fa; border:1px solid rgba(59,130,246,0.2);"
+          style="background: var(--admin-info-light); color: var(--admin-info); border: 1px solid rgba(37,99,235,0.25);"
         >
           <i class="fas fa-file-export mr-1"></i>Exporter
         </button>
@@ -40,7 +40,7 @@ export const BulkActionsToolbar = ({ selectedCount, totalCount }: BulkActionsToo
           type="button"
           onclick="adminBulkAction('delete')"
           class="text-xs px-3 py-1.5 rounded-lg font-semibold"
-          style="background:rgba(239,68,68,0.12); color:#f87171; border:1px solid rgba(239,68,68,0.2);"
+          style="background: var(--admin-danger-light); color: var(--admin-danger); border: 1px solid rgba(220,38,38,0.25);"
         >
           <i class="fas fa-trash mr-1"></i>Supprimer
         </button>
@@ -48,7 +48,7 @@ export const BulkActionsToolbar = ({ selectedCount, totalCount }: BulkActionsToo
           type="button"
           onclick="adminClearSelection()"
           class="text-xs px-3 py-1.5 rounded-lg"
-          style="background:rgba(148,163,184,0.08); color:#94a3b8; border:1px solid rgba(148,163,184,0.12);"
+          style="background: var(--admin-bg-elevated); color: var(--admin-text-muted);"
         >
           Effacer sélection
         </button>

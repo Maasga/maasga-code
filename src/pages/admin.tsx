@@ -1,4 +1,4 @@
-﻿import { products } from '../data/products'
+import { products } from '../data/products'
 import { reviews, appointments, orders, clients, maintenanceDueCount, notifications } from '../data/store'
 import { SITE_URL } from '../types'
 // Référentiels de l'import produits, injectés dans le <script> de la modale plutôt
@@ -68,28 +68,28 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>Admin MAASGA - Back-office</title>
       <link rel="stylesheet" href="/static/tailwind.css" />
+      <link rel="stylesheet" href="/static/admin-tokens.css" />
       <link rel="stylesheet" href="/static/style.css" />
       <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" />
       <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
       <style dangerouslySetInnerHTML={{ __html: `
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-        * { font-family: 'Inter', sans-serif; }
         .admin-sidebar { background: linear-gradient(180deg, #0f1a2e 0%, #1a3478 100%); }
         .nav-item { transition: all 0.2s; padding: 0.625rem 0.75rem; border-radius: 0.75rem; display: flex; align-items: center; gap: 0.75rem; font-size: 0.875rem; font-weight: 500; color: #93c5fd; }
         .nav-item:hover { background: rgba(255,255,255,0.12); color: white; }
         .nav-item.active { background: rgba(255,255,255,0.2); color: white; font-weight: 600; }
-        .card-shadow { box-shadow: 0 2px 20px rgba(0,0,0,0.3), 0 0 0 1px rgba(56,189,248,0.06); }
-        .input-field { border: 1.5px solid rgba(56,189,248,0.18); transition: all 0.2s; background: rgba(15,23,42,0.7); color: #e0f0ff; border-radius: 0.75rem; padding: 0.625rem 1rem; width: 100%; }
-        .input-field:focus { outline: none; border-color: #38bdf8; background: rgba(15,23,42,0.9); box-shadow: 0 0 0 3px rgba(56,189,248,0.15); }
-        .input-field::placeholder { color: #64748b; }
+        .card-shadow { box-shadow: var(--admin-shadow-card); background: var(--admin-card-bg); border: 1px solid var(--admin-border); }
+        .input-field { border: 1.5px solid var(--admin-border); transition: all 0.2s; background: var(--admin-card-bg); color: var(--admin-text-primary); border-radius: 0.75rem; padding: 0.625rem 1rem; width: 100%; }
+        .input-field:focus { outline: none; border-color: var(--admin-accent); background: var(--admin-card-bg); box-shadow: 0 0 0 3px rgba(3,105,161,0.15); }
+        .input-field::placeholder { color: var(--admin-text-muted); }
         .badge-pending { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
         .badge-confirmed { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid rgba(52,211,153,0.3); }
         .badge-done { background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); }
         .badge-cancelled { background: rgba(248,113,113,0.15); color: #f87171; border: 1px solid rgba(248,113,113,0.3); }
-        .btn-primary { background: linear-gradient(135deg, #2563eb, #0284c7); color: white; transition: all 0.2s; }
-        .btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
-        .stat-card { background: #111827; border-radius: 1rem; padding: 1.25rem; border: 1px solid rgba(56,189,248,0.1); box-shadow: 0 2px 20px rgba(0,0,0,0.3); transition: transform 0.2s, box-shadow 0.2s; }
-        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+        .admin-ui .btn-primary { background: var(--admin-btn-primary-bg); color: white; transition: all 0.2s; box-shadow: 0 4px 12px rgba(3,105,161,0.25); }
+        .admin-ui .btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
+        .stat-card { background: var(--admin-card-bg); border-radius: 1rem; padding: 1.25rem; border: 1px solid var(--admin-border); box-shadow: var(--admin-shadow-card); transition: transform 0.2s, box-shadow 0.2s; color: var(--admin-text-primary); }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(3,105,161,0.12); }
         @media (max-width: 768px) { .admin-sidebar { transform: translateX(-100%); position: fixed; transition: transform 0.3s; z-index: 50; } .admin-sidebar.open { transform: translateX(0); } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -100,10 +100,6 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
         .delay-3 { animation-delay: 0.3s; }
         .hover-lift { transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s ease; }
         .hover-lift:hover { transform: translateY(-1.5px); box-shadow: 0 4px 10px rgba(3,105,161,0.08), 0 1px 3px rgba(3,105,161,0.04); }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0b1120; }
-        ::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #2a4a6f; }
         .admin-table tr { transition: background 0.15s; }
         @keyframes slideIn { from { opacity: 0; transform: translateX(60px); } to { opacity: 1; transform: translateX(0); } }
 
@@ -136,15 +132,12 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
           /* Smaller badges */
           .badge-pending, .badge-confirmed, .badge-done, .badge-cancelled { font-size: 0.6rem !important; padding: 0.15rem 0.4rem !important; }
 
-          /* Modals: ensure they fit viewport */
-          .rounded-3xl, .rounded-2xl { max-width: calc(100vw - 1rem) !important; }
-
           /* Reduce whitespace-nowrap on table cells to allow wrapping */
           table td, table th { white-space: normal !important; word-break: break-word; }
         }
       `}} />
     </head>
-    <body class="min-h-screen flex overflow-x-hidden" style="background:#0b1120;">
+    <body class="admin-ui min-h-screen flex overflow-x-hidden" style="background: var(--admin-bg);">
 
       {/* Overlay mobile */}
       <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden" onclick="toggleSidebar()"></div>
@@ -157,7 +150,7 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
               <i class="fas fa-snowflake text-white text-lg"></i>
             </div>
             <div>
-              <div class="font-bold text-white text-base">MAASGA</div>
+              <div class="font-bold text-base" style="color:var(--admin-text-primary)">MAASGA</div>
               <div class="text-xs text-blue-300">Back-office Admin</div>
             </div>
           </div>
@@ -176,6 +169,7 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
             { href: "/admin/sav", icon: "fa-headset", label: "SAV / Tickets", key: "sav" },
             { href: "/admin/messages", icon: "fa-envelope", label: "Messages", key: "messages" },
             { href: "/admin/avis", icon: "fa-star", label: "Avis clients", key: "avis" },
+            { href: "/admin/realisations", icon: "fa-images", label: "Réalisations", key: "realisations" },
             { href: "/admin/audit-log", icon: "fa-clipboard-list", label: "Audit / Logs", key: "audit-log" },
             { href: "/admin/notifications", icon: "fa-bell", label: "Notifications", key: "notifications" },
                         { href: "/admin/banners", icon: "fa-images", label: "Bannières & Marques", key: "banners" },
@@ -239,13 +233,13 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
       {/* Main content */}
       <main class="md:ml-64 flex-1 min-h-screen overflow-x-hidden">
         {/* Top bar */}
-        <header class="px-2 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center justify-between sticky top-0 z-30" style="background:rgba(11,17,32,0.92); backdrop-filter:blur(20px); border-bottom:1px solid rgba(56,189,248,0.1);">
+        <header class="px-2 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center justify-between sticky top-0 z-30" style="background:rgba(255,255,255,0.92); backdrop-filter:blur(12px); border-bottom:1px solid var(--admin-border);">
           <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
             <button onclick="toggleSidebar()" class="md:hidden text-gray-500 hover:text-gray-300 p-1.5">
               <i class="fas fa-bars"></i>
             </button>
             <div class="min-w-0">
-              <h1 class="font-bold text-white text-sm sm:text-base leading-none truncate">
+              <h1 class="font-bold text-sm sm:text-base leading-none truncate" style="color: var(--admin-text-primary)">
                 {activePage === 'dashboard' ? 'Tableau de bord' :
                  activePage === 'produits' ? 'Gestion Produits' :
                  activePage === 'rdv' ? 'Rendez-vous' :
@@ -254,19 +248,19 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
                  activePage === 'avis' ? 'Avis Clients' :
                  activePage === 'banners' ? 'Bannières & Marques' : 'MAASGA Admin'}
               </h1>
-              <div class="text-xs text-gray-400 mt-0.5">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+              <div class="text-xs mt-0.5" style="color: var(--admin-text-muted)">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
             </div>
           </div>
           <div class="flex items-center space-x-2">
             {/* Global search */}
             <div class="hidden md:block relative" id="global-search-container">
               <input id="global-search-input" type="text" placeholder="Rechercher partout..." autocomplete="off"
-                class="w-64 rounded-xl px-3 py-1.5 pl-8 text-xs text-white" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.15);"
+                class="w-64 rounded-xl px-3 py-1.5 pl-8 text-xs" style="background:rgba(241,245,249,0.8); border:1px solid var(--admin-border); color: var(--admin-text-primary);"
                 oninput="globalSearch(this.value)" onfocus="document.getElementById('global-search-results').classList.remove('hidden')" />
               <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
-              <div id="global-search-results" class="hidden absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden z-50 max-h-96 overflow-y-auto shadow-2xl" style="background:#111827; border:1px solid rgba(56,189,248,0.2);"></div>
+              <div id="global-search-results" class="hidden absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden z-50 max-h-96 overflow-y-auto shadow-2xl" style="background: var(--admin-card-bg); border:1px solid var(--admin-border);"></div>
             </div>
-            <div class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium" style="background:rgba(16,185,129,0.12); color:#34d399;">
+            <div class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium" style="background: var(--admin-success-light); color: var(--admin-success);">
               <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
               <span>Système actif</span>
             </div>
@@ -276,8 +270,8 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
                 <i class="fas fa-bell text-sm"></i>
                 <span id="notif-badge" class="hidden absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold" style="font-size:9px;"></span>
               </button>
-              <div id="notif-panel" class="hidden absolute top-full right-0 mt-1 w-80 rounded-xl overflow-hidden z-50 shadow-2xl" style="background:#111827; border:1px solid rgba(56,189,248,0.2);">
-                <div class="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+              <div id="notif-panel" class="hidden absolute top-full right-0 mt-1 w-80 rounded-xl overflow-hidden z-50 shadow-2xl" style="background: var(--admin-card-bg); border:1px solid var(--admin-border);">
+                <div class="flex items-center justify-between px-4 py-3" style="border-bottom:1px solid var(--admin-border)">
                   <span class="text-xs font-bold text-white">Notifications</span>
                   <div class="flex gap-2">
                     <button onclick="markAllNotifRead()" class="text-xs text-cyan-400 hover:underline">Tout lire</button>
@@ -417,10 +411,10 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
               var icon = typeIcons[n.type] || 'fa-bell';
               var color = typeColors[n.type] || '#94a3b8';
               var ago = timeAgo(n.created_at);
-              html += '<div class="flex items-start gap-3 px-4 py-3 border-b border-gray-800/50' + (n.read ? '' : ' bg-cyan-500/5') + '">'
+              html += '<div class="flex items-start gap-3 px-4 py-3 border-b border-gray-800/50' + (n.read ? '' : ' bg-[rgba(3,105,161,0.04)]') + '">'
                 + '<i class="fas ' + icon + ' text-sm mt-0.5" style="color:' + color + ';"></i>'
                 + '<div class="flex-1 min-w-0">'
-                + '<div class="text-xs text-white' + (n.read ? ' opacity-60' : ' font-medium') + '">' + escapeHtml(n.summary) + '</div>'
+                + '<div class="text-xs' + (n.read ? ' opacity-60' : ' font-medium') + '" style="color:var(--admin-text-primary)">' + escapeHtml(n.summary) + '</div>'
                 + '<div class="text-xs text-gray-500 mt-0.5">' + ago + '</div>'
                 + '</div>'
                 + (n.read ? '' : '<div class="w-2 h-2 bg-cyan-400 rounded-full mt-1 flex-shrink-0"></div>')
@@ -458,10 +452,10 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
         window.showToast = function(msg, type) {
           type = type || 'info';
           var colors = {
-            success: 'linear-gradient(135deg,#059669,#10b981)',
-            error: 'linear-gradient(135deg,#dc2626,#ef4444)',
-            warning: 'linear-gradient(135deg,#d97706,#f59e0b)',
-            info: 'linear-gradient(135deg,#2563eb,#3b82f6)'
+            success: 'linear-gradient(135deg, var(--admin-success), #10b981)',
+            error: 'linear-gradient(135deg, var(--admin-danger), #ef4444)',
+            warning: 'linear-gradient(135deg, var(--admin-warning), #f59e0b)',
+            info: 'linear-gradient(135deg, var(--admin-info), #3b82f6)'
           };
           var icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
           var container = document.getElementById('toast-container');
@@ -595,15 +589,15 @@ export const AdminPage = () => {
           {/* Liste des RDV en attente */}
           <div class="mt-4 pt-4 space-y-2" style="border-top:1px solid rgba(220,38,38,0.2);">
             {appointments.filter(a => a.status === 'pending').slice(0, 3).map(a => (
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl p-3" style="background:rgba(15,23,42,0.6); border:1px solid rgba(220,38,38,0.15);">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl p-3" style="background:rgba(220,38,38,0.05); border:1px solid rgba(220,38,38,0.15);">
                 <div>
-                  <span class="inline-block text-xs font-bold px-2.5 py-0.5 rounded-full mr-2" style="background:rgba(220,38,38,0.2); color:#f87171;">NOUVEAU</span>
-                  <span class="font-semibold text-gray-200">{a.name}</span>
-                  <span class="text-xs text-gray-400 ml-2">
+                  <span class="inline-block text-xs font-bold px-2.5 py-0.5 rounded-full mr-2" style="background:rgba(220,38,38,0.1); color:#dc2626;">NOUVEAU</span>
+                  <span class="font-semibold" style="color:var(--admin-text-primary)">{a.name}</span>
+                  <span class="text-xs ml-2" style="color:var(--admin-text-muted)">
                     ?? {a.quartier} · ?? {a.date} · {{ devis: 'Devis', installation: 'Installation', entretien: 'Entretien', depannage: 'Dépannage' }[a.type] || a.type}
                   </span>
                 </div>
-                <span class="text-xs text-gray-400">{a.phone}</span>
+                <span class="text-xs" style="color:var(--admin-text-muted)">{a.phone}</span>
               </div>
             ))}
             {pendingRdv > 3 && (
@@ -627,17 +621,17 @@ export const AdminPage = () => {
             <div class={`w-10 h-10 bg-gradient-to-br ${k.color} rounded-xl flex items-center justify-center mb-3`}>
               <i class={`fas ${k.icon} text-white text-sm`}></i>
             </div>
-            <div class="text-2xl font-bold text-white mb-0.5">{k.val}</div>
-            <div class="text-sm font-medium text-gray-400">{k.label}</div>
-            <div class="text-xs text-gray-400 mt-1">{k.sub}</div>
+            <div class="text-2xl font-bold mb-0.5" style="color:var(--admin-text-primary)">{k.val}</div>
+            <div class="text-sm font-medium" style="color:var(--admin-text-muted)">{k.label}</div>
+            <div class="text-xs mt-1" style="color:var(--admin-text-muted)">{k.sub}</div>
           </a>
         ))}
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 fade-in-up delay-1">
         {/* Stats cette semaine */}
-        <div class="rounded-2xl p-6 card-shadow" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
-          <h3 class="font-bold text-white mb-4 flex items-center space-x-2">
+        <div class="rounded-2xl p-6 card-shadow" style="background: var(--admin-card-bg); border: 1px solid var(--admin-border);">
+          <h3 class="font-bold mb-4 flex items-center space-x-2" style="color: var(--admin-text-primary)">
             <i class="fas fa-calendar-week text-cyan-400"></i>
             <span>Cette semaine</span>
           </h3>
@@ -648,18 +642,18 @@ export const AdminPage = () => {
               { label: "En attente", val: pendingRdv, icon: "fa-hourglass-half", color: "#fbbf24" },
               { label: "Effectués", val: doneRdv, icon: "fa-flag-checkered", color: "#34d399" },
             ].map(s => (
-              <div class="rounded-xl p-3 flex items-center space-x-3" style="background:rgba(255,255,255,0.03); border:1px solid rgba(148,180,220,0.08);">
+              <div class="rounded-xl p-3 flex items-center space-x-3" style="background: var(--admin-card-bg); border: 1px solid var(--admin-border);">
                 <i class={`fas ${s.icon} text-lg`} style={`color:${s.color};`}></i>
                 <div>
-                  <div class="text-xl font-bold text-white leading-none">{s.val}</div>
-                  <div class="text-xs text-gray-400 mt-0.5">{s.label}</div>
+                  <div class="text-xl font-bold leading-none" style="color: var(--admin-text-primary);">{s.val}</div>
+                  <div class="text-xs mt-0.5" style="color: var(--admin-text-muted);">{s.label}</div>
                 </div>
               </div>
             ))}
           </div>
           {/* Mini bar chart - derniers 7 jours RDV */}
           <div>
-            <div class="text-xs text-gray-500 mb-2">RDV par jour (7 derniers jours)</div>
+            <div class="text-xs mb-2" style="color:var(--admin-text-muted)">RDV par jour (7 derniers jours)</div>
             <canvas id="rdv-chart" height="60"></canvas>
             <script dangerouslySetInnerHTML={{ __html: `
               (function() {
@@ -688,8 +682,8 @@ export const AdminPage = () => {
         </div>
 
         {/* Actions rapides */}
-        <div class="rounded-2xl p-6 card-shadow" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
-          <h3 class="font-bold text-white mb-4 flex items-center space-x-2">
+        <div class="rounded-2xl p-6 card-shadow" style="background: var(--admin-card-bg); border: 1px solid var(--admin-border);">
+          <h3 class="font-bold mb-4 flex items-center space-x-2" style="color: var(--admin-text-primary)">
             <i class="fas fa-bolt text-yellow-400"></i>
             <span>Actions rapides</span>
           </h3>
@@ -710,13 +704,13 @@ export const AdminPage = () => {
           <div class="mt-4 pt-4 space-y-2" style="border-top:1px solid rgba(56,189,248,0.08);">
             <a href="/admin/parametres" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors">
               <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(56,189,248,0.1);"><i class="fas fa-cog text-cyan-400 text-sm"></i></div>
-              <div><div class="text-sm font-medium text-gray-200">Paramètres du site</div><div class="text-xs text-gray-500">Mot de passe, configuration</div></div>
+              <div><div class="text-sm font-medium" style="color:var(--admin-text-primary)">Paramètres du site</div><div class="text-xs" style="color:var(--admin-text-muted)">Mot de passe, configuration</div></div>
               <i class="fas fa-chevron-right text-xs text-gray-600 ml-auto"></i>
             </a>
             <form method="post" action="/api/admin/logout">
               <button type="submit" class="w-full text-left flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-red-900/10 transition-colors">
                 <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(239,68,68,0.1);"><i class="fas fa-sign-out-alt text-red-400 text-sm"></i></div>
-                <div><div class="text-sm font-medium text-red-400">Déconnexion</div><div class="text-xs text-gray-500">Fermer la session admin</div></div>
+                <div><div class="text-sm font-medium text-red-400">Déconnexion</div><div class="text-xs" style="color:var(--admin-text-muted)">Fermer la session admin</div></div>
               </button>
             </form>
           </div>
@@ -725,16 +719,16 @@ export const AdminPage = () => {
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 fade-in-up delay-1">
         {/* Alertes stock */}
-        <div class="rounded-2xl  p-6 card-shadow" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+        <div class="rounded-2xl  p-6 card-shadow" style="background: var(--admin-card-bg); border: 1px solid var(--admin-border);">
           <div class="flex items-center justify-between mb-5">
-            <h3 class="font-bold text-white flex items-center space-x-2">
+            <h3 class="font-bold flex items-center space-x-2" style="color: var(--admin-text-primary)">
               <i class="fas fa-exclamation-triangle text-orange-500"></i>
               <span>Alertes stock</span>
             </h3>
             <a href="/admin/produits" class="text-xs text-primary-600 font-medium">Gérer</a>
           </div>
           {products.filter(p => p.stock <= 3).length === 0 ? (
-            <div class="text-center py-6 text-gray-400">
+            <div class="text-center py-6" style="color:var(--admin-text-muted)">
               <i class="fas fa-check-circle text-green-400 text-2xl mb-2"></i>
               <p class="text-sm">Tous les stocks sont OK</p>
             </div>
@@ -745,7 +739,7 @@ export const AdminPage = () => {
                   <div class="flex items-center space-x-3">
                     <div class="text-2xl">{p.image}</div>
                     <div>
-                      <div class="text-sm font-semibold text-gray-200 leading-tight">{p.name}</div>
+                      <div class="text-sm font-semibold leading-tight" style="color:var(--admin-text-primary)">{p.name}</div>
                       <div class="text-xs text-gray-400">{p.brand} · {p.btu.toLocaleString()} BTU</div>
                     </div>
                   </div>
@@ -759,23 +753,23 @@ export const AdminPage = () => {
         </div>
 
         {/* RDV récents */}
-        <div class="rounded-2xl  p-6 card-shadow" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+        <div class="rounded-2xl  p-6 card-shadow" style="background: var(--admin-card-bg); border: 1px solid var(--admin-border);">
           <div class="flex items-center justify-between mb-5">
-            <h3 class="font-bold text-white flex items-center space-x-2">
+            <h3 class="font-bold flex items-center space-x-2" style="color: var(--admin-text-primary)">
               <i class="fas fa-calendar-alt text-primary-500"></i>
               <span>Rendez-vous récents</span>
             </h3>
             <a href="/admin/rdv" class="text-xs text-primary-600 font-medium">Voir tout</a>
           </div>
           {appointments.length === 0 ? (
-            <p class="text-sm text-gray-400 text-center py-4">Aucun rendez-vous</p>
+            <p class="text-sm text-center py-4" style="color:var(--admin-text-muted)">Aucun rendez-vous</p>
           ) : (
             <div class="space-y-3">
               {appointments.slice(-4).reverse().map(a => (
-                <div class="flex items-center justify-between p-3 rounded-xl" style="background:rgba(15,23,42,0.5); border:1px solid rgba(148,180,220,0.08);">
+                <div class="flex items-center justify-between p-3 rounded-xl" style="background: var(--admin-card-bg); border: 1px solid var(--admin-border);">
                   <div>
-                    <div class="text-sm font-semibold text-gray-200">{a.name}</div>
-                    <div class="text-xs text-gray-400">{a.date} · {a.quartier} · {{ devis: 'Devis', installation: 'Installation', entretien: 'Entretien', depannage: 'Dépannage' }[a.type] || a.type}</div>
+                    <div class="text-sm font-semibold" style="color: var(--admin-text-primary);">{a.name}</div>
+                    <div class="text-xs" style="color: var(--admin-text-muted);">{a.date} · {a.quartier} · {{ devis: 'Devis', installation: 'Installation', entretien: 'Entretien', depannage: 'Dépannage' }[a.type] || a.type}</div>
                   </div>
                   <span class={`text-xs font-semibold px-2.5 py-1 rounded-full ${a.status === 'pending' ? 'badge-pending' : a.status === 'confirmed' ? 'badge-confirmed' : 'badge-done'}`}>
                     {a.status === 'pending' ? 'En attente' : a.status === 'confirmed' ? 'Confirmé' : 'Effectué'}
@@ -825,9 +819,9 @@ export const AdminPage = () => {
         const maxRev = topProducts[0]?.revenue || 1
 
         return (
-      <div class="rounded-2xl card-shadow overflow-hidden mb-6 fade-in-up delay-2" style="background:#111827; border:1px solid rgba(16,185,129,0.15);">
-        <div class="p-5 flex items-center justify-between" style="border-bottom:1px solid rgba(16,185,129,0.1);">
-          <h3 class="font-bold text-white flex items-center space-x-2">
+      <div class="rounded-2xl card-shadow overflow-hidden mb-6 fade-in-up delay-2" style="background: var(--admin-card-bg); border: 1px solid var(--admin-border);">
+        <div class="p-5 flex items-center justify-between" style="border-bottom: 1px solid var(--admin-border);">
+          <h3 class="font-bold flex items-center space-x-2" style="color: var(--admin-text-primary)">
             <i class="fas fa-chart-line text-green-400"></i>
             <span>Tableau de bord financier</span>
           </h3>
@@ -837,33 +831,33 @@ export const AdminPage = () => {
           {/* KPIs financiers */}
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div class="rounded-xl p-4" style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2);">
-              <div class="text-xs text-gray-400 font-semibold mb-1">CA ce mois</div>
+              <div class="text-xs font-semibold mb-1" style="color:var(--admin-text-muted)">CA ce mois</div>
               <div class="text-xl font-bold text-green-400">{currentMonth.revenue.toLocaleString()} F</div>
               <div class="text-xs mt-1" style={growth >= 0 ? 'color:#34d399;' : 'color:#f87171;'}>
                 <i class={`fas fa-arrow-${growth >= 0 ? 'up' : 'down'} mr-1`}></i>{growth > 0 ? '+' : ''}{growth}% vs mois precedent
               </div>
             </div>
             <div class="rounded-xl p-4" style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2);">
-              <div class="text-xs text-gray-400 font-semibold mb-1">CA mois precedent</div>
+              <div class="text-xs font-semibold mb-1" style="color:var(--admin-text-muted)">CA mois precedent</div>
               <div class="text-xl font-bold text-blue-400">{prevMonth.revenue.toLocaleString()} F</div>
-              <div class="text-xs text-gray-500 mt-1">{prevMonth.count} commandes</div>
+              <div class="text-xs mt-1" style="color:var(--admin-text-muted)">{prevMonth.count} commandes</div>
             </div>
             <div class="rounded-xl p-4" style="background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.2);">
-              <div class="text-xs text-gray-400 font-semibold mb-1">CA total (6 mois)</div>
+              <div class="text-xs font-semibold mb-1" style="color:var(--admin-text-muted)">CA total (6 mois)</div>
               <div class="text-xl font-bold text-purple-400">{estimatedCA.toLocaleString()} F</div>
-              <div class="text-xs text-gray-500 mt-1">{orders.filter(o => ['confirme','en_livraison','livre'].includes(o.status)).length} commandes</div>
+              <div class="text-xs mt-1" style="color:var(--admin-text-muted)">{orders.filter(o => ['confirme','en_livraison','livre'].includes(o.status)).length} commandes</div>
             </div>
             <div class="rounded-xl p-4" style="background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.2);">
-              <div class="text-xs text-gray-400 font-semibold mb-1">Moyenne mensuelle</div>
+              <div class="text-xs font-semibold mb-1" style="color:var(--admin-text-muted)">Moyenne mensuelle</div>
               <div class="text-xl font-bold text-yellow-400">{Math.round(avgMonthly).toLocaleString()} F</div>
-              <div class="text-xs text-gray-500 mt-1">sur les mois actifs</div>
+              <div class="text-xs mt-1" style="color:var(--admin-text-muted)">sur les mois actifs</div>
             </div>
           </div>
 
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Graphique CA mensuel */}
             <div>
-              <div class="text-sm font-semibold text-gray-300 mb-3"><i class="fas fa-chart-bar text-green-400 mr-2"></i>Evolution CA mensuel</div>
+              <div class="text-sm font-semibold mb-3" style="color:var(--admin-text-primary)"><i class="fas fa-chart-bar text-green-400 mr-2"></i>Evolution CA mensuel</div>
               <canvas id="ca-chart" height="140"></canvas>
               <script dangerouslySetInnerHTML={{ __html: `
                 (function() {
@@ -901,14 +895,14 @@ export const AdminPage = () => {
             </div>
             {/* Top produits */}
             <div>
-              <div class="text-sm font-semibold text-gray-300 mb-3"><i class="fas fa-trophy text-yellow-400 mr-2"></i>Top produits par revenus</div>
+              <div class="text-sm font-semibold mb-3" style="color:var(--admin-text-primary)"><i class="fas fa-trophy text-yellow-400 mr-2"></i>Top produits par revenus</div>
               {topProducts.length === 0 ? (
-                <p class="text-xs text-gray-500 py-4">Aucune commande validee</p>
+                <p class="text-xs py-4" style="color:var(--admin-text-muted)">Aucune commande validee</p>
               ) : (
                 <div class="space-y-3">
                   {topProducts.map((tp, i) => (
                     <div class="flex items-center gap-3">
-                      <span class="text-xs font-bold text-gray-500 w-5">#{i + 1}</span>
+                      <span class="text-xs font-bold w-5" style="color:var(--admin-text-muted)">#{i + 1}</span>
                       <div class="flex-1">
                         <div class="flex items-center justify-between mb-1">
                           <span class="text-xs font-medium text-gray-300 truncate max-w-[180px]">{tp.name}</span>
@@ -917,7 +911,7 @@ export const AdminPage = () => {
                         <div class="w-full h-2 rounded-full" style="background:rgba(16,185,129,0.1);">
                           <div class="h-2 rounded-full" style={`width:${Math.round((tp.revenue / maxRev) * 100)}%; background:linear-gradient(90deg,#10b981,#34d399);`}></div>
                         </div>
-                        <div class="text-[10px] text-gray-500 mt-0.5">{tp.count} vente(s)</div>
+                        <div class="text-[10px] mt-0.5" style="color:var(--admin-text-muted)">{tp.count} vente(s)</div>
                       </div>
                     </div>
                   ))}
@@ -931,9 +925,9 @@ export const AdminPage = () => {
       })()}
 
       {/* Tableau produits */}
-      <div class="rounded-2xl  p-6 card-shadow" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+      <div class="rounded-2xl  p-6 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
         <div class="flex items-center justify-between mb-5">
-          <h3 class="font-bold text-white flex items-center space-x-2">
+          <h3 class="font-bold flex items-center space-x-2" style="color:var(--admin-text-primary)">
             <i class="fas fa-trophy text-yellow-500"></i>
             <span>État du catalogue</span>
           </h3>
@@ -944,7 +938,7 @@ export const AdminPage = () => {
             <thead>
               <tr class="border-b border-gray-800">
                 {["Produit", "Marque", "BTU", "Prix", "Stock", "Statut"].map(h => (
-                  <th class="text-left py-3 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                  <th class="text-left py-3 px-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--admin-text-muted)">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -954,12 +948,12 @@ export const AdminPage = () => {
                   <td class="py-3 px-3">
                     <div class="flex items-center space-x-2">
                       <span class="text-xl">{p.image}</span>
-                      <span class="font-medium text-gray-200 text-xs leading-tight max-w-32">{p.name}</span>
+                      <span class="font-medium text-xs leading-tight max-w-32" style="color:var(--admin-text-primary)">{p.name}</span>
                     </div>
                   </td>
-                  <td class="py-3 px-3 text-xs text-gray-400 font-medium">{p.brand}</td>
-                  <td class="py-3 px-3 text-xs text-gray-400">{p.btu.toLocaleString()}</td>
-                  <td class="py-3 px-3 text-xs font-semibold text-gray-200">{p.price.toLocaleString()} F</td>
+                  <td class="py-3 px-3 text-xs font-medium" style="color:var(--admin-text-muted)">{p.brand}</td>
+                  <td class="py-3 px-3 text-xs" style="color:var(--admin-text-muted)">{p.btu.toLocaleString()}</td>
+                  <td class="py-3 px-3 text-xs font-semibold" style="color:var(--admin-text-primary)">{p.price.toLocaleString()} F</td>
                   <td class="py-3 px-3">
                     <span class={`text-xs font-bold ${p.stock === 0 ? 'text-red-600' : p.stock <= 3 ? 'text-orange-500' : 'text-green-600'}`}>{p.stock}</span>
                   </td>
@@ -995,8 +989,8 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
 
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
       <div>
-        <h2 class="text-xl font-bold text-white">Gestion des produits</h2>
-        <p class="text-sm text-gray-400 mt-1">{products.length} produits au catalogue · {products.filter(p => p.available && p.stock > 0).length} disponibles</p>
+        <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">Gestion des produits</h2>
+        <p class="text-sm mt-1" style="color:var(--admin-text-muted)">{products.length} produits au catalogue · {products.filter(p => p.available && p.stock > 0).length} disponibles</p>
       </div>
       <div class="flex items-center gap-2">
         <button id="btn-ouvrir-import-masse"
@@ -1015,34 +1009,34 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
     </div>
 
     {/* ===== MÉDIATHÈQUE CENTRALISÉE PAR MARQUE ===== */}
-    <div class="mb-6 rounded-2xl card-shadow overflow-hidden" style="background:#111827; border:1px solid rgba(168,85,247,0.2);">
+    <div class="mb-6 rounded-2xl card-shadow overflow-hidden" style="background:var(--admin-card-bg); border:1px solid rgba(168,85,247,0.2);">
       <button type="button" onclick="toggleMediatheque()"
         class="w-full flex items-center justify-between px-5 py-4 text-left">
         <div class="flex items-center gap-3">
           <i class="fas fa-photo-video text-purple-400"></i>
-          <span class="font-semibold text-white text-sm">Médiathèque par marque</span>
+          <span class="font-semibold text-sm" style="color:var(--admin-text-primary)">Médiathèque par marque</span>
           <span class="text-xs text-purple-300/70 hidden sm:inline">Uploadez des images une fois, affectez-les à n'importe quel produit</span>
         </div>
-        <i id="mediatheque-chevron" class="fas fa-chevron-down text-gray-500 text-xs" style="transition:transform 0.2s;"></i>
+        <i id="mediatheque-chevron" class="fas fa-chevron-down text-xs" style="color:var(--admin-text-muted);transition:transform 0.2s;"></i>
       </button>
       <div id="mediatheque-panel" class="hidden p-5" style="border-top:1px solid rgba(168,85,247,0.1);">
         {/* Upload form */}
         <div class="flex flex-wrap gap-3 mb-5 items-end">
           <div>
-            <label class="block text-xs text-gray-400 mb-1">Marque</label>
+            <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Marque</label>
             <input id="mediatheque-brand" type="text" placeholder="LG, Samsung…" list="mediatheque-brands-list"
-              class="rounded-xl px-3 py-2 text-xs text-white w-32" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.2);" />
+              class="input-field text-xs w-32" />
             <datalist id="mediatheque-brands-list">
               {['LG', 'Samsung', 'Daikin', 'Midea', 'Panasonic', 'Gree', 'Hisense', 'TCL', 'Airwell', 'Carrier', 'Fujitsu', 'Mitsubishi', 'Toshiba', 'Hitachi'].map(b => <option value={b} />)}
             </datalist>
           </div>
           <div>
-            <label class="block text-xs text-gray-400 mb-1">Libellé (optionnel)</label>
+            <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Libellé (optionnel)</label>
             <input id="mediatheque-label" type="text" placeholder="Logo officiel 2024"
-              class="rounded-xl px-3 py-2 text-xs text-white w-44" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.2);" />
+              class="input-field text-xs w-44" />
           </div>
           <div>
-            <label class="block text-xs text-gray-400 mb-1">Image(s)</label>
+            <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Image(s)</label>
             <label class="cursor-pointer flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold" style="background:rgba(168,85,247,0.12); color:#d8b4fe; border:1px solid rgba(168,85,247,0.3);">
               <i class="fas fa-cloud-upload-alt"></i>
               <span>Choisir les fichiers</span>
@@ -1055,7 +1049,7 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
         </div>
         {/* Filtres par marque */}
         <div class="flex items-center gap-2 mb-4 flex-wrap">
-          <span class="text-xs text-gray-500">Filtrer :</span>
+          <span class="text-xs" style="color:var(--admin-text-muted)">Filtrer :</span>
           <button onclick="filterMediatheque('')" data-brand-filter="" class="brand-filter-btn text-xs px-2.5 py-1 rounded-lg font-semibold" style="background:rgba(168,85,247,0.2); color:#d8b4fe;">Toutes</button>
           {['LG', 'Samsung', 'Daikin', 'Midea', 'Panasonic', 'Gree', 'Hisense', 'TCL', 'Airwell', 'Carrier'].map(b => (
             <button onclick={`filterMediatheque('${b}')`} data-brand-filter={b} class="brand-filter-btn text-xs px-2.5 py-1 rounded-lg font-semibold" style="background:rgba(148,163,184,0.08); color:#94a3b8;">{b}</button>
@@ -1069,31 +1063,31 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
 
     {/* Modal affectation d'une image médiathèque à un produit */}
     <div id="assign-media-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.75); backdrop-filter:blur(4px);">
-      <div class="rounded-2xl p-6 w-full max-w-sm shadow-2xl" style="background:#111827; border:1px solid rgba(168,85,247,0.2);">
-        <h3 class="font-bold text-white mb-4 flex items-center gap-2">
+      <div class="rounded-2xl p-6 w-full max-w-sm shadow-2xl" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
+        <h3 class="font-bold mb-4 flex items-center gap-2" style="color:var(--admin-text-primary);">
           <i class="fas fa-link text-purple-400"></i>
           Affecter à un produit
         </h3>
         <div class="mb-4 flex justify-center">
-          <img id="assign-media-preview" src="" class="w-28 h-28 object-contain rounded-xl" style="background:#0a1628; border:1px solid rgba(148,163,184,0.1);" />
+          <img id="assign-media-preview" src="" class="w-28 h-28 object-contain rounded-xl" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);" />
         </div>
         <input type="hidden" id="assign-media-id" />
         <div class="mb-4">
-          <label class="block text-xs text-gray-400 mb-1">Produit cible</label>
-          <select id="assign-product-select" class="w-full rounded-xl px-3 py-2 text-xs text-white" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.2);">
+          <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Produit cible</label>
+          <select id="assign-product-select" class="w-full rounded-xl px-3 py-2 text-xs" style="background:var(--admin-card-bg); border:1px solid var(--admin-border); color:var(--admin-text-primary);">
             {products.map(p => <option value={String(p.id)}>{p.name} — {p.brand}</option>)}
           </select>
         </div>
         <div class="mb-5">
-          <label class="block text-xs text-gray-400 mb-2">Utiliser comme</label>
+          <label class="block text-xs mb-2" style="color:var(--admin-text-muted);">Utiliser comme</label>
           <div class="flex gap-4">
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="radio" name="assign-target" value="main" checked class="accent-purple-500" />
-              <span class="text-xs text-gray-300">Image principale</span>
+              <span class="text-xs" style="color:var(--admin-text-primary);">Image principale</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="radio" name="assign-target" value="gallery" class="accent-purple-500" />
-              <span class="text-xs text-gray-300">Galerie</span>
+              <span class="text-xs" style="color:var(--admin-text-primary);">Galerie</span>
             </label>
           </div>
         </div>
@@ -1290,17 +1284,17 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
     )}
 
     {/* Quick stock movement form */}
-    <div class="mb-6 rounded-xl p-4 flex flex-wrap items-end gap-3" style="background:rgba(15,23,42,0.5); border:1px solid rgba(148,163,184,0.1);">
+    <div class="mb-6 rounded-xl p-4 flex flex-wrap items-end gap-3" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
       <form method="post" action="/api/admin/stock/movement" class="flex flex-wrap items-end gap-3 w-full">
         <div>
-          <label class="block text-xs text-gray-400 mb-1">Produit</label>
-          <select name="product_id" required class="rounded-xl px-3 py-2 text-xs text-white" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.15);">
+          <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Produit</label>
+          <select name="product_id" required class="input-field text-xs">
             {products.map(p => <option value={p.id}>{p.name} (stock: {p.stock})</option>)}
           </select>
         </div>
         <div>
-          <label class="block text-xs text-gray-400 mb-1">Type</label>
-          <select name="type" class="rounded-xl px-3 py-2 text-xs text-white" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.15);">
+          <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Type</label>
+          <select name="type" class="input-field text-xs">
             <option value="entree">Entrée (+)</option>
             <option value="sortie">Sortie (-)</option>
             <option value="ajustement">Ajustement</option>
@@ -1308,12 +1302,12 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
           </select>
         </div>
         <div>
-          <label class="block text-xs text-gray-400 mb-1">Quantité (+/-)</label>
-          <input name="quantity" type="number" required class="w-24 rounded-xl px-3 py-2 text-xs text-white" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.15);" placeholder="ex: 5 ou -2" />
+          <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Quantité (+/-)</label>
+          <input name="quantity" type="number" required class="input-field text-xs w-24" placeholder="ex: 5 ou -2" />
         </div>
         <div class="flex-1 min-w-[120px]">
-          <label class="block text-xs text-gray-400 mb-1">Raison</label>
-          <input name="reason" class="w-full rounded-xl px-3 py-2 text-xs text-white" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.15);" placeholder="Réapprovisionnement, vente, etc." />
+          <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Raison</label>
+          <input name="reason" class="input-field text-xs w-full" placeholder="Réapprovisionnement, vente, etc." />
         </div>
         <button type="submit" class="btn-primary px-4 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-exchange-alt mr-1"></i>Enregistrer</button>
       </form>
@@ -1322,8 +1316,8 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
     {/* Stock movements history (loaded via JS) */}
     <div class="mb-6">
       <button onclick="toggleStockHistory()" class="text-xs text-cyan-400 hover:underline mb-2"><i class="fas fa-history mr-1"></i>Voir l'historique des mouvements de stock</button>
-      <div id="stock-history" class="hidden rounded-xl overflow-hidden" style="background:rgba(15,23,42,0.5); border:1px solid rgba(148,163,184,0.1);">
-        <div id="stock-history-content" class="p-4 text-xs text-gray-400">Chargement...</div>
+      <div id="stock-history" class="hidden rounded-xl overflow-hidden" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">
+        <div id="stock-history-content" class="p-4 text-xs" style="color:var(--admin-text-muted)">Chargement...</div>
       </div>
     </div>
     <script dangerouslySetInnerHTML={{__html: `
@@ -1348,11 +1342,11 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
             var typeLabels = {entree:'Entrée',sortie:'Sortie',ajustement:'Ajust.',vente:'Vente',retour:'Retour'};
             html += '<tr class="border-t border-gray-800/50">'
               + '<td class="py-2 px-3 text-gray-400">'+_esc((m.created_at||'').substring(0,16))+'</td>'
-              + '<td class="py-2 px-3 text-white">'+_esc(m.product_name||'#'+m.product_id)+'</td>'
+              + '<td class="py-2 px-3" style="color:var(--admin-text-primary)">'+_esc(m.product_name||'#'+m.product_id)+'</td>'
               + '<td class="py-2 px-3"><span style="color:'+(typeColors[m.movement_type]||'#94a3b8')+'">'+_esc(typeLabels[m.movement_type]||m.movement_type)+'</span></td>'
               + '<td class="py-2 px-3 font-mono '+(m.quantity>0?'text-green-400':'text-red-400')+'">'+(m.quantity>0?'+':'')+_esc(m.quantity)+'</td>'
               + '<td class="py-2 px-3 text-gray-500">'+_esc(m.stock_before)+'</td>'
-              + '<td class="py-2 px-3 text-white font-semibold">'+_esc(m.stock_after)+'</td>'
+              + '<td class="py-2 px-3 font-semibold" style="color:var(--admin-text-primary)">'+_esc(m.stock_after)+'</td>'
               + '<td class="py-2 px-3 text-gray-400">'+_esc(m.reason||'-')+'</td>'
               + '</tr>';
           });
@@ -1362,42 +1356,42 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
       }
     `}} />
 
-    <div class="rounded-2xl  card-shadow overflow-hidden" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+    <div class="rounded-2xl  card-shadow overflow-hidden" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
-          <thead class="border-b border-gray-700/50" style="background:#0e1726;">
+          <thead class="border-b" style="background:#f1f5f9;">
             <tr>
               {["Produit", "Marque", "BTU", "Prix", "Stock"].map(h => (
-                <th class="text-left py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                <th class="text-left py-4 px-4 text-xs font-semibold uppercase tracking-wider whitespace-nowrap" style="color: var(--admin-text-muted)">{h}</th>
               ))}
-              <th class="text-left py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap hidden lg:table-cell">Inverter</th>
-              <th class="text-left py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap hidden md:table-cell">Image</th>
-              <th class="text-left py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Actions</th>
+              <th class="text-left py-4 px-4 text-xs font-semibold uppercase tracking-wider whitespace-nowrap hidden lg:table-cell" style="color: var(--admin-text-muted)">Inverter</th>
+              <th class="text-left py-4 px-4 text-xs font-semibold uppercase tracking-wider whitespace-nowrap hidden md:table-cell" style="color: var(--admin-text-muted)">Image</th>
+              <th class="text-left py-4 px-4 text-xs font-semibold uppercase tracking-wider whitespace-nowrap" style="color: var(--admin-text-muted)">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-700/30" data-paginate="20">
+          <tbody class="divide-y" style="border-color: var(--admin-border)" data-paginate="20">
             {products.map(p => (
-              <tr class="hover:bg-cyan-900/10 transition-colors">
+              <tr class="hover:bg-[rgba(3,105,161,0.04)] transition-colors">
                 <td class="py-4 px-4">
                   <div class="flex items-center space-x-3 min-w-0">
                     {(p as any).imageUrl
-                      ? <img src={(p as any).imageUrl} alt={p.name} class="w-10 h-10 object-contain rounded-lg border flex-shrink-0" style="background:rgba(15,23,42,0.5); border-color:rgba(148,180,220,0.12);" />
+                      ? <img src={(p as any).imageUrl} alt={p.name} class="w-10 h-10 object-contain rounded-lg border flex-shrink-0" style="background:var(--admin-bg); border-color:var(--admin-border);" />
                       : <span class="text-2xl flex-shrink-0">{p.image}</span>
                     }
                     <div class="min-w-0">
-                      <div class="font-semibold text-gray-200 text-xs leading-tight truncate max-w-36">{p.name}</div>
-                      <div class="text-xs text-gray-500">{p.model}</div>
+                      <div class="font-semibold text-xs leading-tight truncate max-w-36" style="color: var(--admin-text-primary)">{p.name}</div>
+                      <div class="text-xs" style="color: var(--admin-text-muted)">{p.model}</div>
                     </div>
                   </div>
                 </td>
-                <td class="py-4 px-4 text-gray-400 text-xs font-medium whitespace-nowrap">{p.brand}</td>
-                <td class="py-4 px-4 text-gray-400 text-xs whitespace-nowrap">{p.btu.toLocaleString()}</td>
-                <td class="py-4 px-4 font-semibold text-gray-200 text-xs whitespace-nowrap">{p.price.toLocaleString()} F</td>
+                <td class="py-4 px-4 text-xs font-medium whitespace-nowrap" style="color: var(--admin-text-muted)">{p.brand}</td>
+                <td class="py-4 px-4 text-xs whitespace-nowrap" style="color: var(--admin-text-muted)">{p.btu.toLocaleString()}</td>
+                <td class="py-4 px-4 font-semibold text-xs whitespace-nowrap" style="color: var(--admin-text-primary)">{p.price.toLocaleString()} F</td>
                 <td class="py-4 px-4">
                   <form method="post" action="/api/admin/produit/stock" class="flex items-center space-x-2">
                     <input type="hidden" name="id" value={String(p.id)} />
                     <input type="number" name="stock" value={String(p.stock)} min="0" max="99"
-                      class={`w-16 border rounded-lg px-2 py-1.5 text-xs text-center font-bold focus:outline-none focus:border-blue-500 transition-colors ${p.stock === 0 ? 'border-red-500/40 text-red-400' : p.stock <= 3 ? 'border-orange-500/40 text-orange-400' : 'border-green-500/40 text-green-400'}`} style="background:rgba(15,23,42,0.7);" />
+                      class={`w-16 border rounded-lg px-2 py-1.5 text-xs text-center font-bold focus:outline-none focus:border-blue-500 transition-colors ${p.stock === 0 ? 'border-red-500/40 text-red-400' : p.stock <= 3 ? 'border-orange-500/40 text-orange-400' : 'border-green-500/40 text-green-400'}`} style="background:var(--admin-bg);" />
                     <button type="submit" class="text-xs text-blue-400 hover:text-blue-300 px-2 py-1.5 rounded-lg font-semibold transition-colors whitespace-nowrap" style="background:rgba(59,130,246,0.12);">MAJ</button>
                   </form>
                 </td>
@@ -1462,9 +1456,9 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
 
     {/* Modal ajout produit */}
     <div id="add-product-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div class="rounded-3xl p-4 sm:p-8 w-full max-w-xl shadow-2xl max-h-[90vh] overflow-y-auto" style="background:#111827; border:1px solid rgba(56,189,248,0.12);">
+      <div class="rounded-3xl p-4 sm:p-8 w-full max-w-xl shadow-2xl max-h-[90vh] overflow-y-auto" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
         <div class="flex items-center justify-between mb-6">
-          <h3 class="font-bold text-white text-lg">
+          <h3 class="font-bold text-lg" style="color:var(--admin-text-primary);">
             <i class="fas fa-plus-circle text-primary-600 mr-2"></i>Ajouter un produit
           </h3>
           <button onclick="document.getElementById('add-product-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-300 p-1">
@@ -1474,18 +1468,18 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
         <form method="post" action="/api/admin/produit/add" enctype="multipart/form-data" class="space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="sm:col-span-2">
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Nom du produit *</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Nom du produit *</label>
               <input type="text" name="name" required placeholder="Ex: Climatiseur Split Inverter 12000 BTU" class="input-field text-sm" />
             </div>
             <div class="sm:col-span-2">
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">
                 <i class="fas fa-image text-purple-500 mr-1"></i>Photo du produit
               </label>
               <div class="flex items-center space-x-3">
                 <label class="flex-1 cursor-pointer border-2 border-dashed rounded-xl p-3 text-center transition-all" style="border-color:rgba(168,85,247,0.3); background:transparent;" onmouseover="this.style.borderColor='rgba(168,85,247,0.5)'" onmouseout="this.style.borderColor='rgba(168,85,247,0.3)'">
                   <i class="fas fa-cloud-upload-alt text-purple-400 text-xl mb-1"></i>
                   <p class="text-xs text-purple-400 font-medium">Cliquer pour choisir une image</p>
-                  <p class="text-xs text-gray-500">JPG, PNG, WEBP (max 2 Mo)</p>
+                  <p class="text-xs" style="color:var(--admin-text-muted)">JPG, PNG, WEBP (max 2 Mo)</p>
                   <input type="file" name="image" accept="image/*" class="hidden"
                     onchange="const r=new FileReader();r.onload=e=>{document.getElementById('preview-img').src=e.target.result;document.getElementById('preview-img').classList.remove('hidden')};r.readAsDataURL(this.files[0])" />
                 </label>
@@ -1493,15 +1487,15 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
               </div>
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Marque *</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Marque *</label>
               <input type="text" name="brand" required placeholder="Ex: SAMSUNG, LG, DAIKIN" class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Modèle / Référence</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Modèle / Référence</label>
               <input type="text" name="model" placeholder="Ex: AR12TX..." class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Puissance BTU *</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Puissance BTU *</label>
               <select name="btu" required class="input-field text-sm">
                 <option value="9000">9 000 BTU</option>
                 <option value="12000" selected>12 000 BTU</option>
@@ -1511,35 +1505,35 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
               </select>
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Prix FCFA *</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Prix FCFA *</label>
               <input type="number" name="price" required min="0" placeholder="Ex: 280000" class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Stock initial *</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Stock initial *</label>
               <input type="number" name="stock" required min="0" value="0" class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Classe énergie</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Classe énergie</label>
               <select name="energy_class" class="input-field text-sm">
                 <option value="A">A</option><option value="A+">A+</option>
                 <option value="A++" selected>A++</option><option value="A+++">A+++</option>
               </select>
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Surface min m²</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Surface min m²</label>
               <input type="number" name="surface_min" min="1" placeholder="Ex: 15" class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Surface max m²</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Surface max m²</label>
               <input type="number" name="surface_max" min="1" placeholder="Ex: 25" class="input-field text-sm" />
             </div>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Description</label>
+            <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Description</label>
             <textarea name="description" rows={2} placeholder="Description technique du produit..." class="input-field text-sm resize-none"></textarea>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Mentions / Fonctionnalités</label>
+            <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Mentions / Fonctionnalités</label>
             <div id="features-add" class="space-y-2 mb-3">
               <input type="hidden" name="features_json" class="features-input" value="[]" />
               <div class="flex flex-wrap gap-2 mb-2" id="features-add-tags"></div>
@@ -1550,68 +1544,68 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
             </div>
           </div>
           {/* Caractéristiques techniques */}
-          <div class="pt-4" style="border-top:1px solid rgba(56,189,248,0.15);">
+          <div class="pt-4" style="border-top:1px solid var(--admin-border);">
             <button type="button" onclick="this.nextElementSibling.classList.toggle('hidden')"
-              class="w-full flex items-center justify-between text-sm font-semibold mb-3 focus:outline-none" style="color:#38bdf8;">
+              class="w-full flex items-center justify-between text-sm font-semibold mb-3 focus:outline-none" style="color:var(--admin-accent);">
               <span><i class="fas fa-microchip mr-2"></i>Caractéristiques techniques (optionnel)</span>
               <i class="fas fa-chevron-down text-xs"></i>
             </button>
             <div class="hidden">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Source de courant</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Source de courant</label>
                   <input type="text" name="power_source" placeholder="ex: 220V/1Ph/50Hz" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Capacité refroidissement</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Capacité refroidissement</label>
                   <input type="text" name="cooling_capacity" placeholder="ex: 3500 W" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Puissance refroid. entrée</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Puissance refroid. entrée</label>
                   <input type="text" name="cooling_input_power" placeholder="ex: 1150 W" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Courant nominal refroid.</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Courant nominal refroid.</label>
                   <input type="text" name="nominal_cooling_current" placeholder="ex: 5.5 A" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Max. Conso. entrée</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Max. Conso. entrée</label>
                   <input type="text" name="max_input_consumption" placeholder="ex: 1400 W" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Courant max</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Courant max</label>
                   <input type="text" name="max_current" placeholder="ex: 6.5 A" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Courant de démarrage</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Courant de démarrage</label>
                   <input type="text" name="starting_current" placeholder="ex: 45 A" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Type de compresseur</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Type de compresseur</label>
                   <input type="text" name="compressor_type" placeholder="ex: Rotatif" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Débit d'air intérieur</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Débit d'air intérieur</label>
                   <input type="text" name="indoor_airflow" placeholder="ex: 600 m³/h" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Bruit intérieur</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Bruit intérieur</label>
                   <input type="text" name="indoor_noise" placeholder="ex: 26-42 dB(A)" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Type de réfrigérant</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Type de réfrigérant</label>
                   <input type="text" name="refrigerant_type" placeholder="ex: R32" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Pression de conception</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Pression de conception</label>
                   <input type="text" name="design_pressure" placeholder="ex: 4.3/1.9 MPa" class="input-field text-sm" />
                 </div>
                 <div class="col-span-2">
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Température de fonctionnement</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Température de fonctionnement</label>
                   <input type="text" name="operating_temp" placeholder="ex: -15°C · 50°C" class="input-field text-sm" />
                 </div>
                 <div class="col-span-2">
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Température ambiante (refroid.)</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Température ambiante (refroid.)</label>
                   <input type="text" name="ambient_temp_cooling" placeholder="ex: 18°C · 43°C" class="input-field text-sm" />
                 </div>
               </div>
@@ -1644,16 +1638,16 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
           <div class="flex flex-wrap items-center gap-4">
             <label class="flex items-center space-x-2 cursor-pointer">
               <input type="checkbox" name="inverter" id="inverter-check" class="accent-blue-600 w-4 h-4" />
-              <span class="text-sm text-gray-300 font-medium">Technologie Inverter</span>
+              <span class="text-sm font-medium" style="color:var(--admin-text-primary);">Technologie Inverter</span>
             </label>
             <label class="flex items-center space-x-2 cursor-pointer">
               <input type="checkbox" name="available" id="available-check" checked class="accent-green-600 w-4 h-4" />
-              <span class="text-sm text-gray-300 font-medium">Disponible à la vente</span>
+              <span class="text-sm font-medium" style="color:var(--admin-text-primary);">Disponible à la vente</span>
             </label>
           </div>
           <div class="flex space-x-3 pt-2">
             <button type="button" onclick="document.getElementById('add-product-modal').classList.add('hidden')"
-              class="flex-1 border-2 border-gray-600 text-gray-400 font-semibold py-3 rounded-xl text-sm hover:bg-cyan-900/10 transition-colors">
+              class="flex-1 border-2 font-semibold py-3 rounded-xl text-sm hover:bg-cyan-900/10 transition-colors" style="border-color:var(--admin-border); color:var(--admin-text-muted);">
               Annuler
             </button>
             <button type="submit" class="flex-1 btn-primary font-semibold py-3 rounded-xl text-sm shadow-md">
@@ -1666,9 +1660,9 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
 
     {/* Modal Édition produit */}
     <div id="edit-product-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div class="rounded-3xl p-4 sm:p-8 w-full max-w-xl shadow-2xl max-h-[90vh] overflow-y-auto" style="background:#111827; border:1px solid rgba(56,189,248,0.12);">
+      <div class="rounded-3xl p-4 sm:p-8 w-full max-w-xl shadow-2xl max-h-[90vh] overflow-y-auto" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
         <div class="flex items-center justify-between mb-6">
-          <h3 class="font-bold text-white text-lg">
+          <h3 class="font-bold text-lg" style="color:var(--admin-text-primary);">
             <i class="fas fa-edit-circle text-primary-600 mr-2"></i>Modifier le produit
           </h3>
           <button onclick="document.getElementById('edit-product-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-300 p-1">
@@ -1679,19 +1673,19 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
           <input type="hidden" id="edit-id" name="id" />
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="sm:col-span-2">
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Nom du produit *</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Nom du produit *</label>
               <input type="text" id="edit-name" name="name" required placeholder="Ex: Climatiseur Split Inverter 12000 BTU" class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Marque *</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Marque *</label>
               <input type="text" id="edit-brand" name="brand" required placeholder="Ex: SAMSUNG" class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Modèle / Référence</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Modèle / Référence</label>
               <input type="text" id="edit-model" name="model" placeholder="Ex: AR12TX..." class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Puissance BTU *</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Puissance BTU *</label>
               <select id="edit-btu" name="btu" required class="input-field text-sm">
                 <option value="9000">9 000 BTU</option>
                 <option value="12000">12 000 BTU</option>
@@ -1701,35 +1695,35 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
               </select>
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Prix FCFA *</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Prix FCFA *</label>
               <input type="number" id="edit-price" name="price" required min="0" placeholder="Ex: 280000" class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Stock *</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Stock *</label>
               <input type="number" id="edit-stock" name="stock" required min="0" class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Classe énergie</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Classe énergie</label>
               <select id="edit-energy_class" name="energy_class" class="input-field text-sm">
                 <option value="A">A</option><option value="A+">A+</option>
                 <option value="A++">A++</option><option value="A+++">A+++</option>
               </select>
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Surface min m²</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Surface min m²</label>
               <input type="number" id="edit-surface_min" name="surface_min" min="1" class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Surface max m²</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Surface max m²</label>
               <input type="number" id="edit-surface_max" name="surface_max" min="1" class="input-field text-sm" />
             </div>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Description</label>
+            <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Description</label>
             <textarea id="edit-description" name="description" rows={2} placeholder="Description technique du produit..." class="input-field text-sm resize-none"></textarea>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Mentions / Fonctionnalités</label>
+            <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Mentions / Fonctionnalités</label>
             <div id="features-edit" class="space-y-2 mb-3">
               <input type="hidden" name="features_json" class="features-input" value="[]" />
               <div class="flex flex-wrap gap-2 mb-2" id="features-edit-tags"></div>
@@ -1749,59 +1743,59 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
             <div class="hidden">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Source de courant</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Source de courant</label>
                   <input type="text" id="edit-power_source" name="power_source" placeholder="ex: 220V/1Ph/50Hz" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Capacité refroidissement</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Capacité refroidissement</label>
                   <input type="text" id="edit-cooling_capacity" name="cooling_capacity" placeholder="ex: 3500 W" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Puissance refroid. entrée</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Puissance refroid. entrée</label>
                   <input type="text" id="edit-cooling_input_power" name="cooling_input_power" placeholder="ex: 1150 W" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Courant nominal refroid.</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Courant nominal refroid.</label>
                   <input type="text" id="edit-nominal_cooling_current" name="nominal_cooling_current" placeholder="ex: 5.5 A" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Max. Conso. entrée</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Max. Conso. entrée</label>
                   <input type="text" id="edit-max_input_consumption" name="max_input_consumption" placeholder="ex: 1400 W" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Courant max</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Courant max</label>
                   <input type="text" id="edit-max_current" name="max_current" placeholder="ex: 6.5 A" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Courant de démarrage</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Courant de démarrage</label>
                   <input type="text" id="edit-starting_current" name="starting_current" placeholder="ex: 45 A" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Type de compresseur</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Type de compresseur</label>
                   <input type="text" id="edit-compressor_type" name="compressor_type" placeholder="ex: Rotatif" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Débit d'air intérieur</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Débit d'air intérieur</label>
                   <input type="text" id="edit-indoor_airflow" name="indoor_airflow" placeholder="ex: 600 m³/h" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Bruit intérieur</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Bruit intérieur</label>
                   <input type="text" id="edit-indoor_noise" name="indoor_noise" placeholder="ex: 26-42 dB(A)" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Type de réfrigérant</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Type de réfrigérant</label>
                   <input type="text" id="edit-refrigerant_type" name="refrigerant_type" placeholder="ex: R32" class="input-field text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Pression de conception</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Pression de conception</label>
                   <input type="text" id="edit-design_pressure" name="design_pressure" placeholder="ex: 4.3/1.9 MPa" class="input-field text-sm" />
                 </div>
                 <div class="col-span-2">
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Température de fonctionnement</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Température de fonctionnement</label>
                   <input type="text" id="edit-operating_temp" name="operating_temp" placeholder="ex: -15°C · 50°C" class="input-field text-sm" />
                 </div>
                 <div class="col-span-2">
-                  <label class="block text-xs font-semibold text-gray-400 mb-1">Température ambiante (refroid.)</label>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--admin-text-muted);">Température ambiante (refroid.)</label>
                   <input type="text" id="edit-ambient_temp_cooling" name="ambient_temp_cooling" placeholder="ex: 18°C · 43°C" class="input-field text-sm" />
                 </div>
               </div>
@@ -2154,18 +2148,18 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
 
     {/* ===== MODAL GALERIE PRODUIT ===== */}
     <div id="gallery-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.75); backdrop-filter:blur(4px);">
-      <div class="w-full max-w-2xl rounded-2xl p-6 shadow-2xl" style="background:#111827; border:1px solid rgba(14,165,233,0.2);">
+      <div class="w-full max-w-2xl rounded-2xl p-6 shadow-2xl" style="background:var(--admin-card-bg); border:1px solid rgba(14,165,233,0.2);">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="font-bold text-white text-lg flex items-center gap-2">
-            <i class="fas fa-images" style="color:#38bdf8;"></i>
+          <h3 class="font-bold text-lg flex items-center gap-2" style="color:var(--admin-text-primary);">
+            <i class="fas fa-images" style="color:var(--admin-accent);"></i>
             <span>Galerie photos — <span id="gallery-modal-name"></span></span>
           </h3>
-          <button type="button" onclick="closeGalleryModal()" class="text-gray-400 hover:text-white text-xl">&times;</button>
+          <button type="button" onclick="closeGalleryModal()" class="text-xl" style="color:var(--admin-text-muted);">&times;</button>
         </div>
         <label class="cursor-pointer block border-2 border-dashed rounded-xl p-4 text-center hover:border-cyan-400 transition-all mb-4" style="border-color:rgba(14,165,233,0.3);">
           <i class="fas fa-cloud-upload-alt text-cyan-400 text-2xl mb-1"></i>
           <p class="text-sm text-cyan-400 font-semibold">Cliquer pour ajouter des photos</p>
-          <p class="text-xs text-gray-400 mt-0.5">JPG, PNG, WebP — max 5 MB chacune — plusieurs fichiers acceptés</p>
+          <p class="text-xs mt-0.5" style="color:var(--admin-text-muted)">JPG, PNG, WebP — max 5 MB chacune — plusieurs fichiers acceptés</p>
           <input type="file" id="gallery-file-input" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(this)" />
         </label>
         <div id="gallery-uploading" class="hidden mb-3 text-xs text-cyan-400 text-center">
@@ -2278,13 +2272,13 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
     {/* Import en masse — Produits (tableur quelconque) */}
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <div id="modal-import-masse" class="hidden fixed inset-0 bg-black/60 z-50 items-center justify-center p-4">
-      <div class="w-full max-w-6xl rounded-2xl p-6 shadow-2xl max-h-[88vh] overflow-y-auto" style="background:#111827; border:1px solid rgba(168,85,247,0.15);">
+      <div class="w-full max-w-6xl rounded-2xl p-6 shadow-2xl max-h-[88vh] overflow-y-auto" style="background:var(--admin-card-bg); border:1px solid rgba(168,85,247,0.15);">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+          <h2 class="text-lg font-semibold flex items-center gap-2" style="color:var(--admin-text-primary);">
             <span class="h-2 w-2 rounded-full bg-purple-400"></span>
             Import en masse — Produits
           </h2>
-          <button id="btn-fermer-import-masse" class="text-gray-400 hover:text-white text-xl">&times;</button>
+          <button id="btn-fermer-import-masse" class="text-xl" style="color:var(--admin-text-muted);">&times;</button>
         </div>
 
         <ol class="flex flex-wrap items-center gap-2 mb-5 text-xs">
@@ -2297,15 +2291,15 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
         {/* Étape 1 — fichier */}
         <section data-etape="1">
           <div id="zone-depot" class="rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition-colors" style="border-color:rgba(168,85,247,0.3);">
-            <p class="text-gray-300 text-sm mb-1">Glisse ton fichier <span class="text-white font-medium">.xlsx</span>, <span class="text-white font-medium">.xls</span> ou <span class="text-white font-medium">.csv</span> ici, ou clique pour parcourir</p>
-            <p class="text-gray-500 text-xs">N'importe quel tableau fournisseur convient : les colonnes sont reconnues automatiquement, aucun format n'est imposé.</p>
+            <p class="text-sm mb-1" style="color:var(--admin-text-primary)">Glisse ton fichier <span class="font-medium" style="color:var(--admin-accent)">.xlsx</span>, <span class="font-medium" style="color:var(--admin-accent)">.xls</span> ou <span class="font-medium" style="color:var(--admin-accent)">.csv</span> ici, ou clique pour parcourir</p>
+            <p class="text-xs" style="color:var(--admin-text-muted)">N'importe quel tableau fournisseur convient : les colonnes sont reconnues automatiquement, aucun format n'est imposé.</p>
             <input id="input-fichier" type="file" accept=".xlsx,.xls,.csv" class="hidden" />
           </div>
           <div class="mt-3 flex items-center justify-between gap-3 flex-wrap">
             <button id="btn-modele" type="button" class="text-xs text-purple-300 hover:text-purple-200 underline">Télécharger un modèle (simple commodité)</button>
             <div id="choix-feuille" class="hidden text-xs text-gray-400 flex items-center gap-2">
               <label for="select-feuille">Feuille :</label>
-              <select id="select-feuille" class="rounded-lg px-2 py-1 text-xs text-white" style="background:#0b1220; border:1px solid rgba(148,163,184,0.2);"></select>
+              <select id="select-feuille" class="input-field text-xs w-auto"></select>
             </div>
           </div>
           <div id="etat-lecture" class="hidden mt-4 rounded-xl p-3 text-xs"></div>
@@ -2317,13 +2311,13 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
             <p class="text-xs text-gray-400 max-w-md">Voici ce que le système a compris de chaque colonne. Corrige si besoin — toute modification relance l'analyse.</p>
             <div class="text-xs text-gray-400 flex items-center gap-2">
               <label for="input-entete">Ligne d'en-tête :</label>
-              <input id="input-entete" type="number" min="0" class="w-20 rounded-lg px-2 py-1 text-xs text-white" style="background:#0b1220; border:1px solid rgba(148,163,184,0.2);" />
+              <input id="input-entete" type="number" min="0" class="input-field text-xs w-20" />
               <span class="text-gray-600">0 = aucune</span>
             </div>
           </div>
           <div class="max-h-80 overflow-auto rounded-xl" style="border:1px solid rgba(148,163,184,0.15);">
             <table class="w-full text-xs text-left">
-              <thead class="text-gray-500 sticky top-0" style="background:rgba(15,23,42,0.95);">
+              <thead class="sticky top-0" style="background:#f1f5f9; color: var(--admin-text-muted)">
                 <tr>
                   <th class="px-3 py-2">Colonne du fichier</th>
                   <th class="px-3 py-2">Exemples</th>
@@ -2331,12 +2325,12 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
                   <th class="px-3 py-2">Détection</th>
                 </tr>
               </thead>
-              <tbody id="tbody-mapping" class="divide-y divide-gray-700/30 text-gray-200"></tbody>
+              <tbody id="tbody-mapping" class="divide-y" style="border-color: var(--admin-border); color: var(--admin-text-primary)"></tbody>
             </table>
           </div>
           <div id="alertes-analyse" class="mt-3 space-y-1 text-xs"></div>
           <div class="mt-4 flex items-center justify-end gap-3">
-            <button id="btn-retour-1" class="rounded-xl px-4 py-2 text-sm text-gray-300 hover:text-white">Retour</button>
+            <button id="btn-retour-1" class="rounded-xl px-4 py-2 text-sm" style="color:var(--admin-text-muted)">Retour</button>
             <button id="btn-vers-apercu" class="rounded-xl bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500">Voir l'aperçu</button>
           </div>
         </section>
@@ -2353,7 +2347,7 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
             </div>
             <div class="flex items-center gap-2">
               <label for="select-strategie">Produit déjà au catalogue :</label>
-              <select id="select-strategie" class="rounded-lg px-2 py-1 text-xs text-white" style="background:#0b1220; border:1px solid rgba(148,163,184,0.2);">
+              <select id="select-strategie" class="input-field text-xs w-auto">
                 <option value="maj">Mettre à jour la fiche</option>
                 <option value="ignorer">Laisser inchangée</option>
                 <option value="creer">Créer une fiche de plus</option>
@@ -2362,7 +2356,7 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
           </div>
           <div class="max-h-80 overflow-auto rounded-xl" style="border:1px solid rgba(148,163,184,0.15);">
             <table class="w-full text-xs text-left whitespace-nowrap">
-              <thead class="text-gray-500 sticky top-0" style="background:rgba(15,23,42,0.95);">
+              <thead class="sticky top-0" style="background:#f1f5f9; color: var(--admin-text-muted)">
                 <tr>
                   <th class="px-3 py-2">Ligne</th>
                   <th class="px-3 py-2">Nom</th>
@@ -2385,7 +2379,7 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
                   <th class="px-3 py-2">État</th>
                 </tr>
               </thead>
-              <tbody id="tbody-apercu" class="divide-y divide-gray-700/30 text-gray-200"></tbody>
+              <tbody id="tbody-apercu" class="divide-y" style="border-color: var(--admin-border); color: var(--admin-text-primary)"></tbody>
             </table>
           </div>
           <div id="barre-progression" class="hidden mt-3">
@@ -2395,7 +2389,7 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
             <p id="texte-progression" class="mt-1 text-xs text-gray-400"></p>
           </div>
           <div class="mt-4 flex items-center justify-end gap-3">
-            <button id="btn-retour-2" class="rounded-xl px-4 py-2 text-sm text-gray-300 hover:text-white">Retour</button>
+            <button id="btn-retour-2" class="rounded-xl px-4 py-2 text-sm" style="color:var(--admin-text-muted)">Retour</button>
             <button id="btn-confirmer-import" class="rounded-xl bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed">Confirmer l'import</button>
           </div>
         </section>
@@ -2405,7 +2399,7 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
           <div id="zone-resultat" class="rounded-xl p-4 text-sm"></div>
           <div id="detail-resultat" class="mt-3 max-h-64 overflow-auto text-xs text-gray-300 space-y-1"></div>
           <div class="mt-4 flex items-center justify-end gap-3">
-            <button id="btn-nouvel-import" class="rounded-xl px-4 py-2 text-sm text-gray-300 hover:text-white">Importer un autre fichier</button>
+            <button id="btn-nouvel-import" class="rounded-xl px-4 py-2 text-sm" style="color:var(--admin-text-muted)">Importer un autre fichier</button>
             <button id="btn-terminer-import" class="rounded-xl bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500">Terminer</button>
           </div>
         </section>
@@ -3029,7 +3023,7 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
     <AdminLayout activePage="rdv">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h2 class="text-xl font-bold text-white">Gestion des rendez-vous</h2>
+          <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">Gestion des rendez-vous</h2>
           <p class="text-sm text-gray-500 mt-1">{filtered.length} rendez-vous · {appointments.filter(a => a.status === 'pending').length} en attente</p>
         </div>
         <div class="flex flex-wrap gap-2 items-center">
@@ -3049,7 +3043,7 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
             { s: 'done', label: 'Effectués', count: appointments.filter(a => a.status === 'done').length }
           ].map(f => (
             <a href={`/admin/rdv${f.s ? '?status=' + f.s : ''}`}
-              class={`text-xs px-3 py-1.5 rounded-xl font-medium border transition-colors flex items-center space-x-1.5 ${(filterStatus || '') === f.s ? 'bg-primary-600 text-white border-primary-600' : 'border-gray-700 text-gray-400 hover:bg-cyan-900/10'}`} style={(filterStatus || '') !== f.s ? 'background:rgba(15,23,42,0.5);' : ''}>
+              class={`text-xs px-3 py-1.5 rounded-xl font-medium border transition-colors flex items-center space-x-1.5 ${(filterStatus || '') === f.s ? 'bg-primary-600 text-white border-primary-600' : 'border-gray-200 text-gray-600 hover:bg-[rgba(3,105,161,0.04)]'}`} style={(filterStatus || '') !== f.s ? 'background:var(--admin-bg);' : ''}>
               <span>{f.label}</span>
               {f.count > 0 && <span class={`text-xs rounded-full w-4 h-4 flex items-center justify-center ${(filterStatus || '') === f.s ? 'bg-white text-primary-600' : ''}`} style={(filterStatus || '') !== f.s ? 'background:rgba(148,180,220,0.1);' : ''}>{f.count}</span>}
             </a>
@@ -3077,12 +3071,12 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
 
       {/* VUE CALENDRIER */}
       <div id="rdv-calendar-view" class="hidden mb-6">
-        <div class="rounded-2xl card-shadow overflow-hidden" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+        <div class="rounded-2xl card-shadow overflow-hidden" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
           <div class="p-4 flex items-center justify-between" style="border-bottom:1px solid rgba(148,163,184,0.08);">
             <button onclick="changeCalendarMonth(-1)" class="px-3 py-1.5 rounded-lg text-sm font-medium" style="background:rgba(59,130,246,0.1); color:#60a5fa;">
               <i class="fas fa-chevron-left"></i>
             </button>
-            <h3 id="calendar-month-label" class="text-lg font-bold text-white"></h3>
+            <h3 id="calendar-month-label" class="text-lg font-bold" style="color:var(--admin-text-primary);"></h3>
             <button onclick="changeCalendarMonth(1)" class="px-3 py-1.5 rounded-lg text-sm font-medium" style="background:rgba(59,130,246,0.1); color:#60a5fa;">
               <i class="fas fa-chevron-right"></i>
             </button>
@@ -3090,28 +3084,28 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
           <div class="p-4">
             <div class="grid grid-cols-7 gap-1 mb-2">
               {['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].map(d => (
-                <div class="text-center text-xs font-bold text-gray-500 py-2">{d}</div>
+                <div class="text-center text-xs font-bold py-2" style="color:var(--admin-text-muted)">{d}</div>
               ))}
             </div>
             <div id="calendar-grid" class="grid grid-cols-7 gap-1"></div>
           </div>
         </div>
         {/* Détail du jour sélectionné */}
-        <div id="calendar-day-detail" class="hidden mt-4 rounded-2xl card-shadow p-5" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
-          <h4 id="calendar-day-label" class="font-bold text-white mb-3"></h4>
+        <div id="calendar-day-detail" class="hidden mt-4 rounded-2xl card-shadow p-5" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
+          <h4 id="calendar-day-label" class="font-bold mb-3" style="color:var(--admin-text-primary);"></h4>
           <div id="calendar-day-rdvs" class="space-y-2"></div>
         </div>
       </div>
 
       {filtered.length === 0 ? (
-        <div id="rdv-list-view" class="rounded-2xl  p-12 text-center card-shadow" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+        <div id="rdv-list-view" class="rounded-2xl  p-12 text-center card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
           <i class="fas fa-calendar-times text-3xl text-gray-300 mb-3"></i>
           <p class="text-gray-400">Aucun rendez-vous dans cette catégorie</p>
         </div>
       ) : (
         <div id="rdv-list-view" class="space-y-4">
           {filtered.map(a => (
-            <div class="rdv-card rounded-2xl p-5 card-shadow" data-search={`${a.name} ${a.phone} ${a.quartier}`.toLowerCase()} style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+            <div class="rdv-card rounded-2xl p-5 card-shadow" data-search={`${a.name} ${a.phone} ${a.quartier}`.toLowerCase()} style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
               <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex items-start space-x-4">
                   <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{
@@ -3124,7 +3118,7 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
                   </div>
                   <div>
                     <div class="flex items-center space-x-2 mb-1">
-                      <h4 class="font-bold text-white cursor-pointer hover:text-blue-300 transition-colors" onclick={`showRdvDetailById(${a.id})`} title="Voir détails client">{a.name} <i class="fas fa-eye text-xs text-blue-400 ml-1"></i></h4>
+                      <h4 class="font-bold cursor-pointer transition-colors" onclick={`showRdvDetailById(${a.id})`} title="Voir détails client">{a.name} <i class="fas fa-eye text-xs text-blue-400 ml-1"></i></h4>
                       <span class={`text-xs px-2 py-0.5 rounded-full font-semibold ${a.status === 'pending' ? 'badge-pending' : a.status === 'confirmed' ? 'badge-confirmed' : 'badge-done'}`}>
                         {a.status === 'pending' ? 'En attente' : a.status === 'confirmed' ? 'Confirmé' : 'Effectué'}
                       </span>
@@ -3183,41 +3177,41 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
 
       {/* Modal ajout RDV */}
       <div id="add-rdv-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-        <div class="rounded-3xl p-4 sm:p-8 w-full max-w-xl shadow-2xl my-8 max-h-[90vh] overflow-y-auto" style="background:#111827; border:1px solid rgba(56,189,248,0.12);">
+        <div class="rounded-3xl p-4 sm:p-8 w-full max-w-xl shadow-2xl my-8 max-h-[90vh] overflow-y-auto" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
           <div class="flex items-center justify-between mb-6">
-            <h3 class="font-bold text-white text-lg">Ajouter un rendez-vous</h3>
-            <button onclick="document.getElementById('add-rdv-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-300 p-1">
+            <h3 class="font-bold text-lg" style="color:var(--admin-text-primary);">Ajouter un rendez-vous</h3>
+            <button onclick="document.getElementById('add-rdv-modal').classList.add('hidden')" class="p-1" style="color:var(--admin-text-muted);">
               <i class="fas fa-times text-xl"></i>
             </button>
           </div>
           <form method="post" action="/api/admin/rdv/add" class="space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="sm:col-span-2">
-                <label class="block text-xs font-semibold text-gray-400 mb-1.5">Nom client *</label>
+                <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Nom client *</label>
                 <input type="text" name="name" required placeholder="Ex: Moussa Traoré" class="input-field text-sm" />
               </div>
               <div>
-                <label class="block text-xs font-semibold text-gray-400 mb-1.5">Téléphone (Whatsapp) *</label>
+                <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Téléphone (Whatsapp) *</label>
                 <input type="tel" name="phone" required placeholder="+226 XX XX XX XX" class="input-field text-sm" />
               </div>
               <div>
-                <label class="block text-xs font-semibold text-gray-400 mb-1.5">Quartier *</label>
+                <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Quartier *</label>
                 <input type="text" name="quartier" required placeholder="Ex: Paspanga" class="input-field text-sm" />
               </div>
               <div>
-                <label class="block text-xs font-semibold text-gray-400 mb-1.5">Date *</label>
+                <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Date *</label>
                 <input type="date" name="date" required class="input-field text-sm" />
               </div>
               <div>
-                <label class="block text-xs font-semibold text-gray-400 mb-1.5">Heure début</label>
+                <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Heure début</label>
                 <input type="time" name="heure_debut" value="08:00" class="input-field text-sm" />
               </div>
               <div>
-                <label class="block text-xs font-semibold text-gray-400 mb-1.5">Heure fin</label>
+                <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Heure fin</label>
                 <input type="time" name="heure_fin" value="18:00" class="input-field text-sm" />
               </div>
               <div>
-                <label class="block text-xs font-semibold text-gray-400 mb-1.5">Type *</label>
+                <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Type *</label>
                 <select name="type" required class="input-field text-sm">
                   <option value="devis">Devis / Dimensionnement</option>
                   <option value="installation">Installation</option>
@@ -3226,15 +3220,15 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
                 </select>
               </div>
               <div>
-                <label class="block text-xs font-semibold text-gray-400 mb-1.5">Latitude</label>
+                <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Latitude</label>
                 <input type="number" name="latitude" step="0.0001" placeholder="12.3656" class="input-field text-sm" />
               </div>
               <div>
-                <label class="block text-xs font-semibold text-gray-400 mb-1.5">Longitude</label>
+                <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Longitude</label>
                 <input type="number" name="longitude" step="0.0001" placeholder="-1.5197" class="input-field text-sm" />
               </div>
               <div class="sm:col-span-2">
-                <label class="block text-xs font-semibold text-gray-400 mb-1.5">Notes</label>
+                <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Notes</label>
                 <textarea name="notes" placeholder="Remarques complémentaires..." class="input-field text-sm" rows={3}></textarea>
               </div>
             </div>
@@ -3246,9 +3240,9 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
       </div>
       {/* Modal Détail RDV */}
       <div id="rdv-detail-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-        <div class="rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto" style="background:#111827; border:1px solid rgba(56,189,248,0.2);">
-          <div class="flex items-center justify-between px-4 sm:px-6 py-4" style="background:rgba(59,130,246,0.1); border-bottom:1px solid rgba(56,189,248,0.15);">
-            <h3 class="font-bold text-white text-base sm:text-lg flex items-center space-x-2">
+        <div class="rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
+          <div class="flex items-center justify-between px-4 sm:px-6 py-4" style="border-bottom:1px solid var(--admin-border);">
+            <h3 class="font-bold text-base sm:text-lg flex items-center space-x-2" style="color:var(--admin-text-primary);">
               <i class="fas fa-calendar-alt text-blue-400"></i>
               <span>Détails du rendez-vous</span>
             </h3>
@@ -3260,51 +3254,51 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
             <div class="flex items-center space-x-4">
               <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold flex-shrink-0" style="background:rgba(59,130,246,0.2); color:#60a5fa;" id="rdv-detail-avatar"></div>
               <div>
-                <div class="text-lg font-bold text-white" id="rdv-detail-name"></div>
-                <div class="text-sm text-blue-300" id="rdv-detail-type"></div>
+                <div class="text-lg font-bold" style="color:var(--admin-text-primary);" id="rdv-detail-name"></div>
+                <div class="text-sm" style="color:var(--admin-accent);" id="rdv-detail-type"></div>
               </div>
               <div class="ml-auto" id="rdv-detail-badge"></div>
             </div>
             <div class="grid grid-cols-2 gap-3">
-              <div class="rounded-xl p-3" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,180,220,0.1);">
-                <div class="text-xs text-gray-500 mb-1"><i class="fas fa-phone mr-1"></i>Téléphone (Whatsapp)</div>
-                <div class="text-sm font-semibold text-gray-200" id="rdv-detail-phone"></div>
+              <div class="rounded-xl p-3" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
+                <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-phone mr-1"></i>Téléphone (Whatsapp)</div>
+                <div class="text-sm font-semibold" style="color:var(--admin-text-primary);" id="rdv-detail-phone"></div>
               </div>
-              <div class="rounded-xl p-3" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,180,220,0.1);">
-                <div class="text-xs text-gray-500 mb-1"><i class="fas fa-map-marker-alt mr-1"></i>Quartier</div>
-                <div class="text-sm font-semibold text-gray-200" id="rdv-detail-quartier"></div>
+              <div class="rounded-xl p-3" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
+                <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-map-marker-alt mr-1"></i>Quartier</div>
+                <div class="text-sm font-semibold" style="color:var(--admin-text-primary);" id="rdv-detail-quartier"></div>
               </div>
-              <div class="rounded-xl p-3" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,180,220,0.1);">
-                <div class="text-xs text-gray-500 mb-1"><i class="fas fa-calendar mr-1"></i>Date</div>
-                <div class="text-sm font-semibold text-gray-200" id="rdv-detail-date"></div>
+              <div class="rounded-xl p-3" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
+                <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-calendar mr-1"></i>Date</div>
+                <div class="text-sm font-semibold" style="color:var(--admin-text-primary);" id="rdv-detail-date"></div>
               </div>
-              <div class="rounded-xl p-3" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,180,220,0.1);">
-                <div class="text-xs text-gray-500 mb-1"><i class="fas fa-clock mr-1"></i>Horaire</div>
-                <div class="text-sm font-semibold text-gray-200" id="rdv-detail-heure"></div>
+              <div class="rounded-xl p-3" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
+                <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-clock mr-1"></i>Horaire</div>
+                <div class="text-sm font-semibold text-gray-200" style="color:var(--admin-text-primary);" id="rdv-detail-heure"></div>
               </div>
-              <div class="rounded-xl p-3" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,180,220,0.1);">
-                <div class="text-xs text-gray-500 mb-1"><i class="fas fa-globe mr-1"></i>Localisation GPS</div>
-                <div class="text-sm font-semibold text-gray-200" id="rdv-detail-gps"></div>
+              <div class="rounded-xl p-3" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
+                <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-globe mr-1"></i>Localisation GPS</div>
+                <div class="text-sm font-semibold text-gray-200" style="color:var(--admin-text-primary);" id="rdv-detail-gps"></div>
               </div>
-              <div class="rounded-xl p-3" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,180,220,0.1);">
-                <div class="text-xs text-gray-500 mb-1"><i class="fas fa-calendar-plus mr-1"></i>Créé le</div>
-                <div class="text-sm font-semibold text-gray-200" id="rdv-detail-created"></div>
+              <div class="rounded-xl p-3" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
+                <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-calendar-plus mr-1"></i>Créé le</div>
+                <div class="text-sm font-semibold" style="color:var(--admin-text-primary);" id="rdv-detail-created"></div>
               </div>
             </div>
-            <div id="rdv-detail-adresse-row" class="rounded-xl p-3 hidden" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,180,220,0.1);">
-              <div class="text-xs text-gray-500 mb-1"><i class="fas fa-home mr-1"></i>Adresse précise</div>
-              <div class="text-sm font-semibold text-gray-200" id="rdv-detail-adresse"></div>
+            <div id="rdv-detail-adresse-row" class="rounded-xl p-3 hidden" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
+              <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-home mr-1"></i>Adresse précise</div>
+              <div class="text-sm font-semibold" style="color:var(--admin-text-primary);" id="rdv-detail-adresse"></div>
             </div>
-            <div id="rdv-detail-notes-row" class="rounded-xl p-3 hidden" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,180,220,0.1);">
-              <div class="text-xs text-gray-500 mb-1"><i class="fas fa-sticky-note mr-1"></i>Notes</div>
+            <div id="rdv-detail-notes-row" class="rounded-xl p-3 hidden" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
+              <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-sticky-note mr-1"></i>Notes</div>
               <div class="text-sm text-gray-300 italic" id="rdv-detail-notes"></div>
             </div>
 
             {/* Fiche client section */}
-            <div id="rdv-client-section" class="rounded-2xl overflow-hidden" style="border:1px solid rgba(56,189,248,0.18);">
-              <div class="flex items-center justify-between px-4 py-2.5" style="background:rgba(56,189,248,0.08); border-bottom:1px solid rgba(56,189,248,0.12);">
-                <span class="text-xs font-bold text-cyan-400"><i class="fas fa-user-circle mr-2"></i>Fiche client</span>
-                <span id="rdv-client-status" class="text-xs text-gray-500">Chargement...</span>
+            <div id="rdv-client-section" class="rounded-2xl overflow-hidden" style="border:1px solid var(--admin-border);">
+              <div class="flex items-center justify-between px-4 py-2.5" style="background:var(--admin-accent-light); border-bottom:1px solid var(--admin-border);">
+                <span class="text-xs font-bold" style="color:var(--admin-accent);"><i class="fas fa-user-circle mr-2"></i>Fiche client</span>
+                <span id="rdv-client-status" class="text-xs" style="color:var(--admin-text-muted)">Chargement...</span>
               </div>
               <div id="rdv-client-body" class="p-4 space-y-3">
                 <div class="flex justify-center py-2"><i class="fas fa-spinner fa-spin text-gray-500 text-lg"></i></div>
@@ -3384,15 +3378,15 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
           var html = '';
           // Empty cells before 1st
           for (var i = 0; i < startOffset; i++) {
-            html += '<div class="p-2 rounded-lg min-h-[60px]" style="background:rgba(15,23,42,0.3);"></div>';
+            html += '<div class="p-2 rounded-lg min-h-[60px]" style="background:var(--admin-bg-elevated);"></div>';
           }
           for (var d = 1; d <= daysInMonth; d++) {
             var isToday = (d === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear());
             var count = rdvByDay[d] ? rdvByDay[d].length : 0;
             var pending = rdvByDay[d] ? rdvByDay[d].filter(function(r){return r.status==='pending'}).length : 0;
-            var bgStyle = isToday ? 'background:rgba(59,130,246,0.15); border:2px solid rgba(59,130,246,0.4);' : count > 0 ? 'background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2);' : 'background:rgba(15,23,42,0.4); border:1px solid rgba(148,163,184,0.05);';
+            var bgStyle = isToday ? 'background:rgba(3,105,161,0.08); border:2px solid rgba(3,105,161,0.3);' : count > 0 ? 'background:rgba(5,150,105,0.06); border:1px solid rgba(5,150,105,0.2);' : 'background:var(--admin-bg); border:1px solid var(--admin-border);';
             html += '<div class="p-2 rounded-lg min-h-[60px] cursor-pointer hover:scale-105 transition-transform" style="' + bgStyle + '" onclick="showCalendarDay(' + d + ')">';
-            html += '<div class="text-xs font-bold ' + (isToday ? 'text-blue-400' : 'text-gray-400') + '">' + d + '</div>';
+            html += '<div class="text-xs font-bold ' + (isToday ? 'text-blue-500' : '') + '" style="' + (isToday ? '' : 'color:var(--admin-text-muted)') + '">' + d + '</div>';
             if (count > 0) {
               html += '<div class="mt-1">';
               if (pending > 0) html += '<div class="text-[10px] px-1.5 py-0.5 rounded-full font-bold mb-0.5" style="background:rgba(251,191,36,0.15); color:#fbbf24;">' + pending + ' attente</div>';
@@ -3422,10 +3416,10 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
             container.innerHTML = rdvs.map(function(r) {
               var statusColor = r.status === 'pending' ? 'color:#fbbf24' : r.status === 'confirmed' ? 'color:#34d399' : 'color:#60a5fa';
               var statusLabel = r.status === 'pending' ? 'En attente' : r.status === 'confirmed' ? 'Confirmé' : 'Effectué';
-              return '<div class="flex items-center justify-between p-3 rounded-xl" style="background:rgba(15,23,42,0.5); border:1px solid rgba(148,163,184,0.1);">' +
-                '<div><span class="font-semibold text-white text-sm">' + _esc(r.name) + '</span>' +
-                '<span class="text-xs text-gray-500 ml-2">' + _esc(r.heure_debut || '') + (r.heure_fin ? '–' + _esc(r.heure_fin) : '') + '</span>' +
-                '<div class="text-xs text-gray-500 mt-0.5"><i class="fas fa-map-marker-alt mr-1"></i>' + _esc(r.quartier || '') + ' · ' + _esc({devis:'Devis',installation:'Installation',entretien:'Entretien',depannage:'Dépannage'}[r.type] || r.type) + '</div></div>' +
+              return '<div class="flex items-center justify-between p-3 rounded-xl" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">' +
+                '<div><span class="font-semibold text-sm" style="color:var(--admin-text-primary)">' + _esc(r.name) + '</span>' +
+                '<span class="text-xs ml-2" style="color:var(--admin-text-muted)">' + _esc(r.heure_debut || '') + (r.heure_fin ? '–' + _esc(r.heure_fin) : '') + '</span>' +
+                '<div class="text-xs mt-0.5" style="color:var(--admin-text-muted)"><i class="fas fa-map-marker-alt mr-1"></i>' + _esc(r.quartier || '') + ' · ' + _esc({devis:'Devis',installation:'Installation',entretien:'Entretien',depannage:'Dépannage'}[r.type] || r.type) + '</div></div>' +
                 '<span class="text-xs font-bold" style="' + statusColor + '">' + statusLabel + '</span></div>';
             }).join('');
           }
@@ -3479,27 +3473,27 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
               var srcLabel = { website: 'Site web', referral: 'Parrainage', direct: 'Direct', social: 'Réseaux sociaux' };
               document.getElementById('rdv-client-body').innerHTML =
                 '<div class="grid grid-cols-2 gap-2 text-xs">' +
-                  '<div class="rounded-lg p-2" style="background:rgba(15,23,42,0.6);">' +
-                    '<div class="text-gray-500 mb-0.5"><i class="fas fa-user mr-1"></i>Nom</div>' +
-                    '<div class="font-semibold text-gray-200">' + _esc(cl.name || '-') + '</div>' +
+                  '<div class="rounded-lg p-2" style="background:var(--admin-bg);border:1px solid var(--admin-border);">' +
+                    '<div style="color:var(--admin-text-muted)" class="mb-0.5"><i class="fas fa-user mr-1"></i>Nom</div>' +
+                    '<div class="font-semibold" style="color:var(--admin-text-primary)">' + _esc(cl.name || '-') + '</div>' +
                   '</div>' +
-                  '<div class="rounded-lg p-2" style="background:rgba(15,23,42,0.6);">' +
-                    '<div class="text-gray-500 mb-0.5"><i class="fas fa-envelope mr-1"></i>Email</div>' +
-                    '<div class="font-semibold text-gray-200 truncate">' + _esc(cl.email || 'Non renseigné') + '</div>' +
+                  '<div class="rounded-lg p-2" style="background:var(--admin-bg);border:1px solid var(--admin-border);">' +
+                    '<div style="color:var(--admin-text-muted)" class="mb-0.5"><i class="fas fa-envelope mr-1"></i>Email</div>' +
+                    '<div class="font-semibold truncate" style="color:var(--admin-text-primary)">' + _esc(cl.email || 'Non renseigné') + '</div>' +
                   '</div>' +
-                  '<div class="rounded-lg p-2" style="background:rgba(15,23,42,0.6);">' +
-                    '<div class="text-gray-500 mb-0.5"><i class="fas fa-home mr-1"></i>Adresse</div>' +
-                    '<div class="font-semibold text-gray-200">' + _esc(cl.address || cl.quartier || '-') + '</div>' +
+                  '<div class="rounded-lg p-2" style="background:var(--admin-bg);border:1px solid var(--admin-border);">' +
+                    '<div style="color:var(--admin-text-muted)" class="mb-0.5"><i class="fas fa-home mr-1"></i>Adresse</div>' +
+                    '<div class="font-semibold" style="color:var(--admin-text-primary)">' + _esc(cl.address || cl.quartier || '-') + '</div>' +
                   '</div>' +
-                  '<div class="rounded-lg p-2" style="background:rgba(15,23,42,0.6);">' +
-                    '<div class="text-gray-500 mb-0.5"><i class="fas fa-calendar-alt mr-1"></i>Client depuis</div>' +
-                    '<div class="font-semibold text-gray-200">' + (cl.created_at ? new Date(cl.created_at).toLocaleDateString('fr-FR') : '-') + '</div>' +
+                  '<div class="rounded-lg p-2" style="background:var(--admin-bg);border:1px solid var(--admin-border);">' +
+                    '<div style="color:var(--admin-text-muted)" class="mb-0.5"><i class="fas fa-calendar-alt mr-1"></i>Client depuis</div>' +
+                    '<div class="font-semibold" style="color:var(--admin-text-primary)">' + (cl.created_at ? new Date(cl.created_at).toLocaleDateString('fr-FR') : '-') + '</div>' +
                   '</div>' +
                 '</div>' +
                 '<div class="flex gap-2 mt-2 text-xs">' +
-                  '<div class="flex-1 rounded-lg p-2 text-center" style="background:rgba(59,130,246,0.1);">' +
-                    '<div class="font-bold text-blue-300 text-base">' + (d.rdvCount || 0) + '</div>' +
-                    '<div class="text-gray-500">RDV</div>' +
+                  '<div class="flex-1 rounded-lg p-2 text-center" style="background:rgba(3,105,161,0.06);border:1px solid rgba(3,105,161,0.15);">' +
+                    '<div class="font-bold text-blue-500 text-base">' + (d.rdvCount || 0) + '</div>' +
+                    '<div style="color:var(--admin-text-muted)">RDV</div>' +
                   '</div>' +
                   '<div class="flex-1 rounded-lg p-2 text-center" style="background:rgba(16,185,129,0.1);">' +
                     '<div class="font-bold text-green-300 text-base">' + (d.orderCount || 0) + '</div>' +
@@ -3533,8 +3527,8 @@ export const AdminClientsPage = () => {
     <AdminLayout activePage="clients">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
-          <h2 class="text-xl font-bold text-white">Gestion des clients</h2>
-          <p class="text-sm text-gray-400 mt-1">{clients.length} clients enregistrés</p>
+          <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">Gestion des clients</h2>
+          <p class="text-sm mt-1" style="color:var(--admin-text-muted)">{clients.length} clients enregistrés</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
           <button onclick="document.getElementById('add-client-modal').classList.remove('hidden')"
@@ -3551,13 +3545,13 @@ export const AdminClientsPage = () => {
       </div>
 
       {/* Pending Reset Codes */}
-      <div id="reset-codes-panel" class="mb-4 rounded-2xl card-shadow p-4" style="background:#111827; border:1px solid rgba(251,191,36,0.2); display:none;">
+      <div id="reset-codes-panel" class="mb-4 rounded-2xl card-shadow p-4" style="background:var(--admin-card-bg); border:1px solid rgba(251,191,36,0.2); display:none;">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-sm font-bold text-amber-400"><i class="fas fa-key mr-2"></i>Codes de réinitialisation en attente</h3>
-          <button onclick="loadResetCodes()" class="text-xs text-gray-400 hover:text-white"><i class="fas fa-sync-alt mr-1"></i>Actualiser</button>
+          <button onclick="loadResetCodes()" class="text-xs hover:opacity-75 transition-opacity" style="color:var(--admin-text-muted)"><i class="fas fa-sync-alt mr-1"></i>Actualiser</button>
         </div>
         <div id="reset-codes-list" class="space-y-2 text-sm text-gray-300">
-          <p class="text-xs text-gray-500">Chargement...</p>
+          <p class="text-xs" style="color:var(--admin-text-muted)">Chargement...</p>
         </div>
       </div>
 
@@ -3569,22 +3563,22 @@ export const AdminClientsPage = () => {
           class="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm input-field" />
       </div>
 
-      <div class="rounded-2xl  card-shadow overflow-hidden" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+      <div class="rounded-2xl card-shadow overflow-hidden" style="background: var(--admin-card-bg); border: 1px solid var(--admin-border); border-radius: var(--admin-radius)">
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
-            <thead class="border-b" style="background:#0e1726;">
+            <thead class="border-b" style="background:#f1f5f9;">
               <tr>
-                <th class="text-left py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Nom</th>
-                <th class="text-left py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Email</th>
-                <th class="text-left py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Téléphone</th>
-                <th class="text-left py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">Quartier</th>
-                <th class="text-left py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">Source</th>
-                <th class="text-left py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">RDVs</th>
-                <th class="text-left py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Créé le</th>
-                <th class="text-left py-4 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                <th class="text-left py-4 px-4 text-xs font-semibold uppercase tracking-wider" style="color: var(--admin-text-muted)">Nom</th>
+                <th class="text-left py-4 px-4 text-xs font-semibold uppercase tracking-wider hidden md:table-cell" style="color: var(--admin-text-muted)">Email</th>
+                <th class="text-left py-4 px-4 text-xs font-semibold uppercase tracking-wider" style="color: var(--admin-text-muted)">Téléphone</th>
+                <th class="text-left py-4 px-4 text-xs font-semibold uppercase tracking-wider hidden lg:table-cell" style="color: var(--admin-text-muted)">Quartier</th>
+                <th class="text-left py-4 px-4 text-xs font-semibold uppercase tracking-wider hidden sm:table-cell" style="color: var(--admin-text-muted)">Source</th>
+                <th class="text-left py-4 px-4 text-xs font-semibold uppercase tracking-wider hidden lg:table-cell" style="color: var(--admin-text-muted)">RDVs</th>
+                <th class="text-left py-4 px-4 text-xs font-semibold uppercase tracking-wider hidden md:table-cell" style="color: var(--admin-text-muted)">Créé le</th>
+                <th class="text-left py-4 px-4 text-xs font-semibold uppercase tracking-wider" style="color: var(--admin-text-muted)">Actions</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-700/30" data-paginate="20">
+            <tbody class="divide-y" style="border-color: var(--admin-border)" data-paginate="20">
               {clients.map(client => {
                 const srcMap: Record<string, { label: string; style: string }> = {
                   devis: { label: 'RDV Devis', style: 'background:rgba(56,189,248,0.12); color:#38bdf8;' },
@@ -3595,25 +3589,25 @@ export const AdminClientsPage = () => {
                 }
                 const src = srcMap[client.type_demande] || { label: client.type_demande || 'Manuel', style: 'background:rgba(148,163,184,0.1); color:#94a3b8;' }
                 return (
-                <tr class="client-row hover:bg-cyan-900/10 transition-colors cursor-pointer" onclick={`showClientDetail(this)`} data-client={jsonForScript(client)} data-search={`${client.name} ${client.phone} ${client.email || ''} ${client.quartier || ''} ${client.type_demande || ''}`.toLowerCase()}>
+                <tr class="client-row hover:bg-[rgba(3,105,161,0.04)] transition-colors cursor-pointer" onclick={`showClientDetail(this)`} data-client={jsonForScript(client)} data-search={`${client.name} ${client.phone} ${client.email || ''} ${client.quartier || ''} ${client.type_demande || ''}`.toLowerCase()}>
                   <td class="py-4 px-4">
                     <div class="flex items-center space-x-3">
                       <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background:rgba(59,130,246,0.15);">
                         <span class="text-blue-400 font-bold text-xs">{client.name.charAt(0)}</span>
                       </div>
-                      <span class="font-semibold text-gray-200">{client.name}</span>
+                      <span class="font-semibold" style="color: var(--admin-text-primary)">{client.name}</span>
                     </div>
                   </td>
-                  <td class="py-4 px-4 text-gray-400 text-xs hidden md:table-cell">{client.email || '-'}</td>
-                  <td class="py-4 px-4 text-gray-400 text-xs">{client.phone}</td>
-                  <td class="py-4 px-4 text-gray-400 text-xs hidden lg:table-cell">{client.quartier || '-'}</td>
+                  <td class="py-4 px-4 text-xs hidden md:table-cell" style="color: var(--admin-text-muted)">{client.email || '-'}</td>
+                  <td class="py-4 px-4 text-xs" style="color: var(--admin-text-muted)">{client.phone}</td>
+                  <td class="py-4 px-4 text-xs hidden lg:table-cell" style="color: var(--admin-text-muted)">{client.quartier || '-'}</td>
                   <td class="py-4 px-4 hidden sm:table-cell">
                     <span class="text-xs font-bold px-2 py-1 rounded-full" style={src.style}>{src.label}</span>
                   </td>
                   <td class="py-4 px-4 hidden lg:table-cell">
                     <span class="text-xs font-bold px-2 py-1 rounded-full" style={appointments.filter(a => a.phone === client.phone).length > 0 ? 'background:rgba(56,189,248,0.12); color:#38bdf8;' : 'background:rgba(148,163,184,0.1); color:#94a3b8;'}>{appointments.filter(a => a.phone === client.phone).length}</span>
                   </td>
-                  <td class="py-4 px-4 text-gray-500 text-xs hidden md:table-cell">{client.created_at}</td>
+                  <td class="py-4 px-4 text-xs hidden md:table-cell" style="color: var(--admin-text-muted)">{client.created_at}</td>
                   <td class="py-4 px-4">
                     <div class="flex items-center space-x-1">
                       <button
@@ -3648,28 +3642,28 @@ export const AdminClientsPage = () => {
 
       {/* Modal ajout client */}
       <div id="add-client-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div class="rounded-3xl p-4 sm:p-8 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto" style="background:#111827; border:1px solid rgba(56,189,248,0.12);">
+        <div class="rounded-3xl p-4 sm:p-8 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
           <div class="flex items-center justify-between mb-6">
-            <h3 class="font-bold text-white text-lg">Ajouter un client</h3>
+            <h3 class="font-bold text-lg" style="color:var(--admin-text-primary)">Ajouter un client</h3>
             <button onclick="document.getElementById('add-client-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-300 p-1">
               <i class="fas fa-times text-xl"></i>
             </button>
           </div>
           <form method="post" action="/api/admin/client/add" class="space-y-4">
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Nom complet *</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Nom complet *</label>
               <input type="text" name="name" required placeholder="Ex: Moussa Traoré" class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Email</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Email</label>
               <input type="email" name="email" placeholder="Ex: client@example.com" class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Téléphone (Whatsapp) *</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Téléphone (Whatsapp) *</label>
               <input type="tel" name="phone" required placeholder="Ex: +226 XX XX XX XX" class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Quartier</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Quartier</label>
               <input type="text" name="quartier" placeholder="Ex: Paspanga" class="input-field text-sm" />
             </div>
             <button type="submit" class="btn-primary w-full py-3 rounded-xl font-semibold text-sm mt-6">
@@ -3681,29 +3675,29 @@ export const AdminClientsPage = () => {
 
       {/* Modal modifier client */}
       <div id="edit-client-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div class="rounded-3xl p-4 sm:p-8 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto" style="background:#111827; border:1px solid rgba(56,189,248,0.12);">
+        <div class="rounded-3xl p-4 sm:p-8 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
           <div class="flex items-center justify-between mb-6">
-            <h3 class="font-bold text-white text-lg">Modifier client</h3>
-            <button onclick="document.getElementById('edit-client-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-300 p-1">
+            <h3 class="font-bold text-lg" style="color:var(--admin-text-primary);">Modifier client</h3>
+            <button onclick="document.getElementById('edit-client-modal').classList.add('hidden')" class="p-1" style="color:var(--admin-text-muted);">
               <i class="fas fa-times text-xl"></i>
             </button>
           </div>
           <form method="post" action="/api/admin/client/update" class="space-y-4">
             <input type="hidden" id="edit-client-id" name="id" />
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Nom complet *</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Nom complet *</label>
               <input type="text" id="edit-client-name" name="name" required class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Email</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Email</label>
               <input type="email" id="edit-client-email" name="email" class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Téléphone (Whatsapp) *</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Téléphone (Whatsapp) *</label>
               <input type="tel" id="edit-client-phone" name="phone" required class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Quartier</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Quartier</label>
               <input type="text" id="edit-client-quartier" name="quartier" class="input-field text-sm" />
             </div>
             <button type="submit" class="btn-primary w-full py-3 rounded-xl font-semibold text-sm mt-6">
@@ -3714,20 +3708,20 @@ export const AdminClientsPage = () => {
       </div>
 
       {/* Modal Détail Client */}
-      <div id="client-detail-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-        <div class="rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col" style="background:#111827; border:1px solid rgba(56,189,248,0.2); max-height:90vh;">
+      <div id="order-client-detail-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div class="rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col" style="background:var(--admin-card-bg); border:1px solid var(--admin-border); max-height:90vh;">
           {/* Header */}
-          <div class="flex items-center justify-between px-4 sm:px-6 py-4 flex-shrink-0" style="background:rgba(59,130,246,0.1); border-bottom:1px solid rgba(56,189,248,0.15);">
-            <h3 class="font-bold text-white text-lg flex items-center space-x-2">
-              <i class="fas fa-user text-blue-400"></i>
+          <div class="flex items-center justify-between px-4 sm:px-6 py-4 flex-shrink-0" style="background:var(--admin-accent-light); border-bottom:1px solid var(--admin-border);">
+            <h3 class="font-bold text-lg flex items-center space-x-2" style="color:var(--admin-text-primary)">
+              <i class="fas fa-user" style="color:var(--admin-accent);"></i>
               <span>Fiche client</span>
             </h3>
-            <button onclick="document.getElementById('client-detail-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-200 p-1 transition-colors">
+            <button onclick="document.getElementById('order-client-detail-modal').classList.add('hidden')" class="p-1 transition-colors" style="color:var(--admin-text-muted);">
               <i class="fas fa-times text-xl"></i>
             </button>
           </div>
           {/* Tabs */}
-          <div class="flex flex-shrink-0" style="background:#0e1726; border-bottom:1px solid rgba(56,189,248,0.1);">
+          <div class="flex flex-shrink-0" style="background:var(--admin-bg-elevated); border-bottom:1px solid var(--admin-border);">
             <button id="cd-tab-info" onclick="cdSwitchTab('info')" class="flex-1 py-3 text-xs font-semibold transition-colors cd-tab-active" style="color:#38bdf8; border-bottom:2px solid #38bdf8;">
               <i class="fas fa-id-card mr-1.5"></i>Informations
             </button>
@@ -3742,34 +3736,34 @@ export const AdminClientsPage = () => {
               <div class="flex items-center space-x-4">
                 <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold flex-shrink-0" style="background:rgba(59,130,246,0.2); color:#60a5fa;" id="client-detail-avatar"></div>
                 <div>
-                  <div class="text-lg font-bold text-white" id="client-detail-name"></div>
+                  <div class="text-lg font-bold" style="color:var(--admin-text-primary)" id="client-detail-name"></div>
                   <div class="text-sm" id="client-detail-source"></div>
                 </div>
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                <div class="rounded-xl p-3" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,180,220,0.1);">
-                  <div class="text-xs text-gray-500 mb-1"><i class="fas fa-phone mr-1"></i>Téléphone (Whatsapp)</div>
+                <div class="rounded-xl p-3" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
+                  <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-phone mr-1"></i>Téléphone (Whatsapp)</div>
                   <div class="text-sm font-semibold text-gray-200" id="client-detail-phone"></div>
                 </div>
-                <div class="rounded-xl p-3" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,180,220,0.1);">
-                  <div class="text-xs text-gray-500 mb-1"><i class="fas fa-envelope mr-1"></i>Email</div>
+                <div class="rounded-xl p-3" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
+                  <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-envelope mr-1"></i>Email</div>
                   <div class="text-sm font-semibold text-gray-200" id="client-detail-email"></div>
                 </div>
-                <div class="rounded-xl p-3" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,180,220,0.1);">
-                  <div class="text-xs text-gray-500 mb-1"><i class="fas fa-map-marker-alt mr-1"></i>Quartier</div>
+                <div class="rounded-xl p-3" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
+                  <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-map-marker-alt mr-1"></i>Quartier</div>
                   <div class="text-sm font-semibold text-gray-200" id="client-detail-quartier"></div>
                 </div>
-                <div class="rounded-xl p-3" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,180,220,0.1);">
-                  <div class="text-xs text-gray-500 mb-1"><i class="fas fa-calendar-plus mr-1"></i>Inscrit le</div>
+                <div class="rounded-xl p-3" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
+                  <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-calendar-plus mr-1"></i>Inscrit le</div>
                   <div class="text-sm font-semibold text-gray-200" id="client-detail-created"></div>
                 </div>
-                <div class="col-span-2 rounded-xl p-3" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,180,220,0.1);">
-                  <div class="text-xs text-gray-500 mb-1"><i class="fas fa-tag mr-1"></i>Type de demande initiale</div>
+                <div class="col-span-2 rounded-xl p-3" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
+                  <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-tag mr-1"></i>Type de demande initiale</div>
                   <div class="text-sm font-semibold text-gray-200" id="client-detail-type"></div>
                 </div>
               </div>
-              <div id="client-detail-notes-row" class="rounded-xl p-3 hidden" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,180,220,0.1);">
-                <div class="text-xs text-gray-500 mb-1"><i class="fas fa-sticky-note mr-1"></i>Notes</div>
+              <div id="client-detail-notes-row" class="rounded-xl p-3 hidden" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
+                <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-sticky-note mr-1"></i>Notes</div>
                 <div class="text-sm text-gray-300 italic" id="client-detail-notes"></div>
               </div>
             </div>
@@ -3784,7 +3778,7 @@ export const AdminClientsPage = () => {
                 <div>
                   <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center space-x-2">
                     <i class="fas fa-tools text-cyan-400"></i><span>Contrats de maintenance</span>
-                    <span id="cd-contracts-count" class="ml-1 px-2 py-0.5 rounded-full text-xs" style="background:rgba(56,189,248,0.1); color:#38bdf8;"></span>
+                    <span id="cd-contracts-count" class="ml-1 px-2 py-0.5 rounded-full text-xs" style="background:var(--admin-accent-light); color:var(--admin-accent);"></span>
                   </div>
                   <div id="cd-contracts" class="space-y-2"></div>
                 </div>
@@ -3824,14 +3818,14 @@ export const AdminClientsPage = () => {
             </div>
           </div>
           {/* Footer */}
-          <div class="px-4 sm:px-6 pb-4 sm:pb-5 pt-3 flex flex-col sm:flex-row gap-2 sm:gap-3 flex-shrink-0" style="border-top:1px solid rgba(56,189,248,0.08);">
-            <a id="client-detail-wa" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 text-center text-sm font-semibold py-2.5 rounded-xl transition-colors" style="background:rgba(37,211,102,0.15); color:#25D366; border:1px solid rgba(37,211,102,0.25);">
+          <div class="px-4 sm:px-6 pb-4 sm:pb-5 pt-3 flex flex-col sm:flex-row gap-2 sm:gap-3 flex-shrink-0" style="border-top:1px solid var(--admin-border);">
+            <a id="client-detail-wa" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 text-center text-sm font-semibold py-2.5 rounded-xl transition-colors" style="background:rgba(37,211,102,0.12); color:#25D366; border:1px solid rgba(37,211,102,0.25);">
               <i class="fab fa-whatsapp mr-2"></i>WhatsApp
             </a>
-            <a id="client-detail-devis-btn" href="#" class="flex-1 text-center text-sm font-semibold py-2.5 rounded-xl transition-colors" style="background:rgba(56,189,248,0.1); color:#38bdf8; border:1px solid rgba(56,189,248,0.2);">
+            <a id="client-detail-devis-btn" href="#" class="flex-1 text-center text-sm font-semibold py-2.5 rounded-xl transition-colors" style="background:var(--admin-accent-light); color:var(--admin-accent); border:1px solid var(--admin-border);">
               <i class="fas fa-file-invoice mr-2"></i>Nouveau devis
             </a>
-            <button onclick="document.getElementById('client-detail-modal').classList.add('hidden')" class="px-5 text-sm font-semibold py-2.5 rounded-xl transition-colors" style="background:rgba(148,163,184,0.1); color:#94a3b8;">
+            <button onclick="document.getElementById('order-client-detail-modal').classList.add('hidden')" class="px-5 text-sm font-semibold py-2.5 rounded-xl transition-colors" style="background:var(--admin-bg-elevated); color:var(--admin-text-muted);">
               Fermer
             </button>
           </div>
@@ -3882,55 +3876,55 @@ export const AdminClientsPage = () => {
             var c = document.getElementById('cd-contracts');
             document.getElementById('cd-contracts-count').textContent = d.contracts.length;
             c.innerHTML = d.contracts.length ? d.contracts.map(function(x) {
-              return '<div class="rounded-xl p-3 text-xs flex items-center justify-between" style="background:rgba(15,23,42,0.6);border:1px solid rgba(56,189,248,0.1);">'
-                + '<div><span class="font-semibold text-gray-200">' + _esc(planLabels[x.plan_type] || x.plan_type) + '</span>'
-                + '<span class="ml-2 text-gray-500">' + _esc(x.start_date||'') + ' → ' + _esc(x.end_date||'') + '</span>'
-                + '<span class="ml-2 text-gray-400">' + _esc(x.completed_visits) + '/' + _esc(x.total_visits) + ' visites</span></div>'
-                + '<span class="px-2 py-0.5 rounded-full font-bold" style="background:rgba(52,211,153,0.1);color:' + (statusColors[x.status]||'#94a3b8') + ';">'
+              return '<div class="rounded-xl p-3 text-xs flex items-center justify-between" style="background:var(--admin-bg);border:1px solid var(--admin-border);">'
+                + '<div><span class="font-semibold" style="color:var(--admin-text-primary)">' + _esc(planLabels[x.plan_type] || x.plan_type) + '</span>'
+                + '<span class="ml-2" style="color:var(--admin-text-muted)">' + _esc(x.start_date||'') + ' → ' + _esc(x.end_date||'') + '</span>'
+                + '<span class="ml-2" style="color:var(--admin-text-muted)">' + _esc(x.completed_visits) + '/' + _esc(x.total_visits) + ' visites</span></div>'
+                + '<span class="px-2 py-0.5 rounded-full font-bold" style="background:rgba(5,150,105,0.1);color:' + (statusColors[x.status]||'#94a3b8') + ';">'
                 + ({ en_attente:'En attente', contacte:'Contacté', actif:'Actif', expire:'Expiré', annule:'Annulé' }[x.status] || x.status) + '</span></div>';
-            }).join('') : '<p class="text-xs text-gray-600 py-2">Aucun contrat</p>';
+            }).join('') : '<p class="text-xs py-2" style="color:var(--admin-text-muted)">Aucun contrat</p>';
             // Visits
             var v = document.getElementById('cd-visits');
             document.getElementById('cd-visits-count').textContent = d.visits.length;
             v.innerHTML = d.visits.length ? d.visits.map(function(x) {
-              return '<div class="rounded-xl p-3 text-xs flex items-center justify-between" style="background:rgba(15,23,42,0.6);border:1px solid rgba(52,211,153,0.08);">'
-                + '<div><span class="font-semibold text-gray-200">' + (x.visit_type==='preventive'?'Préventive':'Corrective') + '</span>'
-                + '<span class="ml-2 text-gray-500">' + _esc(x.visit_date||'') + '</span>'
-                + (x.technician ? '<span class="ml-2 text-gray-500">— ' + _esc(x.technician) + '</span>' : '') + '</div>'
-                + '<span class="px-2 py-0.5 rounded-full font-bold" style="background:rgba(251,191,36,0.1);color:' + (statusColors[x.status]||'#94a3b8') + ';">'
+              return '<div class="rounded-xl p-3 text-xs flex items-center justify-between" style="background:var(--admin-bg);border:1px solid var(--admin-border);">'
+                + '<div><span class="font-semibold" style="color:var(--admin-text-primary)">' + (x.visit_type==='preventive'?'Préventive':'Corrective') + '</span>'
+                + '<span class="ml-2" style="color:var(--admin-text-muted)">' + _esc(x.visit_date||'') + '</span>'
+                + (x.technician ? '<span class="ml-2" style="color:var(--admin-text-muted)">— ' + _esc(x.technician) + '</span>' : '') + '</div>'
+                + '<span class="px-2 py-0.5 rounded-full font-bold" style="background:rgba(217,119,6,0.1);color:' + (statusColors[x.status]||'#94a3b8') + ';">'
                 + ((x.status==='planifiee')?'Planifiée':(x.status==='realisee')?'Réalisée':'Annulée') + '</span></div>';
-            }).join('') : '<p class="text-xs text-gray-600 py-2">Aucune visite</p>';
+            }).join('') : '<p class="text-xs py-2" style="color:var(--admin-text-muted)">Aucune visite</p>';
             // RDVs
             var r = document.getElementById('cd-rdvs');
             document.getElementById('cd-rdvs-count').textContent = d.rdvs.length;
             r.innerHTML = d.rdvs.length ? d.rdvs.map(function(x) {
-              return '<div class="rounded-xl p-3 text-xs flex items-center justify-between" style="background:rgba(15,23,42,0.6);border:1px solid rgba(251,191,36,0.08);">'
-                + '<div><span class="font-semibold text-gray-200">' + _esc(x.type||'RDV') + '</span>'
-                + '<span class="ml-2 text-gray-500">' + _esc(x.date||'') + (x.heure_debut?' à '+_esc(x.heure_debut):'') + '</span></div>'
-                + '<span class="text-xs" style="color:#fbbf24;">' + _esc(x.status||'') + '</span></div>';
-            }).join('') : '<p class="text-xs text-gray-600 py-2">Aucun rendez-vous</p>';
+              return '<div class="rounded-xl p-3 text-xs flex items-center justify-between" style="background:var(--admin-bg);border:1px solid var(--admin-border);">'
+                + '<div><span class="font-semibold" style="color:var(--admin-text-primary)">' + _esc(x.type||'RDV') + '</span>'
+                + '<span class="ml-2" style="color:var(--admin-text-muted)">' + _esc(x.date||'') + (x.heure_debut?' à '+_esc(x.heure_debut):'') + '</span></div>'
+                + '<span class="text-xs" style="color:var(--admin-status-pending)">' + _esc(x.status||'') + '</span></div>';
+            }).join('') : '<p class="text-xs py-2" style="color:var(--admin-text-muted)">Aucun rendez-vous</p>';
             // Devis
             var dv = document.getElementById('cd-devis');
             document.getElementById('cd-devis-count').textContent = d.devis.length;
             dv.innerHTML = d.devis.length ? d.devis.map(function(x) {
-              var sc = {draft:'#94a3b8',sent:'#38bdf8',accepted:'#34d399',rejected:'#f87171',expired:'#f59e0b'};
-              return '<div class="rounded-xl p-3 text-xs flex items-center justify-between" style="background:rgba(15,23,42,0.6);border:1px solid rgba(167,139,250,0.08);">'
-                + '<div><span class="font-semibold text-gray-200">' + _esc(x.numero||'#'+x.id) + '</span>'
-                + '<span class="ml-2 text-gray-500">' + _esc(x.produit_nom||'') + '</span>'
-                + '<span class="ml-2 text-gray-400">' + (x.total_ht?(parseInt(x.total_ht).toLocaleString('fr-FR')+' F'):'') + '</span></div>'
-                + '<span class="px-2 py-0.5 rounded-full font-bold text-xs" style="background:rgba(167,139,250,0.1);color:' + (sc[x.status]||'#94a3b8') + ';">' + _esc(x.status||'') + '</span></div>';
-            }).join('') : '<p class="text-xs text-gray-600 py-2">Aucun devis</p>';
+              var sc = {draft:'#94a3b8',sent:'#0369a1',accepted:'#059669',rejected:'#dc2626',expired:'#d97706'};
+              return '<div class="rounded-xl p-3 text-xs flex items-center justify-between" style="background:var(--admin-bg);border:1px solid var(--admin-border);">'
+                + '<div><span class="font-semibold" style="color:var(--admin-text-primary)">' + _esc(x.numero||'#'+x.id) + '</span>'
+                + '<span class="ml-2" style="color:var(--admin-text-muted)">' + _esc(x.produit_nom||'') + '</span>'
+                + '<span class="ml-2" style="color:var(--admin-text-muted)">' + (x.total_ht?(parseInt(x.total_ht).toLocaleString('fr-FR')+' F'):'') + '</span></div>'
+                + '<span class="px-2 py-0.5 rounded-full font-bold text-xs" style="background:rgba(3,105,161,0.1);color:' + (sc[x.status]||'#94a3b8') + ';">' + _esc(x.status||'') + '</span></div>';
+            }).join('') : '<p class="text-xs py-2" style="color:var(--admin-text-muted)">Aucun devis</p>';
             // SAV
             var s = document.getElementById('cd-sav');
             document.getElementById('cd-sav-count').textContent = d.sav.length;
             s.innerHTML = d.sav.length ? d.sav.map(function(x) {
-              var pc = {haute:'#f87171',normale:'#fbbf24',basse:'#94a3b8'};
-              return '<div class="rounded-xl p-3 text-xs" style="background:rgba(15,23,42,0.6);border:1px solid rgba(251,146,60,0.08);">'
+              var pc = {haute:'#dc2626',normale:'#d97706',basse:'#94a3b8'};
+              return '<div class="rounded-xl p-3 text-xs" style="background:var(--admin-bg);border:1px solid var(--admin-border);">'
                 + '<div class="flex items-center justify-between mb-1">'
-                + '<span class="font-semibold text-gray-200">' + _esc(x.ticket_ref||'#'+x.id) + '</span>'
-                + '<span class="px-2 py-0.5 rounded-full font-bold" style="background:rgba(251,146,60,0.1);color:' + (pc[x.priority]||'#94a3b8') + ';">' + _esc(x.priority||'') + '</span></div>'
-                + '<p class="text-gray-400">' + _esc(x.subject||'') + '</p></div>';
-            }).join('') : '<p class="text-xs text-gray-600 py-2">Aucun ticket SAV</p>';
+                + '<span class="font-semibold" style="color:var(--admin-text-primary)">' + _esc(x.ticket_ref||'#'+x.id) + '</span>'
+                + '<span class="px-2 py-0.5 rounded-full font-bold" style="background:rgba(220,38,38,0.1);color:' + (pc[x.priority]||'#94a3b8') + ';">' + _esc(x.priority||'') + '</span></div>'
+                + '<p style="color:var(--admin-text-muted)">' + _esc(x.subject||'') + '</p></div>';
+            }).join('') : '<p class="text-xs py-2" style="color:var(--admin-text-muted)">Aucun ticket SAV</p>';
           }).catch(function() {
             loader.classList.add('hidden');
             content.innerHTML = '<p class="text-center text-xs text-red-400 py-4"><i class="fas fa-exclamation-circle mr-1"></i>Erreur de chargement</p>';
@@ -3958,7 +3952,7 @@ export const AdminClientsPage = () => {
           var phone = (c.phone || '').replace(/\\D/g, '');
           document.getElementById('client-detail-wa').href = 'https://wa.me/' + phone + '?text=' + encodeURIComponent('Bonjour ' + c.name + ', MAASGA vous contacte.');
           document.getElementById('client-detail-devis-btn').href = '/admin/devis/new' + (c.id ? '?client_id=' + c.id : '');
-          document.getElementById('client-detail-modal').classList.remove('hidden');
+          document.getElementById('order-client-detail-modal').classList.remove('hidden');
         }
         function filterClientsList(q) {
           q = q.toLowerCase().trim();
@@ -4105,6 +4099,55 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
           </div>
         </div>
 
+        {/* Bulk actions script */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          window.adminSelectedIds = window.adminSelectedIds || new Set();
+
+          window.adminBulkAction = window.adminBulkAction || function(type) {
+            var ids = Array.from(window.adminSelectedIds);
+            if (!ids.length) {
+              if (typeof window.showToast === 'function') window.showToast('Aucune commande sélectionnée.', 'warning');
+              return;
+            }
+            if (type === 'status') {
+              var newStatus = prompt('Nouveau statut : en_attente | contacte | confirme | en_livraison | livre | annule');
+              if (!newStatus) return;
+              fetch('/api/admin/commandes/bulk-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: ids, status: newStatus })
+              }).then(function(r) { return r.json(); })
+                .then(function(d) {
+                  if (typeof window.showToast === 'function') window.showToast((d.updated || 0) + ' commande(s) mise(s) à jour.', 'success');
+                  setTimeout(function() { location.reload(); }, 1200);
+                })
+                .catch(function() { if (typeof window.showToast === 'function') window.showToast('Erreur réseau.', 'error'); });
+            } else if (type === 'export') {
+              window.location.href = '/api/admin/commandes/export?ids=' + ids.join(',');
+            } else if (type === 'delete') {
+              if (!confirm('Supprimer ' + ids.length + ' commande(s) ? Cette action est irréversible.')) return;
+              fetch('/api/admin/commandes/bulk-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: ids })
+              }).then(function(r) { return r.json(); })
+                .then(function(d) {
+                  if (typeof window.showToast === 'function') window.showToast((d.deleted || 0) + ' commande(s) supprimée(s).', 'success');
+                  setTimeout(function() { location.reload(); }, 1200);
+                })
+                .catch(function() { if (typeof window.showToast === 'function') window.showToast('Erreur réseau.', 'error'); });
+            }
+          };
+
+          window.adminClearSelection = window.adminClearSelection || function() {
+            window.adminSelectedIds = window.adminSelectedIds || new Set();
+            window.adminSelectedIds.clear();
+            document.querySelectorAll('.order-checkbox').forEach(function(cb) { cb.checked = false; });
+            var toolbar = document.getElementById('bulk-toolbar');
+            if (toolbar) toolbar.style.display = 'none';
+          };
+        `}} />
+
         {/* Selection Controls */}
         {selectedOrderIds.size > 0 && (
           <BulkActionsToolbar
@@ -4171,8 +4214,8 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
                   <i className={`fas ${kpi.icon} text-lg`} style={{ color: kpi.color }}></i>
                 </div>
                 <div>
-                  <div className="text-xl font-bold text-white leading-none">{kpi.val}</div>
-                  <div className="text-xs text-gray-400 mt-0.5">{kpi.label}</div>
+                  <div className="text-xl font-bold leading-none" style={{ color: 'var(--admin-text-primary)' }}>{kpi.val}</div>
+                  <div className="text-xs mt-0.5" style={{ color: 'var(--admin-text-muted)' }}>{kpi.label}</div>
                 </div>
               </div>
             </div>
@@ -4180,7 +4223,7 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
         </div>
 
         {/* Deux processus possibles */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="mb-6">
           <CommandesProcessDiagram
             selectedOrderId={selectedOrderId}
             onSelectOrder={() => {}}
@@ -4214,9 +4257,9 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
               />
             </div>
           ) : (
-            <div className="p-8 text-center" style={{ background: 'rgba(15,23,42,0.4)' }}>
-              <i className="fas fa-shopping-cart text-3xl text-gray-600 mb-3"></i>
-              <p className="text-gray-400">Aucune commande en ligne pour le moment</p>
+            <div className="p-8 text-center" style={{ background: 'var(--admin-bg-elevated)' }}>
+              <i className="fas fa-shopping-cart text-3xl mb-3" style={{ color: 'var(--admin-text-muted)' }}></i>
+              <p style={{ color: 'var(--admin-text-muted)' }}>Aucune commande en ligne pour le moment</p>
             </div>
           )}
         </div>
@@ -4224,7 +4267,7 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
         {/* ============================================ */}
         {/* SECTION 2: Commandes TERRAIN (depuis RDV)    */}
         {/* ============================================ */}
-        <div className="rounded-2xl card-shadow overflow-hidden mb-6" style={{ background: '#111827', border: '1px solid rgba(56,189,248,0.1)' }}>
+        <div className="rounded-2xl card-shadow overflow-hidden mb-6" style={{ background: 'var(--admin-card-bg)', border: '1px solid var(--admin-border)' }}>
           <div className="p-5 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(148,180,220,0.08)' }}>
             <div>
               <h3 className="font-semibold text-gray-200 flex items-center space-x-2">
@@ -4272,29 +4315,29 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
           {pendingAppointments.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead style={{ background: 'rgba(15,23,42,0.8)' }}>
+                <thead style={{ background: '#f1f5f9' }}>
                   <tr>
-                    <th className="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Client</th>
-                    <th className="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider hidden sm:table-cell">Téléphone</th>
-                    <th className="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider hidden md:table-cell">Quartier</th>
-                    <th className="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider hidden sm:table-cell">Date RDV</th>
-                    <th className="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider hidden lg:table-cell">Type</th>
-                    <th className="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Localisation</th>
-                    <th className="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider hidden sm:table-cell">Action</th>
+                    <th className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style={{ color: 'var(--admin-text-muted)' }}>Client</th>
+                    <th className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden sm:table-cell" style={{ color: 'var(--admin-text-muted)' }}>Téléphone</th>
+                    <th className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell" style={{ color: 'var(--admin-text-muted)' }}>Quartier</th>
+                    <th className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden sm:table-cell" style={{ color: 'var(--admin-text-muted)' }}>Date RDV</th>
+                    <th className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden lg:table-cell" style={{ color: 'var(--admin-text-muted)' }}>Type</th>
+                    <th className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style={{ color: 'var(--admin-text-muted)' }}>Localisation</th>
+                    <th className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden sm:table-cell" style={{ color: 'var(--admin-text-muted)' }}>Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-700/30" data-paginate="10">
+                <tbody className="divide-y" style={{ borderColor: 'var(--admin-border)' }} data-paginate="10">
                   {pendingAppointments.map(appointment => (
-                    <tr key={appointment.id} className="hover:bg-gray-800/20 transition-colors" data-appointment-id={String(appointment.id)}>
+                    <tr key={appointment.id} className="hover:bg-[rgba(3,105,161,0.04)] transition-colors" data-appointment-id={String(appointment.id)}>
                       <td className="px-5 py-3">
-                        <div className="text-white text-sm font-semibold">{appointment.name}</div>
-                        <div className="text-xs" style={{ color: '#64748b' }}>{appointment.phone}</div>
+                        <div className="text-sm font-semibold" style={{ color: 'var(--admin-text-primary)' }}>{appointment.name}</div>
+                        <div className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>{appointment.phone}</div>
                       </td>
                       <td className="px-5 py-3 hidden sm:table-cell">
-                        <div className="text-xs" style={{ color: '#64748b' }}>{appointment.phone}</div>
+                        <div className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>{appointment.phone}</div>
                       </td>
-                      <td className="px-5 py-3 text-xs text-blue-200 hidden md:table-cell"><i className="fas fa-map-marker-alt text-primary-500 mr-1"></i>{appointment.quartier}</td>
-                      <td className="px-5 py-3 text-xs text-gray-500 hidden sm:table-cell">{new Date(appointment.date).toLocaleDateString('fr-FR')}</td>
+                      <td className="px-5 py-3 text-xs hidden md:table-cell" style={{ color: 'var(--admin-text-primary)' }}><i className="fas fa-map-marker-alt text-primary-500 mr-1"></i>{appointment.quartier}</td>
+                      <td className="px-5 py-3 text-xs hidden sm:table-cell" style={{ color: 'var(--admin-text-muted)' }}>{new Date(appointment.date).toLocaleDateString('fr-FR')}</td>
                       <td className="px-5 py-3 text-xs text-blue-200 hidden lg:table-cell">
                         <span className={`text-xs px-2 py-1 rounded-full font-medium`} style={{
                           background: appointment.type === 'devis' ? 'rgba(59,130,246,0.12)' :
@@ -4365,9 +4408,9 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
               </table>
             </div>
           ) : (
-            <div className="p-8 text-center" style={{ background: 'rgba(15,23,42,0.4)' }}>
-              <i className="fas fa-calendar text-3xl text-gray-600 mb-3"></i>
-              <p className="text-gray-400">Aucun RDV en attente</p>
+            <div className="p-8 text-center" style={{ background: 'var(--admin-bg-elevated)' }}>
+              <i className="fas fa-calendar text-3xl mb-3" style={{ color: 'var(--admin-text-muted)' }}></i>
+              <p style={{ color: 'var(--admin-text-muted)' }}>Aucun RDV en attente</p>
             </div>
           )}
         </div>
@@ -4441,8 +4484,8 @@ export const AdminAvisPage = ({ success, deleted, allReviews = [] }: { success?:
     )}
 
     <div class="mb-6">
-      <h2 class="text-xl font-bold text-white">Modération des avis</h2>
-      <p class="text-sm text-gray-400 mt-1">
+      <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">Modération des avis</h2>
+      <p class="text-sm mt-1" style="color:var(--admin-text-muted)">
         {pending.length} en attente · {approved.length} publiés
       </p>
     </div>
@@ -4456,7 +4499,7 @@ export const AdminAvisPage = ({ success, deleted, allReviews = [] }: { success?:
         </h3>
         <div class="space-y-4">
           {pending.map((r: any) => (
-            <div class="rounded-2xl p-5 card-shadow border-l-4 border-orange-400" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+            <div class="rounded-2xl p-5 card-shadow border-l-4 border-orange-400" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
               <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                 <div class="flex-1">
                   <div class="flex items-center space-x-3 mb-2">
@@ -4511,15 +4554,15 @@ export const AdminAvisPage = ({ success, deleted, allReviews = [] }: { success?:
         <span>Avis publiés ({approved.length})</span>
       </h3>
       {approved.length === 0 ? (
-        <div class="rounded-2xl p-10 text-center card-shadow text-gray-400" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+        <div class="rounded-2xl p-10 text-center card-shadow text-gray-400" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
           <i class="fas fa-star text-3xl mb-3"></i>
           <p>Aucun avis publié pour le moment</p>
         </div>
       ) : (
-        <div class="rounded-2xl card-shadow overflow-hidden" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+        <div class="rounded-2xl card-shadow overflow-hidden" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
-              <thead class="border-b border-gray-700/50" style="background:#0e1726;">
+              <thead class="border-b border-gray-700/50" style="background:#f1f5f9;">
                 <tr>
                   <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Client</th>
                   <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Note</th>
@@ -4529,20 +4572,20 @@ export const AdminAvisPage = ({ success, deleted, allReviews = [] }: { success?:
                   <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-700/30" data-paginate="15">
+              <tbody class="divide-y" style="border-color:var(--admin-border)" data-paginate="15">
                 {approved.map((r: any) => (
-                  <tr class="hover:bg-cyan-900/10 transition-colors">
-                    <td class="py-3 px-4 font-semibold text-gray-200 text-sm">{r.name}</td>
+                  <tr class="hover:bg-[rgba(3,105,161,0.04)] transition-colors">
+                    <td class="py-3 px-4 font-semibold text-sm" style="color:var(--admin-text-primary)">{r.name}</td>
                     <td class="py-3 px-4">
                       <div class="flex space-x-0.5">
                         {[1,2,3,4,5].map(s => (
-                          <i class={`fas fa-star text-xs ${s <= r.note ? 'text-yellow-400' : 'text-gray-600'}`}></i>
+                          <i class={`fas fa-star text-xs ${s <= r.note ? 'text-yellow-400' : 'text-gray-300'}`}></i>
                         ))}
                       </div>
                     </td>
-                    <td class="py-3 px-4 text-xs text-gray-400 max-w-xs truncate italic hidden md:table-cell">"{r.comment}"</td>
-                    <td class="py-3 px-4 text-xs text-gray-500 hidden sm:table-cell">{r.service}</td>
-                    <td class="py-3 px-4 text-xs text-gray-400 hidden sm:table-cell">{r.date}</td>
+                    <td class="py-3 px-4 text-xs max-w-xs truncate italic hidden md:table-cell" style="color:var(--admin-text-muted)">"{r.comment}"</td>
+                    <td class="py-3 px-4 text-xs hidden sm:table-cell" style="color:var(--admin-text-muted)">{r.service}</td>
+                    <td class="py-3 px-4 text-xs hidden sm:table-cell" style="color:var(--admin-text-muted)">{r.date}</td>
                     <td class="py-3 px-4">
                       <form method="post" action="/api/admin/avis/reject">
                         <input type="hidden" name="id" value={String(r.id)} />
@@ -4572,8 +4615,8 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
   return (
   <AdminLayout activePage="parametres">
     <div class="mb-6">
-      <h2 class="text-xl font-bold text-white">Paramètres du site</h2>
-      <p class="text-sm text-gray-400 mt-1">Configuration, sécurité et gestion du back-office</p>
+      <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">Paramètres du site</h2>
+      <p class="text-sm mt-1" style="color:var(--admin-text-muted)">Configuration, sécurité et gestion du back-office</p>
     </div>
 
     {success && (
@@ -4601,31 +4644,31 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
     <div class="max-w-2xl space-y-6">
 
       {/* Changer mot de passe */}
-      <div class="rounded-2xl p-6 card-shadow" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+      <div class="rounded-2xl p-6 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
         <div class="flex items-center space-x-3 mb-5">
           <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(59,130,246,0.15);">
             <i class="fas fa-lock text-blue-400"></i>
           </div>
           <div>
-            <h3 class="font-bold text-white">Sécurité — Mot de passe admin</h3>
+            <h3 class="font-bold" style="color:var(--admin-text-primary)">Sécurité — Mot de passe admin</h3>
             <p class="text-xs text-gray-400">Modifiez le mot de passe de connexion au back-office</p>
           </div>
         </div>
         <form method="post" action="/api/admin/change-password" class="space-y-4">
           <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Mot de passe actuel *</label>
+            <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Mot de passe actuel *</label>
             <input type="password" name="current_password" required placeholder="Votre mot de passe actuel" class="input-field text-sm" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Nouvel identifiant <span class="text-gray-500">(optionnel, laisser vide pour garder l'actuel)</span></label>
+            <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Nouvel identifiant <span class="text-gray-500">(optionnel, laisser vide pour garder l'actuel)</span></label>
             <input type="text" name="new_username" placeholder="admin" minlength={3} class="input-field text-sm" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Nouveau mot de passe *</label>
+            <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Nouveau mot de passe *</label>
             <input type="password" name="new_password" required placeholder="Minimum 12 caractères" minlength={12} class="input-field text-sm" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Confirmer le nouveau mot de passe *</label>
+            <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Confirmer le nouveau mot de passe *</label>
             <input type="password" name="confirm_password" required placeholder="Répéter le nouveau mot de passe" class="input-field text-sm" />
           </div>
           <button type="submit" class="btn-primary px-6 py-2.5 rounded-xl font-semibold text-sm flex items-center space-x-2">
@@ -4636,53 +4679,53 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
       </div>
 
       {/* Informations site — Éditables */}
-      <div class="rounded-2xl p-6 card-shadow" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+      <div class="rounded-2xl p-6 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
         <div class="flex items-center space-x-3 mb-5">
           <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(16,185,129,0.15);">
             <i class="fas fa-store text-green-400"></i>
           </div>
           <div>
-            <h3 class="font-bold text-white">Informations MAASGA</h3>
+            <h3 class="font-bold" style="color:var(--admin-text-primary)">Informations MAASGA</h3>
             <p class="text-xs text-gray-400">Modifiez les données de contact et horaires affichés sur le site</p>
           </div>
         </div>
         <form method="post" action="/api/admin/site-settings" class="space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5"><i class="fas fa-building mr-1 text-cyan-400"></i>Nom entreprise</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);"><i class="fas fa-building mr-1 text-cyan-400"></i>Nom entreprise</label>
               <input name="company_name" value={s('company_name', 'MAASGA')} class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5"><i class="fas fa-phone mr-1 text-cyan-400"></i>Téléphone (Whatsapp)</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);"><i class="fas fa-phone mr-1 text-cyan-400"></i>Téléphone (Whatsapp)</label>
               <input name="phone" value={s('phone', '+226 55 99 64 18')} class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5"><i class="fas fa-envelope mr-1 text-blue-400"></i>Email</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);"><i class="fas fa-envelope mr-1 text-blue-400"></i>Email</label>
               <input name="email" type="email" value={s('email', 'maasgabf@gmail.com')} class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5"><i class="fab fa-whatsapp mr-1 text-green-400"></i>WhatsApp</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);"><i class="fab fa-whatsapp mr-1 text-green-400"></i>WhatsApp</label>
               <input name="whatsapp" value={s('whatsapp', '+226 55 99 64 18')} class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5"><i class="fas fa-map-marker-alt mr-1 text-red-400"></i>Adresse</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);"><i class="fas fa-map-marker-alt mr-1 text-red-400"></i>Adresse</label>
               <input name="address" value={s('address', 'Ouagadougou, Burkina Faso')} class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5"><i class="fas fa-clock mr-1 text-yellow-400"></i>Horaires</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);"><i class="fas fa-clock mr-1 text-yellow-400"></i>Horaires</label>
               <input name="hours" value={s('hours', 'Lundi–Dimanche · 8h00–18h00')} class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5"><i class="fab fa-facebook mr-1 text-blue-500"></i>Facebook (URL)</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);"><i class="fab fa-facebook mr-1 text-blue-500"></i>Facebook (URL)</label>
               <input name="facebook" value={s('facebook', '')} placeholder="https://facebook.com/..." class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5"><i class="fab fa-instagram mr-1 text-pink-400"></i>Instagram (URL)</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);"><i class="fab fa-instagram mr-1 text-pink-400"></i>Instagram (URL)</label>
               <input name="instagram" value={s('instagram', '')} placeholder="https://instagram.com/..." class="input-field text-sm" />
             </div>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5"><i class="fas fa-quote-left mr-1 text-purple-400"></i>Slogan</label>
+            <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);"><i class="fas fa-quote-left mr-1 text-purple-400"></i>Slogan</label>
             <input name="slogan" value={s('slogan', 'Solutions énergétiques solaires professionnelles')} class="input-field text-sm" />
           </div>
           <button type="submit" class="btn-primary px-6 py-2.5 rounded-xl font-semibold text-sm flex items-center space-x-2">
@@ -4693,13 +4736,13 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
       </div>
 
       {/* Statistiques globales */}
-      <div class="rounded-2xl p-6 card-shadow" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+      <div class="rounded-2xl p-6 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
         <div class="flex items-center space-x-3 mb-5">
           <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(168,85,247,0.15);">
             <i class="fas fa-database text-purple-400"></i>
           </div>
           <div>
-            <h3 class="font-bold text-white">État de la base de données</h3>
+            <h3 class="font-bold" style="color:var(--admin-text-primary)">État de la base de données</h3>
             <p class="text-xs text-gray-400">Récapitulatif des données enregistrées</p>
           </div>
         </div>
@@ -4713,7 +4756,7 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
             <div class="flex items-center space-x-3 p-3 rounded-xl" style="background:rgba(255,255,255,0.03); border:1px solid rgba(148,180,220,0.08);">
               <i class={`fas ${s.icon} text-base`} style={`color:${s.color};`}></i>
               <div>
-                <div class="text-lg font-bold text-white leading-none">{s.val}</div>
+                <div class="text-lg font-bold leading-none" style="color:var(--admin-text-primary)">{s.val}</div>
                 <div class="text-xs text-gray-400">{s.label}</div>
               </div>
             </div>
@@ -4722,13 +4765,13 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
       </div>
 
       {/* Sauvegarde / Backup */}
-      <div class="rounded-2xl p-6 card-shadow" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+      <div class="rounded-2xl p-6 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
         <div class="flex items-center space-x-3 mb-5">
           <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(168,85,247,0.15);">
             <i class="fas fa-download text-purple-400"></i>
           </div>
           <div>
-            <h3 class="font-bold text-white">Sauvegarde des données</h3>
+            <h3 class="font-bold" style="color:var(--admin-text-primary)">Sauvegarde des données</h3>
             <p class="text-xs text-gray-400">Téléchargez une copie complète de toutes les données</p>
           </div>
         </div>
@@ -4768,7 +4811,7 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div class="font-semibold text-red-300 text-sm">Réinitialiser les données de démo</div>
-                <div class="text-xs text-gray-400 mt-0.5">Supprime tous les RDV, clients et avis de test</div>
+                <div class="text-xs mt-0.5" style="color:var(--admin-text-muted)">Supprime tous les RDV, clients et avis de test</div>
               </div>
               <button onclick="confirmReset()" class="text-xs px-4 py-2 rounded-xl font-semibold whitespace-nowrap flex-shrink-0" style="background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3);">
                 <i class="fas fa-trash mr-1"></i>Réinitialiser
@@ -4779,7 +4822,7 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div class="font-semibold text-red-300 text-sm">Déconnexion forcée</div>
-                <div class="text-xs text-gray-400 mt-0.5">Invalider la session admin en cours</div>
+                <div class="text-xs mt-0.5" style="color:var(--admin-text-muted)">Invalider la session admin en cours</div>
               </div>
               <form method="post" action="/api/admin/logout" class="flex-shrink-0">
                 <button type="submit" class="text-xs px-4 py-2 rounded-xl font-semibold whitespace-nowrap text-center" style="background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3);">
@@ -4829,7 +4872,7 @@ export const AdminDevisListPage = ({ devisData = [], rdvsPending = [] }: { devis
   <AdminLayout activePage="devis">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
       <div>
-        <h2 class="text-xl font-bold text-white">Devis clients</h2>
+        <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">Devis clients</h2>
         <p class="text-sm text-gray-500 mt-1">
           {devisData.length} devis · {devisData.filter((d:any) => d.status === 'sent').length} en attente · {devisData.filter((d:any) => d.status === 'accepted').length} acceptés
         </p>
@@ -4856,7 +4899,7 @@ export const AdminDevisListPage = ({ devisData = [], rdvsPending = [] }: { devis
                 </div>
                 <div>
                   <div class="flex items-center gap-2">
-                    <span class="font-semibold text-white text-sm">{r.name}</span>
+                    <span class="font-semibold text-sm" style="color:var(--admin-text-primary)">{r.name}</span>
                     <span class="text-xs px-2 py-0.5 rounded-full" style="background:rgba(251,191,36,0.12); color:#fbbf24; border:1px solid rgba(251,191,36,0.25);">RDV #{r.id}</span>
                   </div>
                   <div class="flex flex-wrap gap-x-3 text-xs text-gray-500 mt-0.5">
@@ -4878,7 +4921,7 @@ export const AdminDevisListPage = ({ devisData = [], rdvsPending = [] }: { devis
     )}
 
     {devisData.length === 0 ? (
-      <div class="rounded-2xl p-16 text-center card-shadow" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+      <div class="rounded-2xl p-16 text-center card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
         <i class="fas fa-file-invoice-dollar text-5xl text-gray-700 mb-4"></i>
         <p class="text-gray-400 mb-2 font-semibold">Aucun devis créé</p>
         <p class="text-gray-600 text-sm mb-6">Créez un devis depuis les RDV ci-dessus ou avec le bouton "Nouveau devis"</p>
@@ -4901,7 +4944,7 @@ export const AdminDevisListPage = ({ devisData = [], rdvsPending = [] }: { devis
             expired: 'background:rgba(107,114,128,0.12); color:#6b7280; border:1px solid rgba(107,114,128,0.2);'
           }
           return (
-            <div class="rounded-2xl p-5 card-shadow" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+            <div class="rounded-2xl p-5 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
               <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex items-start space-x-4">
                   <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(239,68,68,0.1);">
@@ -4909,7 +4952,7 @@ export const AdminDevisListPage = ({ devisData = [], rdvsPending = [] }: { devis
                   </div>
                   <div>
                     <div class="flex items-center flex-wrap gap-2 mb-1">
-                      <span class="font-bold text-white">{d.numero}</span>
+                      <span class="font-bold" style="color:var(--admin-text-primary)">{d.numero}</span>
                       <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold" style={statusStyle[effectiveStatus] || statusStyle.draft}>{statusLabel[effectiveStatus] || effectiveStatus}</span>
                     </div>
                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
@@ -4971,11 +5014,11 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
   return (
   <AdminLayout activePage="devis">
     <div class="flex items-center space-x-3 mb-6">
-      <a href="/admin/devis" class="text-gray-400 hover:text-white transition-colors p-1">
+      <a href="/admin/devis" class="transition-colors p-1" style="color:var(--admin-text-muted)">
         <i class="fas fa-arrow-left"></i>
       </a>
       <div>
-        <h2 class="text-xl font-bold text-white">{ctx === 'sav' ? 'Devis réparation SAV' : ctx === 'maintenance' ? 'Devis entretien planifié' : 'Créer un devis'}</h2>
+        <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">{ctx === 'sav' ? 'Devis réparation SAV' : ctx === 'maintenance' ? 'Devis entretien planifié' : 'Créer un devis'}</h2>
         <p class="text-sm text-gray-500 mt-0.5">{ctx === 'sav' && ticket ? `Ticket ${ticket.ticket_ref||'#'+(ticket.id||'')} — ${ticket.subject||''}` : ctx === 'maintenance' && contract ? `Contrat ${contract.plan_type||''} — ${contract.client_name||''}` : orderId ? `Commande #CMD-${String(orderId).padStart(4,'0')} — ${rdv?.name||''}` : rdv ? `D'après le RDV de ${rdv.name} — ${rdv.quartier}` : 'Nouveau devis manuel'}</p>
       </div>
     </div>
@@ -5004,7 +5047,7 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
           <span class="text-xs px-2 py-0.5 rounded-full font-bold ml-auto" style="background:rgba(251,146,60,0.15);color:#fb923c;">{ticket.priority}</span>
         </div>
         <p class="text-sm text-gray-300 font-medium">{ticket.subject}</p>
-        {ticket.description && <p class="text-xs text-gray-400 mt-1">{ticket.description}</p>}
+        {ticket.description && <p class="text-xs mt-1" style="color:var(--admin-text-muted)">{ticket.description}</p>}
       </div>
     )}
     {ctx === 'maintenance' && contract && (
@@ -5014,7 +5057,7 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
           <span class="font-semibold text-emerald-300 text-sm">Contrat de maintenance — {contract.plan_type}</span>
           <span class="text-xs px-2 py-0.5 rounded-full ml-auto" style="background:rgba(52,211,153,0.12);color:#34d399;">{contract.completed_visits}/{contract.total_visits} visites</span>
         </div>
-        <p class="text-xs text-gray-500">{contract.start_date} → {contract.end_date}</p>
+        <p class="text-xs" style="color:var(--admin-text-muted)">{contract.start_date} → {contract.end_date}</p>
       </div>
     )}
     {ctx === 'commande' && (
@@ -5030,8 +5073,8 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
       {contract && <input type="hidden" name="contract_id" value={String(contract.id)} />}
 
       {/* Section client */}
-      <div class="rounded-2xl p-6 card-shadow" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
-        <h3 class="font-bold text-white mb-4 flex items-center space-x-2">
+      <div class="rounded-2xl p-6 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
+        <h3 class="font-bold mb-4 flex items-center space-x-2" style="color:var(--admin-text-primary)">
           <i class="fas fa-user text-cyan-400"></i><span>Informations client</span>
         </h3>
 
@@ -5058,19 +5101,19 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Nom complet *</label>
+            <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Nom complet *</label>
             <input type="text" id="client_name_input" name="client_name" required placeholder="Nom et prénom" value={pc ? pc.name : ''} class="input-field text-sm" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Téléphone (Whatsapp) *</label>
+            <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Téléphone (Whatsapp) *</label>
             <input type="tel" id="client_phone_input" name="client_phone" required placeholder="+226 XX XX XX XX" value={pc ? pc.phone : ''} class="input-field text-sm" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Email</label>
+            <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Email</label>
             <input type="email" id="client_email_input" name="client_email" placeholder="client@email.com" value={pc?.email || ''} class="input-field text-sm" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Quartier / Zone</label>
+            <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Quartier / Zone</label>
             <input type="text" id="client_quartier_input" name="client_quartier" placeholder="Ex: Paspanga" value={pc ? pc.quartier : ''} class="input-field text-sm" />
           </div>
         </div>
@@ -5078,17 +5121,17 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
 
       {/* Section technique — only for installation/RDV/commande contexts */}
       {(ctx === 'rdv' || ctx === 'commande' || ctx === 'manuel') && (
-        <div class="rounded-2xl p-6 card-shadow" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
-          <h3 class="font-bold text-white mb-4 flex items-center space-x-2">
+        <div class="rounded-2xl p-6 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
+          <h3 class="font-bold mb-4 flex items-center space-x-2" style="color:var(--admin-text-primary)">
             <i class="fas fa-ruler-combined text-cyan-400"></i><span>Données techniques</span>
           </h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Surface de la pièce (m²)</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Surface de la pièce (m²)</label>
               <input type="number" name="surface" min="1" max="500" step="0.5" placeholder="Ex: 20" value={surface} class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5">Puissance recommandée</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Puissance recommandée</label>
               <select name="btu_recommande" class="input-field text-sm">
                 <option value="">Non défini</option>
                 {[9000, 12000, 18000, 24000, 36000].map((b: number) => (
@@ -5103,8 +5146,8 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
       )}
 
       {/* Section produit & prix */}
-      <div class="rounded-2xl p-6 card-shadow" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
-        <h3 class="font-bold text-white mb-4 flex items-center space-x-2">
+      <div class="rounded-2xl p-6 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
+        <h3 class="font-bold mb-4 flex items-center space-x-2" style="color:var(--admin-text-primary)">
           <i class="fas fa-box text-cyan-400"></i><span>{ctx === 'sav' ? "Pièces & Main d'œuvre" : ctx === 'maintenance' ? "Interventions & Main d'œuvre" : 'Produit & Prestations'}</span>
         </h3>
 
@@ -5130,25 +5173,25 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
 
         <div class="grid grid-cols-1 gap-4 mb-4">
           <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Désignation produit / climatiseur *</label>
+            <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Désignation produit / climatiseur *</label>
             <input type="text" name="produit_nom" id="produit_nom_input" required
               placeholder="Ex: Samsung Wind-Free 12 000 BTU 1,5 CV Inverter" class="input-field text-sm" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Prix unitaire (FCFA) *</label>
+            <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Prix unitaire (FCFA) *</label>
             <input type="number" name="produit_prix" id="produit_prix_input" required min="0"
               placeholder="Ex: 375 000" oninput="recalcTotal()" class="input-field text-sm" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Quantité</label>
+            <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Quantité</label>
             <input type="number" name="produit_quantite" id="produit_quantite_input"
               value="1" min="1" max="20" oninput="recalcTotal()" class="input-field text-sm" />
           </div>
         </div>
         <div class="mb-5">
-          <label class="block text-xs font-semibold text-gray-400 mb-1.5">{ctx === 'sav' ? "Main d'œuvre réparation (FCFA)" : ctx === 'maintenance' ? 'Prestation entretien (FCFA)' : "Main d'œuvre / Installation (FCFA)"}</label>
+          <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">{ctx === 'sav' ? "Main d'œuvre réparation (FCFA)" : ctx === 'maintenance' ? 'Prestation entretien (FCFA)' : "Main d'œuvre / Installation (FCFA)"}</label>
           <input type="number" name="installation_prix" id="installation_prix_input"
             value={ctx === 'maintenance' ? '15000' : '50000'} min="0" oninput="recalcTotal()" class="input-field text-sm" />
         </div>
@@ -5169,12 +5212,12 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
 
         <div class="grid grid-cols-2 gap-4 pt-4" style="border-top:1px solid rgba(148,180,220,0.1);">
           <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Remise (%)</label>
+            <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Remise (%)</label>
             <input type="number" name="remise" id="remise_input"
               value="0" min="0" max="50" oninput="recalcTotal()" class="input-field text-sm" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Total estimé</label>
+            <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Total estimé</label>
             <div id="total-display" class="rounded-xl px-4 py-3 text-right font-bold text-xl"
               style="background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.2); color:#38bdf8;">
               0 FCFA
@@ -5184,14 +5227,14 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
       </div>
 
       {/* Section message & validité */}
-      <div class="rounded-2xl p-6 card-shadow" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
-        <h3 class="font-bold text-white mb-4 flex items-center space-x-2">
+      <div class="rounded-2xl p-6 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
+        <h3 class="font-bold mb-4 flex items-center space-x-2" style="color:var(--admin-text-primary)">
           <i class="fas fa-comment-alt text-cyan-400"></i><span>Message & Validité</span>
         </h3>
         {ctx === 'manuel' && (
           <div class="mb-4 grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5"><i class="fas fa-map-signs mr-1.5" style="color:#fbbf24;"></i>Origine de la demande</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);"><i class="fas fa-map-signs mr-1.5" style="color:#fbbf24;"></i>Origine de la demande</label>
               <select name="origine" class="input-field text-sm">
                 <option value="">Non précisé</option>
                 <option value="appel">Appel entrant</option>
@@ -5203,7 +5246,7 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
               </select>
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-400 mb-1.5"><i class="fas fa-exclamation-triangle mr-1.5" style="color:#f87171;"></i>Niveau d'urgence</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);"><i class="fas fa-exclamation-triangle mr-1.5" style="color:#f87171;"></i>Niveau d'urgence</label>
               <select name="urgence" class="input-field text-sm">
                 <option value="normal">Normal</option>
                 <option value="urgent">Urgent</option>
@@ -5213,16 +5256,16 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
           </div>
         )}
         <div class="mb-4">
-          <label class="block text-xs font-semibold text-gray-400 mb-1.5">Message personnalisé pour le client <span class="text-gray-600 font-normal">(apparaît sur le devis)</span></label>
+          <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Message personnalisé pour le client <span class="text-gray-600 font-normal">(apparaît sur le devis)</span></label>
           <textarea name="message_client" rows={3} class="input-field text-sm resize-none"
             placeholder="Ex: Suite à notre visite technique, voici notre proposition...">{ctx === 'sav' && ticket ? `Suite à l'analyse du ticket ${ticket.ticket_ref||''} — "${ticket.subject||''}", voici notre devis de réparation. Ce devis est valable 30 jours. Contactez-nous au +226 55 99 64 18 pour accord.` : ctx === 'maintenance' && contract ? `Dans le cadre de votre contrat de maintenance ${contract.plan_type}, voici le devis pour la prochaine intervention planifiée. Ce devis est valable 30 jours.` : rdv ? `Suite à notre visite technique à ${rdv.quartier}, voici notre proposition de devis personnalisée. Ce devis est valable 30 jours. N'hésitez pas à nous contacter pour toute question au +226 55 99 64 18.` : ''}</textarea>
         </div>
         <div class="mb-4">
-          <label class="block text-xs font-semibold text-gray-400 mb-1.5">Notes internes <span class="text-gray-600 font-normal">(non visibles par le client)</span></label>
+          <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Notes internes <span class="text-gray-600 font-normal">(non visibles par le client)</span></label>
           <textarea name="notes_internes" rows={2} placeholder={ctx === 'sav' ? "Diagnostic, pièces identifiées, technicien assigné..." : ctx === 'maintenance' ? "Points d'entretien, filtres à vérifier, niveaux fluide..." : "Observations techniques, contraintes, remarques d'installation..."} class="input-field text-sm resize-none">{ctx === 'sav' && ticket ? `Ref. ticket: ${ticket.ticket_ref||'#'+(ticket.id||'')}` : ctx === 'maintenance' && contract ? `Ref. contrat #${contract.id}` : ''}</textarea>
         </div>
         <div>
-          <label class="block text-xs font-semibold text-gray-400 mb-1.5">Date d'expiration du devis</label>
+          <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Date d'expiration du devis</label>
           <input type="date" name="expires_at" id="expires_at_input" required class="input-field text-sm" />
           <p class="text-xs text-gray-600 mt-1"><i class="fas fa-info-circle mr-1"></i>Défaut : 30 jours à partir d'aujourd'hui</p>
         </div>
@@ -5253,8 +5296,8 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
     {/* Preview modal */}
     <div id="preview-modal" class="fixed inset-0 z-50 hidden" style="background:rgba(0,0,0,0.8); backdrop-filter:blur(4px);">
       <div class="flex flex-col h-full">
-        <div class="flex items-center justify-between px-5 py-3" style="background:#0f172a; border-bottom:1px solid rgba(56,189,248,0.15);">
-          <h3 class="text-sm font-bold text-white flex items-center space-x-2"><i class="fas fa-file-pdf" style="color:#a78bfa;"></i><span>Prévisualisation du devis</span></h3>
+        <div class="flex items-center justify-between px-5 py-3" style="background:var(--admin-card-bg); border-bottom:1px solid var(--admin-border);">
+          <h3 class="text-sm font-bold flex items-center space-x-2" style="color:var(--admin-text-primary)"><i class="fas fa-file-pdf" style="color:#a78bfa;"></i><span>Prévisualisation du devis</span></h3>
           <button type="button" onclick="closePreview()" class="p-2 rounded-lg hover:bg-white/10 transition-colors"><i class="fas fa-times text-gray-400"></i></button>
         </div>
         <div class="flex-1 overflow-auto p-4"><iframe id="preview-iframe" style="width:100%;height:100%;min-height:80vh;border:none;border-radius:12px;background:white;"></iframe></div>
@@ -5368,16 +5411,16 @@ export const AdminDevisDetailPage = ({ devis, publicUrl, notify, emailOk, emailE
         {notify && <div class="rounded-xl p-4 text-sm" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#34d399;">{notify}</div>}
         {emailOk && <div class="rounded-xl p-4 text-sm" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#34d399;">Email envoyé avec succès.</div>}
         {emailErr && <div class="rounded-xl p-4 text-sm" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#f87171;">Erreur email : {emailErr}</div>}
-        <div class="rounded-2xl p-6" style="background:#111827;border:1px solid rgba(56,189,248,0.1);">
+        <div class="rounded-2xl p-6" style="background:var(--admin-card-bg);border:1px solid var(--admin-border);">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-bold text-white">Devis {devis?.numero}</h2>
+            <h2 class="text-lg font-bold" style="color:var(--admin-text-primary)">Devis {devis?.numero}</h2>
             <span class="text-xs px-3 py-1 rounded-full font-semibold" style={`background:rgba(148,163,184,0.1);color:${statusColors[devis?.status]||'#94a3b8'}`}>{statusLabels[devis?.status]||devis?.status}</span>
           </div>
           <div class="grid grid-cols-2 gap-4 text-sm mb-4">
-            <div><span class="text-gray-500">Client :</span> <span class="text-white">{devis?.client_name}</span></div>
-            <div><span class="text-gray-500">Téléphone :</span> <span class="text-white">{devis?.client_phone}</span></div>
+            <div><span class="text-gray-500">Client :</span> <span style="color:var(--admin-text-primary)">{devis?.client_name}</span></div>
+            <div><span class="text-gray-500">Téléphone :</span> <span style="color:var(--admin-text-primary)">{devis?.client_phone}</span></div>
             <div><span class="text-gray-500">Total :</span> <span class="text-cyan-400 font-bold">{devis?.total?.toLocaleString()} FCFA</span></div>
-            <div><span class="text-gray-500">Date :</span> <span class="text-white">{devis?.created_at ? new Date(devis.created_at).toLocaleDateString('fr-FR') : '-'}</span></div>
+            <div><span class="text-gray-500">Date :</span> <span style="color:var(--admin-text-primary)">{devis?.created_at ? new Date(devis.created_at).toLocaleDateString('fr-FR') : '-'}</span></div>
           </div>
           <div class="flex flex-wrap gap-3 mt-4">
             <a href={publicUrl} target="_blank" class="btn-secondary text-sm px-4 py-2 rounded-xl"><i class="fas fa-eye mr-2"></i>Voir le devis</a>
@@ -5404,7 +5447,7 @@ export const AdminPaiementsPage = ({ payments = [], stats }: { payments: any[]; 
     <div class="space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 fade-in-up">
         <div>
-          <h2 class="text-xl font-bold text-white">Paiements</h2>
+          <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">Paiements</h2>
           <p class="text-sm text-blue-300/60 mt-1">Suivi et gestion de tous les paiements</p>
         </div>
         <a href="/api/admin/export/payments" class="text-xs px-4 py-2.5 rounded-xl font-semibold flex items-center space-x-2" style="background:rgba(16,185,129,0.12); color:#34d399; border:1px solid rgba(16,185,129,0.2);">
@@ -5429,7 +5472,7 @@ export const AdminPaiementsPage = ({ payments = [], stats }: { payments: any[]; 
               </div>
               <div>
                 <div class="text-xs font-medium" style="color:#64748b;">{c.label}</div>
-                <div class="text-xl font-bold text-white">{c.val}</div>
+                <div class="text-xl font-bold" style="color:var(--admin-text-primary)">{c.val}</div>
               </div>
             </div>
           </div>
@@ -5449,7 +5492,7 @@ export const AdminPaiementsPage = ({ payments = [], stats }: { payments: any[]; 
       </div>
 
       {/* Table */}
-      <div class="rounded-2xl overflow-hidden fade-in-up delay-3" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+      <div class="rounded-2xl overflow-hidden fade-in-up delay-3" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
         {payments.length === 0 ? (
           <div class="text-center py-16">
             <i class="fas fa-receipt text-4xl mb-3" style="color:#1e3a5f;"></i>
@@ -5459,15 +5502,15 @@ export const AdminPaiementsPage = ({ payments = [], stats }: { payments: any[]; 
           <div class="overflow-x-auto">
             <table class="admin-table w-full text-sm">
               <thead>
-                <tr style="background:rgba(15,23,42,0.8); border-bottom:1px solid rgba(56,189,248,0.08);">
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider hidden lg:table-cell">ID</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Client</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider hidden sm:table-cell">Type</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Montant</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider hidden md:table-cell">Méthode</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Statut</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider hidden lg:table-cell">Réf.</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider hidden md:table-cell">Date</th>
+                <tr style="background:#f1f5f9; border-bottom:1px solid var(--admin-border);">
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden lg:table-cell" style="color:var(--admin-text-muted)">ID</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Client</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden sm:table-cell" style="color:var(--admin-text-muted)">Type</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Montant</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell" style="color:var(--admin-text-muted)">Méthode</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Statut</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden lg:table-cell" style="color:var(--admin-text-muted)">Réf.</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell" style="color:var(--admin-text-muted)">Date</th>
                   <th class="px-5 py-3"></th>
                 </tr>
               </thead>
@@ -5485,15 +5528,15 @@ export const AdminPaiementsPage = ({ payments = [], stats }: { payments: any[]; 
                   const methodMap: Record<string,string> = { orange_money: 'Orange Money', moov_money: 'Moov Money', wave: 'Wave', carte_bancaire: 'Carte', ligdicash: 'LigdiCash', cash: 'Espèces' }
                   const typeMap: Record<string,string> = { order: 'Commande', maintenance: 'Maintenance' }
                   return (
-                    <tr style="border-bottom:1px solid rgba(56,189,248,0.05);" class="hover:bg-white/5">
-                      <td class="px-5 py-3 font-mono text-xs text-blue-300 hidden lg:table-cell">#{p.id}</td>
+                    <tr style="border-bottom:1px solid var(--admin-border);" class="hover:bg-[rgba(3,105,161,0.04)]">
+                      <td class="px-5 py-3 font-mono text-xs hidden lg:table-cell" style="color:var(--admin-accent)">#{p.id}</td>
                       <td class="px-5 py-3">
-                        <div class="font-semibold text-white text-sm">{p.client_name || '—'}</div>
-                        <div class="text-xs" style="color:#64748b;">{p.client_phone || ''}</div>
+                        <div class="font-semibold text-sm" style="color:var(--admin-text-primary)">{p.client_name || '—'}</div>
+                        <div class="text-xs" style="color:var(--admin-text-muted)">{p.client_phone || ''}</div>
                       </td>
-                      <td class="px-5 py-3 text-sm text-blue-200 hidden sm:table-cell">{typeMap[p.payment_type] || p.payment_type}</td>
-                      <td class="px-5 py-3 font-bold text-white">{(p.amount || 0).toLocaleString()} F</td>
-                      <td class="px-5 py-3 text-sm hidden md:table-cell" style="color:#94a3b8;">{methodMap[p.method] || p.method}</td>
+                      <td class="px-5 py-3 text-sm hidden sm:table-cell" style="color:var(--admin-text-primary)">{typeMap[p.payment_type] || p.payment_type}</td>
+                      <td class="px-5 py-3 font-bold" style="color:var(--admin-text-primary)">{(p.amount || 0).toLocaleString()} F</td>
+                      <td class="px-5 py-3 text-sm hidden md:table-cell" style="color:var(--admin-text-muted)">{methodMap[p.method] || p.method}</td>
                       <td class="px-5 py-3"><span class={`text-xs font-bold px-2.5 py-1 rounded-full ${st.cls}`}>{st.label}</span></td>
                       <td class="px-5 py-3 text-xs font-mono hidden lg:table-cell" style="color:#64748b;">{p.provider_ref || '—'}</td>
                       <td class="px-5 py-3 text-xs hidden md:table-cell" style="color:#94a3b8;">{p.created_at ? new Date(p.created_at).toLocaleDateString('fr-FR') : '—'}</td>
@@ -5547,7 +5590,7 @@ export const AdminMaintenancePage = () => {
     <div class="space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 fade-in-up">
         <div>
-          <h2 class="text-xl font-bold text-white">Maintenance</h2>
+          <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">Maintenance</h2>
           <p class="text-sm text-blue-300/60 mt-1">Contrats, demandes et visites de maintenance</p>
         </div>
       </div>
@@ -5560,7 +5603,7 @@ export const AdminMaintenancePage = () => {
               <i class="fas fa-bell text-lg" style="color:#f59e0b;"></i>
             </div>
             <div class="flex-1 min-w-0">
-              <h3 class="font-bold text-white flex items-center space-x-2">
+              <h3 class="font-bold flex items-center space-x-2" style="color:var(--admin-text-primary)">
                 <span>🔔 {dueVisits.length} visite{dueVisits.length > 1 ? 's' : ''} à effectuer !</span>
               </h3>
               <p class="text-sm mt-1" style="color:#fbbf24;">Les visites suivantes ont atteint leur date prévue et doivent être validées après réalisation.</p>
@@ -5573,7 +5616,7 @@ export const AdminMaintenancePage = () => {
                       <div class="flex items-center space-x-3 min-w-0">
                         <i class="fas fa-exclamation-triangle text-sm" style="color:#f59e0b;"></i>
                         <div class="min-w-0">
-                          <div class="text-sm font-semibold text-white truncate">
+                          <div class="text-sm font-semibold truncate" style="color:var(--admin-text-primary)">
                             {v.client_name || (contract ? contract.client_name : `Client #${v.client_id}`)}
                             <span class="text-xs font-normal ml-2" style="color:#94a3b8;">{v.client_phone}</span>
                           </div>
@@ -5611,7 +5654,7 @@ export const AdminMaintenancePage = () => {
               </div>
               <div>
                 <div class="text-xs font-medium" style="color:#64748b;">{c.label}</div>
-                <div class="text-xl font-bold text-white">{c.val}</div>
+                <div class="text-xl font-bold" style="color:var(--admin-text-primary)">{c.val}</div>
               </div>
             </div>
           </div>
@@ -5619,9 +5662,9 @@ export const AdminMaintenancePage = () => {
       </div>
 
       {/* ===== Contrats ===== */}
-      <div class="rounded-2xl overflow-hidden fade-in-up delay-2" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
-        <div class="px-5 py-4" style="border-bottom:1px solid rgba(56,189,248,0.08);">
-          <h3 class="font-bold text-white flex items-center space-x-2">
+      <div class="rounded-2xl overflow-hidden fade-in-up delay-2" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
+        <div class="px-5 py-4" style="border-bottom:1px solid var(--admin-border);">
+          <h3 class="font-bold flex items-center space-x-2" style="color:var(--admin-text-primary)">
             <i class="fas fa-file-contract text-sm" style="color:#0ea5e9;"></i>
             <span>Contrats de maintenance</span>
             <span class="ml-2 text-xs px-2 py-0.5 rounded-full" style="background:rgba(14,165,233,0.15); color:#38bdf8;">{contracts.length}</span>
@@ -5636,15 +5679,15 @@ export const AdminMaintenancePage = () => {
           <div class="overflow-x-auto">
             <table class="admin-table w-full text-sm">
               <thead>
-                <tr style="background:rgba(15,23,42,0.8); border-bottom:1px solid rgba(56,189,248,0.08);">
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider hidden lg:table-cell">ID</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Client</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider hidden md:table-cell">Formule</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider hidden md:table-cell">Prix</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider hidden lg:table-cell">Période</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Visites</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Statut</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider hidden sm:table-cell">Actions</th>
+                <tr style="background:#f1f5f9; border-bottom:1px solid var(--admin-border);">
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden lg:table-cell" style="color:var(--admin-text-muted)">ID</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Client</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell" style="color:var(--admin-text-muted)">Formule</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell" style="color:var(--admin-text-muted)">Prix</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden lg:table-cell" style="color:var(--admin-text-muted)">Période</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Visites</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Statut</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden sm:table-cell" style="color:var(--admin-text-muted)">Actions</th>
                 </tr>
               </thead>
               <tbody data-paginate="10">
@@ -5666,25 +5709,25 @@ export const AdminMaintenancePage = () => {
                   const progress = (c.total_visits || 0) > 0 ? Math.round((completedCount / c.total_visits) * 100) : 0
                   return (
                     <>
-                    <tr style="border-bottom:1px solid rgba(56,189,248,0.05);" class="hover:bg-white/5 cursor-pointer" onclick={`var el=document.getElementById('cv-${c.id}');el.classList.toggle('hidden');this.querySelector('.expand-icon').classList.toggle('fa-chevron-right');this.querySelector('.expand-icon').classList.toggle('fa-chevron-down');`}>
-                      <td class="px-5 py-3 font-mono text-xs text-blue-300 hidden lg:table-cell">
-                        <i class="fas fa-chevron-right expand-icon text-xs mr-1" style="color:#64748b;"></i>#{c.id}
+                    <tr style="border-bottom:1px solid var(--admin-border);" class="hover:bg-[rgba(3,105,161,0.04)] cursor-pointer" onclick={`var el=document.getElementById('cv-${c.id}');el.classList.toggle('hidden');this.querySelector('.expand-icon').classList.toggle('fa-chevron-right');this.querySelector('.expand-icon').classList.toggle('fa-chevron-down');`}>
+                      <td class="px-5 py-3 font-mono text-xs hidden lg:table-cell" style="color:var(--admin-accent)">
+                        <i class="fas fa-chevron-right expand-icon text-xs mr-1" style="color:var(--admin-text-muted);"></i>#{c.id}
                       </td>
                       <td class="px-5 py-3 cursor-pointer hover:text-blue-400" onClick={() => handleOpenClientDetail(c.client_id ?? null)}>
-                        <div class="text-white text-sm font-semibold">{c.client_name || c.client_phone || `Client #${c.client_id}`}</div>
-                        {c.client_phone && <div class="text-xs" style="color:#64748b;">{c.client_phone}</div>}
+                        <div class="text-sm font-semibold" style="color:var(--admin-text-primary)">{c.client_name || c.client_phone || `Client #${c.client_id}`}</div>
+                        {c.client_phone && <div class="text-xs" style="color:var(--admin-text-muted)">{c.client_phone}</div>}
                       </td>
-                      <td class="px-5 py-3 text-sm text-blue-200 hidden md:table-cell">{planLabels[c.plan_type] || c.plan_type}</td>
-                      <td class="px-5 py-3 font-bold text-white hidden md:table-cell">{(c.plan_price || 0).toLocaleString()} F</td>
-                      <td class="px-5 py-3 text-xs hidden lg:table-cell" style="color:#94a3b8;">
+                      <td class="px-5 py-3 text-sm hidden md:table-cell" style="color:var(--admin-text-primary)">{planLabels[c.plan_type] || c.plan_type}</td>
+                      <td class="px-5 py-3 font-bold hidden md:table-cell" style="color:var(--admin-text-primary)">{(c.plan_price || 0).toLocaleString()} F</td>
+                      <td class="px-5 py-3 text-xs hidden lg:table-cell" style="color:var(--admin-text-muted)">
                         {c.start_date ? new Date(c.start_date).toLocaleDateString('fr-FR') : '—'} → {c.end_date ? new Date(c.end_date).toLocaleDateString('fr-FR') : '—'}
                       </td>
                       <td class="px-5 py-3">
                         <div class="flex items-center space-x-2">
-                          <div class="w-16 h-2 rounded-full" style="background:rgba(14,165,233,0.1);">
-                            <div class="h-2 rounded-full" style={`width:${progress}%; background:linear-gradient(90deg,#0077b6,#00b4d8);`}></div>
+                          <div class="w-16 h-2 rounded-full" style="background:rgba(3,105,161,0.1);">
+                            <div class="h-2 rounded-full" style={`width:${progress}%; background:linear-gradient(90deg,var(--admin-accent),var(--admin-accent-hover));`}></div>
                           </div>
-                          <span class="text-sm text-blue-200 font-bold">{completedCount}/{c.total_visits || 0}</span>
+                          <span class="text-sm font-bold" style="color:var(--admin-text-primary)">{completedCount}/{c.total_visits || 0}</span>
                         </div>
                         {upcomingCount > 0 && <div class="text-xs mt-0.5" style="color:#f59e0b;"><i class="fas fa-clock mr-1"></i>{upcomingCount} à venir</div>}
                       </td>
@@ -5740,7 +5783,7 @@ export const AdminMaintenancePage = () => {
                                     <div class="flex items-center justify-between py-2 px-3 rounded-lg" style={isDue ? 'background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.2);' : 'background:rgba(14,165,233,0.05); border:1px solid rgba(14,165,233,0.1);'}>
                                       <div class="flex items-center space-x-2">
                                         <span class="text-xs font-black w-5 h-5 rounded flex items-center justify-center" style={isDue ? 'background:rgba(245,158,11,0.2); color:#f59e0b;' : 'background:rgba(14,165,233,0.1); color:#0ea5e9;'}>{idx + 1}</span>
-                                        <span class="text-sm text-white">{fmtDate(v.visit_date)}</span>
+                                        <span class="text-sm" style="color:var(--admin-text-primary)">{fmtDate(v.visit_date)}</span>
                                       </div>
                                       <div class="flex items-center space-x-2">
                                         <span class="text-xs px-2 py-0.5 rounded-full font-bold" style={isDue ? 'background:rgba(245,158,11,0.15); color:#f59e0b;' : 'background:rgba(14,165,233,0.1); color:#0ea5e9;'}>
@@ -5772,7 +5815,7 @@ export const AdminMaintenancePage = () => {
                                   <div class="flex items-center justify-between py-2 px-3 rounded-lg" style="background:rgba(52,211,153,0.05); border:1px solid rgba(52,211,153,0.1);">
                                     <div class="flex items-center space-x-2">
                                       <i class="fas fa-check-circle text-xs" style="color:#34d399;"></i>
-                                      <span class="text-sm text-white">{fmtDate(v.visit_date)}</span>
+                                      <span class="text-sm" style="color:var(--admin-text-primary)">{fmtDate(v.visit_date)}</span>
                                       {v.technician && <span class="text-xs" style="color:#64748b;">· {v.technician}</span>}
                                     </div>
                                     {v.actions_performed && <span class="text-xs truncate max-w-[200px]" style="color:#94a3b8;">{v.actions_performed}</span>}
@@ -5794,9 +5837,9 @@ export const AdminMaintenancePage = () => {
       </div>
 
       {/* ===== Visites techniques ===== */}
-      <div class="rounded-2xl overflow-hidden fade-in-up delay-2" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
-        <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid rgba(56,189,248,0.08);">
-          <h3 class="font-bold text-white flex items-center space-x-2">
+      <div class="rounded-2xl overflow-hidden fade-in-up delay-2" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
+        <div class="px-5 py-4 flex items-center justify-between" style="border-bottom:1px solid var(--admin-border);">
+          <h3 class="font-bold flex items-center space-x-2" style="color:var(--admin-text-primary)">
             <i class="fas fa-clipboard-check text-sm" style="color:#34d399;"></i>
             <span>Visites techniques</span>
             <span class="ml-2 text-xs px-2 py-0.5 rounded-full" style="background:rgba(52,211,153,0.15); color:#34d399;">{visits.length}</span>
@@ -5816,15 +5859,15 @@ export const AdminMaintenancePage = () => {
           <div class="overflow-x-auto">
             <table class="admin-table w-full text-sm">
               <thead>
-                <tr style="background:rgba(15,23,42,0.8); border-bottom:1px solid rgba(56,189,248,0.08);">
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">ID</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Client</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Contrat</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Type</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Date prévue</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Technicien</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Statut</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Actions</th>
+                <tr style="background:#f1f5f9; border-bottom:1px solid var(--admin-border);">
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">ID</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Client</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Contrat</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Type</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Date prévue</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Technicien</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Statut</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Actions</th>
                 </tr>
               </thead>
               <tbody data-paginate="10">
@@ -5840,19 +5883,19 @@ export const AdminMaintenancePage = () => {
                   const isDue = v.status === 'planifiee' && v.visit_date <= today
                   const contract = contracts.find((c: any) => c.id === v.contract_id)
                   return (
-                    <tr style={`border-bottom:1px solid rgba(56,189,248,0.05);${isDue ? ' background:rgba(245,158,11,0.05);' : ''}`} class="hover:bg-white/5">
-                      <td class="px-5 py-3 font-mono text-xs text-blue-300">#{v.id}</td>
-                      <td class="px-5 py-3 cursor-pointer hover:text-blue-400" onClick={() => handleOpenClientDetail(v.client_id || (contract ? contract.id : null))}>
-                        <div class="text-white text-sm font-semibold">{v.client_name || (contract ? contract.client_name : '—')}</div>
-                        <div class="text-xs" style="color:#64748b;">{v.client_phone || (contract ? contract.client_phone : '')}</div>
+                    <tr style={`border-bottom:1px solid var(--admin-border);${isDue ? ' background:rgba(245,158,11,0.05);' : ''}`} class="hover:bg-[rgba(3,105,161,0.04)]">
+                      <td class="px-5 py-3 font-mono text-xs" style="color:var(--admin-accent)">#{v.id}</td>
+                      <td class="px-5 py-3 cursor-pointer" onClick={() => handleOpenClientDetail(v.client_id || (contract ? contract.id : null))}>
+                        <div class="text-sm font-semibold" style="color:var(--admin-text-primary)">{v.client_name || (contract ? contract.client_name : '—')}</div>
+                        <div class="text-xs" style="color:var(--admin-text-muted);">{v.client_phone || (contract ? contract.client_phone : '')}</div>
                       </td>
-                      <td class="px-5 py-3 text-xs text-blue-200">
+                      <td class="px-5 py-3 text-xs" style="color:var(--admin-text-primary);">
                         {v.contract_id ? `#${v.contract_id}` : '—'}
-                        {contract && <div class="text-xs" style="color:#64748b;">{contract.plan_type}</div>}
+                        {contract && <div class="text-xs" style="color:var(--admin-text-muted);">{contract.plan_type}</div>}
                       </td>
-                      <td class="px-5 py-3 text-sm text-blue-200">{visitTypeLabels[v.visit_type] || v.visit_type}</td>
+                      <td class="px-5 py-3 text-sm" style="color:var(--admin-text-primary);">{visitTypeLabels[v.visit_type] || v.visit_type}</td>
                       <td class="px-5 py-3">
-                        <span class={`text-sm ${isDue ? 'font-bold' : ''}`} style={isDue ? 'color:#f59e0b;' : 'color:white;'}>
+                        <span class={`text-sm ${isDue ? 'font-bold' : ''}`} style={isDue ? 'color:#f59e0b;' : 'color:var(--admin-text-primary);'}>
                           {v.visit_date ? new Date(v.visit_date).toLocaleDateString('fr-FR') : '—'}
                         </span>
                         {isDue && <div class="text-xs font-bold" style="color:#ef4444;">⚠️ Échue</div>}
@@ -5890,9 +5933,9 @@ export const AdminMaintenancePage = () => {
       </div>
 
       {/* ===== Demandes de maintenance ===== */}
-      <div class="rounded-2xl overflow-hidden fade-in-up delay-3" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
-        <div class="px-5 py-4" style="border-bottom:1px solid rgba(56,189,248,0.08);">
-          <h3 class="font-bold text-white flex items-center space-x-2">
+      <div class="rounded-2xl overflow-hidden fade-in-up delay-3" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
+        <div class="px-5 py-4" style="border-bottom:1px solid var(--admin-border);">
+          <h3 class="font-bold flex items-center space-x-2" style="color:var(--admin-text-primary)">
             <i class="fas fa-inbox text-sm" style="color:#fbbf24;"></i>
             <span>Demandes de maintenance</span>
             <span class="ml-2 text-xs px-2 py-0.5 rounded-full" style="background:rgba(251,191,36,0.15); color:#fbbf24;">{requests.length}</span>
@@ -5907,15 +5950,15 @@ export const AdminMaintenancePage = () => {
           <div class="overflow-x-auto">
             <table class="admin-table w-full text-sm">
               <thead>
-                <tr style="background:rgba(15,23,42,0.8); border-bottom:1px solid rgba(56,189,248,0.08);">
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">ID</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Client</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Type</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Équipement</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Description</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Statut</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Date</th>
-                  <th class="text-left px-5 py-3 font-semibold text-blue-300/80 text-xs uppercase tracking-wider">Actions</th>
+                <tr style="background:#f1f5f9; border-bottom:1px solid var(--admin-border);">
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">ID</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Client</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Type</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Équipement</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Description</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Statut</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Date</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Actions</th>
                 </tr>
               </thead>
               <tbody data-paginate="10">
@@ -5924,15 +5967,15 @@ export const AdminMaintenancePage = () => {
                   const statusBadge: Record<string,{l:string;c:string}> = { pending:{l:'En attente',c:'badge-pending'}, contacted:{l:'Contacté',c:'badge-done'}, scheduled:{l:'Planifié',c:'badge-confirmed'}, done:{l:'Terminé',c:'badge-confirmed'}, cancelled:{l:'Annulé',c:'badge-cancelled'} }
                   const sb = statusBadge[r.status] || {l:r.status,c:'badge-pending'}
                   return (
-                    <tr style="border-bottom:1px solid rgba(56,189,248,0.05);" class="hover:bg-white/5">
-                      <td class="px-5 py-3 font-mono text-xs text-blue-300">#{r.id}</td>
-                      <td class="px-5 py-3 cursor-pointer hover:text-blue-400" onClick={() => handleOpenClientDetail(r.client_id ?? null)}>
-                        <div class="text-white text-sm font-semibold">{r.client_name || '—'}</div>
-                        <div class="text-xs" style="color:#64748b;">{r.client_phone || ''}</div>
+                    <tr style="border-bottom:1px solid var(--admin-border);" class="hover:bg-[rgba(3,105,161,0.04)]">
+                      <td class="px-5 py-3 font-mono text-xs" style="color:var(--admin-accent)">#{r.id}</td>
+                      <td class="px-5 py-3 cursor-pointer" onClick={() => handleOpenClientDetail(r.client_id ?? null)}>
+                        <div class="text-sm font-semibold" style="color:var(--admin-text-primary)">{r.client_name || '—'}</div>
+                        <div class="text-xs" style="color:var(--admin-text-muted);">{r.client_phone || ''}</div>
                       </td>
-                      <td class="px-5 py-3 text-sm text-blue-200">{typeLabels[r.request_type] || r.request_type}</td>
-                      <td class="px-5 py-3 text-xs" style="color:#94a3b8;">{r.equipment_type || '—'}</td>
-                      <td class="px-5 py-3 text-xs max-w-xs truncate" style="color:#94a3b8;">{r.description || '—'}</td>
+                      <td class="px-5 py-3 text-sm" style="color:var(--admin-text-primary);">{typeLabels[r.request_type] || r.request_type}</td>
+                      <td class="px-5 py-3 text-xs" style="color:var(--admin-text-muted);">{r.equipment_type || '—'}</td>
+                      <td class="px-5 py-3 text-xs max-w-xs truncate" style="color:var(--admin-text-muted);">{r.description || '—'}</td>
                       <td class="px-5 py-3"><span class={`text-xs font-bold px-2.5 py-1 rounded-full ${sb.c}`}>{sb.l}</span></td>
                       <td class="px-5 py-3 text-xs" style="color:#94a3b8;">{r.created_at ? new Date(r.created_at).toLocaleDateString('fr-FR') : '—'}</td>
                       <td class="px-5 py-3">
@@ -5968,9 +6011,9 @@ export const AdminMaintenancePage = () => {
     {/* ===== MODAL VALIDATION VISITE ===== */}
     <div id="validation-modal" class="fixed inset-0 z-50 hidden" style="background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);">
       <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="w-full max-w-lg rounded-2xl p-6" style="background:#111827; border:1px solid rgba(56,189,248,0.15); box-shadow:0 25px 50px rgba(0,0,0,0.5);">
+        <div class="w-full max-w-lg rounded-2xl p-6" style="background:var(--admin-card-bg); border:1px solid var(--admin-border); box-shadow:0 25px 50px rgba(0,0,0,0.3);">
           <div class="flex items-center justify-between mb-5">
-            <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+            <h3 class="text-lg font-bold flex items-center space-x-2" style="color:var(--admin-text-primary)">
               <i class="fas fa-check-circle" style="color:#34d399;"></i>
               <span>Valider l'entretien</span>
             </h3>
@@ -5983,11 +6026,11 @@ export const AdminMaintenancePage = () => {
           <form method="post" action="/admin/maintenance/validate-visit" class="space-y-4">
             <input type="hidden" name="visit_id" id="modal-visit-id" />
             <div>
-              <label class="block text-xs font-semibold text-blue-300/80 mb-1.5">Technicien</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Technicien</label>
               <input type="text" name="technician" placeholder="Nom du technicien" class="input-field" required />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-blue-300/80 mb-1.5">Actions réalisées</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Actions réalisées</label>
               <textarea name="actions_performed" rows={3} placeholder="Nettoyage filtres, recharge gaz, vérification..." class="input-field" style="resize:vertical;" required></textarea>
             </div>
             <div class="grid grid-cols-2 gap-4">
@@ -6001,7 +6044,7 @@ export const AdminMaintenancePage = () => {
               </label>
             </div>
             <div>
-              <label class="block text-xs font-semibold text-blue-300/80 mb-1.5">Notes supplémentaires</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Notes supplémentaires</label>
               <textarea name="notes" rows={2} placeholder="Remarques, état de l'équipement..." class="input-field" style="resize:vertical;"></textarea>
             </div>
             <div class="flex justify-end space-x-3 pt-2">
@@ -6057,14 +6100,14 @@ export const AdminMessagesPage = ({ messages = [], unreadCount = 0, success, del
       {/* Header */}
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-bold text-white flex items-center gap-3">
+          <h1 class="text-2xl font-bold flex items-center gap-3" style="color:var(--admin-text-primary)">
             <i class="fas fa-envelope text-blue-400"></i>
             Messages de contact
             {unreadCount > 0 && (
               <span class="bg-red-500 text-white text-sm font-bold rounded-full px-2.5 py-0.5">{unreadCount} non lu{unreadCount > 1 ? 's' : ''}</span>
             )}
           </h1>
-          <p class="text-sm text-gray-400 mt-1">{messages.length} message{messages.length !== 1 ? 's' : ''} au total</p>
+          <p class="text-sm mt-1" style="color:var(--admin-text-muted)">{messages.length} message{messages.length !== 1 ? 's' : ''} au total</p>
         </div>
       </div>
 
@@ -6082,7 +6125,7 @@ export const AdminMessagesPage = ({ messages = [], unreadCount = 0, success, del
 
       {/* Messages list */}
       {messages.length === 0 ? (
-        <div class="text-center py-20 rounded-2xl" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+        <div class="text-center py-20 rounded-2xl" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
           <i class="fas fa-inbox text-5xl text-gray-600 mb-4"></i>
           <p class="text-gray-400 text-lg">Aucun message reçu</p>
           <p class="text-gray-500 text-sm mt-2">Les messages envoyés via le formulaire de contact apparaîtront ici.</p>
@@ -6092,7 +6135,7 @@ export const AdminMessagesPage = ({ messages = [], unreadCount = 0, success, del
           {messages.map((m: any) => (
             <div
               class="rounded-xl p-5 transition-all hover:shadow-lg"
-              style={`background:${m.is_read ? '#111827' : '#0f1d35'}; border:1px solid ${m.is_read ? 'rgba(56,189,248,0.08)' : 'rgba(59,130,246,0.3)'};`}
+              style={`background:${m.is_read ? 'var(--admin-card-bg)' : 'rgba(59,130,246,0.04)'}; border:1px solid ${m.is_read ? 'var(--admin-border)' : 'rgba(59,130,246,0.25)'};`}
             >
               <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div class="flex items-center gap-3">
@@ -6103,7 +6146,7 @@ export const AdminMessagesPage = ({ messages = [], unreadCount = 0, success, del
                     <i class={`fas fa-user text-sm ${m.is_read ? 'text-gray-500' : 'text-blue-400'}`}></i>
                   </div>
                   <div>
-                    <h3 class={`font-semibold ${m.is_read ? 'text-gray-300' : 'text-white'}`}>{m.name}</h3>
+                    <h3 class={`font-semibold`} style={m.is_read ? "color:var(--admin-text-muted)" : "color:var(--admin-text-primary)"} data-unused={`${m.is_read ? 'text-gray-300' : 'text-white'}`}>{m.name}</h3>
                     <div class="flex flex-wrap items-center gap-3 text-xs text-gray-500 mt-0.5">
                       {m.phone && (
                         <span><i class="fas fa-phone mr-1"></i>{m.phone}</span>
@@ -6115,7 +6158,7 @@ export const AdminMessagesPage = ({ messages = [], unreadCount = 0, success, del
                   </div>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
-                  <span class="text-xs text-gray-500">
+                  <span class="text-xs" style="color:var(--admin-text-muted)">
                     <i class="fas fa-clock mr-1"></i>
                     {m.created_at ? new Date(m.created_at + 'Z').toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                   </span>
@@ -6128,8 +6171,8 @@ export const AdminMessagesPage = ({ messages = [], unreadCount = 0, success, del
               </div>
 
               {/* Message body */}
-              <div class="rounded-lg p-4 mb-3" style="background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.05);">
-                <p class="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed">{m.message}</p>
+              <div class="rounded-lg p-4 mb-3" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">
+                <p style="color:var(--admin-text-primary);" class="text-sm whitespace-pre-wrap leading-relaxed">{m.message}</p>
               </div>
 
               {/* Actions */}
@@ -6153,7 +6196,7 @@ export const AdminMessagesPage = ({ messages = [], unreadCount = 0, success, del
                   </a>
                 )}
                 {m.email && (
-                  <a href={`mailto:${m.email}`} class="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors" style="background:rgba(56,189,248,0.1); color:#38bdf8; border:1px solid rgba(56,189,248,0.2);">
+                  <a href={`mailto:${m.email}`} class="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors" style="background:var(--admin-accent-light); color:var(--admin-accent); border:1px solid var(--admin-border);">
                     <i class="fas fa-envelope mr-1"></i>Email
                   </a>
                 )}
@@ -6197,8 +6240,8 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
   return (
   <AdminLayout activePage="realisations">
     <div class="mb-6">
-      <h2 class="text-xl font-bold text-white">Gestion des réalisations</h2>
-      <p class="text-sm text-gray-400 mt-1">Ajoutez et gérez vos projets terminés visibles sur le site</p>
+      <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">Gestion des réalisations</h2>
+      <p class="text-sm mt-1" style="color:var(--admin-text-muted)">Ajoutez et gérez vos projets terminés visibles sur le site</p>
     </div>
 
     {success && (
@@ -6226,7 +6269,7 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
               <i class={`fas ${s.icon} text-lg`} style={`color:${s.color};`}></i>
             </div>
             <div>
-              <div class="text-xl font-bold text-white">{s.val}</div>
+              <div class="text-xl font-bold" style="color:var(--admin-text-primary)">{s.val}</div>
               <div class="text-xs text-gray-400">{s.label}</div>
             </div>
           </div>
@@ -6235,9 +6278,9 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
     </div>
 
     {/* Formulaire d'ajout */}
-    <div class="rounded-2xl card-shadow overflow-hidden mb-6" style="background:#111827; border:1px solid rgba(16,185,129,0.2);">
+    <div class="rounded-2xl card-shadow overflow-hidden mb-6" style="background:var(--admin-card-bg); border:1px solid rgba(16,185,129,0.2);">
       <div class="p-5" style="border-bottom:1px solid rgba(16,185,129,0.15);">
-        <h3 class="font-semibold text-white flex items-center space-x-2">
+        <h3 class="font-semibold flex items-center space-x-2" style="color:var(--admin-text-primary)">
           <i class="fas fa-plus-circle text-green-400"></i>
           <span>Ajouter une réalisation</span>
         </h3>
@@ -6245,12 +6288,12 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
       <form method="post" action="/api/admin/realisations/add" class="p-5 space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs text-gray-400 mb-1 font-semibold">Titre *</label>
-            <input type="text" name="title" required placeholder="Ex: Installation Split 18000 BTU" class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,163,184,0.2);" />
+            <label class="block text-xs mb-1 font-semibold" style="color:var(--admin-text-muted)">Titre *</label>
+            <input type="text" name="title" required placeholder="Ex: Installation Split 18000 BTU" class="input-field text-sm" />
           </div>
           <div>
-            <label class="block text-xs text-gray-400 mb-1 font-semibold">Catégorie</label>
-            <select name="category" class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,163,184,0.2);">
+            <label class="block text-xs mb-1 font-semibold" style="color:var(--admin-text-muted)">Catégorie</label>
+            <select name="category" class="input-field text-sm">
               <option value="climatisation">Climatisation</option>
               <option value="ventilation">Ventilation</option>
               <option value="chambre_froide">Chambre froide</option>
@@ -6261,32 +6304,32 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
           </div>
         </div>
         <div>
-          <label class="block text-xs text-gray-400 mb-1 font-semibold">Description</label>
-          <textarea name="description" rows={3} placeholder="Décrivez le projet réalisé..." class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,163,184,0.2); resize:vertical;"></textarea>
+          <label class="block text-xs mb-1 font-semibold" style="color:var(--admin-text-muted)">Description</label>
+          <textarea name="description" rows={3} placeholder="Décrivez le projet réalisé..." class="input-field text-sm" style="resize:vertical;"></textarea>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label class="block text-xs text-gray-400 mb-1 font-semibold">Client</label>
-            <input type="text" name="client_name" placeholder="Nom du client" class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,163,184,0.2);" />
+            <label class="block text-xs mb-1 font-semibold" style="color:var(--admin-text-muted)">Client</label>
+            <input type="text" name="client_name" placeholder="Nom du client" class="input-field text-sm" />
           </div>
           <div>
-            <label class="block text-xs text-gray-400 mb-1 font-semibold">Quartier</label>
-            <input type="text" name="quartier" placeholder="Ex: Ouaga 2000" class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,163,184,0.2);" />
+            <label class="block text-xs mb-1 font-semibold" style="color:var(--admin-text-muted)">Quartier</label>
+            <input type="text" name="quartier" placeholder="Ex: Ouaga 2000" class="input-field text-sm" />
           </div>
           <div>
-            <label class="block text-xs text-gray-400 mb-1 font-semibold">Date réalisation</label>
-            <input type="date" name="date_realisation" class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,163,184,0.2);" />
+            <label class="block text-xs mb-1 font-semibold" style="color:var(--admin-text-muted)">Date réalisation</label>
+            <input type="date" name="date_realisation" class="input-field text-sm" />
           </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs text-gray-400 mb-1 font-semibold">URL de l'image</label>
-            <input type="url" name="image_url" placeholder="https://..." class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.6); border:1px solid rgba(148,163,184,0.2);" />
+            <label class="block text-xs mb-1 font-semibold" style="color:var(--admin-text-muted)">URL de l'image</label>
+            <input type="url" name="image_url" placeholder="https://..." class="input-field text-sm" />
           </div>
           <div class="flex items-end">
             <label class="flex items-center space-x-2 cursor-pointer">
               <input type="checkbox" name="is_featured" value="1" class="rounded" />
-              <span class="text-sm text-gray-300"><i class="fas fa-star text-yellow-400 mr-1"></i>Mettre en vedette</span>
+              <span class="text-sm" style="color:var(--admin-text-primary)"><i class="fas fa-star text-yellow-400 mr-1"></i>Mettre en vedette</span>
             </label>
           </div>
         </div>
@@ -6297,9 +6340,9 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
     </div>
 
     {/* Liste des réalisations */}
-    <div class="rounded-2xl card-shadow overflow-hidden" style="background:#111827; border:1px solid rgba(59,130,246,0.1);">
+    <div class="rounded-2xl card-shadow overflow-hidden" style="background:var(--admin-card-bg); border:1px solid rgba(59,130,246,0.1);">
       <div class="p-5" style="border-bottom:1px solid rgba(148,163,184,0.08);">
-        <h3 class="font-semibold text-white flex items-center space-x-2">
+        <h3 class="font-semibold flex items-center space-x-2" style="color:var(--admin-text-primary)">
           <i class="fas fa-list text-blue-400"></i>
           <span>Toutes les réalisations ({realisations.length})</span>
         </h3>
@@ -6310,19 +6353,19 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
           <p class="text-gray-400">Aucune réalisation pour le moment</p>
         </div>
       ) : (
-        <div class="divide-y divide-gray-700/30">
+        <div class="divide-y" style="border-color:var(--admin-border)">
           {realisations.map((r: any) => (
-            <div class="p-5 hover:bg-blue-900/10 transition-colors">
+            <div class="p-5 hover:bg-[rgba(3,105,161,0.04)] transition-colors">
               <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
                 <div class="flex-1">
                   <div class="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
-                    <h4 class="font-bold text-white text-sm">{r.title}</h4>
+                    <h4 class="font-bold text-sm" style="color:var(--admin-text-primary)">{r.title}</h4>
                     {r.is_featured ? <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:rgba(251,191,36,0.15); color:#fbbf24;"><i class="fas fa-star mr-1"></i>Vedette</span> : null}
                     {!r.is_visible ? <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:rgba(239,68,68,0.15); color:#f87171;"><i class="fas fa-eye-slash mr-1"></i>Masqué</span> : null}
                     <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:rgba(59,130,246,0.15); color:#60a5fa;">{categoryLabels[r.category] || r.category}</span>
                   </div>
-                  {r.description && <p class="text-xs text-gray-400 mb-2 line-clamp-2">{r.description}</p>}
-                  <div class="flex flex-wrap gap-3 text-xs text-gray-500">
+                  {r.description && <p class="text-xs mb-2 line-clamp-2" style="color:var(--admin-text-muted)">{r.description}</p>}
+                  <div class="flex flex-wrap gap-3 text-xs" style="color:var(--admin-text-muted)">
                     {r.client_name && <span><i class="fas fa-user mr-1"></i>{r.client_name}</span>}
                     {r.quartier && <span><i class="fas fa-map-marker-alt mr-1"></i>{r.quartier}</span>}
                     {r.date_realisation && <span><i class="fas fa-calendar mr-1"></i>{r.date_realisation}</span>}
@@ -6344,31 +6387,31 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
                 </form>
               </div>
               {/* Formulaire d'édition inline (caché) */}
-              <form id={`edit-form-${r.id}`} method="post" action="/api/admin/realisations/update" class="hidden mt-4 p-4 rounded-xl space-y-3" style="background:rgba(15,23,42,0.5); border:1px solid rgba(148,163,184,0.1);">
+              <form id={`edit-form-${r.id}`} method="post" action="/api/admin/realisations/update" class="hidden mt-4 p-4 rounded-xl space-y-3" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">
                 <input type="hidden" name="id" value={String(r.id)} />
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <input type="text" name="title" value={r.title} required class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.2);" />
-                  <select name="category" class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.2);">
+                  <input type="text" name="title" value={r.title} required class="input-field text-sm" />
+                  <select name="category" class="input-field text-sm">
                     {Object.entries(categoryLabels).map(([k, v]) => (
                       <option value={k} selected={r.category === k}>{v}</option>
                     ))}
                   </select>
                 </div>
-                <textarea name="description" rows={2} class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.2); resize:vertical;">{r.description || ''}</textarea>
+                <textarea name="description" rows={2} class="input-field text-sm" style="resize:vertical;">{r.description || ''}</textarea>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <input type="text" name="client_name" value={r.client_name || ''} placeholder="Client" class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.2);" />
-                  <input type="text" name="quartier" value={r.quartier || ''} placeholder="Quartier" class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.2);" />
-                  <input type="date" name="date_realisation" value={r.date_realisation || ''} class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.2);" />
+                  <input type="text" name="client_name" value={r.client_name || ''} placeholder="Client" class="input-field text-sm" />
+                  <input type="text" name="quartier" value={r.quartier || ''} placeholder="Quartier" class="input-field text-sm" />
+                  <input type="date" name="date_realisation" value={r.date_realisation || ''} class="input-field text-sm" />
                 </div>
-                <input type="url" name="image_url" value={r.image_url || ''} placeholder="URL image" class="w-full px-3 py-2 rounded-lg text-sm text-white" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.2);" />
+                <input type="url" name="image_url" value={r.image_url || ''} placeholder="URL image" class="input-field text-sm" />
                 <div class="flex items-center gap-4">
                   <label class="flex items-center space-x-2 cursor-pointer">
                     <input type="checkbox" name="is_featured" value="1" checked={!!r.is_featured} />
-                    <span class="text-sm text-gray-300">En vedette</span>
+                    <span class="text-sm" style="color:var(--admin-text-primary)">En vedette</span>
                   </label>
                   <label class="flex items-center space-x-2 cursor-pointer">
                     <input type="checkbox" name="is_visible" value="1" checked={!!r.is_visible} />
-                    <span class="text-sm text-gray-300">Visible</span>
+                    <span class="text-sm" style="color:var(--admin-text-primary)">Visible</span>
                   </label>
                 </div>
                 <button type="submit" class="px-4 py-2 rounded-lg text-sm font-bold text-white" style="background:linear-gradient(135deg,#3b82f6,#2563eb);">
@@ -6423,8 +6466,8 @@ export const AdminSAVPage = ({ tickets = [], filterStatus = '' }: { tickets: any
   <AdminLayout activePage="sav">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
       <div>
-        <h2 class="text-xl font-bold text-white"><i class="fas fa-headset mr-2 text-cyan-400"></i>SAV / Tickets Support</h2>
-        <p class="text-sm text-gray-400 mt-1">{tickets.length} tickets · {open} ouverts · {inProgress} en cours</p>
+        <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)"><i class="fas fa-headset mr-2 text-cyan-400"></i>SAV / Tickets Support</h2>
+        <p class="text-sm mt-1" style="color:var(--admin-text-muted)">{tickets.length} tickets · {open} ouverts · {inProgress} en cours</p>
       </div>
       <div class="flex gap-2">
         <a href="/api/admin/export/tickets" class="text-xs px-3 py-2 rounded-xl font-semibold flex items-center space-x-2" style="background:rgba(16,185,129,0.12); color:#34d399; border:1px solid rgba(16,185,129,0.2);">
@@ -6453,8 +6496,8 @@ export const AdminSAVPage = ({ tickets = [], filterStatus = '' }: { tickets: any
               <i class={`fas ${s.icon} text-lg`} style={`color:${s.color};`}></i>
             </div>
             <div>
-              <div class="text-xl font-bold text-white leading-none">{s.val}</div>
-              <div class="text-xs text-gray-400 mt-0.5">{s.label}</div>
+              <div class="text-xl font-bold leading-none" style="color:var(--admin-text-primary)">{s.val}</div>
+              <div class="text-xs mt-0.5" style="color:var(--admin-text-muted)">{s.label}</div>
             </div>
           </div>
         </div>
@@ -6473,7 +6516,7 @@ export const AdminSAVPage = ({ tickets = [], filterStatus = '' }: { tickets: any
       ].map(f => (
         <a href={`/admin/sav${f.s ? '?status=' + f.s : ''}`}
           class={`text-xs px-3 py-1.5 rounded-xl font-medium border transition-colors ${filterStatus === f.s ? 'bg-primary-600 text-white border-primary-600' : 'border-gray-700 text-gray-400 hover:bg-cyan-900/10'}`}
-          style={filterStatus !== f.s ? 'background:rgba(15,23,42,0.5);' : ''}>
+          style={filterStatus !== f.s ? 'background:var(--admin-bg-elevated);' : ''}>
           {f.label} ({f.count})
         </a>
       ))}
@@ -6481,7 +6524,7 @@ export const AdminSAVPage = ({ tickets = [], filterStatus = '' }: { tickets: any
 
     {/* Tickets list */}
     {filtered.length === 0 ? (
-      <div class="text-center py-16 rounded-xl" style="background:rgba(15,23,42,0.5); border:1px solid rgba(148,163,184,0.1);">
+      <div class="text-center py-16 rounded-xl" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">
         <i class="fas fa-headset text-3xl text-gray-600 mb-3"></i>
         <p class="text-gray-500">Aucun ticket{filterStatus ? ` avec ce statut` : ''}</p>
       </div>
@@ -6492,7 +6535,7 @@ export const AdminSAVPage = ({ tickets = [], filterStatus = '' }: { tickets: any
           const st = ticketStatusLabels[t.status] || ticketStatusLabels.ouvert
           const pr = ticketPriorityLabels[t.priority] || ticketPriorityLabels.normal
           return (
-          <a href={`/admin/sav/${t.id}`} class="block rounded-xl p-4 hover:scale-[1.005] transition-all cursor-pointer" style="background:rgba(15,23,42,0.5); border:1px solid rgba(148,163,184,0.1);">
+          <a href={`/admin/sav/${t.id}`} class="block rounded-xl p-4 hover:scale-[1.005] transition-all cursor-pointer" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">
             <div class="flex items-start justify-between gap-4">
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 flex-wrap mb-1">
@@ -6502,7 +6545,7 @@ export const AdminSAVPage = ({ tickets = [], filterStatus = '' }: { tickets: any
                     <i class="fas fa-flag mr-1"></i>{pr.label}
                   </span>
                 </div>
-                <h3 class="text-white font-semibold text-sm truncate">{t.subject}</h3>
+                <h3 class="font-semibold text-sm truncate" style="color:var(--admin-text-primary)">{t.subject}</h3>
                 <div class="flex items-center gap-3 mt-1.5 text-xs text-gray-500">
                   <span><i class={`fas ${cat.icon} mr-1`} style={`color:${cat.color};`}></i>{cat.label}</span>
                   <span><i class="fas fa-user mr-1"></i>{t.client_name || t.client_phone}</span>
@@ -6522,24 +6565,24 @@ export const AdminSAVPage = ({ tickets = [], filterStatus = '' }: { tickets: any
     <div id="create-ticket-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.7);">
       <div class="rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto" style="background:linear-gradient(135deg,#0f172a,#1e293b); border:1px solid rgba(148,163,184,0.15);">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-bold text-white"><i class="fas fa-plus-circle mr-2 text-cyan-400"></i>Nouveau ticket SAV</h3>
-          <button onclick="document.getElementById('create-ticket-modal').classList.add('hidden')" class="text-gray-400 hover:text-white text-xl">&times;</button>
+          <h3 class="text-lg font-bold" style="color:var(--admin-text-primary)"><i class="fas fa-plus-circle mr-2 text-cyan-400"></i>Nouveau ticket SAV</h3>
+          <button onclick="document.getElementById('create-ticket-modal').classList.add('hidden')" class="text-xl" style="color:var(--admin-text-muted);">&times;</button>
         </div>
         <form method="post" action="/api/admin/sav/create" class="space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs text-gray-400 mb-1">Nom client</label>
-              <input name="client_name" class="w-full rounded-xl px-3 py-2 text-sm text-white" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.15);" />
+              <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Nom client</label>
+              <input name="client_name" class="input-field text-sm" />
             </div>
             <div>
-              <label class="block text-xs text-gray-400 mb-1">Téléphone (Whatsapp) *</label>
-              <input name="client_phone" required class="w-full rounded-xl px-3 py-2 text-sm text-white" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.15);" />
+              <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Téléphone (Whatsapp) *</label>
+              <input name="client_phone" required class="input-field text-sm" />
             </div>
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs text-gray-400 mb-1">Catégorie</label>
-              <select name="category" class="w-full rounded-xl px-3 py-2 text-sm text-white" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.15);">
+              <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Catégorie</label>
+              <select name="category" class="input-field text-sm">
                 <option value="panne">Panne</option>
                 <option value="garantie">Garantie</option>
                 <option value="installation">Installation</option>
@@ -6549,8 +6592,8 @@ export const AdminSAVPage = ({ tickets = [], filterStatus = '' }: { tickets: any
               </select>
             </div>
             <div>
-              <label class="block text-xs text-gray-400 mb-1">Priorité</label>
-              <select name="priority" class="w-full rounded-xl px-3 py-2 text-sm text-white" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.15);">
+              <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Priorité</label>
+              <select name="priority" class="input-field text-sm">
                 <option value="basse">Basse</option>
                 <option value="normal" selected>Normal</option>
                 <option value="haute">Haute</option>
@@ -6559,16 +6602,16 @@ export const AdminSAVPage = ({ tickets = [], filterStatus = '' }: { tickets: any
             </div>
           </div>
           <div>
-            <label class="block text-xs text-gray-400 mb-1">Produit concerné</label>
-            <input name="product_info" class="w-full rounded-xl px-3 py-2 text-sm text-white" placeholder="Ex: Kit solaire 200W" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.15);" />
+            <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Produit concerné</label>
+            <input name="product_info" class="input-field text-sm" placeholder="Ex: Kit solaire 200W" />
           </div>
           <div>
-            <label class="block text-xs text-gray-400 mb-1">Sujet *</label>
-            <input name="subject" required class="w-full rounded-xl px-3 py-2 text-sm text-white" placeholder="Résumé du problème" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.15);" />
+            <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Sujet *</label>
+            <input name="subject" required class="input-field text-sm" placeholder="Résumé du problème" />
           </div>
           <div>
-            <label class="block text-xs text-gray-400 mb-1">Description *</label>
-            <textarea name="description" required rows={4} class="w-full rounded-xl px-3 py-2 text-sm text-white" placeholder="Décrivez le problème en détail..." style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.15);"></textarea>
+            <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Description *</label>
+            <textarea name="description" required rows={4} class="input-field text-sm" placeholder="Décrivez le problème en détail..."></textarea>
           </div>
           <button type="submit" class="btn-primary w-full py-2.5 rounded-xl font-semibold text-sm">
             <i class="fas fa-paper-plane mr-2"></i>Créer le ticket
@@ -6600,7 +6643,7 @@ export const AdminSAVDetailPage = ({ ticket, messages = [] }: { ticket: any; mes
               <i class="fas fa-flag mr-1"></i>{pr.label}
             </span>
           </div>
-          <h2 class="text-xl font-bold text-white">{ticket.subject}</h2>
+          <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">{ticket.subject}</h2>
         </div>
       </div>
     </div>
@@ -6609,39 +6652,39 @@ export const AdminSAVDetailPage = ({ ticket, messages = [] }: { ticket: any; mes
       {/* Main conversation area */}
       <div class="lg:col-span-2 space-y-4">
         {/* Original description */}
-        <div class="rounded-xl p-5" style="background:rgba(15,23,42,0.5); border:1px solid rgba(148,163,184,0.1);">
+        <div class="rounded-xl p-5" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">
           <div class="flex items-center gap-2 mb-3">
             <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style="background:rgba(59,130,246,0.2); color:#60a5fa;">
               <i class="fas fa-user"></i>
             </div>
             <div>
-              <span class="text-white text-sm font-semibold">{ticket.client_name || ticket.client_phone}</span>
-              <span class="text-gray-500 text-xs ml-2">{ticket.created_at}</span>
+              <span class="text-sm font-semibold" style="color:var(--admin-text-primary)">{ticket.client_name || ticket.client_phone}</span>
+              <span class="text-xs ml-2" style="color:var(--admin-text-muted)">{ticket.created_at}</span>
             </div>
           </div>
-          <p class="text-gray-300 text-sm whitespace-pre-wrap">{ticket.description}</p>
+          <p class="text-sm whitespace-pre-wrap" style="color:var(--admin-text-primary)">{ticket.description}</p>
         </div>
 
         {/* Messages thread */}
         {messages.map((m: any) => (
-          <div class="rounded-xl p-4" style={`background:${m.sender_type === 'admin' ? 'rgba(59,130,246,0.08)' : 'rgba(15,23,42,0.5)'}; border:1px solid ${m.sender_type === 'admin' ? 'rgba(59,130,246,0.15)' : 'rgba(148,163,184,0.1)'};`}>
+          <div class="rounded-xl p-4" style={`background:${m.sender_type === 'admin' ? 'rgba(3,105,161,0.06)' : 'var(--admin-bg)'}; border:1px solid ${m.sender_type === 'admin' ? 'rgba(59,130,246,0.15)' : 'rgba(148,163,184,0.1)'};`}>
             <div class="flex items-center gap-2 mb-2">
               <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={`background:${m.sender_type === 'admin' ? 'rgba(59,130,246,0.2)' : 'rgba(52,211,153,0.2)'}; color:${m.sender_type === 'admin' ? '#60a5fa' : '#34d399'};`}>
                 <i class={`fas ${m.sender_type === 'admin' ? 'fa-user-shield' : 'fa-user'}`}></i>
               </div>
-              <span class="text-white text-sm font-medium">{m.sender_name || (m.sender_type === 'admin' ? 'Admin' : 'Client')}</span>
-              <span class="text-gray-600 text-xs">{m.created_at}</span>
+              <span class="text-sm font-medium" style="color:var(--admin-text-primary)">{m.sender_name || (m.sender_type === 'admin' ? 'Admin' : 'Client')}</span>
+              <span class="text-xs" style="color:var(--admin-text-muted)">{m.created_at}</span>
             </div>
-            <p class="text-gray-300 text-sm whitespace-pre-wrap">{m.message}</p>
+            <p class="text-sm whitespace-pre-wrap" style="color:var(--admin-text-primary)">{m.message}</p>
           </div>
         ))}
 
         {/* Reply form */}
         {(ticket.status !== 'ferme') && (
-        <form method="post" action="/api/admin/sav/message" class="rounded-xl p-4" style="background:rgba(15,23,42,0.5); border:1px solid rgba(148,163,184,0.1);">
+        <form method="post" action="/api/admin/sav/message" class="rounded-xl p-4" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">
           <input type="hidden" name="ticket_id" value={ticket.id} />
-          <label class="block text-xs text-gray-400 mb-2"><i class="fas fa-reply mr-1"></i>Répondre</label>
-          <textarea name="message" required rows={3} class="w-full rounded-xl px-3 py-2 text-sm text-white mb-3" placeholder="Votre réponse..." style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.15);"></textarea>
+          <label class="block text-xs mb-2" style="color:var(--admin-text-muted);"><i class="fas fa-reply mr-1"></i>Répondre</label>
+          <textarea name="message" required rows={3} class="input-field text-sm mb-3" placeholder="Votre réponse..."></textarea>
           <button type="submit" class="btn-primary px-4 py-2 rounded-xl text-sm font-semibold">
             <i class="fas fa-paper-plane mr-1"></i>Envoyer
           </button>
@@ -6652,15 +6695,15 @@ export const AdminSAVDetailPage = ({ ticket, messages = [] }: { ticket: any; mes
       {/* Sidebar: ticket info + actions */}
       <div class="space-y-4">
         {/* Ticket info card */}
-        <div class="rounded-xl p-5" style="background:rgba(15,23,42,0.5); border:1px solid rgba(148,163,184,0.1);">
-          <h3 class="text-sm font-bold text-white mb-3"><i class="fas fa-info-circle mr-1 text-cyan-400"></i>Informations</h3>
+        <div class="rounded-xl p-5" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">
+          <h3 class="text-sm font-bold mb-3" style="color:var(--admin-text-primary)"><i class="fas fa-info-circle mr-1 text-cyan-400"></i>Informations</h3>
           <div class="space-y-2.5 text-xs">
-            <div class="flex justify-between"><span class="text-gray-500">Client:</span><span class="text-white">{ticket.client_name || '-'}</span></div>
-            <div class="flex justify-between"><span class="text-gray-500">Téléphone:</span><span class="text-white">{ticket.client_phone}</span></div>
-            <div class="flex justify-between"><span class="text-gray-500">Catégorie:</span><span style={`color:${cat.color};`}><i class={`fas ${cat.icon} mr-1`}></i>{cat.label}</span></div>
-            {ticket.product_info && <div class="flex justify-between"><span class="text-gray-500">Produit:</span><span class="text-white">{ticket.product_info}</span></div>}
-            <div class="flex justify-between"><span class="text-gray-500">Créé le:</span><span class="text-white">{ticket.created_at?.substring(0, 10)}</span></div>
-            {ticket.resolved_at && <div class="flex justify-between"><span class="text-gray-500">Résolu le:</span><span class="text-green-400">{ticket.resolved_at?.substring(0, 10)}</span></div>}
+            <div class="flex justify-between"><span style="color:var(--admin-text-muted)">Client:</span><span style="color:var(--admin-text-primary)">{ticket.client_name || '-'}</span></div>
+            <div class="flex justify-between"><span style="color:var(--admin-text-muted)">Téléphone:</span><span style="color:var(--admin-text-primary)">{ticket.client_phone}</span></div>
+            <div class="flex justify-between"><span style="color:var(--admin-text-muted)">Catégorie:</span><span style={`color:${cat.color};`}><i class={`fas ${cat.icon} mr-1`}></i>{cat.label}</span></div>
+            {ticket.product_info && <div class="flex justify-between"><span style="color:var(--admin-text-muted)">Produit:</span><span style="color:var(--admin-text-primary)">{ticket.product_info}</span></div>}
+            <div class="flex justify-between"><span style="color:var(--admin-text-muted)">Créé le:</span><span style="color:var(--admin-text-primary)">{ticket.created_at?.substring(0, 10)}</span></div>
+            {ticket.resolved_at && <div class="flex justify-between"><span style="color:var(--admin-text-muted)">Résolu le:</span><span class="text-green-400">{ticket.resolved_at?.substring(0, 10)}</span></div>}
           </div>
         </div>
 
@@ -6669,16 +6712,16 @@ export const AdminSAVDetailPage = ({ ticket, messages = [] }: { ticket: any; mes
           <i class="fas fa-file-invoice-dollar"></i>
           <span>Créer un devis réparation</span>
         </a>
-        <form method="post" action="/api/admin/sav/update-status" class="rounded-xl p-5" style="background:rgba(15,23,42,0.5); border:1px solid rgba(148,163,184,0.1);">
-          <h3 class="text-sm font-bold text-white mb-3"><i class="fas fa-edit mr-1 text-cyan-400"></i>Modifier le statut</h3>
+        <form method="post" action="/api/admin/sav/update-status" class="rounded-xl p-5" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">
+          <h3 class="text-sm font-bold mb-3" style="color:var(--admin-text-primary)"><i class="fas fa-edit mr-1 text-cyan-400"></i>Modifier le statut</h3>
           <input type="hidden" name="id" value={ticket.id} />
-          <select name="status" class="w-full rounded-xl px-3 py-2 text-sm text-white mb-3" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.15);">
+          <select name="status" class="input-field text-sm mb-3">
             {['ouvert', 'en_cours', 'attente_client', 'resolu', 'ferme'].map(s => (
               <option value={s} selected={ticket.status === s}>{(ticketStatusLabels[s] || { label: s }).label}</option>
             ))}
           </select>
-          <label class="block text-xs text-gray-400 mb-1">Notes de résolution</label>
-          <textarea name="resolution_notes" rows={3} class="w-full rounded-xl px-3 py-2 text-sm text-white mb-3" style="background:rgba(15,23,42,0.8); border:1px solid rgba(148,163,184,0.15);">{ticket.resolution_notes || ''}</textarea>
+          <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Notes de résolution</label>
+          <textarea name="resolution_notes" rows={3} class="input-field text-sm mb-3">{ticket.resolution_notes || ''}</textarea>
           <button type="submit" class="bg-cyan-600 hover:bg-cyan-700 text-white w-full py-2 rounded-xl text-sm font-semibold transition-colors">
             <i class="fas fa-save mr-1"></i>Mettre à jour
           </button>
@@ -6710,8 +6753,8 @@ export const AdminAuditLogPage = ({ logs = [] }: { logs: any[] }) => {
   <AdminLayout activePage="audit-log">
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h2 class="text-xl font-bold text-white"><i class="fas fa-clipboard-list mr-2 text-cyan-400"></i>Journal d'activité</h2>
-        <p class="text-sm text-gray-400 mt-1">{logs.length} entrées enregistrées</p>
+        <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)"><i class="fas fa-clipboard-list mr-2 text-cyan-400"></i>Journal d'activité</h2>
+        <p class="text-sm mt-1" style="color:var(--admin-text-muted)">{logs.length} entrées enregistrées</p>
       </div>
     </div>
 
@@ -6730,39 +6773,39 @@ export const AdminAuditLogPage = ({ logs = [] }: { logs: any[] }) => {
 
     {/* Log entries */}
     {logs.length === 0 ? (
-      <div class="text-center py-16 rounded-xl" style="background:rgba(15,23,42,0.5); border:1px solid rgba(148,163,184,0.1);">
+      <div class="text-center py-16 rounded-xl" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">
         <i class="fas fa-clipboard-list text-3xl text-gray-600 mb-3"></i>
         <p class="text-gray-500">Aucune activité enregistrée</p>
       </div>
     ) : (
-      <div class="rounded-2xl overflow-hidden card-shadow" style="background:#111827; border:1px solid rgba(56,189,248,0.1);">
+      <div class="rounded-2xl overflow-hidden card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
         <div class="overflow-x-auto">
           <table class="w-full text-xs">
-            <thead class="border-b border-gray-700/50" style="background:#0e1726;">
+            <thead class="border-b" style="background:#f1f5f9; border-color:var(--admin-border);">
               <tr>
-                <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Client</th>
-                <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">Catégorie</th>
-                <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
-                <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Détails</th>
-                <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">IP</th>
+                <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider" style="color:var(--admin-text-muted)">Date</th>
+                <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider" style="color:var(--admin-text-muted)">Client</th>
+                <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider hidden sm:table-cell" style="color:var(--admin-text-muted)">Catégorie</th>
+                <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider" style="color:var(--admin-text-muted)">Action</th>
+                <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider hidden md:table-cell" style="color:var(--admin-text-muted)">Détails</th>
+                <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider hidden lg:table-cell" style="color:var(--admin-text-muted)">IP</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-700/30" data-paginate="30">
+            <tbody class="divide-y" style="border-color:var(--admin-border)" data-paginate="30">
               {logs.map((l: any) => {
                 const info = logCategoryColors[l.category] || { color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', icon: 'fa-circle' }
                 return (
-                <tr class="hover:bg-cyan-900/10 transition-colors">
-                  <td class="py-3 px-4 text-gray-400 whitespace-nowrap">{(l.created_at || '').substring(0, 16)}</td>
-                  <td class="py-3 px-4 text-white">{l.client_phone || `#${l.client_id}`}</td>
+                <tr class="hover:bg-[rgba(3,105,161,0.04)] transition-colors">
+                  <td class="py-3 px-4 whitespace-nowrap" style="color:var(--admin-text-muted)">{(l.created_at || '').substring(0, 16)}</td>
+                  <td class="py-3 px-4" style="color:var(--admin-text-primary)">{l.client_phone || `#${l.client_id}`}</td>
                   <td class="py-3 px-4 hidden sm:table-cell">
                     <span class="px-2 py-0.5 rounded-lg text-xs font-medium" style={`background:${info.bg}; color:${info.color};`}>
                       <i class={`fas ${info.icon} mr-1`}></i>{l.category || '-'}
                     </span>
                   </td>
-                  <td class="py-3 px-4 text-white font-medium">{l.action}</td>
-                  <td class="py-3 px-4 text-gray-400 max-w-xs truncate hidden md:table-cell">{l.details || '-'}</td>
-                  <td class="py-3 px-4 text-gray-600 font-mono text-xs hidden lg:table-cell">{l.ip_address || '-'}</td>
+                  <td class="py-3 px-4 font-medium" style="color:var(--admin-text-primary)">{l.action}</td>
+                  <td class="py-3 px-4 max-w-xs truncate hidden md:table-cell" style="color:var(--admin-text-muted)">{l.details || '-'}</td>
+                  <td class="py-3 px-4 font-mono text-xs hidden lg:table-cell" style="color:var(--admin-text-muted)">{l.ip_address || '-'}</td>
                 </tr>
                 )
               })}
@@ -6785,8 +6828,8 @@ export const AdminNotificationsPage = ({ notifications = [] }: { notifications: 
   <AdminLayout activePage="notifications">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
       <div>
-        <h2 class="text-xl font-bold text-white"><i class="fas fa-bell mr-2 text-cyan-400"></i>Centre de notifications</h2>
-        <p class="text-sm text-gray-400 mt-1">{notifications.length} notifications · {unread} non lues</p>
+        <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)"><i class="fas fa-bell mr-2 text-cyan-400"></i>Centre de notifications</h2>
+        <p class="text-sm mt-1" style="color:var(--admin-text-muted)">{notifications.length} notifications · {unread} non lues</p>
       </div>
       <button onclick="fetch('/api/admin/notifications/mark-read',{method:'POST'}).then(()=>location.reload())" class="px-4 py-2 rounded-xl text-xs font-bold text-white" style="background:linear-gradient(135deg,#0891b2,#06b6d4);">
         <i class="fas fa-check-double mr-2"></i>Tout marquer comme lu
@@ -6801,18 +6844,18 @@ export const AdminNotificationsPage = ({ notifications = [] }: { notifications: 
         { label: 'Aujourd\'hui', val: notifications.filter((n: any) => n.created_at && n.created_at.startsWith(new Date().toISOString().slice(0,10))).length, color: '#10b981', icon: 'fa-clock' },
         { label: 'Types', val: [...new Set(notifications.map((n: any) => n.type))].length, color: '#a78bfa', icon: 'fa-layer-group' },
       ].map(s => (
-        <div class="rounded-xl p-4" style={`background:rgba(15,23,42,0.5); border:1px solid ${s.color}20;`}>
+        <div class="rounded-xl p-4" style={`background: var(--admin-card-bg); border: 1px solid var(--admin-border);`}>
           <div class="flex items-center gap-2 mb-2">
             <i class={`fas ${s.icon} text-sm`} style={`color:${s.color};`}></i>
-            <span class="text-xs text-gray-400">{s.label}</span>
+            <span class="text-xs" style="color: var(--admin-text-muted);">{s.label}</span>
           </div>
-          <div class="text-lg font-bold text-white">{s.val}</div>
+          <div class="text-lg font-bold" style="color: var(--admin-text-primary);">{s.val}</div>
         </div>
       ))}
     </div>
 
     {notifications.length === 0 ? (
-      <div class="text-center py-16 rounded-xl" style="background:rgba(15,23,42,0.5); border:1px solid rgba(148,163,184,0.1);">
+      <div class="text-center py-16 rounded-xl" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">
         <i class="fas fa-bell-slash text-3xl text-gray-600 mb-3"></i>
         <p class="text-gray-500">Aucune notification</p>
       </div>
@@ -6822,14 +6865,14 @@ export const AdminNotificationsPage = ({ notifications = [] }: { notifications: 
           const icon = typeIcons[n.type] || 'fa-bell'
           const color = typeColors[n.type] || '#94a3b8'
           return (
-          <div class={`flex items-start gap-4 p-4 rounded-xl transition-colors ${n.read ? 'opacity-60' : ''}`} style={`background:${n.read ? 'rgba(15,23,42,0.3)' : 'rgba(6,182,212,0.05)'}; border:1px solid ${n.read ? 'rgba(148,163,184,0.08)' : 'rgba(56,189,248,0.15)'};`}>
+          <div class={`flex items-start gap-4 p-4 rounded-xl transition-colors ${n.read ? 'opacity-60' : ''}`} style={`background:${n.read ? 'var(--admin-bg)' : 'rgba(3,105,161,0.04)'}; border:1px solid ${n.read ? 'var(--admin-border)' : 'rgba(3,105,161,0.15)'};`}>
             <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={`background:${color}18;`}>
               <i class={`fas ${icon} text-sm`} style={`color:${color};`}></i>
             </div>
             <div class="flex-1 min-w-0">
-              <p class={`text-sm text-white ${n.read ? '' : 'font-semibold'}`}>{n.summary}</p>
+              <p class={`text-sm ${n.read ? '' : 'font-semibold'}`}>{n.summary}</p>
               <div class="flex items-center gap-3 mt-1">
-                <span class="text-xs text-gray-500">{(n.created_at || '').replace('T', ' ').substring(0, 16)}</span>
+                <span class="text-xs" style="color:var(--admin-text-muted)">{(n.created_at || '').replace('T', ' ').substring(0, 16)}</span>
                 <span class="text-xs px-2 py-0.5 rounded-lg font-medium" style={`background:${color}18; color:${color};`}>{n.type}</span>
               </div>
             </div>

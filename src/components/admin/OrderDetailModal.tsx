@@ -10,12 +10,12 @@ interface OrderDetailModalProps {
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  en_attente:   { label: '⏳ En attente',         color: '#fbbf24', bg: 'rgba(251,191,36,0.2)'  },
-  contacte:     { label: '💬 Client contacté',    color: '#60a5fa', bg: 'rgba(59,130,246,0.2)'  },
-  confirme:     { label: '✅ Confirmée',           color: '#34d399', bg: 'rgba(52,211,153,0.2)'  },
-  en_livraison: { label: '🚚 En livraison',        color: '#a78bfa', bg: 'rgba(167,139,250,0.2)' },
-  livre:        { label: '🏠 Livrée & Installée', color: '#10b981', bg: 'rgba(16,185,129,0.2)'  },
-  annule:       { label: '❌ Annulée',            color: '#f87171', bg: 'rgba(248,113,113,0.2)' },
+  en_attente:   { label: '⏳ En attente',         color: '#d97706', bg: 'rgba(217,119,6,0.12)'   },
+  contacte:     { label: '💬 Client contacté',    color: '#2563eb', bg: 'rgba(37,99,235,0.12)'   },
+  confirme:     { label: '✅ Confirmée',           color: '#059669', bg: 'rgba(5,150,105,0.12)'   },
+  en_livraison: { label: '🚚 En livraison',        color: '#2563eb', bg: 'rgba(37,99,235,0.12)'   },
+  livre:        { label: '🏠 Livrée & Installée', color: '#0369a1', bg: 'rgba(3,105,161,0.12)'   },
+  annule:       { label: '❌ Annulée',            color: '#dc2626', bg: 'rgba(220,38,38,0.12)'   },
 };
 
 export const OrderDetailModal = ({ order, isOpen }: OrderDetailModalProps) => {
@@ -28,14 +28,14 @@ export const OrderDetailModal = ({ order, isOpen }: OrderDetailModalProps) => {
     <div
       id="order-detail-modal"
       class="fixed inset-0 z-50 flex items-center justify-center"
-      style="background:rgba(0,0,0,0.7);"
+      style="background:rgba(0,0,0,0.5);"
       onclick="if(event.target===this) document.getElementById('order-detail-modal').style.display='none';"
     >
-      <div class="relative w-full max-w-2xl rounded-2xl overflow-hidden" style="background:#0b1120; border:1px solid rgba(56,189,248,0.15); max-height:90vh; overflow-y:auto;">
+      <div class="relative w-full max-w-2xl rounded-2xl overflow-hidden" style="background: var(--admin-card-bg); border: 1px solid var(--admin-border); max-height:90vh; overflow-y:auto;">
 
         {/* Header */}
-        <div class="flex items-center justify-between px-6 py-4" style="border-bottom:1px solid rgba(56,189,248,0.1);">
-          <h2 class="text-lg font-bold text-white">
+        <div class="flex items-center justify-between px-6 py-4" style="border-bottom:1px solid var(--admin-border);">
+          <h2 class="text-lg font-bold" style="color: var(--admin-text-primary);">
             Commande <span class="font-mono text-blue-300">#CMD-{String(order.id).padStart(4, '0')}</span>
           </h2>
           <button
@@ -53,25 +53,25 @@ export const OrderDetailModal = ({ order, isOpen }: OrderDetailModalProps) => {
           {/* Client + résumé */}
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <p class="text-xs mb-1" style="color:#64748b;">Client</p>
-              <p class="font-semibold text-white">{order.client_name}</p>
-              <p class="text-sm" style="color:#94a3b8;">{order.client_phone}</p>
-              {order.client_email && <p class="text-xs" style="color:#94a3b8;">{order.client_email}</p>}
+              <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Client</p>
+              <p class="font-semibold" style="color: var(--admin-text-primary);">{order.client_name}</p>
+              <p class="text-sm" style="color: var(--admin-text-muted);">{order.client_phone}</p>
+              {order.client_email && <p class="text-xs" style="color: var(--admin-text-muted);">{order.client_email}</p>}
             </div>
             <div>
-              <p class="text-xs mb-1" style="color:#64748b;">Date</p>
-              <p class="text-sm text-white">{createdAt}</p>
-              <p class="text-xs mt-1" style="color:#94a3b8;">{order.quartier || '—'}</p>
+              <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Date</p>
+              <p class="text-sm" style="color: var(--admin-text-primary);">{createdAt}</p>
+              <p class="text-xs mt-1" style="color: var(--admin-text-muted);">{order.quartier || '—'}</p>
             </div>
             <div>
-              <p class="text-xs mb-1" style="color:#64748b;">Montant</p>
-              <p class="text-2xl font-bold text-white">
+              <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Montant</p>
+              <p class="text-2xl font-bold" style="color: var(--admin-accent);">
                 {order.total_price ? order.total_price.toLocaleString('fr-FR') + ' F' : '—'}
               </p>
             </div>
             <div>
-              <p class="text-xs mb-1" style="color:#64748b;">Statut</p>
-              <span class="px-3 py-1 rounded-lg text-sm font-semibold" style={`background:${si.bg}; color:${si.color};`}>
+              <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Statut</p>
+              <span style={`background:${si.bg}; color:${si.color}; border-radius:9999px; padding:0.2rem 0.65rem; font-size:0.7rem; font-weight:600;`}>
                 {si.label}
               </span>
             </div>
@@ -80,17 +80,17 @@ export const OrderDetailModal = ({ order, isOpen }: OrderDetailModalProps) => {
           {/* Notes */}
           {order.notes && (
             <div>
-              <p class="text-xs mb-2" style="color:#64748b;">Notes / Produit</p>
-              <p class="text-sm whitespace-pre-wrap" style="color:#cbd5e1;">{order.notes}</p>
+              <p class="text-xs mb-2" style="color: var(--admin-text-muted);">Notes / Produit</p>
+              <p class="text-sm whitespace-pre-wrap" style="color: var(--admin-text-primary);">{order.notes}</p>
             </div>
           )}
 
           {/* Changer statut */}
-          <div style="border-top:1px solid rgba(56,189,248,0.08); padding-top:1rem;">
-            <p class="text-xs mb-3" style="color:#64748b;">Changer le statut</p>
+          <div style="border-top:1px solid var(--admin-border); padding-top:1rem;">
+            <p class="text-xs mb-3" style="color: var(--admin-text-muted);">Changer le statut</p>
             <form method="post" action="/api/admin/commande/status" class="flex items-center gap-3">
               <input type="hidden" name="id" value={String(order.id)} />
-              <select name="status" class="text-sm px-3 py-2 rounded-lg" style="background:#1e293b; color:#e2e8f0; border:1px solid rgba(56,189,248,0.15);">
+              <select name="status" class="text-sm px-3 py-2 rounded-lg" style="background: var(--admin-bg-elevated); color: var(--admin-text-primary); border:1px solid var(--admin-border);">
                 {Object.entries(STATUS_MAP).map(([val, info]) => (
                   <option value={val} selected={val === order.status}>{info.label}</option>
                 ))}
