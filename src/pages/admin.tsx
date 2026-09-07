@@ -1327,7 +1327,6 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
       </div>
     </div>
     <script dangerouslySetInnerHTML={{__html: `
-      ${CLIENT_ESC_HELPER}
       function toggleStockHistory() {
         var el = document.getElementById('stock-history');
         if (el.classList.contains('hidden')) {
@@ -1856,7 +1855,6 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
     </div>
 
     <script dangerouslySetInnerHTML={{ __html: `
-      ${CLIENT_ESC_HELPER}
       function editProductFromData(btn) {
         try {
           var p = JSON.parse(btn.getAttribute('data-product'));
