@@ -1,9 +1,9 @@
-# MAASGA — Guide de Configuration Rapide
+# MAASGA — Guide Administrateur
 
-> **Site en production**: https://maasga-website.pages.dev
-> **Admin**: https://maasga-website.pages.dev/admin
-> **Mot de passe initial admin**: `Maasga@2026`
-> **ADMIN_SECRET (pour reset)**: `ma voiture de reve`
+> **Site en production** : https://maasga-website.pages.dev
+> **Admin** : https://maasga-website.pages.dev/admin
+> **Mot de passe initial admin** : `Maasga@2026`
+> **ADMIN_SECRET (pour reset)** : `ma voiture de reve`
 
 ---
 
@@ -169,6 +169,87 @@ npx wrangler pages deploy dist --project-name maasga-website --commit-dirty=true
 - [x] Notifications admin (D1 + Telegram)
 - [x] Réinitialisation mot de passe client
 - [x] Sécurité renforcée (59 corrections)
+- [ ] Telegram bot (à configurer)
+- [ ] SMS Twilio (optionnel)
+- [ ] Google OAuth (optionnel)
+- [ ] LigdiCash (optionnel)
+- [ ] Domaine personnalisé (optionnel)
+
+---
+
+## Gestion des produits
+
+### Suppression définitive d'un produit
+La suppression via le bouton **Supprimer** (icône corbeille dans la liste des produits) est **permanente** :
+- Le produit est retiré de la base D1 immédiatement.
+- Il est retiré du cache mémoire de l'isolate Cloudflare en cours.
+- Il **ne réapparaît pas** après un redéploiement ou une mise en veille du Worker (contrairement à l'ancien comportement où le catalogue était hardcodé dans le code source).
+
+### Import en masse depuis Excel
+Voir le guide complet → [docs/IMPORT_EXCEL.md](IMPORT_EXCEL.md)
+
+En résumé : bouton **"Importer en masse"** en haut à droite de la page Produits → glisser/déposer n'importe quel fichier fournisseur → le système détecte les colonnes automatiquement → aperçu complet → confirmer.
+
+---
+
+## Médiathèque centralisée par marque
+
+Permet d'**uploader des images une seule fois** par fabricant, puis de les affecter à n'importe quel produit sans ressaisir le fichier à chaque fois.
+
+### Accès
+Page **Produits & Stock** → panneau collapsible **"Médiathèque par marque"** (en haut, juste avant le résumé stock). Cliquer dessus pour l'ouvrir.
+
+### Utilisation pas à pas
+
+#### 1. Uploader des images
+1. Dans le champ **Marque**, saisir le nom du fabricant (LG, Samsung, Daikin…). La saisie est assistée avec une liste de suggestions.
+2. (Optionnel) Saisir un **Libellé** pour décrire l'image (ex : "Photo produit climatiseur 18000 BTU", "Logo officiel haute résolution").
+3. Cliquer sur **Choisir les fichiers** → sélectionner une ou plusieurs images (JPG, PNG, WebP — max 5 Mo chacune). L'upload part immédiatement vers ImgBB.
+4. Un message de confirmation apparaît une fois l'upload terminé.
+
+#### 2. Retrouver une image
+Utiliser les **boutons filtres par marque** (LG, Samsung, Daikin…) pour n'afficher que les images d'un fabricant. Le bouton **Toutes** réaffiche l'ensemble de la médiathèque.
+
+#### 3. Affecter une image à un produit
+1. Survoler la miniature de l'image souhaitée → le bouton vert **Affecter** apparaît.
+2. Cliquer sur **Affecter** → une modale s'ouvre.
+3. Choisir le **Produit cible** dans la liste déroulante.
+4. Choisir le type d'utilisation :
+   - **Image principale** → remplace la photo de couverture affichée dans le catalogue
+   - **Galerie** → ajoute l'image dans la galerie secondaire du produit (visible sur la fiche détail)
+5. Cliquer sur **Affecter** → confirmation instantanée.
+
+L'image peut être affectée à plusieurs produits différents (même marque, puissances différentes par exemple) sans la réuploader.
+
+#### 4. Supprimer une image de la médiathèque
+Survoler la miniature → bouton rouge **Supprimer** → confirmation → l'image est supprimée d'ImgBB et de la médiathèque. Les produits qui l'utilisaient déjà conservent leur URL ImgBB (l'image reste visible sur leurs fiches).
+
+---
+
+## Galerie multi-images par produit
+
+En complément de la médiathèque, chaque produit dispose d'une galerie dédiée accessible directement depuis la liste :
+
+Colonne **Image** dans le tableau des produits → bouton **Galerie** (icône photos) → modale de galerie.
+
+- **Ajouter** : cliquer sur la zone pointillée → sélectionner une ou plusieurs photos → upload automatique vers ImgBB.
+- **Supprimer** : survoler une miniature → icône corbeille.
+
+---
+
+## Checklist mise à jour
+
+- [x] Site en production
+- [x] Google Analytics GA4 configuré (G-LCQJE6963G)
+- [x] Bannière de consentement cookies
+- [x] ADMIN_SECRET configuré
+- [x] Mot de passe initial admin défini
+- [x] Suppression produits permanente (D1 source unique de vérité)
+- [x] Import en masse Excel avec aperçu des champs optionnels
+- [x] Médiathèque centralisée par marque (migration 0043 appliquée)
+- [x] Galerie multi-images par produit (upload ImgBB)
+- [x] Notifications admin (D1 + Telegram)
+- [x] Réinitialisation mot de passe client
 - [ ] Telegram bot (à configurer)
 - [ ] SMS Twilio (optionnel)
 - [ ] Google OAuth (optionnel)
