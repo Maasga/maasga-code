@@ -1176,16 +1176,18 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
       }
 
       function uploadMediatheque() {
-        var brand = document.getElementById('mediatheque-brand').value.trim();
+        var brandInput = document.getElementById('mediatheque-brand');
+        var brand = (brandInput ? brandInput.value : '').trim() || (_mediathequeFilter || '');
         var label = document.getElementById('mediatheque-label').value.trim();
         var input = document.getElementById('mediatheque-files');
-        if (!brand) { showToast('Marque requise avant upload.', 'warning'); input.value = ''; return; }
+        if (!brand) { showToast('Veuillez renseigner ou filtrer par marque avant l\'upload.', 'warning'); input.value = ''; return; }
         if (!input.files || !input.files.length) return;
         var upl = document.getElementById('mediatheque-uploading');
         upl.classList.remove('hidden');
         var files = Array.from(input.files);
         var done = 0;
         var errors = 0;
+        var lastErr = '';
         files.forEach(function(file) {
           var fd = new FormData();
           fd.append('brand', brand);
@@ -1194,19 +1196,19 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
           fetch('/api/admin/media/brand/upload', { method: 'POST', body: fd })
             .then(function(r){ return r.json(); })
             .then(function(d) {
-              if (d.error) errors++;
+              if (d.error) { errors++; lastErr = d.error; }
               done++;
               if (done === files.length) {
                 upl.classList.add('hidden');
                 input.value = '';
-                if (errors > 0) showToast(errors + ' erreur(s).', 'error');
-                else showToast(files.length + ' image(s) uploadee(s).', 'success');
+                if (errors > 0) showToast(lastErr || (errors + ' erreur(s) d\'upload.'), 'error');
+                else showToast(files.length + ' image(s) envoyée(s) dans la médiathèque.', 'success');
                 loadMediatheque();
               }
             })
             .catch(function() {
               errors++; done++;
-              if (done === files.length) { upl.classList.add('hidden'); input.value = ''; showToast('Erreur upload.', 'error'); loadMediatheque(); }
+              if (done === files.length) { upl.classList.add('hidden'); input.value = ''; showToast('Erreur réseau lors de l\'upload.', 'error'); loadMediatheque(); }
             });
         });
       }

@@ -7270,29 +7270,31 @@ app.post('/api/admin/media/brand/upload', adminAuth, async (c) => {
     file = body['image']
   }
 
-  if (!brand) return c.json({ error: 'Marque requise' }, 400)
+  if (!brand) return c.json({ error: 'Marque requise pour ranger l\'image dans la médiathèque' }, 400)
   if (!file || typeof file !== 'object' || typeof file.arrayBuffer !== 'function' || !file.size) {
-    return c.json({ error: 'Fichier manquant ou invalide' }, 400)
+    return c.json({ error: 'Fichier image manquant ou corrompu' }, 400)
   }
-  const MAX = 5 * 1024 * 1024
-  if (file.size > MAX) return c.json({ error: 'Image trop grande (max 5 MB)' }, 400)
-  const fileType = file.type || 'image/jpeg'
-  const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-  if (!allowed.includes(fileType)) return c.json({ error: 'Format non autorisé' }, 400)
+  const MAX = 10 * 1024 * 1024
+  if (file.size > MAX) return c.json({ error: 'Image trop volumineuse (max 10 MB)' }, 400)
+  
+  const rawType = (file.type || '').toLowerCase()
+  const fileType = rawType.startsWith('image/') ? rawType : 'image/jpeg'
+
   const imgbbKey = (c.env as any).IMGBB_API_KEY as string
-  if (!imgbbKey) return c.json({ error: 'IMGBB_API_KEY manquante' }, 500)
+  if (!imgbbKey) return c.json({ error: 'IMGBB_API_KEY non configurée sur le serveur Cloudflare' }, 500)
+  
   const buffer = await file.arrayBuffer()
   try {
     const r = await uploadToImgBB(imgbbKey, buffer, fileType)
     const db = c.env.DB
-    if (!db) return c.json({ error: 'DB indisponible' }, 500)
+    if (!db) return c.json({ error: 'Base de données D1 indisponible' }, 500)
     const row = await db.prepare(
       'INSERT INTO brand_media_library (brand, url, delete_url, label) VALUES (?, ?, ?, ?) RETURNING *'
     ).bind(brand, r.url, r.deleteUrl, label).first() as any
     return c.json({ success: true, image: row })
-  } catch (e) {
+  } catch (e: any) {
     console.error('Brand media upload error:', e)
-    return c.json({ error: 'Upload ImgBB échoué' }, 500)
+    return c.json({ error: 'Upload ImgBB échoué : ' + (e?.message || 'Erreur API') }, 500)
   }
 })
 
