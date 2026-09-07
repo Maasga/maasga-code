@@ -1061,25 +1061,47 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
       </div>
     </div>
 
-    {/* Modal affectation d'une image médiathèque à un produit */}
+    {/* Modal affectation d'une image médiathèque à un produit ou à la marque entière */}
     <div id="assign-media-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.75); backdrop-filter:blur(4px);">
       <div class="rounded-2xl p-6 w-full max-w-sm shadow-2xl" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
         <h3 class="font-bold mb-4 flex items-center gap-2" style="color:var(--admin-text-primary);">
           <i class="fas fa-link text-purple-400"></i>
-          Affecter à un produit
+          Affecter l'image médiathèque
         </h3>
         <div class="mb-4 flex justify-center">
           <img id="assign-media-preview" src="" class="w-28 h-28 object-contain rounded-xl" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);" />
         </div>
         <input type="hidden" id="assign-media-id" />
+        <input type="hidden" id="assign-media-brand-name" />
+
+        {/* Portée d'affectation */}
         <div class="mb-4">
+          <label class="block text-xs font-semibold mb-2" style="color:var(--admin-text-muted);">Portée d'affectation</label>
+          <div class="space-y-2">
+            <label class="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border" style="border-color:var(--admin-border); background:var(--admin-bg);">
+              <input type="radio" name="assign-scope" value="brand" checked onchange="toggleAssignScopeUI()" class="accent-purple-500" />
+              <span class="text-xs font-semibold" style="color:var(--admin-text-primary);">
+                Tous les climatiseurs <span id="assign-brand-badge" class="text-purple-400 font-bold"></span> (Global)
+              </span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border" style="border-color:var(--admin-border); background:var(--admin-bg);">
+              <input type="radio" name="assign-scope" value="single" onchange="toggleAssignScopeUI()" class="accent-purple-500" />
+              <span class="text-xs font-semibold" style="color:var(--admin-text-primary);">Un seul produit spécifique</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Choix du produit si scope == single */}
+        <div id="assign-product-wrapper" class="hidden mb-4">
           <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Produit cible</label>
           <select id="assign-product-select" class="w-full rounded-xl px-3 py-2 text-xs" style="background:var(--admin-card-bg); border:1px solid var(--admin-border); color:var(--admin-text-primary);">
             {products.map(p => <option value={String(p.id)}>{p.name} — {p.brand}</option>)}
           </select>
         </div>
+
+        {/* Emplacement d'utilisation */}
         <div class="mb-5">
-          <label class="block text-xs mb-2" style="color:var(--admin-text-muted);">Utiliser comme</label>
+          <label class="block text-xs font-semibold mb-2" style="color:var(--admin-text-muted);">Utiliser comme</label>
           <div class="flex gap-4">
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="radio" name="assign-target" value="main" checked class="accent-purple-500" />
@@ -1087,10 +1109,11 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
             </label>
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="radio" name="assign-target" value="gallery" class="accent-purple-500" />
-              <span class="text-xs" style="color:var(--admin-text-primary);">Galerie</span>
+              <span class="text-xs" style="color:var(--admin-text-primary);">Galerie photos</span>
             </label>
           </div>
         </div>
+
         <div class="flex gap-3">
           <button type="button" onclick="document.getElementById('assign-media-modal').classList.add('hidden')"
             class="flex-1 py-2.5 rounded-xl text-xs font-semibold" style="background:rgba(148,163,184,0.1); color:#94a3b8;">Annuler</button>
@@ -1225,28 +1248,51 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
           }).catch(function() { showToast('Erreur réseau.', 'error'); });
       }
 
+      function toggleAssignScopeUI() {
+        var scopeEl = document.querySelector('input[name="assign-scope"]:checked');
+        var scope = scopeEl ? scopeEl.value : 'brand';
+        var wrapper = document.getElementById('assign-product-wrapper');
+        if (wrapper) wrapper.classList.toggle('hidden', scope !== 'single');
+      }
+
       function openAssignModal(img) {
         document.getElementById('assign-media-preview').src = img.url;
         document.getElementById('assign-media-id').value = String(img.id);
+        document.getElementById('assign-media-brand-name').value = img.brand || '';
+        document.getElementById('assign-brand-badge').textContent = img.brand ? (img.brand + ' ') : '';
+        
+        var radBrand = document.querySelector('input[name="assign-scope"][value="brand"]');
+        if (radBrand) radBrand.checked = true;
+        toggleAssignScopeUI();
+
         document.getElementById('assign-media-modal').classList.remove('hidden');
       }
 
       function confirmAssignMedia() {
         var mediaId = document.getElementById('assign-media-id').value;
+        var scopeEl = document.querySelector('input[name="assign-scope"]:checked');
+        var scope = scopeEl ? scopeEl.value : 'brand';
         var productId = document.getElementById('assign-product-select').value;
         var targetEl = document.querySelector('input[name="assign-target"]:checked');
         var target = targetEl ? targetEl.value : 'main';
+
         var fd = new FormData();
         fd.append('media_id', mediaId);
+        fd.append('scope', scope);
         fd.append('product_id', productId);
         fd.append('target', target);
+
         fetch('/api/admin/media/brand/assign', { method: 'POST', body: fd })
           .then(function(r){ return r.json(); })
           .then(function(d) {
             document.getElementById('assign-media-modal').classList.add('hidden');
-            if (d.success) showToast('Image affectée au produit.', 'success');
-            else showToast('Erreur : ' + (d.error || ''), 'error');
-          }).catch(function() { showToast('Erreur réseau.', 'error'); });
+            if (d.success) {
+              showToast(d.message || "Image affectée avec succès.", "success");
+              setTimeout(function(){ location.reload(); }, 1200);
+            } else {
+              showToast("Erreur : " + (d.error || "Échec de l'affectation"), "error");
+            }
+          }).catch(function() { showToast("Erreur réseau.", "error"); });
       }
 
       // Fermer modal affectation sur clic extérieur
