@@ -1185,7 +1185,7 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
         var brand = document.getElementById('mediatheque-brand').value.trim();
         var label = document.getElementById('mediatheque-label').value.trim();
         var input = document.getElementById('mediatheque-files');
-        if (!brand) { showToast('Saisissez une marque avant d\\'uploader.', 'warning'); input.value = ''; return; }
+        if (!brand) { showToast('Marque requise avant upload.', 'warning'); input.value = ''; return; }
         if (!input.files || !input.files.length) return;
         var upl = document.getElementById('mediatheque-uploading');
         upl.classList.remove('hidden');
@@ -1205,8 +1205,8 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
               if (done === files.length) {
                 upl.classList.add('hidden');
                 input.value = '';
-                if (errors > 0) showToast(errors + ' erreur(s) d\\'upload.', 'error');
-                else showToast(files.length + ' image(s) uploadée(s) dans la médiathèque.', 'success');
+                if (errors > 0) showToast(errors + ' erreur(s).', 'error');
+                else showToast(files.length + ' image(s) uploadee(s).', 'success');
                 loadMediatheque();
               }
             })
