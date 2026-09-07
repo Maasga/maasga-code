@@ -7254,10 +7254,22 @@ app.get('/api/admin/media/brand', adminAuth, async (c) => {
 
 // Uploader une image dans la médiathèque (taguée par marque)
 app.post('/api/admin/media/brand/upload', adminAuth, async (c) => {
-  const body = await c.req.parseBody()
-  const brand = sanitizeText(body['brand'] as string, 120)
-  const label = sanitizeText(body['label'] as string, 200) || ''
-  const file = body['image'] as any
+  let brand = ''
+  let label = ''
+  let file: any = null
+
+  try {
+    const form = await c.req.formData()
+    brand = sanitizeText(form.get('brand') as string, 120)
+    label = sanitizeText(form.get('label') as string, 200) || ''
+    file = form.get('image')
+  } catch (e) {
+    const body = await c.req.parseBody()
+    brand = sanitizeText(body['brand'] as string, 120)
+    label = sanitizeText(body['label'] as string, 200) || ''
+    file = body['image']
+  }
+
   if (!brand) return c.json({ error: 'Marque requise' }, 400)
   if (!file || typeof file !== 'object' || typeof file.arrayBuffer !== 'function' || !file.size) {
     return c.json({ error: 'Fichier manquant ou invalide' }, 400)

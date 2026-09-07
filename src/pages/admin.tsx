@@ -347,7 +347,7 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
               data.forEach(function(r) {
                 var a = document.createElement('a');
                 // r.url vient du serveur — on valide que c'est un chemin relatif
-                a.href = (r.url && /^\/[a-zA-Z0-9/_-]/.test(r.url)) ? r.url : '#';
+                a.href = (r.url && /^\\/[a-zA-Z0-9\\/_-]/.test(r.url)) ? r.url : '#';
                 a.className = 'flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-b border-gray-800/50';
                 var icon = document.createElement('i');
                 icon.className = 'fas ' + (typeIcons[r.type]||'fa-circle') + ' text-sm';
