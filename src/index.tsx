@@ -7234,10 +7234,31 @@ app.get('/api/admin/produit/gallery/:id', adminAuth, async (c) => {
 // puis de les affecter à n'importe quel produit (image principale ou galerie).
 // ============================================================
 
+// Helper d'initialisation automatique de la table médiathèque par marque sur D1
+async function ensureBrandMediaTable(db: any) {
+  if (!db) return
+  try {
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS brand_media_library (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        brand TEXT NOT NULL,
+        url TEXT NOT NULL,
+        delete_url TEXT,
+        label TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `).run()
+    await db.prepare(`CREATE INDEX IF NOT EXISTS idx_brand_media_brand ON brand_media_library(brand)`).run()
+  } catch (e) {
+    console.error('ensureBrandMediaTable error:', e)
+  }
+}
+
 // Lister toutes les images (optionnel : filtrer par brand)
 app.get('/api/admin/media/brand', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ images: [] })
+  await ensureBrandMediaTable(db)
   const brand = c.req.query('brand') || ''
   try {
     const sql = brand
@@ -7248,12 +7269,17 @@ app.get('/api/admin/media/brand', adminAuth, async (c) => {
       : await db.prepare(sql).all()
     return c.json({ images: (res as any)?.results || [] })
   } catch (e) {
+    console.error('GET brand_media_library error:', e)
     return c.json({ images: [] })
   }
 })
 
 // Uploader une image dans la médiathèque (taguée par marque)
 app.post('/api/admin/media/brand/upload', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Base de données D1 indisponible' }, 500)
+  await ensureBrandMediaTable(db)
+
   let brand = ''
   let label = ''
   let file: any = null
@@ -7286,12 +7312,11 @@ app.post('/api/admin/media/brand/upload', adminAuth, async (c) => {
   const buffer = await file.arrayBuffer()
   try {
     const r = await uploadToImgBB(imgbbKey, buffer, fileType)
-    const db = c.env.DB
-    if (!db) return c.json({ error: 'Base de données D1 indisponible' }, 500)
-    const row = await db.prepare(
-      'INSERT INTO brand_media_library (brand, url, delete_url, label) VALUES (?, ?, ?, ?) RETURNING *'
-    ).bind(brand, r.url, r.deleteUrl, label).first() as any
-    return c.json({ success: true, image: row })
+    await db.prepare(
+      'INSERT INTO brand_media_library (brand, url, delete_url, label) VALUES (?, ?, ?, ?)'
+    ).bind(brand, r.url, r.deleteUrl, label).run()
+
+    return c.json({ success: true, image: { brand, url: r.url, delete_url: r.deleteUrl, label } })
   } catch (e: any) {
     console.error('Brand media upload error:', e)
     return c.json({ error: 'Upload ImgBB échoué : ' + (e?.message || 'Erreur API') }, 500)
@@ -7305,6 +7330,7 @@ app.post('/api/admin/media/brand/delete', adminAuth, async (c) => {
   if (!id) return c.json({ error: 'ID manquant' }, 400)
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB indisponible' }, 500)
+  await ensureBrandMediaTable(db)
   try {
     const row = await db.prepare('SELECT delete_url FROM brand_media_library WHERE id = ?').bind(id).first() as any
     await db.prepare('DELETE FROM brand_media_library WHERE id = ?').bind(id).run()
@@ -7327,6 +7353,7 @@ app.post('/api/admin/media/brand/assign', adminAuth, async (c) => {
   const target = (getVal('target') as string) === 'gallery' ? 'gallery' : 'main'
   const db = c.env.DB
   if (!db) return c.json({ error: 'Base de données D1 indisponible' }, 500)
+  await ensureBrandMediaTable(db)
 
   try {
     const mediaRow = await db.prepare('SELECT * FROM brand_media_library WHERE id = ?').bind(mediaId).first() as any
