@@ -9782,9 +9782,38 @@ app.get('/api/mobile/brands', async (c) => {
     return c.json([])
   }
 })
-// â”€â”€ POST /api/mobile/commandes/:id/annuler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Annulation d'une commande par le client mobile (Firebase Auth).
-// Logique identique Ã  /api/order/cancel-order mais authentifiÃ©e via mobileAuth.
+
+// ── POST /api/admin/upload/image — téléverse une image vers ImgBB (banners/logos) ──
+// Retourne { success, url } sans sauvegarder en DB (l'appelant place l'URL dans son form)
+app.post('/api/admin/upload/image', adminAuth, async (c) => {
+  const imgbbKey = (c.env as any).IMGBB_API_KEY as string
+  if (!imgbbKey) return c.json({ error: 'IMGBB_API_KEY non configurée' }, 500)
+  let file: any = null
+  try {
+    const form = await c.req.formData()
+    file = form.get('image')
+  } catch (_) {
+    const body = await c.req.parseBody()
+    file = body['image']
+  }
+  if (!file || typeof file !== 'object' || typeof file.arrayBuffer !== 'function' || !file.size) {
+    return c.json({ error: 'Fichier image manquant ou corrompu' }, 400)
+  }
+  const MAX = 10 * 1024 * 1024
+  if (file.size > MAX) return c.json({ error: 'Image trop volumineuse (max 10 MB)' }, 400)
+  const rawType = (file.type || '').toLowerCase()
+  const fileType = rawType.startsWith('image/') ? rawType : 'image/jpeg'
+  const buffer = await file.arrayBuffer()
+  try {
+    const r = await uploadToImgBB(imgbbKey, buffer, fileType)
+    return c.json({ success: true, url: r.url, delete_url: r.deleteUrl })
+  } catch (e: any) {
+    console.error('Admin image upload error:', e)
+    return c.json({ error: 'Upload ImgBB échoué : ' + (e?.message || 'Erreur') }, 500)
+  }
+})
+
+// ── POST /api/mobile/commandes/:id/annuler ──────────────────
 app.post('/api/mobile/commandes/:id/annuler', mobileAuth, async (c) => {
   const user = c.get('mobileUser')
   const db = c.env.DB
