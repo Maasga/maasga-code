@@ -1,0 +1,13 @@
+name = "maasga-website"
+compatibility_date = "2024-01-01"
+
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "maasga_db"
+database_id = "votre_database_id"  # À remplacer par l'ID réel
+
+[env.preview]
+vars = { ENVIRONMENT = "preview" }

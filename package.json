@@ -8,7 +8,7 @@
     "build": "npm run build:css && vite build && npm run build:copy-static",
     "build:copy-static": "node -e \"const fs=require('fs');const src='public/.well-known';const dst='dist/.well-known';if(fs.existsSync(src)){fs.mkdirSync(dst,{recursive:true});fs.readdirSync(src).forEach(f=>fs.copyFileSync(src+'/'+f,dst+'/'+f));console.log('Copied .well-known/ →',dst)}\"",
     "preview": "wrangler pages dev dist",
-    "deploy": "npm run build && npx cross-env CLOUDFLARE_ACCOUNT_ID=f489c6f9ffecc57e8a188b26df8fed8c CLOUDFLARE_API_TOKEN=cfut_jam55BzyQa7yq3uwxcIODY1931HZz8VsyH48lHlp826b0d96 wrangler pages deploy dist --project-name maasga-website --commit-dirty=true",
+    "deploy": "npm run build && npx cross-env-shell \"CLOUDFLARE_ACCOUNT_ID=$CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_TOKEN=$CLOUDFLARE_API_TOKEN wrangler pages deploy dist --project-name maasga-website --commit-dirty=true\"",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "migrate": "wrangler d1 migrations apply maasga_db --remote",
     "migrate:local": "wrangler d1 migrations apply maasga_db --local",
@@ -16,6 +16,7 @@
     "test": "curl http://localhost:3000"
   },
   "dependencies": {
+    "dotenv": "^17.4.2",
     "hono": "^4.12.1"
   },
   "devDependencies": {
