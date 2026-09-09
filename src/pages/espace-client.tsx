@@ -329,7 +329,7 @@ function orderStepDesc(status: string): { msg: string; color: string } {
     contacte:     { msg: 'Nous vous avons contacté — confirmation de la commande en cours', color: '#38bdf8' },
     confirme:     { msg: 'Commande confirmée ✓ — préparation de la livraison', color: '#34d399' },
     en_livraison: { msg: 'Produit en cours de livraison chez vous', color: '#a78bfa' },
-    livre:        { msg: '✅ Livrée et installée ! Profitez de votre climatiseur MAASGA', color: '#10b981' },
+    livre:        { msg: 'Livrée et installée ! Profitez de votre climatiseur MAASGA', color: '#10b981' },
     annule:       { msg: 'Commande annulée', color: '#f87171' },
   }
   return m[status] || { msg: 'Statut en cours de mise à jour', color: '#94a3b8' }
@@ -554,7 +554,13 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                       {/* Header */}
                       <div class="flex items-center justify-between mb-3">
                         <div class="flex items-center space-x-3">
-                          <div class="text-2xl">{o.image || '❄️'}</div>
+                          {o.image && (o.image.startsWith('http') || o.image.startsWith('/') || o.image.includes('.')) ? (
+                            <img src={o.image} alt={o.product_name || ''} class="w-12 h-12 object-contain rounded-xl bg-white p-1 shadow-sm flex-shrink-0" />
+                          ) : (
+                            <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(0,119,182,0.1);">
+                              <i class="fas fa-snowflake text-lg" style="color:#0077b6;"></i>
+                            </div>
+                          )}
                           <div>
                             <div class="text-sm font-semibold" style="color:#03045e;">{o.product_name || `Commande #${o.id}`}</div>
                             <div class="text-xs" style="color:#64748b;">#{o.id} · {formatDate(o.created_at)}{o.brand ? ` · ${o.brand}` : ''}{o.btu ? ` · ${(o.btu/1000).toFixed(0)}k BTU` : ''}</div>
@@ -772,7 +778,7 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
               <div class="space-y-4">
                 {maintenanceContracts.map(mc => {
                   const progress = mc.total_visits > 0 ? Math.round((mc.completed_visits / mc.total_visits) * 100) : 0
-                  const planLabels: Record<string, string> = { trimestriel: 'Trimestriel (3 visites/an)', semestriel: 'Semestriel ⭐ (2 visites/an)', annuel: 'Annuel Premium 🔥 (1 visite/an)' }
+                  const planLabels: Record<string, string> = { trimestriel: 'Trimestriel (3 visites/an)', semestriel: 'Semestriel (2 visites/an)', annuel: 'Annuel Premium (1 visite/an)' }
                   const statusLabels: Record<string, string> = { active: 'Actif', expired: 'Expiré', cancelled: 'Annulé' }
                   const statusColors: Record<string, string> = { active: 'color:#16a34a;background:rgba(22,163,74,0.1);', expired: 'color:#94a3b8;background:rgba(148,163,184,0.1);', cancelled: 'color:#ef4444;background:rgba(239,68,68,0.1);' }
                   // Find visits linked to this contract

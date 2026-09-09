@@ -10,12 +10,12 @@ interface OrderDetailModalProps {
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  en_attente:   { label: '⏳ En attente',         color: '#d97706', bg: 'rgba(217,119,6,0.12)'   },
-  contacte:     { label: '💬 Client contacté',    color: '#2563eb', bg: 'rgba(37,99,235,0.12)'   },
-  confirme:     { label: '✅ Confirmée',           color: '#059669', bg: 'rgba(5,150,105,0.12)'   },
-  en_livraison: { label: '🚚 En livraison',        color: '#2563eb', bg: 'rgba(37,99,235,0.12)'   },
-  livre:        { label: '🏠 Livrée & Installée', color: '#0369a1', bg: 'rgba(3,105,161,0.12)'   },
-  annule:       { label: '❌ Annulée',            color: '#dc2626', bg: 'rgba(220,38,38,0.12)'   },
+  en_attente:   { label: 'En attente',         color: '#d97706', bg: 'rgba(217,119,6,0.12)'   },
+  contacte:     { label: 'Client contacté',    color: '#2563eb', bg: 'rgba(37,99,235,0.12)'   },
+  confirme:     { label: 'Confirmée',           color: '#059669', bg: 'rgba(5,150,105,0.12)'   },
+  en_livraison: { label: 'En livraison',        color: '#2563eb', bg: 'rgba(37,99,235,0.12)'   },
+  livre:        { label: 'Livrée & Installée', color: '#0369a1', bg: 'rgba(3,105,161,0.12)'   },
+  annule:       { label: 'Annulée',            color: '#dc2626', bg: 'rgba(220,38,38,0.12)'   },
 };
 
 export const OrderDetailModal = ({ order, isOpen }: OrderDetailModalProps) => {

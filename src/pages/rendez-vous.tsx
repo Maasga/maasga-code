@@ -2,7 +2,7 @@
 import { products } from '../data/products'
 import { quartiersByArrondissement } from '../data/quartiers'
 
-export const RendezVousPage = ({ success, error, productId, type, clientName, clientPhone, surface, btu }: { success?: boolean; error?: string; productId?: string; type?: string; clientName?: string; clientPhone?: string; surface?: string; btu?: string }) => {
+export const RendezVousPage = ({ success, error, productId, type, clientName, clientPhone, surface, btu, loggedIn }: { success?: boolean; error?: string; productId?: string; type?: string; clientName?: string; clientPhone?: string; surface?: string; btu?: string; loggedIn?: boolean }) => {
   const selectedProduct = productId ? products.find(p => p.id === parseInt(productId)) : null
 
   return (
@@ -37,20 +37,41 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                 <i class="fas fa-home"></i><span>Retour à l'accueil</span>
               </a>
 
-              {/* Section création compte */}
-              <div id="rdv-create-account" data-client-name={clientName?.replace(/[<>"'&]/g, '') || ''} data-client-phone={clientPhone?.replace(/[^0-9+\s]/g, '') || ''} style="margin-top:20px;">
-                <div style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.15); border-radius:14px; padding:16px;">
-                  <div style="font-size:0.85rem; font-weight:700; color:#03045e; margin-bottom:8px;">
-                    <i class="fas fa-user-circle" style="color:#38bdf8; margin-right:6px;"></i>Créer votre compte MAASGA
-                  </div>
-                  <p style="font-size:0.95rem; color:#03045e; font-weight:700; margin-bottom:14px; line-height:1.5;">Suivez vos commandes et RDV. Nous vous contacterons bientôt</p>
-                  <a href="/espace-client" style="display:block; width:100%; padding:11px; border-radius:10px; background:rgba(56,189,248,0.15); color:#38bdf8; font-weight:700; font-size:0.85rem; border:1px solid rgba(56,189,248,0.25); text-align:center; text-decoration:none;">
-                    <i class="fas fa-user-plus" style="margin-right:6px;"></i>Créer mon compte
+              {/* Section compte / Espace client */}
+              {loggedIn ? (
+                <div style="margin-top:20px;">
+                  <a href="/espace-client" class="inline-flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-bold text-white text-sm" style="background:linear-gradient(135deg,#0077b6,#00b4d8); box-shadow:0 6px 20px rgba(0,119,182,0.25);">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Voir mon Espace Client</span>
                   </a>
                 </div>
-              </div>
+              ) : (
+                <div id="rdv-create-account" data-client-name={clientName?.replace(/[<>"'&]/g, '') || ''} data-client-phone={clientPhone?.replace(/[^0-9+\s]/g, '') || ''} style="margin-top:20px;">
+                  <div style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.15); border-radius:14px; padding:16px;">
+                    <div style="font-size:0.85rem; font-weight:700; color:#03045e; margin-bottom:8px;">
+                      <i class="fas fa-user-circle" style="color:#38bdf8; margin-right:6px;"></i>Créer votre compte MAASGA
+                    </div>
+                    <p style="font-size:0.95rem; color:#03045e; font-weight:700; margin-bottom:14px; line-height:1.5;">Suivez vos commandes et RDV. Nous vous contacterons bientôt</p>
+                    <a href="/espace-client" style="display:block; width:100%; padding:11px; border-radius:10px; background:rgba(56,189,248,0.15); color:#38bdf8; font-weight:700; font-size:0.85rem; border:1px solid rgba(56,189,248,0.25); text-align:center; text-decoration:none;">
+                      <i class="fas fa-user-plus" style="margin-right:6px;"></i>Créer mon compte
+                    </a>
+                  </div>
+                </div>
+              )}
 
               <script dangerouslySetInnerHTML={{ __html: `
+                (function() {
+                  fetch('/api/session-check', { credentials: 'same-origin' })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                      if (data && data.loggedIn) {
+                        var box = document.getElementById('rdv-create-account');
+                        if (box) {
+                          box.innerHTML = '<a href="/espace-client" class="inline-flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-bold text-white text-sm" style="background:linear-gradient(135deg,#0077b6,#00b4d8); box-shadow:0 6px 20px rgba(0,119,182,0.25);"><i class="fas fa-user-circle"></i><span>Voir mon Espace Client</span></a>';
+                        }
+                      }
+                    }).catch(function() {});
+                })();
                 function toggleRdvPwd() {
                   const input = document.getElementById('rdv-register-password');
                   const icon = document.getElementById('rdv-eye-icon');
@@ -530,13 +551,13 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
             const statusDiv = document.getElementById('location-status');
             
             if (!navigator.geolocation) {
-              statusDiv.textContent = '❌ Géolocalisation non supportée par votre navigateur';
+              statusDiv.innerHTML = '<i class="fas fa-times-circle"></i> Géolocalisation non supportée par votre navigateur';
               statusDiv.className = 'text-xs mt-2 text-red-600 font-medium';
               statusDiv.classList.remove('hidden');
               return;
             }
 
-            statusDiv.textContent = '📍 Localisation en cours...';
+            statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Localisation en cours...';
             statusDiv.className = 'text-xs mt-2 text-blue-600 font-medium';
             statusDiv.classList.remove('hidden');
 
@@ -555,7 +576,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                 // Reverse geocoding (simulation simple - en prod utiliser Google Maps API)
                 document.getElementById('address-input').value = \`Coordonnées: \${lat.toFixed(4)}, \${lng.toFixed(4)} (précision: ±\${accuracy}m)\`;
 
-                statusDiv.textContent = \`✅ Vous êtes localisé (précision: ±\${accuracy}m)\`;
+                statusDiv.innerHTML = \`<i class="fas fa-check-circle"></i> Vous êtes localisé (précision: ±\${accuracy}m)\`;
                 statusDiv.className = 'text-xs mt-2 text-green-600 font-medium';
 
                 // Mettre à jour la carte
@@ -566,13 +587,13 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                 let errorMsg = 'Erreur de localisation';
                 switch(error.code) {
                   case error.PERMISSION_DENIED:
-                    errorMsg = '❌ Localisation refusée. Activez-la dans vos paramètres.';
+                    errorMsg = '<i class="fas fa-times-circle"></i> Localisation refusée. Activez-la dans vos paramètres.';
                     break;
                   case error.POSITION_UNAVAILABLE:
-                    errorMsg = '❌ Position indisponible. GPS non accessible.';
+                    errorMsg = '<i class="fas fa-times-circle"></i> Position indisponible. GPS non accessible.';
                     break;
                   case error.TIMEOUT:
-                    errorMsg = '❌ Délai dépassé. Essayez à nouveau.';
+                    errorMsg = '<i class="fas fa-times-circle"></i> Délai dépassé. Essayez à nouveau.';
                     break;
                 }
                 statusDiv.textContent = errorMsg;

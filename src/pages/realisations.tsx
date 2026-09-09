@@ -159,7 +159,7 @@ export const RealisationsPage = ({ realisations = [] }: { realisations?: any[] }
                   </div>
                 )}
                 <div class="tilt-caption p-5">
-                  {r.is_featured ? <span class="inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-2" style="background:rgba(251,191,36,0.15); color:#fbbf24;">⭐ À la une</span> : null}
+                  {r.is_featured ? <span class="inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-2" style="background:rgba(251,191,36,0.15); color:#fbbf24;"><i class="fas fa-star"></i> À la une</span> : null}
                   <h3 class="font-bold text-white mb-1 text-sm leading-snug">{r.title}</h3>
                   {r.description && <p class="text-xs mb-2 leading-relaxed" style="color:#8ba3c0;">{r.description}</p>}
                   <div class="flex items-center justify-between mt-3">

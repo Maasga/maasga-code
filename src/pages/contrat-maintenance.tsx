@@ -1,6 +1,9 @@
 import { Layout } from '../components/Layout'
 
 const renderCell = (val: string) => {
+  if (val === '✅') {
+    return <span><i class="fas fa-check-circle" style="color:#16a34a;"></i></span>;
+  }
   if (val.includes('✅')) {
     const rest = val.replace('✅', '').trim();
     return <span><i class="fas fa-check-circle" style="color:#16a34a;"></i>{rest ? ` ${rest}` : ''}</span>;
@@ -260,15 +263,6 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
             </div>
           </div>
 
-        {success && (
-          <div class="mb-6 p-4 rounded-xl flex items-center space-x-3" style="background:rgba(22,163,74,0.08); border:1px solid rgba(22,163,74,0.15);">
-            <i class="fas fa-check-circle text-xl" style="color:#16a34a;"></i>
-            <div>
-              <div class="font-bold text-sm" style="color:#16a34a;">Souscription confirmée !</div>
-              <div class="text-xs" style="color:#64748b;">Votre contrat est enregistré. Nous vous contactons sous 2h pour planifier la prochaine intervention.</div>
-            </div>
-          </div>
-        )}
         {error && (
           <div class="mb-6 p-4 rounded-xl flex items-center space-x-3" style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.15);">
             <i class="fas fa-exclamation-circle text-xl" style="color:#ef4444;"></i>
@@ -276,7 +270,30 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
           </div>
         )}
 
-        <form method="post" action="/api/maintenance/request" class="space-y-5">
+        {success ? (
+          <div class="py-6 px-2 text-center space-y-6">
+            <div class="w-16 h-16 rounded-full mx-auto flex items-center justify-center" style="background:rgba(22,163,74,0.12); border:2px solid rgba(22,163,74,0.3);">
+              <i class="fas fa-check-circle text-3xl" style="color:#16a34a;"></i>
+            </div>
+            <div class="space-y-2">
+              <h4 class="text-xl font-extrabold" style="color:#03045e;">Souscription confirmée !</h4>
+              <p class="text-sm max-w-md mx-auto leading-relaxed" style="color:#475569;">
+                Votre contrat de maintenance a été enregistré avec succès. Notre équipe vous contactera sous <strong>2h</strong> par <span style="color:#25d366; font-weight:700;"><i class="fab fa-whatsapp"></i> WhatsApp</span> / Téléphone pour planifier votre première intervention.
+              </p>
+            </div>
+
+            <div class="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <a href="/espace-client" class="w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-white transition-all hover:-translate-y-0.5 text-sm inline-flex items-center justify-center gap-2" style="background:linear-gradient(135deg,#0077b6,#00b4d8); box-shadow:0 8px 24px rgba(0,119,182,0.3);">
+                <i class="fas fa-user-circle"></i>
+                <span>Voir mon Espace Client</span>
+              </a>
+              <button onclick="closeMaintenanceModal()" class="w-full sm:w-auto px-6 py-3.5 rounded-xl font-semibold transition-all hover:bg-slate-100 text-sm cursor-pointer" style="color:#64748b; border:1.5px solid #cbd5e1;">
+                Fermer
+              </button>
+            </div>
+          </div>
+        ) : (
+          <form method="post" action="/api/maintenance/request" class="space-y-5">
             <div class="hidden" aria-hidden="true"><input type="text" name="website" tabindex={-1} autocomplete="off" /></div>
             {/* Type de demande */}
             <div>
@@ -391,6 +408,7 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
               <span>Confirmer ma souscription</span>
             </button>
           </form>
+        )}
         </div>
       </div>
     </div>
@@ -466,6 +484,11 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
         // Re-enable body scroll and Lenis
         document.body.classList.remove('modal-open');
         if (window.__lenis) window.__lenis.start();
+
+        // Clean query params from URL
+        if (window.history && window.history.replaceState && (window.location.search.indexOf('success') !== -1 || window.location.search.indexOf('error') !== -1)) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
       }
 
       // Close on backdrop click

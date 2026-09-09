@@ -411,7 +411,7 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
           const label = document.getElementById('order-gps-label');
           const status = document.getElementById('order-gps-status');
           if (!navigator.geolocation) {
-            status.textContent = '❌ Géolocalisation non supportée par votre navigateur.';
+            status.innerHTML = '<i class="fas fa-times-circle"></i> Géolocalisation non supportée par votre navigateur.';
             status.style.cssText = 'display:block; background:rgba(239,68,68,0.08); color:#f87171; border:1px solid rgba(239,68,68,0.2);';
             return;
           }
@@ -431,10 +431,10 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
               btn.disabled = false;
               label.textContent = 'Partager ma position';
               let msg = 'Erreur de localisation.';
-              if (err.code === 1) msg = '❌ Permission refusée. Autorisez la localisation dans votre navigateur.';
-              else if (err.code === 2) msg = '❌ Position indisponible. Vérifiez votre GPS.';
-              else if (err.code === 3) msg = '❌ Délai dépassé. Réessayez.';
-              status.textContent = msg;
+              if (err.code === 1) msg = '<i class="fas fa-times-circle"></i> Permission refusée. Autorisez la localisation dans votre navigateur.';
+              else if (err.code === 2) msg = '<i class="fas fa-times-circle"></i> Position indisponible. Vérifiez votre GPS.';
+              else if (err.code === 3) msg = '<i class="fas fa-times-circle"></i> Délai dépassé. Réessayez.';
+              status.innerHTML = msg;
               status.style.cssText = 'display:block; background:rgba(239,68,68,0.08); color:#f87171; border:1px solid rgba(239,68,68,0.2); border-radius:8px; padding:8px 12px; font-size:0.72rem; margin-top:8px;';
             },
             { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }

@@ -5608,9 +5608,7 @@ export const AdminPaiementsPage = ({ payments = [], stats }: { payments: any[]; 
 // ============================================================
 // ADMIN MAINTENANCE PAGE
 // ============================================================
-export const AdminMaintenancePage = () => {
-
-  const { contracts, requests, visits, loading, error } = useAdminMaintenanceData();
+export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [] }: { contracts?: any[], requests?: any[], visits?: any[] }) => {
 
   // Visites dues/en retard (date passée et toujours planifiée)
   const today = new Date().toISOString().split('T')[0]
@@ -6489,11 +6487,11 @@ const ticketCategoryLabels: Record<string, { label: string; icon: string; color:
 }
 
 const ticketStatusLabels: Record<string, { label: string; color: string; bg: string }> = {
-  ouvert: { label: '🟢 Ouvert', color: '#34d399', bg: 'rgba(52,211,153,0.12)' },
-  en_cours: { label: '🔵 En cours', color: '#60a5fa', bg: 'rgba(96,165,250,0.12)' },
-  attente_client: { label: '🟡 Attente client', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
-  resolu: { label: '✅ Résolu', color: '#34d399', bg: 'rgba(52,211,153,0.12)' },
-  ferme: { label: '⚫ Fermé', color: '#94a3b8', bg: 'rgba(148,163,184,0.12)' }
+  ouvert: { label: 'Ouvert', color: '#34d399', bg: 'rgba(52,211,153,0.12)' },
+  en_cours: { label: 'En cours', color: '#60a5fa', bg: 'rgba(96,165,250,0.12)' },
+  attente_client: { label: 'Attente client', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
+  resolu: { label: 'Résolu', color: '#34d399', bg: 'rgba(52,211,153,0.12)' },
+  ferme: { label: 'Fermé', color: '#94a3b8', bg: 'rgba(148,163,184,0.12)' }
 }
 
 const ticketPriorityLabels: Record<string, { label: string; color: string }> = {
