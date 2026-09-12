@@ -1,6 +1,0 @@
-{
-  "name": "maasga-website",
-  "pages_build_output_dir": "dist",
-  "build_command": "npm run build",
-  "compatibility_date": "2024-01-01"
-}
