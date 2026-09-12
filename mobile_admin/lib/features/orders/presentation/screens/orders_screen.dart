@@ -92,18 +92,39 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 ),
               ),
               data: (orders) {
+                // Mapper les statuts français vers les valeurs du backend
+                final statusMap = {
+                  'Tous': '',
+                  'En attente': 'en_attente',
+                  'Confirmée': 'confirmée',
+                  'En cours': 'en_cours',
+                  'Livrée': 'livrée',
+                  'Annulée': 'annulée',
+                };
+
                 // Filtrer les commandes
                 List<Order> filteredOrders = orders;
                 if (_selectedStatus != 'Tous') {
+                  final backendStatus = statusMap[_selectedStatus] ?? '';
                   filteredOrders = filteredOrders
-                      .where((o) => o.status.toLowerCase() == _selectedStatus.toLowerCase())
+                      .where(
+                        (o) =>
+                            o.status.toLowerCase() ==
+                            backendStatus.toLowerCase(),
+                      )
                       .toList();
                 }
                 if (_searchQuery.isNotEmpty) {
                   filteredOrders = filteredOrders
-                      .where((o) =>
-                          o.customerName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                          o.id.toLowerCase().contains(_searchQuery.toLowerCase()))
+                      .where(
+                        (o) =>
+                            o.clientName.toLowerCase().contains(
+                              _searchQuery.toLowerCase(),
+                            ) ||
+                            o.id.toLowerCase().contains(
+                              _searchQuery.toLowerCase(),
+                            ),
+                      )
                       .toList();
                 }
 
@@ -129,19 +150,22 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                   itemCount: filteredOrders.length,
                   itemBuilder: (context, index) {
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: MaasgaTokens.spacingSm),
+                      padding: const EdgeInsets.only(
+                        bottom: MaasgaTokens.spacingSm,
+                      ),
                       child: OrderCard(
                         order: filteredOrders[index],
                         onStatusChange: (newStatus) {
-                          // TODO: Implémenter le changement de statut
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Statut changé en $newStatus (simulation)')),
+                          ref.read(
+                            orderStatusUpdateProvider((
+                              id: filteredOrders[index].id,
+                              status: newStatus,
+                            )),
                           );
                         },
                         onCancel: () {
-                          // TODO: Implémenter l'annulation
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Annulation de la commande (simulation)')),
+                          ref.read(
+                            orderCancelProvider(filteredOrders[index].id),
                           );
                         },
                       ),

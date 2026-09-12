@@ -49,7 +49,7 @@ class OrderCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          order.customerName,
+                          order.clientName,
                           style: TextStyle(
                             fontSize: 14,
                             color: AdminTheme.textSecondary,
@@ -65,7 +65,11 @@ class OrderCard extends StatelessWidget {
               // Date et total
               Row(
                 children: [
-                  Icon(Icons.calendar_today, size: 16, color: AdminTheme.textSecondary),
+                  Icon(
+                    Icons.calendar_today,
+                    size: 16,
+                    color: AdminTheme.textSecondary,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     '${order.createdAt.day}/${order.createdAt.month}/${order.createdAt.year}',
@@ -75,11 +79,15 @@ class OrderCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: MaasgaTokens.spacingMd),
-                  Icon(Icons.location_on, size: 16, color: AdminTheme.textSecondary),
+                  Icon(
+                    Icons.location_on,
+                    size: 16,
+                    color: AdminTheme.textSecondary,
+                  ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      order.address,
+                      order.quartier,
                       style: TextStyle(
                         fontSize: 12,
                         color: AdminTheme.textSecondary,
@@ -91,6 +99,59 @@ class OrderCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: MaasgaTokens.spacingSm),
+              // Produit
+              if (order.productName != null) ...[
+                Row(
+                  children: [
+                    Icon(
+                      Icons.inventory_2,
+                      size: 16,
+                      color: AdminTheme.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        order.productName!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AdminTheme.textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+              ],
+              // Marque et BTU
+              if (order.brand != null || order.btu != null) ...[
+                Row(
+                  children: [
+                    if (order.brand != null) ...[
+                      Text(
+                        order.brand!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AdminTheme.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    if (order.btu != null) ...[
+                      Text(
+                        '${order.btu} BTU',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AdminTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: MaasgaTokens.spacingSm),
+              ],
               // Total
               Text(
                 order.formattedTotal,
@@ -116,11 +177,26 @@ class OrderCard extends StatelessWidget {
                         ),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'pending', child: Text('En attente')),
-                        DropdownMenuItem(value: 'confirmed', child: Text('Confirmée')),
-                        DropdownMenuItem(value: 'in_progress', child: Text('En cours')),
-                        DropdownMenuItem(value: 'delivered', child: Text('Livrée')),
-                        DropdownMenuItem(value: 'cancelled', child: Text('Annulée')),
+                        DropdownMenuItem(
+                          value: 'en_attente',
+                          child: Text('En attente'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'confirmée',
+                          child: Text('Confirmée'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'en_cours',
+                          child: Text('En cours'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'livrée',
+                          child: Text('Livrée'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'annulée',
+                          child: Text('Annulée'),
+                        ),
                       ],
                       onChanged: (value) {
                         if (value != null) {
@@ -130,7 +206,7 @@ class OrderCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: MaasgaTokens.spacingSm),
-                  if (order.status != 'cancelled')
+                  if (order.status != 'annulée')
                     IconButton(
                       onPressed: onCancel,
                       icon: const Icon(Icons.cancel),
@@ -149,19 +225,19 @@ class OrderCard extends StatelessWidget {
   Widget _buildStatusBadge() {
     Color badgeColor;
     switch (order.status.toLowerCase()) {
-      case 'pending':
+      case 'en_attente':
         badgeColor = Colors.orange;
         break;
-      case 'confirmed':
+      case 'confirmée':
         badgeColor = Colors.blue;
         break;
-      case 'in_progress':
+      case 'en_cours':
         badgeColor = Colors.purple;
         break;
-      case 'delivered':
+      case 'livrée':
         badgeColor = Colors.green;
         break;
-      case 'cancelled':
+      case 'annulée':
         badgeColor = Colors.red;
         break;
       default:

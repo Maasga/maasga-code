@@ -1,6 +1,6 @@
 class ApiEndpoints {
   // Base URL - Points to the deployed Cloudflare Pages instance
-  static const String baseUrl = 'https://731cd457.maasga-website.pages.dev';
+  static const String baseUrl = 'https://16c02bc7.maasga-website.pages.dev';
 
   // Auth endpoints (Firebase-based)
   static const String mobileLogin = '/api/mobile/login';

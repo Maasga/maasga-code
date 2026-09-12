@@ -9782,6 +9782,41 @@ app.get('/api/mobile/orders', async (c) => {
   }
 })
 
+// ── PATCH /api/mobile/orders/:id ─────────────────────────────────────
+// Met à jour le statut d'une commande pour l'application admin
+app.patch('/api/mobile/orders/:id', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Database not available' }, 500)
+  
+  const orderId = c.req.param('id')
+  const body = await c.req.json()
+  const { status } = body
+  
+  if (!status) {
+    return c.json({ error: 'Status is required' }, 400)
+  }
+  
+  try {
+    const result = await db.prepare(
+      'UPDATE orders SET status = ?, updated_at = datetime("now") WHERE id = ?'
+    ).bind(status, orderId).run()
+    
+    if (result.success === false) {
+      return c.json({ error: 'Failed to update order' }, 500)
+    }
+    
+    // Récupérer la commande mise à jour
+    const orderResult = await db.prepare(
+      'SELECT o.*, p.name as product_name, p.btu, p.brand FROM orders o LEFT JOIN products p ON o.product_id = p.id WHERE o.id = ?'
+    ).bind(orderId).first()
+    
+    return c.json(orderResult)
+  } catch (e) {
+    console.error('Mobile order update error:', e)
+    return c.json({ error: 'Failed to update order' }, 500)
+  }
+})
+
 // â”€â”€ POST /api/mobile/commandes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.post('/api/mobile/commandes', mobileAuth, async (c) => {
   const body = await c.req.json()
