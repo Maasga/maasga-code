@@ -1,0 +1,95 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Flutter",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "flutterMode": "release"
+        },
+        {
+            "name": "mobile_admin",
+            "cwd": "mobile_admin",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "mobile_admin (profile mode)",
+            "cwd": "mobile_admin",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "mobile_admin (release mode)",
+            "cwd": "mobile_admin",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        },
+        {
+            "name": "mobile_admin",
+            "cwd": ".worktrees\\admin-mobile\\mobile_admin",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "mobile_admin (profile mode)",
+            "cwd": ".worktrees\\admin-mobile\\mobile_admin",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "mobile_admin (release mode)",
+            "cwd": ".worktrees\\admin-mobile\\mobile_admin",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        },
+        {
+            "name": "mobile_admin_fixed",
+            "cwd": ".worktrees\\admin-mobile\\mobile_admin_fixed",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "mobile_admin_fixed (profile mode)",
+            "cwd": ".worktrees\\admin-mobile\\mobile_admin_fixed",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "mobile_admin_fixed (release mode)",
+            "cwd": ".worktrees\\admin-mobile\\mobile_admin_fixed",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        },
+        {
+            "name": "app",
+            "cwd": ".worktrees\\catalogue-product-pages\\mobile\\app",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "app (profile mode)",
+            "cwd": ".worktrees\\catalogue-product-pages\\mobile\\app",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "app (release mode)",
+            "cwd": ".worktrees\\catalogue-product-pages\\mobile\\app",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        }
+    ]
+}

@@ -9738,6 +9738,20 @@ app.get('/api/mobile/my-rdvs', mobileAuth, async (c) => {
     return c.json(rdvs.results || [])
   } catch (e) { console.error('Mobile my-rdvs error:', e); return c.json([]) }
 })
+// ── GET /api/mobile/rdv v2 ───────────────────────────────────────
+// Retourne TOUS les RDV pour l'application admin (sans filtre utilisateur)
+app.get('/api/mobile/rdv', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    const rdvs = await db.prepare('SELECT * FROM appointments ORDER BY date DESC').all()
+    return c.json(rdvs.results || [])
+  } catch (e) { 
+    console.error('Mobile rdv error:', e)
+    return c.json([])
+  }
+})
+
 
 // â”€â”€ GET /api/mobile/my-orders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/api/mobile/my-orders', mobileAuth, async (c) => {
@@ -9926,6 +9940,228 @@ app.get('/api/mobile/brands', async (c) => {
   } catch (e) {
     console.error('Mobile brands error:', e)
     return c.json([])
+  }
+})
+
+// ── GET /api/mobile/products ───────────────────────────────────
+// Liste des produits pour l'application mobile admin
+app.get('/api/mobile/products', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const result = await db.prepare(
+      'SELECT * FROM products ORDER BY created_at DESC'
+    ).all()
+    return c.json(result.results || [])
+  } catch (e) {
+    console.error('Mobile products error:', e)
+    return c.json([])
+  }
+})
+
+// ── GET /api/mobile/admin-dashboard ───────────────────────────────
+// Dashboard pour l'application mobile admin - Robust error handling v3
+app.get('/api/mobile/admin-dashboard', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    // Rendez-vous - essayer avec les différents statuts possibles
+    let pendingRdv = 0
+    let confirmedRdv = 0
+    let doneRdv = 0
+    try {
+      const rdvResult = await db.prepare(
+        'SELECT COUNT(*) as total FROM appointments WHERE status = ?'
+      ).bind('pending').first() as any
+      pendingRdv = rdvResult?.total || 0
+
+      const confirmedRdvResult = await db.prepare(
+        'SELECT COUNT(*) as total FROM appointments WHERE status = ?'
+      ).bind('confirmed').first() as any
+      confirmedRdv = confirmedRdvResult?.total || 0
+
+      const doneRdvResult = await db.prepare(
+        'SELECT COUNT(*) as total FROM appointments WHERE status = ?'
+      ).bind('done').first() as any
+      doneRdv = doneRdvResult?.total || 0
+    } catch (e) {
+      console.warn('RDV tables not available:', e)
+    }
+
+    // Stock
+    let lowStock = 0
+    let outOfStock = 0
+    try {
+      const lowStockResult = await db.prepare(
+        'SELECT COUNT(*) as total FROM products WHERE stock > 0 AND stock <= ?'
+      ).bind(5).first() as any
+      lowStock = lowStockResult?.total || 0
+
+      const outOfStockResult = await db.prepare(
+        'SELECT COUNT(*) as total FROM products WHERE stock = 0'
+      ).first() as any
+      outOfStock = outOfStockResult?.total || 0
+    } catch (e) {
+      console.warn('Products tables not available:', e)
+    }
+
+    // Avis
+    let pendingReviews = 0
+    let approvedReviews = 0
+    let avgNote = 0
+    try {
+      const pendingReviewsResult = await db.prepare(
+        'SELECT COUNT(*) as total FROM reviews WHERE approved = 0'
+      ).first() as any
+      pendingReviews = pendingReviewsResult?.total || 0
+
+      const approvedReviewsResult = await db.prepare(
+        'SELECT COUNT(*) as total FROM reviews WHERE approved = 1'
+      ).first() as any
+      approvedReviews = approvedReviewsResult?.total || 0
+
+      const avgNoteResult = await db.prepare(
+        'SELECT AVG(rating) as avg FROM reviews WHERE approved = 1'
+      ).first() as any
+      avgNote = avgNoteResult?.avg || 0
+    } catch (e) {
+      console.warn('Reviews tables not available:', e)
+    }
+
+    // Commandes cette semaine
+    let ordersThisWeek = 0
+    let rdvThisWeek = 0
+    let estimatedCA = 0
+    try {
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      const ordersThisWeekResult = await db.prepare(
+        'SELECT COUNT(*) as total FROM orders WHERE created_at >= ?'
+      ).bind(weekAgo).first() as any
+      ordersThisWeek = ordersThisWeekResult?.total || 0
+
+      // RDV cette semaine
+      const rdvThisWeekResult = await db.prepare(
+        'SELECT COUNT(*) as total FROM appointments WHERE created_at >= ?'
+      ).bind(weekAgo).first() as any
+      rdvThisWeek = rdvThisWeekResult?.total || 0
+
+      // CA estimé
+      const caResult = await db.prepare(
+        'SELECT SUM(total) as total FROM orders WHERE status != ? AND status != ?'
+      ).bind('annule', 'cancelled').first() as any
+      estimatedCA = caResult?.total || 0
+    } catch (e) {
+      console.warn('Orders tables not available:', e)
+    }
+
+    // Données de graphique (RDV par jour de la semaine)
+    let rdvChartData: any[] = []
+    try {
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      const chartDataResult = await db.prepare(`
+        SELECT 
+          CASE 
+            WHEN strftime('%w', created_at) = '0' THEN 'Dim'
+            WHEN strftime('%w', created_at) = '1' THEN 'Lun'
+            WHEN strftime('%w', created_at) = '2' THEN 'Mar'
+            WHEN strftime('%w', created_at) = '3' THEN 'Mer'
+            WHEN strftime('%w', created_at) = '4' THEN 'Jeu'
+            WHEN strftime('%w', created_at) = '5' THEN 'Ven'
+            WHEN strftime('%w', created_at) = '6' THEN 'Sam'
+          END as day,
+          COUNT(*) as count
+        FROM appointments 
+        WHERE created_at >= ?
+        GROUP BY day
+        ORDER BY day
+      `).bind(weekAgo).all()
+      rdvChartData = (chartDataResult.results || []).map((r: any) => ({
+        day: r.day,
+        count: r.count
+      }))
+    } catch (e) {
+      console.warn('Chart data not available:', e)
+      rdvChartData = [
+        { day: 'Lun', count: 0 },
+        { day: 'Mar', count: 0 },
+        { day: 'Mer', count: 0 },
+        { day: 'Jeu', count: 0 },
+        { day: 'Ven', count: 0 },
+        { day: 'Sam', count: 0 },
+        { day: 'Dim', count: 0 },
+      ]
+    }
+
+    // Alertes
+    const alerts = []
+    if (pendingRdv > 0) {
+      alerts.push({
+        type: 'warning',
+        message: `${pendingRdv} RDV en attente`,
+        count: pendingRdv,
+        route: '/rdv'
+      })
+    }
+    if (lowStock > 0) {
+      alerts.push({
+        type: 'danger',
+        message: `${lowStock} produits en stock faible`,
+        count: lowStock,
+        route: '/produits'
+      })
+    }
+    if (pendingReviews > 0) {
+      alerts.push({
+        type: 'info',
+        message: `${pendingReviews} avis à modérer`,
+        count: pendingReviews,
+        route: '/avis'
+      })
+    }
+
+    return c.json({
+      pendingRdv,
+      confirmedRdv,
+      doneRdv,
+      lowStock,
+      outOfStock,
+      pendingReviews,
+      approvedReviews,
+      avgNote,
+      estimatedCA,
+      rdvThisWeek,
+      ordersThisWeek,
+      rdvChartData,
+      alerts
+    })
+  } catch (e) {
+    console.error('Admin dashboard error:', e)
+    // Retourner des valeurs par défaut au lieu d'une erreur 500
+    return c.json({
+      pendingRdv: 0,
+      confirmedRdv: 0,
+      doneRdv: 0,
+      lowStock: 0,
+      outOfStock: 0,
+      pendingReviews: 0,
+      approvedReviews: 0,
+      avgNote: 0,
+      estimatedCA: 0,
+      rdvThisWeek: 0,
+      ordersThisWeek: 0,
+      rdvChartData: [
+        { day: 'Lun', count: 0 },
+        { day: 'Mar', count: 0 },
+        { day: 'Mer', count: 0 },
+        { day: 'Jeu', count: 0 },
+        { day: 'Ven', count: 0 },
+        { day: 'Sam', count: 0 },
+        { day: 'Dim', count: 0 },
+      ],
+      alerts: []
+    })
   }
 })
 
