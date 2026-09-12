@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class Product {
   final String id;
   final String name;
@@ -62,7 +64,15 @@ class Product {
       energyClass: json['energy_class']?.toString(),
       inverter: json['inverter'] == 1 || json['inverter'] == true,
       features: json['features'] != null
-          ? List<String>.from(json['features'])
+          ? (json['features'] is String
+                ? (json['features'] as String).startsWith('[')
+                      ? List<String>.from(
+                          (jsonDecode(json['features'] as String) as List).map(
+                            (e) => e.toString(),
+                          ),
+                        )
+                      : [json['features'].toString()]
+                : List<String>.from(json['features']))
           : null,
       refrigerant: json['refrigerant']?.toString(),
       compressor: json['compressor']?.toString(),
