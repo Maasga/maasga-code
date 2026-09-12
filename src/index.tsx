@@ -9640,18 +9640,18 @@ app.post('/api/mobile/order/:id/devis-action', mobileAuth, async (c) => {
     .bind(newStatus, reason, new Date().toISOString(), orderId).run()
   return c.json({ success: true })
 })
-app.get('/api/mobile/products', async (c) => {
-  const db = c.env.DB
-  let list: any[] = [...products]
-  if (db) {
-    try {
-      const dbProducts = await getProducts(db)
-      if (dbProducts.length > 0) list = dbProducts as any[]
-    } catch (_) {}
-  }
-  list = list.filter((p: any) => p.available || p.stock > 0)
-  return c.json(list)
-})
+// app.get('/api/mobile/products', async (c) => {
+//   const db = c.env.DB
+//   let list: any[] = [...products]
+//   if (db) {
+//     try {
+//       const dbProducts = await getProducts(db)
+//       if (dbProducts.length > 0) list = dbProducts as any[]
+//     } catch (_) {}
+//   }
+//   list = list.filter((p: any) => p.available || p.stock > 0)
+//   return c.json(list)
+// })
 
 // â”€â”€ GET /api/mobile/products/:id â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/api/mobile/products/:id', async (c) => {
