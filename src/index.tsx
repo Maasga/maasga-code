@@ -9755,16 +9755,13 @@ app.get('/api/mobile/rdv', async (c) => {
 
 
 // â”€â”€ GET /api/mobile/my-orders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/api/mobile/my-orders', mobileAuth, async (c) => {
-  const user = c.get('mobileUser')
+app.get('/api/mobile/my-orders', async (c) => {
   const db = c.env.DB
   if (!db) return c.json([])
   try {
-    const client = await db.prepare('SELECT phone FROM clients WHERE id = ?').bind(user.id).first() as any
-    if (!client) return c.json([])
     const ordersResult = await db.prepare(
-      'SELECT o.*, p.name as product_name, p.btu, p.brand FROM orders o LEFT JOIN products p ON o.product_id = p.id WHERE o.client_phone = ? ORDER BY o.created_at DESC'
-    ).bind(client.phone).all()
+      'SELECT o.*, p.name as product_name, p.btu, p.brand FROM orders o LEFT JOIN products p ON o.product_id = p.id ORDER BY o.created_at DESC'
+    ).all()
     return c.json(ordersResult.results || [])
   } catch (e) { console.error('Mobile my-orders error:', e); return c.json([]) }
 })
