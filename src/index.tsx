@@ -9755,7 +9755,7 @@ app.get('/api/mobile/rdv', async (c) => {
 
 
 // â”€â”€ GET /api/mobile/my-orders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/api/mobile/my-orders', async (c) => {
+app.get('/api/mobile/my-orders', mobileAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json([])
   try {
