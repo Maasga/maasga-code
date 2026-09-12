@@ -9801,8 +9801,8 @@ app.patch('/api/mobile/orders/:id', async (c) => {
       'UPDATE orders SET status = ?, updated_at = datetime("now") WHERE id = ?'
     ).bind(status, orderId).run()
     
-    if (result.success === false) {
-      return c.json({ error: 'Failed to update order' }, 500)
+    if (!result.meta || result.meta.changes === 0) {
+      return c.json({ error: 'Order not found or no changes made' }, 404)
     }
     
     // Récupérer la commande mise à jour
@@ -9813,7 +9813,7 @@ app.patch('/api/mobile/orders/:id', async (c) => {
     return c.json(orderResult)
   } catch (e) {
     console.error('Mobile order update error:', e)
-    return c.json({ error: 'Failed to update order' }, 500)
+    return c.json({ error: 'Failed to update order', details: e.message }, 500)
   }
 })
 
