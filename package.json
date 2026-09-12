@@ -1,5 +1,6 @@
 {
   "name": "maasga-website",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
