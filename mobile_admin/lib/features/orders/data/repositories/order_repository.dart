@@ -61,7 +61,7 @@ class OrderRepository {
       print('📦 Annulation de la commande $id');
       await _dio.patch(
         ApiEndpoints.replacePath(ApiEndpoints.orders, {'id': id}),
-        data: {'status': 'annulée'},
+        data: {'status': 'annule'},
       );
       print('✅ Commande $id annulée');
     } catch (e) {

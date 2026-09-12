@@ -80,13 +80,13 @@ class Order {
     switch (status.toLowerCase()) {
       case 'en_attente':
         return 'En attente';
-      case 'confirmée':
+      case 'confirme':
         return 'Confirmée';
-      case 'en_cours':
+      case 'en_livraison':
         return 'En cours';
-      case 'livrée':
+      case 'livre':
         return 'Livrée';
-      case 'annulée':
+      case 'annule':
         return 'Annulée';
       default:
         return status;

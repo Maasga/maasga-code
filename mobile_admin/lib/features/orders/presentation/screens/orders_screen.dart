@@ -96,10 +96,10 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 final statusMap = {
                   'Tous': '',
                   'En attente': 'en_attente',
-                  'Confirmée': 'confirmée',
-                  'En cours': 'en_cours',
-                  'Livrée': 'livrée',
-                  'Annulée': 'annulée',
+                  'Confirmée': 'confirme',
+                  'En cours': 'en_livraison',
+                  'Livrée': 'livre',
+                  'Annulée': 'annule',
                 };
 
                 // Filtrer les commandes

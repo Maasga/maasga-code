@@ -182,19 +182,16 @@ class OrderCard extends StatelessWidget {
                           child: Text('En attente'),
                         ),
                         DropdownMenuItem(
-                          value: 'confirmée',
+                          value: 'confirme',
                           child: Text('Confirmée'),
                         ),
                         DropdownMenuItem(
-                          value: 'en_cours',
+                          value: 'en_livraison',
                           child: Text('En cours'),
                         ),
+                        DropdownMenuItem(value: 'livre', child: Text('Livrée')),
                         DropdownMenuItem(
-                          value: 'livrée',
-                          child: Text('Livrée'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'annulée',
+                          value: 'annule',
                           child: Text('Annulée'),
                         ),
                       ],
@@ -206,7 +203,7 @@ class OrderCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: MaasgaTokens.spacingSm),
-                  if (order.status != 'annulée')
+                  if (order.status != 'annule')
                     IconButton(
                       onPressed: onCancel,
                       icon: const Icon(Icons.cancel),
@@ -228,16 +225,16 @@ class OrderCard extends StatelessWidget {
       case 'en_attente':
         badgeColor = Colors.orange;
         break;
-      case 'confirmée':
+      case 'confirme':
         badgeColor = Colors.blue;
         break;
-      case 'en_cours':
+      case 'en_livraison':
         badgeColor = Colors.purple;
         break;
-      case 'livrée':
+      case 'livre':
         badgeColor = Colors.green;
         break;
-      case 'annulée':
+      case 'annule':
         badgeColor = Colors.red;
         break;
       default:
