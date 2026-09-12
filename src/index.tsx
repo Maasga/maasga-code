@@ -9746,7 +9746,7 @@ app.get('/api/mobile/rdv', async (c) => {
   try {
     const rdvs = await db.prepare('SELECT * FROM appointments ORDER BY date DESC').all()
     return c.json(rdvs.results || [])
-  } catch (e) { 
+  } catch (e) {
     console.error('Mobile rdv error:', e)
     return c.json([])
   }
