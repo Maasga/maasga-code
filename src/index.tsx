@@ -1,3 +1,4 @@
+// Mobile API endpoints updated 2026-09-12
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { serveStatic } from 'hono/cloudflare-workers'
