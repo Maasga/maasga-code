@@ -88,10 +88,9 @@ class Order {
     };
   }
 
-  // Prix total final = (prix produit × quantité) + installation
+  // Prix total = prix produit × quantité (sans installation)
   double get finalTotal {
-    double productTotal = (productPrice ?? 0) * (quantity ?? 1);
-    return productTotal + (installationPrice ?? 0);
+    return (productPrice ?? 0) * (quantity ?? 1);
   }
 
   String get formattedTotal => '${finalTotal.toStringAsFixed(0)} FCFA';
