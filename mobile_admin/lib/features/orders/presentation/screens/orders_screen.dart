@@ -155,18 +155,32 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                       ),
                       child: OrderCard(
                         order: filteredOrders[index],
-                        onStatusChange: (newStatus) {
-                          ref.read(
-                            orderStatusUpdateProvider((
-                              id: filteredOrders[index].id,
-                              status: newStatus,
-                            )),
-                          );
+                        onStatusChange: (newStatus) async {
+                          try {
+                            await ref.read(
+                              orderStatusUpdateProvider((
+                                id: filteredOrders[index].id,
+                                status: newStatus,
+                              )).future,
+                            );
+                            // Force refresh after successful update
+                            ref.invalidate(ordersProvider);
+                          } catch (e) {
+                            // Error is already logged in repository
+                          }
                         },
-                        onCancel: () {
-                          ref.read(
-                            orderCancelProvider(filteredOrders[index].id),
-                          );
+                        onCancel: () async {
+                          try {
+                            await ref.read(
+                              orderCancelProvider(
+                                filteredOrders[index].id,
+                              ).future,
+                            );
+                            // Force refresh after successful cancellation
+                            ref.invalidate(ordersProvider);
+                          } catch (e) {
+                            // Error is already logged in repository
+                          }
                         },
                       ),
                     );
