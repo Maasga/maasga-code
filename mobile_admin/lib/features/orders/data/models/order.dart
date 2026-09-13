@@ -107,6 +107,4 @@ class Order {
         return status;
     }
   }
-
-  String get formattedTotal => '${totalPrice.toStringAsFixed(0)} FCFA';
 }
