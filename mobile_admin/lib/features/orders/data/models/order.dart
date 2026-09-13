@@ -14,6 +14,7 @@ class Order {
   final double? installationPrice;
   final int? productId;
   final int? quantity;
+  final double? productPrice;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -33,6 +34,7 @@ class Order {
     this.installationPrice,
     this.productId,
     this.quantity,
+    this.productPrice,
     required this.createdAt,
     this.updatedAt,
   });
@@ -55,6 +57,7 @@ class Order {
       installationPrice: (json['installation_price'] as num?)?.toDouble(),
       productId: json['product_id'] as int?,
       quantity: json['quantity'] as int?,
+      productPrice: (json['product_price'] as num?)?.toDouble(),
       createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
       updatedAt: json['updated_at'] != null
           ? DateTime.tryParse(json['updated_at'])
@@ -79,14 +82,16 @@ class Order {
       'installation_price': installationPrice,
       'product_id': productId,
       'quantity': quantity,
+      'product_price': productPrice,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
   }
 
-  // Prix total final = produit + installation
+  // Prix total final = (prix produit × quantité) + installation
   double get finalTotal {
-    return totalPrice + (installationPrice ?? 0);
+    double productTotal = (productPrice ?? 0) * (quantity ?? 1);
+    return productTotal + (installationPrice ?? 0);
   }
 
   String get formattedTotal => '${finalTotal.toStringAsFixed(0)} FCFA';

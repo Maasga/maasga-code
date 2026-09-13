@@ -9773,7 +9773,7 @@ app.get('/api/mobile/orders', async (c) => {
   if (!db) return c.json([])
   try {
     const ordersResult = await db.prepare(
-      'SELECT o.*, p.name as product_name, p.btu, p.brand FROM orders o LEFT JOIN products p ON o.product_id = p.id ORDER BY o.created_at DESC'
+      'SELECT o.*, p.name as product_name, p.btu, p.brand, p.price as product_price FROM orders o LEFT JOIN products p ON o.product_id = p.id ORDER BY o.created_at DESC'
     ).all()
     return c.json(ordersResult.results || [])
   } catch (e) {
@@ -9807,7 +9807,7 @@ app.patch('/api/mobile/orders/:id', async (c) => {
     
     // Récupérer la commande mise à jour
     const orderResult = await db.prepare(
-      'SELECT o.*, p.name as product_name, p.btu, p.brand FROM orders o LEFT JOIN products p ON o.product_id = p.id WHERE o.id = ?'
+      'SELECT o.*, p.name as product_name, p.btu, p.brand, p.price as product_price FROM orders o LEFT JOIN products p ON o.product_id = p.id WHERE o.id = ?'
     ).bind(orderId).first()
     
     return c.json(orderResult)
