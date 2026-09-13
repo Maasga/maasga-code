@@ -22,6 +22,7 @@ class ApiEndpoints {
   // Orders endpoints
   static const String orders = '/api/mobile/orders';
   static const String ordersCreate = '/api/mobile/commandes';
+  static const String orderDetail = '/api/mobile/orders/{id}';
 
   // Reviews endpoints
   static const String reviews = '/api/mobile/reviews';
