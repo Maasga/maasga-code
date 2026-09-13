@@ -152,33 +152,14 @@ class OrderCard extends StatelessWidget {
                 ),
                 const SizedBox(height: MaasgaTokens.spacingSm),
               ],
-              // Prix
-              Row(
-                children: [
-                  if (order.totalPrice > 0) ...[
-                    Text(
-                      order.formattedTotal,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AdminTheme.primary,
-                      ),
-                    ),
-                  ],
-                  if (order.installationPrice != null &&
-                      order.installationPrice! > 0) ...[
-                    if (order.totalPrice > 0)
-                      const Text(' + ', style: TextStyle(fontSize: 16)),
-                    Text(
-                      '${order.installationPrice!.toStringAsFixed(0)} FCFA (installation)',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AdminTheme.primary,
-                      ),
-                    ),
-                  ],
-                ],
+              // Prix total
+              Text(
+                order.formattedTotal,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AdminTheme.primary,
+                ),
               ),
               const SizedBox(height: MaasgaTokens.spacingSm),
               // Actions

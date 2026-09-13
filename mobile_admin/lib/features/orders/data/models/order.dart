@@ -12,6 +12,8 @@ class Order {
   final String? notes;
   final double totalPrice;
   final double? installationPrice;
+  final int? productId;
+  final int? quantity;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -29,6 +31,8 @@ class Order {
     this.notes,
     required this.totalPrice,
     this.installationPrice,
+    this.productId,
+    this.quantity,
     required this.createdAt,
     this.updatedAt,
   });
@@ -49,6 +53,8 @@ class Order {
       notes: json['notes']?.toString(),
       totalPrice: (json['total_price'] as num?)?.toDouble() ?? 0.0,
       installationPrice: (json['installation_price'] as num?)?.toDouble(),
+      productId: json['product_id'] as int?,
+      quantity: json['quantity'] as int?,
       createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
       updatedAt: json['updated_at'] != null
           ? DateTime.tryParse(json['updated_at'])
@@ -71,10 +77,19 @@ class Order {
       'notes': notes,
       'total_price': totalPrice,
       'installation_price': installationPrice,
+      'product_id': productId,
+      'quantity': quantity,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
   }
+
+  // Prix total final = produit + installation
+  double get finalTotal {
+    return totalPrice + (installationPrice ?? 0);
+  }
+
+  String get formattedTotal => '${finalTotal.toStringAsFixed(0)} FCFA';
 
   String get formattedStatus {
     switch (status.toLowerCase()) {
