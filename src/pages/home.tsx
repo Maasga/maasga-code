@@ -84,7 +84,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
               </h1>
 
               <p class="text-lg mb-8 leading-relaxed max-w-lg" style="color:#cbd5e1;">
-                Spécialiste en <strong class="text-white">vente, installation et maintenance</strong> de climatiseurs à Ouagadougou. Visite technique gratuite sur site · Devis PDF gratuit · Maintenance trimestrielle.
+                Spécialiste en <strong class="text-white">vente, installation et maintenance</strong> de climatiseurs à Ouagadougou. Visite technique gratuite sur site · Devis PDF gratuit · Contrats de maintenance personnalisés.
               </p>
 
               <div class="flex flex-col sm:flex-row gap-4 mb-8">
@@ -606,7 +606,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             { q: "Les prix incluent-ils l'installation ?", a: "Oui. Tous nos prix catalogue incluent la livraison et l'installation complète par nos techniciens certifiés. Aucuns frais cachés." },
             { q: "Comment se déroule la visite technique ?", a: "Un technicien MAASGA se déplace gratuitement chez vous pour évaluer les besoins (surface, orientation, nombre de fenêtres). Il vous remet ensuite un devis PDF détaillé. Aucun engagement avant validation." },
             { q: "Quel est le délai d'installation ?", a: "En général, l'installation est réalisée sous 48 à 72h après validation du devis. Pour les urgences (dépannage, panne), nous intervenons sous 24h." },
-            { q: "Proposez-vous la maintenance / entretien ?", a: "Oui, nous proposons des contrats de maintenance trimestrielle pour garantir les performances et la longévité de votre équipement. Nettoyage filtres, vérification gaz, contrôle électrique." },
+            { q: "Proposez-vous la maintenance / entretien ?", a: "Oui, nous proposons des contrats de maintenance préventive dégressifs (Résidentiel, Professionnel, Industriel et Sur Mesure) pour garantir les performances et la longévité de votre parc de climatiseurs." },
             { q: "Quels modes de paiement acceptez-vous ?", a: "Paiement en espèces, LigdiCash (paiement mobile sécurisé — Orange Money, Moov Money et plus), Wave ou virement bancaire. Le paiement se fait uniquement après la visite technique et votre validation du devis." },
             { q: "Quelle garantie sur les climatiseurs ?", a: "Tous nos climatiseurs sont neufs et bénéficient d'une garantie constructeur (1 à 3 ans selon les marques). MAASGA assure le service après-vente." },
             { q: "Couvrez-vous tout Ouagadougou ?", a: "Oui, nous intervenons dans tous les arrondissements de Ouagadougou et dans les zones périphériques. Contactez-nous pour vérifier la couverture de votre secteur." }
@@ -632,7 +632,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
           { "@type": "Question", "name": "Les prix incluent-ils l'installation ?", "acceptedAnswer": { "@type": "Answer", "text": "Oui. Tous nos prix catalogue incluent la livraison et l'installation complète par nos techniciens certifiés." } },
           { "@type": "Question", "name": "Comment se déroule la visite technique ?", "acceptedAnswer": { "@type": "Answer", "text": "Un technicien MAASGA se déplace gratuitement chez vous pour évaluer les besoins. Il vous remet ensuite un devis PDF détaillé." } },
           { "@type": "Question", "name": "Quel est le délai d'installation ?", "acceptedAnswer": { "@type": "Answer", "text": "En général, l'installation est réalisée sous 48 à 72h après validation du devis." } },
-          { "@type": "Question", "name": "Proposez-vous la maintenance / entretien ?", "acceptedAnswer": { "@type": "Answer", "text": "Oui, nous proposons des contrats de maintenance trimestrielle pour garantir les performances et la longévité de votre équipement." } },
+          { "@type": "Question", "name": "Proposez-vous la maintenance / entretien ?", "acceptedAnswer": { "@type": "Answer", "text": "Oui, nous proposons des contrats de maintenance préventive dégressifs (Résidentiel, Professionnel, Industriel et Sur Mesure) pour garantir les performances et la longévité de vos équipements." } },
           { "@type": "Question", "name": "Quels modes de paiement acceptez-vous ?", "acceptedAnswer": { "@type": "Answer", "text": "Paiement en espèces, LigdiCash (Orange Money, Moov Money et plus), Wave ou virement bancaire. Le paiement se fait après la visite technique." } },
           { "@type": "Question", "name": "Quelle garantie sur les climatiseurs ?", "acceptedAnswer": { "@type": "Answer", "text": "Tous nos climatiseurs sont neufs et bénéficient d'une garantie constructeur de 1 à 3 ans." } },
           { "@type": "Question", "name": "Couvrez-vous tout Ouagadougou ?", "acceptedAnswer": { "@type": "Answer", "text": "Oui, nous intervenons dans tous les arrondissements de Ouagadougou et dans les zones périphériques." } }

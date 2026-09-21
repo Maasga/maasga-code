@@ -97,10 +97,10 @@ app.use(async (c, next) => {
   c.res.headers.set('X-Frame-Options', 'DENY')
   c.res.headers.set('X-XSS-Protection', '1; mode=block')
   c.res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-  c.res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)')
+  c.res.headers.set('Permissions-Policy', 'camera=(), microphone=()')
   c.res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
-  // CSP: allow inline styles/scripts for SSR JSX, Google Maps embeds, Font Awesome CDN, Google Analytics
-  c.res.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' data: https:; frame-src https://www.google.com; connect-src 'self' https://app.ligdicash.com https://www.google-analytics.com https://analytics.google.com https://www.google.com https://cdn.jsdelivr.net https://api.imgbb.com;")
+  // CSP: allow inline styles/scripts for SSR JSX, Font Awesome CDN, Google Analytics
+  c.res.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' data: https:; connect-src 'self' https://app.ligdicash.com https://www.google-analytics.com https://analytics.google.com https://www.google.com https://cdn.jsdelivr.net https://api.imgbb.com;")
   // Cache control per route type
   const path = new URL(c.req.url).pathname
   if (path.startsWith('/api/')) {
@@ -780,6 +780,10 @@ async function ensureMaintenanceTables(db: any) {
   } catch(_) { /* tables may already exist */ }
   // Ensure missing columns are added to existing tables (migration-safe)
   try { await db.prepare('ALTER TABLE maintenance_requests ADD COLUMN plan_type TEXT').run() } catch(_) { /* column already exists */ }
+  try { await db.prepare('ALTER TABLE maintenance_requests ADD COLUMN nb_climatiseurs INTEGER').run() } catch(_) {}
+  try { await db.prepare('ALTER TABLE maintenance_requests ADD COLUMN frequence_visites TEXT').run() } catch(_) {}
+  try { await db.prepare('ALTER TABLE maintenance_requests ADD COLUMN type_etablissement TEXT').run() } catch(_) {}
+  try { await db.prepare('ALTER TABLE maintenance_requests ADD COLUMN exigences TEXT').run() } catch(_) {}
 }
 
 
@@ -2614,6 +2618,10 @@ app.post('/api/maintenance/request', async (c) => {
   const description = (body['description'] as string || '').trim()
   const preferredDate = (body['preferred_date'] as string || '').trim()
   const equipmentType = (body['equipment_type'] as string || '').trim()
+  const nbClimatiseurs = Math.max(1, parseInt(body['nb_climatiseurs'] as string || '1', 10))
+  const frequenceVisites = (body['frequence_visites'] as string || 'Confort').trim()
+  const typeEtablissement = (body['type_etablissement'] as string || '').trim()
+  const exigences = (body['exigences'] as string || '').trim()
 
   if (!name || !phone) {
     return sendErr('Nom et téléphone sont obligatoires.')
@@ -2646,6 +2654,17 @@ app.post('/api/maintenance/request', async (c) => {
         : null
       const clientId = session?.clientId || existingClient?.id || null
 
+      let fullDescription = description
+      if (typeEtablissement || exigences || nbClimatiseurs > 1) {
+        fullDescription = [
+          nbClimatiseurs ? `${nbClimatiseurs} climatiseur(s)` : '',
+          frequenceVisites ? `Fréquence: ${frequenceVisites}` : '',
+          typeEtablissement ? `Établissement: ${typeEtablissement}` : '',
+          exigences ? `Exigences: ${exigences}` : '',
+          description
+        ].filter(Boolean).join(' | ')
+      }
+
       // Insert the maintenance request
       await db.prepare(
         `INSERT INTO maintenance_requests (client_id, name, phone, email, quartier, request_type, description, preferred_date, equipment_type, plan_type, status)
@@ -2657,7 +2676,7 @@ app.post('/api/maintenance/request', async (c) => {
         email ? sanitizeText(email, 160) : null,
         quartier ? sanitizeText(quartier, 120) : null,
         requestType,
-        description ? sanitizeText(description, 2000) : null,
+        fullDescription ? sanitizeText(fullDescription, 2000) : null,
         preferredDate || null,
         equipmentType || null,
         planType || null,
@@ -2665,49 +2684,98 @@ app.post('/api/maintenance/request', async (c) => {
       ).run()
 
       // If this is a contract subscription, auto-create the contract + schedule visits
-      if (requestType === 'contrat' && planType && ['trimestriel', 'semestriel', 'annuel'].includes(planType)) {
-        const planConfig: Record<string, { months: number; visits: number; price: number }> = {
-          trimestriel: { months: 12, visits: 3, price: 30000 },
-          semestriel: { months: 12, visits: 2, price: 55000 },
-          annuel: { months: 12, visits: 1, price: 100000 }
+      const isV2 = ['residentiel', 'professionnel', 'professionnel_pme', 'industriel', 'sur_mesure'].includes(planType)
+      const isLegacy = ['trimestriel', 'semestriel', 'annuel'].includes(planType)
+
+      if (requestType === 'contrat' && planType && (isV2 || isLegacy)) {
+        let months = 12
+        let visits = 2
+        let price = 34000
+        let dbPlanType = 'semestriel'
+
+        if (isV2) {
+          const getUnitRate = (cnt: number) => cnt <= 4 ? 8500 : cnt <= 8 ? 7500 : cnt <= 15 ? 6000 : 5000
+          visits = frequenceVisites === 'Essentiel' ? 1 : (frequenceVisites === 'Pro' ? 3 : 2)
+          if (planType === 'industriel' || planType === 'sur_mesure') {
+            price = 0
+            dbPlanType = 'annuel'
+          } else {
+            price = getUnitRate(nbClimatiseurs) * nbClimatiseurs * visits
+            dbPlanType = visits === 1 ? 'annuel' : (visits === 3 ? 'trimestriel' : 'semestriel')
+          }
+        } else {
+          const planConfig: Record<string, { months: number; visits: number; price: number }> = {
+            trimestriel: { months: 12, visits: 3, price: 30000 },
+            semestriel: { months: 12, visits: 2, price: 55000 },
+            annuel: { months: 12, visits: 1, price: 100000 }
+          }
+          const cfg = planConfig[planType]
+          months = cfg.months
+          visits = cfg.visits
+          price = cfg.price
+          dbPlanType = planType
         }
-        const cfg = planConfig[planType]
+
         const startDate = preferredDate || new Date().toISOString().split('T')[0]
         const endDateObj = new Date(startDate)
-        endDateObj.setMonth(endDateObj.getMonth() + cfg.months)
+        endDateObj.setMonth(endDateObj.getMonth() + months)
         const endDate = endDateObj.toISOString().split('T')[0]
 
         // Compute visit dates evenly spaced
-        const intervalMonths = Math.floor(cfg.months / cfg.visits)
+        const intervalMonths = Math.max(1, Math.floor(months / visits))
         const visitDates: string[] = []
-        for (let i = 1; i <= cfg.visits; i++) {
+        for (let i = 1; i <= visits; i++) {
           const vd = new Date(startDate)
           vd.setMonth(vd.getMonth() + (intervalMonths * i))
           visitDates.push(vd.toISOString().split('T')[0])
         }
 
-        // Create the maintenance contract in PENDING status — must be validated by admin
-        await db.prepare(
-          `INSERT INTO maintenance_contracts (client_id, client_name, client_phone, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 'en_attente', ?, 0, ?)`
-        ).bind(
-          clientId,
-          sanitizeText(name, 120),
-          sanitizeText(phone, 20),
-          planType,
-          cfg.price,
-          startDate,
-          endDate,
-          cfg.visits,
-          visitDates[0] || null
-        ).run()
+        const planNameFormatted = planType === 'residentiel' ? 'Résidentiel' :
+          planType === 'professionnel' || planType === 'professionnel_pme' ? 'Professionnel / PME' :
+          planType === 'industriel' ? 'Industriel' :
+          planType === 'sur_mesure' ? 'Sur Mesure' : planType
+
+        const contractNote = `Formule: ${planNameFormatted} (v2) | ${nbClimatiseurs} clim(s) | ${frequenceVisites} | ${typeEtablissement ? typeEtablissement + ' | ' : ''}${exigences}`.trim()
+
+        try {
+          await db.prepare(
+            `INSERT INTO maintenance_contracts (client_id, client_name, client_phone, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date, notes)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'en_attente', ?, 0, ?, ?)`
+          ).bind(
+            clientId,
+            sanitizeText(name, 120),
+            sanitizeText(phone, 20),
+            dbPlanType,
+            price,
+            startDate,
+            endDate,
+            visits,
+            visitDates[0] || null,
+            sanitizeText(contractNote, 500)
+          ).run()
+        } catch(_) {
+          await db.prepare(
+            `INSERT INTO maintenance_contracts (client_id, client_name, client_phone, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'en_attente', ?, 0, ?)`
+          ).bind(
+            clientId,
+            sanitizeText(name, 120),
+            sanitizeText(phone, 20),
+            dbPlanType,
+            price,
+            startDate,
+            endDate,
+            visits,
+            visitDates[0] || null
+          ).run()
+        }
 
         // Log activity if client exists
         if (clientId) {
           try {
             await db.prepare(
               `INSERT INTO user_activity_log (client_id, action, category, details) VALUES (?, ?, 'maintenance', ?)`
-            ).bind(clientId, 'Souscription contrat maintenance', `Plan ${planType} — ${cfg.price.toLocaleString()} FCFA — ${cfg.visits} visite(s)`).run()
+            ).bind(clientId, 'Souscription contrat maintenance', `Plan ${planNameFormatted} — ${price > 0 ? price.toLocaleString() + ' FCFA' : 'Sur devis'} — ${visits} visite(s)`).run()
           } catch(_) {}
         }
       }
@@ -8009,6 +8077,76 @@ async function createFirebaseJWT(serviceAccount: any): Promise<string> {
   return `${signingInput}.${sigB64}`
 }
 
+// ── POST /api/admin/set-admin-role ───────────────────────────────
+// Définit le custom claim "role": "admin" pour un utilisateur Firebase
+// Protégé par adminAuth (auth admin existant du site web)
+app.post('/api/admin/set-admin-role', adminAuth, async (c) => {
+  const body = await c.req.json().catch(() => ({})) as any
+  const { uid, role } = body
+
+  if (!uid) return c.json({ error: 'UID requis' }, 400)
+  if (!role || (role !== 'admin' && role !== 'client')) return c.json({ error: 'Role invalide (admin ou client)' }, 400)
+
+  if (!c.env.FIREBASE_PROJECT_ID || !c.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    return c.json({ error: 'Configuration Firebase manquante' }, 500)
+  }
+
+  try {
+    const serviceAccount = JSON.parse(c.env.FIREBASE_SERVICE_ACCOUNT_KEY as string)
+    
+    // Obtenir un access token Firebase Admin
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        assertion: await createFirebaseJWT(serviceAccount)
+      }).toString()
+    })
+    const tokenData = await tokenRes.json() as any
+    
+    if (!tokenData.access_token) {
+      return c.json({ error: 'Impossible d\'obtenir le token Firebase' }, 500)
+    }
+
+    // Définir les custom claims via Firebase Auth REST API
+    const claimsRes = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/projects/${c.env.FIREBASE_PROJECT_ID}/accounts:update`,
+      {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${tokenData.access_token}` 
+        },
+        body: JSON.stringify({
+          localId: uid,
+          customAttributes: JSON.stringify({ role })
+        })
+      }
+    )
+    
+    const claimsData = await claimsRes.json() as any
+    
+    if (claimsData.error) {
+      console.error('Firebase setCustomClaims error:', claimsData.error)
+      return c.json({ error: 'Erreur Firebase: ' + claimsData.error.message }, 500)
+    }
+
+    // Logger l'action dans l'audit
+    await logAdminAudit(c.env.DB, {
+      action: 'set_admin_role',
+      detail: `UID: ${uid}, Role: ${role}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+
+    return c.json({ success: true, uid, role })
+  } catch (e: any) {
+    console.error('Set admin role error:', e)
+    return c.json({ error: 'Erreur serveur: ' + e.message }, 500)
+  }
+})
+
 // ============================================================
 // API RDV - CRUD COMPLET
 // ============================================================
@@ -9741,7 +9879,7 @@ app.get('/api/mobile/my-rdvs', mobileAuth, async (c) => {
 })
 // ── GET /api/mobile/rdv v2 ───────────────────────────────────────
 // Retourne TOUS les RDV pour l'application admin (sans filtre utilisateur)
-app.get('/api/mobile/rdv', async (c) => {
+app.get('/api/mobile/rdv', mobileAdminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json([])
   try {
@@ -9750,6 +9888,599 @@ app.get('/api/mobile/rdv', async (c) => {
   } catch (e) {
     console.error('Mobile rdv error:', e)
     return c.json([])
+  }
+})
+
+// ── GET /api/mobile/admin/rdv/:id ────────────────────────────────
+// Détails d'un RDV spécifique
+app.get('/api/mobile/admin/rdv/:id', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const id = parseInt(c.req.param('id'))
+    if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+    const rdv = await db.prepare('SELECT * FROM appointments WHERE id = ?').bind(id).first()
+    if (!rdv) return c.json({ error: 'RDV non trouvé' }, 404)
+
+    return c.json(rdv)
+  } catch (e: any) {
+    console.error('Get RDV error:', e)
+    return c.json({ error: 'Erreur récupération RDV: ' + e.message }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/rdv/:id/confirm ──────────────────────
+// Confirmer un RDV
+app.post('/api/mobile/admin/rdv/:id/confirm', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const id = parseInt(c.req.param('id'))
+    if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+    await updateAppointmentStatus(db, id, 'confirmed')
+
+    await logAdminAudit(db, {
+      action: 'confirm_rdv',
+      detail: `RDV ID: ${id}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+
+    return c.json({ success: true })
+  } catch (e: any) {
+    console.error('Confirm RDV error:', e)
+    return c.json({ error: 'Erreur confirmation RDV: ' + e.message }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/rdv/:id/cancel ───────────────────────
+// Annuler un RDV
+app.post('/api/mobile/admin/rdv/:id/cancel', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const id = parseInt(c.req.param('id'))
+    if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+    const { reason } = await c.req.json().catch(() => ({}))
+    
+    await updateAppointmentStatus(db, id, 'cancelled')
+
+    await logAdminAudit(db, {
+      action: 'cancel_rdv',
+      detail: `RDV ID: ${id}, Reason: ${reason || 'Non spécifié'}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+
+    return c.json({ success: true })
+  } catch (e: any) {
+    console.error('Cancel RDV error:', e)
+    return c.json({ error: 'Erreur annulation RDV: ' + e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/rdv/calendar ───────────────────────────
+// Vue calendrier des RDV (pour un mois donné)
+app.get('/api/mobile/admin/rdv/calendar', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const { year, month } = c.req.query()
+    const currentYear = year ? parseInt(year) : new Date().getFullYear()
+    const currentMonth = month ? parseInt(month) : new Date().getMonth() + 1
+
+    const startDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`
+    const endDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-31`
+
+    const rdvs = await db.prepare(`
+      SELECT * FROM appointments 
+      WHERE date >= ? AND date <= ?
+      ORDER BY date, heure_debut
+    `).bind(startDate, endDate).all()
+
+    return c.json(rdvs.results || [])
+  } catch (e: any) {
+    console.error('Calendar RDV error:', e)
+    return c.json({ error: 'Erreur calendrier RDV: ' + e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/clients ───────────────────────────────
+// Liste des clients
+app.get('/api/mobile/admin/clients', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const clients = await db.prepare(`
+      SELECT c.*, 
+             (SELECT COUNT(*) FROM orders WHERE client_id = c.id) as order_count,
+             (SELECT COUNT(*) FROM appointments WHERE phone = c.phone) as rdv_count
+      FROM clients c 
+      ORDER BY c.created_at DESC
+    `).all()
+
+    return c.json(clients.results || [])
+  } catch (e: any) {
+    console.error('Get clients error:', e)
+    return c.json({ error: 'Erreur récupération clients: ' + e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/clients/:id ────────────────────────────
+// Détails d'un client
+app.get('/api/mobile/admin/clients/:id', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const id = parseInt(c.req.param('id'))
+    if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+    const client = await db.prepare('SELECT * FROM clients WHERE id = ?').bind(id).first()
+    if (!client) return c.json({ error: 'Client non trouvé' }, 404)
+
+    return c.json(client)
+  } catch (e: any) {
+    console.error('Get client error:', e)
+    return c.json({ error: 'Erreur récupération client: ' + e.message }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/clients ───────────────────────────────
+// Créer un client
+app.post('/api/mobile/admin/clients', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const body = await c.req.json()
+    const { name, email, phone, quartier, adresse_precise, notes } = body
+
+    if (!name || !phone) {
+      return c.json({ error: 'Nom et téléphone requis' }, 400)
+    }
+
+    const result = await db.prepare(`
+      INSERT INTO clients (name, email, phone, quartier, adresse_precise, notes, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(name, email || null, phone, quartier || null, adresse_precise || null, notes || null, new Date().toISOString(), new Date().toISOString()).run()
+
+    await logAdminAudit(db, {
+      action: 'create_client',
+      detail: `Client: ${name}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+
+    return c.json({ success: true, id: result.meta?.last_row_id })
+  } catch (e: any) {
+    console.error('Create client error:', e)
+    return c.json({ error: 'Erreur création client: ' + e.message }, 500)
+  }
+})
+
+// ── PUT /api/mobile/admin/clients/:id ────────────────────────────
+// Modifier un client
+app.put('/api/mobile/admin/clients/:id', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const id = parseInt(c.req.param('id'))
+    if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+    const body = await c.req.json()
+    const { name, email, phone, quartier, adresse_precise, notes } = body
+
+    const result = await db.prepare(`
+      UPDATE clients SET name = ?, email = ?, phone = ?, quartier = ?, adresse_precise = ?, notes = ?, updated_at = ?
+      WHERE id = ?
+    `).bind(name, email || null, phone, quartier || null, adresse_precise || null, notes || null, new Date().toISOString(), id).run()
+
+    if (result.meta?.changes === 0) {
+      return c.json({ error: 'Client non trouvé' }, 404)
+    }
+
+    await logAdminAudit(db, {
+      action: 'update_client',
+      detail: `Client ID: ${id}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+
+    return c.json({ success: true })
+  } catch (e: any) {
+    console.error('Update client error:', e)
+    return c.json({ error: 'Erreur modification client: ' + e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/clients/:id/orders ──────────────────────
+// Commandes d'un client
+app.get('/api/mobile/admin/clients/:id/orders', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const id = parseInt(c.req.param('id'))
+    if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+    const orders = await db.prepare(`
+      SELECT o.*, p.name as product_name, p.btu, p.brand 
+      FROM orders o 
+      LEFT JOIN products p ON o.product_id = p.id 
+      WHERE o.client_id = ? 
+      ORDER BY o.created_at DESC
+    `).bind(id).all()
+
+    return c.json(orders.results || [])
+  } catch (e: any) {
+    console.error('Get client orders error:', e)
+    return c.json({ error: 'Erreur récupération commandes: ' + e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/clients/:id/rdv ────────────────────────
+// RDV d'un client
+app.get('/api/mobile/admin/clients/:id/rdv', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const id = parseInt(c.req.param('id'))
+    if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+    const client = await db.prepare('SELECT phone FROM clients WHERE id = ?').bind(id).first() as any
+    if (!client) return c.json({ error: 'Client non trouvé' }, 404)
+
+    const rdvs = await db.prepare(`
+      SELECT * FROM appointments 
+      WHERE phone = ? 
+      ORDER BY date DESC
+    `).bind(client.phone).all()
+
+    return c.json(rdvs.results || [])
+  } catch (e: any) {
+    console.error('Get client RDV error:', e)
+    return c.json({ error: 'Erreur récupération RDV: ' + e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/reviews ───────────────────────────────
+// Liste tous les avis (incl. non approuvés)
+app.get('/api/mobile/admin/reviews', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const reviews = await db.prepare(`
+      SELECT * FROM reviews 
+      ORDER BY created_at DESC
+    `).all()
+
+    return c.json(reviews.results || [])
+  } catch (e: any) {
+    console.error('Get reviews error:', e)
+    return c.json({ error: 'Erreur récupération avis: ' + e.message }, 500)
+  }
+})
+
+// ── PATCH /api/mobile/admin/reviews/:id ──────────────────────────
+// Approuver/rejeter un avis
+app.patch('/api/mobile/admin/reviews/:id', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const id = parseInt(c.req.param('id'))
+    if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+    const { approved } = await c.req.json()
+    if (typeof approved !== 'boolean') {
+      return c.json({ error: 'approved doit être un booléen' }, 400)
+    }
+
+    const result = await db.prepare(`
+      UPDATE reviews SET approved = ? WHERE id = ?
+    `).bind(approved ? 1 : 0, id).run()
+
+    if (result.meta?.changes === 0) {
+      return c.json({ error: 'Avis non trouvé' }, 404)
+    }
+
+    await logAdminAudit(db, {
+      action: approved ? 'approve_review' : 'reject_review',
+      detail: `Review ID: ${id}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+
+    return c.json({ success: true })
+  } catch (e: any) {
+    console.error('Update review error:', e)
+    return c.json({ error: 'Erreur modification avis: ' + e.message }, 500)
+  }
+})
+
+// ── DELETE /api/mobile/admin/reviews/:id ────────────────────────
+// Supprimer un avis
+app.delete('/api/mobile/admin/reviews/:id', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const id = parseInt(c.req.param('id'))
+    if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+    await db.prepare('DELETE FROM reviews WHERE id = ?').bind(id).run()
+
+    await logAdminAudit(db, {
+      action: 'delete_review',
+      detail: `Review ID: ${id}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+
+    return c.json({ success: true })
+  } catch (e: any) {
+    console.error('Delete review error:', e)
+    return c.json({ error: 'Erreur suppression avis: ' + e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/banners ──────────────────────────────
+// Liste des bannières
+app.get('/api/mobile/admin/banners', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const banners = await db.prepare(`
+      SELECT * FROM banners 
+      ORDER BY display_order ASC
+    `).all()
+
+    return c.json(banners.results || [])
+  } catch (e: any) {
+    console.error('Get banners error:', e)
+    return c.json({ error: 'Erreur récupération bannières: ' + e.message }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/banners ──────────────────────────────
+// Créer une bannière
+app.post('/api/mobile/admin/banners', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const body = await c.req.json()
+    const { title, subtitle, image_url, target_page, display_order, is_active } = body
+
+    if (!title || !image_url) {
+      return c.json({ error: 'Titre et image requis' }, 400)
+    }
+
+    const result = await db.prepare(`
+      INSERT INTO banners (title, subtitle, image_url, target_page, display_order, is_active, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(title, subtitle || null, image_url, target_page || null, display_order || 0, is_active ? 1 : 0, new Date().toISOString(), new Date().toISOString()).run()
+
+    await logAdminAudit(db, {
+      action: 'create_banner',
+      detail: `Banner: ${title}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+
+    return c.json({ success: true, id: result.meta?.last_row_id })
+  } catch (e: any) {
+    console.error('Create banner error:', e)
+    return c.json({ error: 'Erreur création bannière: ' + e.message }, 500)
+  }
+})
+
+// ── PUT /api/mobile/admin/banners/:id ───────────────────────────
+// Modifier une bannière
+app.put('/api/mobile/admin/banners/:id', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const id = parseInt(c.req.param('id'))
+    if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+    const body = await c.req.json()
+    const { title, subtitle, image_url, target_page, display_order, is_active } = body
+
+    const result = await db.prepare(`
+      UPDATE banners SET title = ?, subtitle = ?, image_url = ?, target_page = ?, display_order = ?, is_active = ?, updated_at = ?
+      WHERE id = ?
+    `).bind(title, subtitle || null, image_url, target_page || null, display_order || 0, is_active ? 1 : 0, new Date().toISOString(), id).run()
+
+    if (result.meta?.changes === 0) {
+      return c.json({ error: 'Bannière non trouvée' }, 404)
+    }
+
+    await logAdminAudit(db, {
+      action: 'update_banner',
+      detail: `Banner ID: ${id}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+
+    return c.json({ success: true })
+  } catch (e: any) {
+    console.error('Update banner error:', e)
+    return c.json({ error: 'Erreur modification bannière: ' + e.message }, 500)
+  }
+})
+
+// ── DELETE /api/mobile/admin/banners/:id ────────────────────────
+// Supprimer une bannière
+app.delete('/api/mobile/admin/banners/:id', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const id = parseInt(c.req.param('id'))
+    if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+    await db.prepare('DELETE FROM banners WHERE id = ?').bind(id).run()
+
+    await logAdminAudit(db, {
+      action: 'delete_banner',
+      detail: `Banner ID: ${id}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+
+    return c.json({ success: true })
+  } catch (e: any) {
+    console.error('Delete banner error:', e)
+    return c.json({ error: 'Erreur suppression bannière: ' + e.message }, 500)
+  }
+})
+
+// ── PATCH /api/mobile/admin/banners/:id/toggle ──────────────────
+// Activer/désactiver une bannière
+app.patch('/api/mobile/admin/banners/:id/toggle', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const id = parseInt(c.req.param('id'))
+    if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+    const { is_active } = await c.req.json()
+    if (typeof is_active !== 'boolean') {
+      return c.json({ error: 'is_active doit être un booléen' }, 400)
+    }
+
+    const result = await db.prepare(`
+      UPDATE banners SET is_active = ?, updated_at = ? WHERE id = ?
+    `).bind(is_active ? 1 : 0, new Date().toISOString(), id).run()
+
+    if (result.meta?.changes === 0) {
+      return c.json({ error: 'Bannière non trouvée' }, 404)
+    }
+
+    return c.json({ success: true })
+  } catch (e: any) {
+    console.error('Toggle banner error:', e)
+    return c.json({ error: 'Erreur activation bannière: ' + e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/audit ────────────────────────────────
+// Logs d'audit admin
+app.get('/api/mobile/admin/audit', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const { limit = 50, offset = 0 } = c.req.query()
+    const limitNum = Math.min(parseInt(limit) || 50, 100)
+    const offsetNum = parseInt(offset) || 0
+
+    const logs = await db.prepare(`
+      SELECT * FROM admin_audit_log 
+      ORDER BY created_at DESC 
+      LIMIT ? OFFSET ?
+    `).bind(limitNum, offsetNum).all()
+
+    return c.json(logs.results || [])
+  } catch (e: any) {
+    console.error('Get audit logs error:', e)
+    return c.json({ error: 'Erreur récupération logs: ' + e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/settings ──────────────────────────────
+// Paramètres admin
+app.get('/api/mobile/admin/settings', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const settings = await db.prepare('SELECT * FROM admin_settings').all()
+    const settingsMap: Record<string, string> = {}
+    for (const row of (settings.results || [])) {
+      settingsMap[row.key] = row.value
+    }
+    return c.json(settingsMap)
+  } catch (e: any) {
+    console.error('Get settings error:', e)
+    return c.json({ error: 'Erreur récupération paramètres: ' + e.message }, 500)
+  }
+})
+
+// ── PATCH /api/mobile/admin/settings ────────────────────────────
+// Modifier paramètres
+app.patch('/api/mobile/admin/settings', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const body = await c.req.json()
+    const updates: Promise<any>[] = []
+
+    for (const [key, value] of Object.entries(body)) {
+      updates.push(
+        db.prepare(`
+          INSERT OR REPLACE INTO admin_settings (key, value, updated_at) VALUES (?, ?, ?)
+        `).bind(key, String(value), new Date().toISOString()).run()
+      )
+    }
+
+    await Promise.all(updates)
+
+    await logAdminAudit(db, {
+      action: 'update_settings',
+      detail: `Keys: ${Object.keys(body).join(', ')}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+
+    return c.json({ success: true })
+  } catch (e: any) {
+    console.error('Update settings error:', e)
+    return c.json({ error: 'Erreur modification paramètres: ' + e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/rdv/calendar ───────────────────────────
+// Vue calendrier des RDV (pour un mois donné)
+app.get('/api/mobile/admin/rdv/calendar', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const { year, month } = c.req.query()
+    const currentYear = year ? parseInt(year) : new Date().getFullYear()
+    const currentMonth = month ? parseInt(month) : new Date().getMonth() + 1
+
+    const startDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`
+    const endDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-31`
+
+    const rdvs = await db.prepare(`
+      SELECT * FROM appointments 
+      WHERE date >= ? AND date <= ?
+      ORDER BY date, heure_debut
+    `).bind(startDate, endDate).all()
+
+    return c.json(rdvs.results || [])
+  } catch (e: any) {
+    console.error('Calendar RDV error:', e)
+    return c.json({ error: 'Erreur calendrier RDV: ' + e.message }, 500)
   }
 })
 
@@ -9768,7 +10499,7 @@ app.get('/api/mobile/my-orders', mobileAuth, async (c) => {
 
 // ── GET /api/mobile/orders ─────────────────────────────────────
 // Retourne TOUS les commandes pour l'application admin (sans filtre utilisateur)
-app.get('/api/mobile/orders', async (c) => {
+app.get('/api/mobile/orders', mobileAdminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json([])
   try {
@@ -9779,6 +10510,94 @@ app.get('/api/mobile/orders', async (c) => {
   } catch (e) {
     console.error('Mobile orders error:', e)
     return c.json([])
+  }
+})
+
+// ── GET /api/mobile/admin/orders/:id ────────────────────────────
+// Détails d'une commande spécifique
+app.get('/api/mobile/admin/orders/:id', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const id = parseInt(c.req.param('id'))
+    if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+    const order = await db.prepare(`
+      SELECT o.*, p.name as product_name, p.btu, p.brand, p.price as product_price,
+             p.image_url as product_image
+      FROM orders o 
+      LEFT JOIN products p ON o.product_id = p.id 
+      WHERE o.id = ?
+    `).bind(id).first()
+
+    if (!order) return c.json({ error: 'Commande non trouvée' }, 404)
+
+    return c.json(order)
+  } catch (e: any) {
+    console.error('Get order error:', e)
+    return c.json({ error: 'Erreur récupération commande: ' + e.message }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/orders/:id/notes ───────────────────────
+// Ajouter des notes à une commande
+app.post('/api/mobile/admin/orders/:id/notes', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const id = parseInt(c.req.param('id'))
+    if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+    const { notes } = await c.req.json()
+    if (!notes) return c.json({ error: 'Notes requises' }, 400)
+
+    const result = await db.prepare(`
+      UPDATE orders SET notes = ?, updated_at = ? WHERE id = ?
+    `).bind(notes, new Date().toISOString(), id).run()
+
+    if (result.meta?.changes === 0) {
+      return c.json({ error: 'Commande non trouvée' }, 404)
+    }
+
+    await logAdminAudit(db, {
+      action: 'add_order_notes',
+      detail: `Order ID: ${id}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+
+    return c.json({ success: true })
+  } catch (e: any) {
+    console.error('Add order notes error:', e)
+    return c.json({ error: 'Erreur ajout notes: ' + e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/orders/stats ───────────────────────────
+// Statistiques des commandes
+app.get('/api/mobile/admin/orders/stats', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const stats = await db.prepare(`
+      SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+        SUM(CASE WHEN status = 'confirme' THEN 1 ELSE 0 END) as confirmed,
+        SUM(CASE WHEN status = 'en_livraison' THEN 1 ELSE 0 END) as in_delivery,
+        SUM(CASE WHEN status = 'livre' THEN 1 ELSE 0 END) as delivered,
+        SUM(CASE WHEN status = 'annule' THEN 1 ELSE 0 END) as cancelled,
+        SUM(total_price) as total_revenue
+      FROM orders
+    `).first()
+
+    return c.json(stats)
+  } catch (e: any) {
+    console.error('Orders stats error:', e)
+    return c.json({ error: 'Erreur statistiques: ' + e.message }, 500)
   }
 })
 
@@ -9883,47 +10702,105 @@ app.post('/api/mobile/maintenance', mobileAuth, async (c) => {
       ).bind(user.uid, user.email || '__none__', phone, `%${last8}`).first() as any
       const clientId = clientRow?.id || null
 
+      const nbClimatiseurs = Math.max(1, parseInt(body.nb_climatiseurs || body.nb_clim || '1', 10))
+      const frequenceVisites = (body.frequence_visites || body.frequence || 'Confort').trim()
+      const typeEtablissement = (body.type_etablissement || body.site || '').trim()
+      const exigences = (body.exigences || body.notes || '').trim()
+
+      let fullDescription = description
+      if (typeEtablissement || exigences || nbClimatiseurs > 1) {
+        fullDescription = [
+          nbClimatiseurs ? `${nbClimatiseurs} climatiseur(s)` : '',
+          frequenceVisites ? `Fréquence: ${frequenceVisites}` : '',
+          typeEtablissement ? `Établissement: ${typeEtablissement}` : '',
+          exigences ? `Exigences: ${exigences}` : '',
+          description
+        ].filter(Boolean).join(' | ')
+      }
+
       await db.prepare(
         `INSERT INTO maintenance_requests (client_id, name, phone, email, quartier, request_type, description, preferred_date, equipment_type, plan_type, status)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         clientId, sanitizeText(name, 120), sanitizeText(phone, 20),
         user.email || null, body.quartier || null, requestType,
-        sanitizeText(description, 2000), preferredDate || null,
+        sanitizeText(fullDescription, 2000), preferredDate || null,
         equipmentType || null, planType || null,
         requestType === 'contrat' && planType ? 'done' : 'pending'
       ).run()
 
-      if (requestType === 'contrat' && planType && ['trimestriel', 'semestriel', 'annuel'].includes(planType)) {
-        const planConfig: Record<string, { months: number; visits: number; price: number }> = {
-          trimestriel: { months: 12, visits: 3, price: 30000 },
-          semestriel: { months: 12, visits: 2, price: 55000 },
-          annuel: { months: 12, visits: 1, price: 100000 }
+      const isV2 = ['residentiel', 'professionnel', 'professionnel_pme', 'industriel', 'sur_mesure'].includes(planType)
+      const isLegacy = ['trimestriel', 'semestriel', 'annuel'].includes(planType)
+
+      if (requestType === 'contrat' && planType && (isV2 || isLegacy)) {
+        let months = 12
+        let visits = 2
+        let price = 34000
+        let dbPlanType = 'semestriel'
+
+        if (isV2) {
+          const getUnitRate = (cnt: number) => cnt <= 4 ? 8500 : cnt <= 8 ? 7500 : cnt <= 15 ? 6000 : 5000
+          visits = frequenceVisites === 'Essentiel' ? 1 : (frequenceVisites === 'Pro' ? 3 : 2)
+          if (planType === 'industriel' || planType === 'sur_mesure') {
+            price = 0
+            dbPlanType = 'annuel'
+          } else {
+            price = getUnitRate(nbClimatiseurs) * nbClimatiseurs * visits
+            dbPlanType = visits === 1 ? 'annuel' : (visits === 3 ? 'trimestriel' : 'semestriel')
+          }
+        } else {
+          const planConfig: Record<string, { months: number; visits: number; price: number }> = {
+            trimestriel: { months: 12, visits: 3, price: 30000 },
+            semestriel: { months: 12, visits: 2, price: 55000 },
+            annuel: { months: 12, visits: 1, price: 100000 }
+          }
+          const cfg = planConfig[planType]
+          months = cfg.months
+          visits = cfg.visits
+          price = cfg.price
+          dbPlanType = planType
         }
-        const cfg = planConfig[planType]
+
         const startDate = preferredDate || new Date().toISOString().split('T')[0]
         const endDateObj = new Date(startDate)
-        endDateObj.setMonth(endDateObj.getMonth() + cfg.months)
+        endDateObj.setMonth(endDateObj.getMonth() + months)
         const endDate = endDateObj.toISOString().split('T')[0]
 
-        const intervalMonths = Math.floor(cfg.months / cfg.visits)
+        const intervalMonths = Math.max(1, Math.floor(months / visits))
         const visitDates: string[] = []
-        for (let i = 1; i <= cfg.visits; i++) {
+        for (let i = 1; i <= visits; i++) {
           const vd = new Date(startDate)
           vd.setMonth(vd.getMonth() + (intervalMonths * i))
           visitDates.push(vd.toISOString().split('T')[0])
         }
 
-        await db.prepare(
-          `INSERT INTO maintenance_contracts (client_id, client_name, client_phone, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 'en_attente', ?, 0, ?)`
-        ).bind(
-          clientId, sanitizeText(name, 120), sanitizeText(phone, 20),
-          planType, cfg.price, startDate, endDate, cfg.visits, visitDates[0] || null
-        ).run()
+        const planNameFormatted = planType === 'residentiel' ? 'Résidentiel' :
+          planType === 'professionnel' || planType === 'professionnel_pme' ? 'Professionnel / PME' :
+          planType === 'industriel' ? 'Industriel' :
+          planType === 'sur_mesure' ? 'Sur Mesure' : planType
+
+        const contractNote = `Formule: ${planNameFormatted} (v2) | ${nbClimatiseurs} clim(s) | ${frequenceVisites} | ${typeEtablissement ? typeEtablissement + ' | ' : ''}${exigences}`.trim()
+
+        try {
+          await db.prepare(
+            `INSERT INTO maintenance_contracts (client_id, client_name, client_phone, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date, notes)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'en_attente', ?, 0, ?, ?)`
+          ).bind(
+            clientId, sanitizeText(name, 120), sanitizeText(phone, 20),
+            dbPlanType, price, startDate, endDate, visits, visitDates[0] || null, sanitizeText(contractNote, 500)
+          ).run()
+        } catch(_) {
+          await db.prepare(
+            `INSERT INTO maintenance_contracts (client_id, client_name, client_phone, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'en_attente', ?, 0, ?)`
+          ).bind(
+            clientId, sanitizeText(name, 120), sanitizeText(phone, 20),
+            dbPlanType, price, startDate, endDate, visits, visitDates[0] || null
+          ).run()
+        }
       }
 
-      const notes = [`Formule: ${planType}`, `Type: ${requestType}`, `Équipement: ${equipmentType}`, preferredDate ? `Date souhaitée: ${preferredDate}` : '', description].filter(Boolean).join(' | ')
+      const notes = [`Formule: ${planType}`, `Type: ${requestType}`, `Équipement: ${equipmentType}`, preferredDate ? `Date souhaitée: ${preferredDate}` : '', fullDescription].filter(Boolean).join(' | ')
       await db.prepare(
         'INSERT INTO appointments (name, phone, quartier, date, heure_debut, heure_fin, type, notes, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
       ).bind(name, phone, body.quartier || '', preferredDate || new Date().toISOString().split('T')[0], '08:00', '18:00', 'maintenance', notes, 'pending', new Date().toISOString()).run()
@@ -9994,7 +10871,7 @@ app.get('/api/mobile/brands', async (c) => {
 
 // ── GET /api/mobile/products ───────────────────────────────────
 // Liste des produits pour l'application mobile admin
-app.get('/api/mobile/products', async (c) => {
+app.get('/api/mobile/products', mobileAdminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
 
@@ -10009,9 +10886,133 @@ app.get('/api/mobile/products', async (c) => {
   }
 })
 
+// ── POST /api/mobile/admin/products ─────────────────────────────
+// Créer un nouveau produit
+app.post('/api/mobile/admin/products', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const body = await c.req.json()
+    const {
+      name, brand, model, btu, price, stock, surface_min, surface_max,
+      energy_class, description, inverter, available, warranty, features,
+      refrigerant, compressor, image_url
+    } = body
+
+    if (!name || !brand || !price) {
+      return c.json({ error: 'Champs obligatoires manquants' }, 400)
+    }
+
+    const result = await db.prepare(`
+      INSERT INTO products (
+        name, brand, model, btu, price, stock, surface_min, surface_max,
+        energy_class, description, inverter, available, warranty, features,
+        refrigerant, compressor, image_url, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      name, brand, model, btu, price, stock, surface_min, surface_max,
+      energy_class, description, inverter ? 1 : 0, available ? 1 : 0, warranty,
+      features ? JSON.stringify(features) : null, refrigerant, compressor,
+      image_url, new Date().toISOString(), new Date().toISOString()
+    ).run()
+
+    await logAdminAudit(db, {
+      action: 'create_product',
+      detail: `Product: ${name}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+
+    return c.json({ success: true, id: result.meta?.last_row_id })
+  } catch (e: any) {
+    console.error('Create product error:', e)
+    return c.json({ error: 'Erreur création produit: ' + e.message }, 500)
+  }
+})
+
+// ── PUT /api/mobile/admin/products/:id ───────────────────────────
+// Modifier un produit existant
+app.put('/api/mobile/admin/products/:id', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const id = parseInt(c.req.param('id'))
+    if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+    const body = await c.req.json()
+    const {
+      name, brand, model, btu, price, stock, surface_min, surface_max,
+      energy_class, description, inverter, available, warranty, features,
+      refrigerant, compressor, image_url
+    } = body
+
+    const result = await db.prepare(`
+      UPDATE products SET
+        name = ?, brand = ?, model = ?, btu = ?, price = ?, stock = ?,
+        surface_min = ?, surface_max = ?, energy_class = ?, description = ?,
+        inverter = ?, available = ?, warranty = ?, features = ?,
+        refrigerant = ?, compressor = ?, image_url = ?, updated_at = ?
+      WHERE id = ?
+    `).bind(
+      name, brand, model, btu, price, stock, surface_min, surface_max,
+      energy_class, description, inverter ? 1 : 0, available ? 1 : 0, warranty,
+      features ? JSON.stringify(features) : null, refrigerant, compressor,
+      image_url, new Date().toISOString(), id
+    ).run()
+
+    if (result.meta?.changes === 0) {
+      return c.json({ error: 'Produit non trouvé' }, 404)
+    }
+
+    await logAdminAudit(db, {
+      action: 'update_product',
+      detail: `Product ID: ${id}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+
+    return c.json({ success: true })
+  } catch (e: any) {
+    console.error('Update product error:', e)
+    return c.json({ error: 'Erreur modification produit: ' + e.message }, 500)
+  }
+})
+
+// ── DELETE /api/mobile/admin/products/:id ────────────────────────
+// Supprimer un produit
+app.delete('/api/mobile/admin/products/:id', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const id = parseInt(c.req.param('id'))
+    if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+    // Récupérer les infos du produit avant suppression
+    const product = await db.prepare('SELECT name FROM products WHERE id = ?').bind(id).first() as any
+    if (!product) return c.json({ error: 'Produit non trouvé' }, 404)
+
+    await db.prepare('DELETE FROM products WHERE id = ?').bind(id).run()
+
+    await logAdminAudit(db, {
+      action: 'delete_product',
+      detail: `Product: ${product.name} (ID: ${id})`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+
+    return c.json({ success: true })
+  } catch (e: any) {
+    console.error('Delete product error:', e)
+    return c.json({ error: 'Erreur suppression produit: ' + e.message }, 500)
+  }
+})
+
 // ── GET /api/mobile/admin-dashboard ───────────────────────────────
 // Dashboard pour l'application mobile admin - Robust error handling v3
-app.get('/api/mobile/admin-dashboard', async (c) => {
+app.get('/api/mobile/admin-dashboard', mobileAdminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
 

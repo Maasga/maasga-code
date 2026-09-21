@@ -1,4 +1,4 @@
-﻿import { Layout } from '../components/Layout'
+import { Layout } from '../components/Layout'
 
 interface ClientOrder {
   id: number
@@ -741,7 +741,14 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                     </div>
                     <div class="text-xs mt-1" style="color:#64748b;">
                       <strong>{formatDate(nextVisit.visit_date)}</strong>
-                      {contract && <span> · Contrat {contract.plan_type === 'trimestriel' ? 'Trimestriel' : contract.plan_type === 'semestriel' ? 'Semestriel' : 'Annuel'}</span>}
+                      {contract && <span> · Contrat {
+                        contract.plan_type === 'residentiel' ? 'Résidentiel' :
+                        contract.plan_type === 'professionnel' || contract.plan_type === 'professionnel_pme' ? 'Professionnel / PME' :
+                        contract.plan_type === 'industriel' ? 'Industriel' :
+                        contract.plan_type === 'sur_mesure' ? 'Sur Mesure' :
+                        contract.plan_type === 'trimestriel' ? 'Trimestriel' :
+                        contract.plan_type === 'semestriel' ? 'Semestriel' : 'Annuel'
+                      }</span>}
                     </div>
                     {allUpcoming.length > 1 && (
                       <div class="text-xs mt-1" style="color:#94a3b8;">+ {allUpcoming.length - 1} autre{allUpcoming.length > 2 ? 's' : ''} visite{allUpcoming.length > 2 ? 's' : ''} planifiée{allUpcoming.length > 2 ? 's' : ''}</div>
@@ -778,7 +785,16 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
               <div class="space-y-4">
                 {maintenanceContracts.map(mc => {
                   const progress = mc.total_visits > 0 ? Math.round((mc.completed_visits / mc.total_visits) * 100) : 0
-                  const planLabels: Record<string, string> = { trimestriel: 'Trimestriel (3 visites/an)', semestriel: 'Semestriel (2 visites/an)', annuel: 'Annuel Premium (1 visite/an)' }
+                  const planLabels: Record<string, string> = {
+                    residentiel: 'Résidentiel',
+                    professionnel: 'Professionnel / PME',
+                    professionnel_pme: 'Professionnel / PME',
+                    industriel: 'Industriel',
+                    sur_mesure: 'Sur Mesure',
+                    trimestriel: 'Trimestriel (3 visites/an)',
+                    semestriel: 'Semestriel (2 visites/an)',
+                    annuel: 'Annuel Premium (1 visite/an)'
+                  }
                   const statusLabels: Record<string, string> = { active: 'Actif', expired: 'Expiré', cancelled: 'Annulé' }
                   const statusColors: Record<string, string> = { active: 'color:#16a34a;background:rgba(22,163,74,0.1);', expired: 'color:#94a3b8;background:rgba(148,163,184,0.1);', cancelled: 'color:#ef4444;background:rgba(239,68,68,0.1);' }
                   // Find visits linked to this contract
