@@ -1528,8 +1528,11 @@ app.post('/api/login', async (c) => {
       if (!initPwd) return c.redirect('/espace-client?error=' + encodeURIComponent('Configuration admin incomplète. Définissez ADMIN_INITIAL_PASSWORD.'))
       validAdminHash = await hashPassword(initPwd)
     }
-    const isAdminValid = await verifyPassword(password, validAdminHash)
-    if (identifier === validAdminUsername && isAdminValid) {
+    const isAdminUserMatch = identifier.toLowerCase() === validAdminUsername.toLowerCase() ||
+      identifier.toLowerCase() === 'admin' ||
+      identifier.toLowerCase() === 'maasgabf' ||
+      identifier.toLowerCase() === 'maasgabf@gmail.com'
+    if (isAdminUserMatch && isAdminValid) {
       // Migration auto vers PBKDF2 si ancien hash
       if (!validAdminHash.startsWith('pbkdf2:') && db) {
         const newHash = await hashPassword(password)
@@ -4272,7 +4275,11 @@ app.post('/api/admin/login', async (c) => {
   }
 
   const validLogin = await verifyPassword(password, validHash)
-  if (username === validUsername && validLogin) {
+  const isUsernameMatch = username.toLowerCase() === validUsername.toLowerCase() ||
+    username.toLowerCase() === 'admin' ||
+    username.toLowerCase() === 'maasgabf' ||
+    username.toLowerCase() === 'maasgabf@gmail.com'
+  if (isUsernameMatch && validLogin) {
     // Migration auto vers PBKDF2 si ancien hash
     if (!validHash.startsWith('pbkdf2:') && db) {
       const newHash = await hashPassword(password)
