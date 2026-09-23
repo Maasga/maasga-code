@@ -738,11 +738,11 @@ async function ensureMaintenanceTables(db: any) {
       client_name TEXT NOT NULL,
       client_phone TEXT NOT NULL,
       order_id INTEGER DEFAULT NULL,
-      plan_type TEXT NOT NULL CHECK(plan_type IN ('trimestriel','semestriel','annuel','sav_gratuit')),
+      plan_type TEXT NOT NULL,
       plan_price INTEGER NOT NULL DEFAULT 0,
       start_date TEXT NOT NULL,
       end_date TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'en_attente' CHECK(status IN ('en_attente','contacte','actif','expire','annule')),
+      status TEXT NOT NULL DEFAULT 'en_attente',
       total_visits INTEGER NOT NULL DEFAULT 0,
       completed_visits INTEGER NOT NULL DEFAULT 0,
       next_visit_date TEXT,
@@ -756,9 +756,9 @@ async function ensureMaintenanceTables(db: any) {
       client_id INTEGER NOT NULL DEFAULT 0,
       client_name TEXT NOT NULL DEFAULT '',
       client_phone TEXT NOT NULL DEFAULT '',
-      visit_type TEXT NOT NULL DEFAULT 'preventive' CHECK(visit_type IN ('preventive','occasionnelle','urgence')),
+      visit_type TEXT NOT NULL DEFAULT 'preventive',
       visit_date TEXT NOT NULL,
-      status TEXT DEFAULT 'planifiee' CHECK(status IN ('planifiee','confirmee','effectuee','annulee')),
+      status TEXT DEFAULT 'planifiee',
       technician TEXT,
       description TEXT,
       actions_performed TEXT,
@@ -776,12 +776,12 @@ async function ensureMaintenanceTables(db: any) {
       phone TEXT NOT NULL,
       email TEXT,
       quartier TEXT,
-      request_type TEXT NOT NULL DEFAULT 'occasionnelle' CHECK(request_type IN ('occasionnelle','urgence','contrat')),
+      request_type TEXT NOT NULL DEFAULT 'occasionnelle',
       description TEXT,
       preferred_date TEXT,
       equipment_type TEXT,
       plan_type TEXT,
-      status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','contacted','scheduled','done','cancelled')),
+      status TEXT NOT NULL DEFAULT 'pending',
       admin_notes TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -793,6 +793,132 @@ async function ensureMaintenanceTables(db: any) {
   try { await db.prepare('ALTER TABLE maintenance_requests ADD COLUMN frequence_visites TEXT').run() } catch(_) {}
   try { await db.prepare('ALTER TABLE maintenance_requests ADD COLUMN type_etablissement TEXT').run() } catch(_) {}
   try { await db.prepare('ALTER TABLE maintenance_requests ADD COLUMN exigences TEXT').run() } catch(_) {}
+  try { await db.prepare('ALTER TABLE maintenance_contracts ADD COLUMN notes TEXT').run() } catch(_) {}
+  try { await db.prepare('ALTER TABLE maintenance_contracts ADD COLUMN next_visit_date TEXT').run() } catch(_) {}
+}
+
+async function scheduleVisitsForContract(
+  db: any,
+  contractId: number,
+  clientName: string,
+  clientPhone: string,
+  clientId: number,
+  planType: string,
+  visitsCount: number,
+  startDateStr: string,
+  months: number = 12
+) {
+  if (!db || !contractId) return
+  const count = Math.max(1, visitsCount || 2)
+  const intervalMonths = Math.max(1, Math.floor(months / count))
+  let firstDate = ''
+
+  for (let i = 1; i <= count; i++) {
+    const vd = new Date(startDateStr || new Date().toISOString().split('T')[0])
+    vd.setMonth(vd.getMonth() + (intervalMonths * i))
+    const dateStr = vd.toISOString().split('T')[0]
+    if (i === 1) firstDate = dateStr
+
+    try {
+      const existing = await db.prepare("SELECT id FROM maintenance_visits WHERE contract_id = ? AND visit_date = ?").bind(contractId, dateStr).first()
+      if (!existing) {
+        await db.prepare(
+          `INSERT INTO maintenance_visits (contract_id, client_id, client_name, client_phone, visit_type, visit_date, status, description)
+           VALUES (?, ?, ?, ?, 'preventive', ?, 'planifiee', ?)`
+        ).bind(
+          contractId,
+          clientId || 0,
+          sanitizeText(clientName, 120),
+          sanitizeText(clientPhone, 20),
+          dateStr,
+          `Visite préventive #${i}/${count} — Formule ${planType.toUpperCase()}`
+        ).run()
+      }
+    } catch(e) {
+      console.error('scheduleVisitsForContract error:', e)
+    }
+  }
+
+  if (firstDate) {
+    try {
+      await db.prepare("UPDATE maintenance_contracts SET next_visit_date = ? WHERE id = ?").bind(firstDate, contractId).run()
+    } catch(_) {}
+  }
+}
+
+async function insertContractSafe(
+  db: any,
+  params: {
+    clientId?: number,
+    clientName: string,
+    clientPhone: string,
+    planType: string,
+    planPrice: number,
+    startDate: string,
+    endDate: string,
+    status: string,
+    totalVisits: number,
+    nextVisitDate?: string,
+    notes?: string
+  }
+): Promise<number> {
+  if (!db) return 0
+  let contractId = 0
+  const cleanPlan = (params.planType || 'residentiel').toLowerCase()
+
+  try {
+    const res = await db.prepare(
+      `INSERT INTO maintenance_contracts (client_id, client_name, client_phone, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date, notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
+    ).bind(
+      params.clientId || null,
+      sanitizeText(params.clientName, 120),
+      sanitizeText(params.clientPhone, 20),
+      cleanPlan,
+      params.planPrice || 0,
+      params.startDate,
+      params.endDate,
+      params.status || 'en_attente',
+      params.totalVisits || 2,
+      params.nextVisitDate || null,
+      params.notes || null
+    ).run()
+    contractId = res?.meta?.last_row_id || 0
+  } catch (err: any) {
+    console.warn('Direct contract insert failed, falling back to legacy plan type mapping:', err)
+    const fallbackPlan = params.totalVisits === 1 ? 'annuel' : (params.totalVisits === 3 ? 'trimestriel' : 'semestriel')
+    const fullNotes = `[Formule: ${cleanPlan.toUpperCase()}] ${params.notes || ''}`.trim()
+    try {
+      const resFallback = await db.prepare(
+        `INSERT INTO maintenance_contracts (client_id, client_name, client_phone, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date, notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
+      ).bind(
+        params.clientId || null,
+        sanitizeText(params.clientName, 120),
+        sanitizeText(params.clientPhone, 20),
+        fallbackPlan,
+        params.planPrice || 0,
+        params.startDate,
+        params.endDate,
+        params.status || 'en_attente',
+        params.totalVisits || 2,
+        params.nextVisitDate || null,
+        fullNotes
+      ).run()
+      contractId = resFallback?.meta?.last_row_id || 0
+    } catch(e2) {
+      console.error('Fatal contract insert error:', e2)
+    }
+  }
+
+  if (!contractId) {
+    try {
+      const last = await db.prepare("SELECT id FROM maintenance_contracts WHERE client_phone = ? ORDER BY id DESC LIMIT 1").bind(params.clientPhone).first() as any
+      if (last?.id) contractId = last.id
+    } catch(_) {}
+  }
+
+  return contractId
 }
 
 
@@ -2746,37 +2872,22 @@ app.post('/api/maintenance/request', async (c) => {
 
         const contractNote = `Formule: ${planNameFormatted} (v2) | ${nbClimatiseurs} clim(s) | ${frequenceVisites} | ${typeEtablissement ? typeEtablissement + ' | ' : ''}${exigences}`.trim()
 
-        try {
-          await db.prepare(
-            `INSERT INTO maintenance_contracts (client_id, client_name, client_phone, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date, notes)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'en_attente', ?, 0, ?, ?)`
-          ).bind(
-            clientId,
-            sanitizeText(name, 120),
-            sanitizeText(phone, 20),
-            dbPlanType,
-            price,
-            startDate,
-            endDate,
-            visits,
-            visitDates[0] || null,
-            sanitizeText(contractNote, 500)
-          ).run()
-        } catch(_) {
-          await db.prepare(
-            `INSERT INTO maintenance_contracts (client_id, client_name, client_phone, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'en_attente', ?, 0, ?)`
-          ).bind(
-            clientId,
-            sanitizeText(name, 120),
-            sanitizeText(phone, 20),
-            dbPlanType,
-            price,
-            startDate,
-            endDate,
-            visits,
-            visitDates[0] || null
-          ).run()
+        const contractId = await insertContractSafe(db, {
+          clientId,
+          clientName: name,
+          clientPhone: phone,
+          planType,
+          planPrice: price,
+          startDate,
+          endDate,
+          status: 'actif',
+          totalVisits: visits,
+          nextVisitDate: visitDates[0] || null,
+          notes: contractNote
+        })
+
+        if (contractId) {
+          await scheduleVisitsForContract(db, contractId, name, phone, clientId, planType, visits, startDate, months)
         }
 
         // Log activity if client exists
@@ -4513,7 +4624,9 @@ app.get('/admin/maintenance', adminAuth, refreshAdminCache, async (c) => {
       visits = (vRows.results || []) as any[]
     } catch(e) { console.error('Admin visits load:', e) }
   }
-  return c.html(<AdminMaintenancePage contracts={contracts} requests={requests} visits={visits} />)
+  const success = c.req.query('success') || ''
+  const error = c.req.query('error') || ''
+  return c.html(<AdminMaintenancePage contracts={contracts} requests={requests} visits={visits} success={success} error={error} />)
 })
 
 app.post('/admin/maintenance/update-request', adminAuth, async (c) => {
@@ -4525,10 +4638,149 @@ app.post('/admin/maintenance/update-request', adminAuth, async (c) => {
   const ALLOWED_REQUEST_STATUSES = ['pending', 'contacted', 'scheduled', 'done', 'cancelled']
   if (requestId && status && ALLOWED_REQUEST_STATUSES.includes(status)) {
     try {
-      await db.prepare('UPDATE maintenance_requests SET status = ? WHERE id = ?').bind(status, requestId).run()
+      await db.prepare('UPDATE maintenance_requests SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').bind(status, requestId).run()
     } catch(e) { console.error('Request status update error:', e) }
   }
-  return c.redirect('/admin/maintenance')
+  return c.redirect(`/admin/maintenance?success=${status === 'cancelled' ? 'request_cancelled' : 'request_updated'}`)
+})
+
+app.post('/admin/maintenance/delete-request', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.redirect('/admin/maintenance')
+  const body = await c.req.parseBody()
+  const requestId = parseInt(body['request_id'] as string || '0')
+  if (requestId) {
+    try {
+      await db.prepare('DELETE FROM maintenance_requests WHERE id = ?').bind(requestId).run()
+    } catch(e) { console.error('Delete request error:', e) }
+  }
+  return c.redirect('/admin/maintenance?success=request_deleted')
+})
+
+// Convertir une demande en contrat actif et planifier automatiquement ses visites
+app.post('/admin/maintenance/convert-to-contract', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.redirect('/admin/maintenance?error=no_db')
+  const body = await c.req.parseBody()
+  const requestId = parseInt(body['request_id'] as string || '0')
+  if (!requestId) return c.redirect('/admin/maintenance?error=invalid_request')
+
+  try {
+    const req = await db.prepare('SELECT * FROM maintenance_requests WHERE id = ?').bind(requestId).first() as any
+    if (!req) return c.redirect('/admin/maintenance?error=not_found')
+
+    const clientName = req.name || req.client_name || 'Client'
+    const clientPhone = req.phone || req.client_phone || ''
+    const clientId = req.client_id || 0
+    const rawPlan = (req.plan_type || 'residentiel').toLowerCase()
+
+    let nbClims = req.nb_climatiseurs || 1
+    let freq = req.frequence_visites || 'Confort'
+    if (req.description) {
+      const climMatch = req.description.match(/(\d+)\s*climatiseur/i)
+      if (climMatch) nbClims = parseInt(climMatch[1]) || nbClims
+      if (req.description.includes('Essentiel')) freq = 'Essentiel'
+      else if (req.description.includes('Pro')) freq = 'Pro'
+    }
+
+    let visits = freq.toLowerCase().includes('essentiel') ? 1 : (freq.toLowerCase().includes('pro') ? 3 : 2)
+    const getUnitRate = (cnt: number) => cnt <= 4 ? 8500 : cnt <= 8 ? 7500 : cnt <= 15 ? 6000 : 5000
+    let price = (rawPlan === 'industriel' || rawPlan === 'sur_mesure') ? 0 : getUnitRate(nbClims) * nbClims * visits
+
+    const startDate = req.preferred_date || new Date().toISOString().split('T')[0]
+    const endDateObj = new Date(startDate)
+    endDateObj.setMonth(endDateObj.getMonth() + 12)
+    const endDate = endDateObj.toISOString().split('T')[0]
+
+    const notes = `Formule: ${rawPlan.toUpperCase()} | ${nbClims} clim(s) | ${freq} | Quartier: ${req.quartier || '—'}`
+
+    const contractId = await insertContractSafe(db, {
+      clientId,
+      clientName,
+      clientPhone,
+      planType: rawPlan,
+      planPrice: price,
+      startDate,
+      endDate,
+      status: 'actif',
+      totalVisits: visits,
+      notes
+    })
+
+    if (contractId) {
+      await scheduleVisitsForContract(db, contractId, clientName, clientPhone, clientId, rawPlan, visits, startDate, 12)
+      await db.prepare("UPDATE maintenance_requests SET status = 'done', admin_notes = ? WHERE id = ?").bind(`Contrat #${contractId} actif`, requestId).run()
+      await notifyAdmin(c.env as any, 'maintenance', `Contrat #${contractId} CRÉÉ & VISITES PROGRAMMÉES pour ${clientName} (${clientPhone})`)
+    }
+
+    return c.redirect('/admin/maintenance?success=contract_created')
+  } catch(e) {
+    console.error('convert-to-contract error:', e)
+    return c.redirect('/admin/maintenance?error=server_error')
+  }
+})
+
+// Synchroniser toutes les demandes de contrat en attente en contrats actifs
+app.post('/admin/maintenance/sync-pending-requests', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.redirect('/admin/maintenance?error=no_db')
+
+  try {
+    const pending = await db.prepare("SELECT * FROM maintenance_requests WHERE (request_type = 'contrat' OR plan_type IS NOT NULL) AND status IN ('pending', 'contacted')").all()
+    const rows = (pending?.results || []) as any[]
+    let count = 0
+
+    for (const req of rows) {
+      const clientName = req.name || req.client_name || 'Client'
+      const clientPhone = req.phone || req.client_phone || ''
+      const clientId = req.client_id || 0
+      const rawPlan = (req.plan_type || 'residentiel').toLowerCase()
+
+      let nbClims = req.nb_climatiseurs || 1
+      let freq = req.frequence_visites || 'Confort'
+      if (req.description) {
+        const climMatch = req.description.match(/(\d+)\s*climatiseur/i)
+        if (climMatch) nbClims = parseInt(climMatch[1]) || nbClims
+        if (req.description.includes('Essentiel')) freq = 'Essentiel'
+        else if (req.description.includes('Pro')) freq = 'Pro'
+      }
+
+      let visits = freq.toLowerCase().includes('essentiel') ? 1 : (freq.toLowerCase().includes('pro') ? 3 : 2)
+      const getUnitRate = (cnt: number) => cnt <= 4 ? 8500 : cnt <= 8 ? 7500 : cnt <= 15 ? 6000 : 5000
+      let price = (rawPlan === 'industriel' || rawPlan === 'sur_mesure') ? 0 : getUnitRate(nbClims) * nbClims * visits
+
+      const startDate = req.preferred_date || new Date().toISOString().split('T')[0]
+      const endDateObj = new Date(startDate)
+      endDateObj.setMonth(endDateObj.getMonth() + 12)
+      const endDate = endDateObj.toISOString().split('T')[0]
+
+      const notes = `Formule: ${rawPlan.toUpperCase()} | ${nbClims} clim(s) | ${freq} | Quartier: ${req.quartier || '—'}`
+
+      const contractId = await insertContractSafe(db, {
+        clientId,
+        clientName,
+        clientPhone,
+        planType: rawPlan,
+        planPrice: price,
+        startDate,
+        endDate,
+        status: 'actif',
+        totalVisits: visits,
+        notes
+      })
+
+      if (contractId) {
+        await scheduleVisitsForContract(db, contractId, clientName, clientPhone, clientId, rawPlan, visits, startDate, 12)
+        await db.prepare("UPDATE maintenance_requests SET status = 'done', admin_notes = ? WHERE id = ?").bind(`Contrat #${contractId} actif`, req.id).run()
+        count++
+      }
+    }
+
+    return c.redirect(`/admin/maintenance?success=all_contracts_created&count=${count}`)
+  } catch(e) {
+    console.error('sync-pending-requests error:', e)
+    return c.redirect('/admin/maintenance?error=server_error')
+  }
 })
 
 app.post('/admin/maintenance/update-visit', adminAuth, async (c) => {
@@ -4541,7 +4793,6 @@ app.post('/admin/maintenance/update-visit', adminAuth, async (c) => {
   if (visitId && status && ALLOWED_VISIT_STATUSES.includes(status)) {
     try {
       await db.prepare(`UPDATE maintenance_visits SET status = ?, updated_at = datetime('now') WHERE id = ?`).bind(status, visitId).run()
-      // If cancelled or effectuee, update contract completed_visits count
       if (status === 'effectuee' || status === 'annulee') {
         const visit = await db.prepare('SELECT contract_id FROM maintenance_visits WHERE id = ?').bind(visitId).first() as any
         if (visit?.contract_id) {
@@ -4552,6 +4803,74 @@ app.post('/admin/maintenance/update-visit', adminAuth, async (c) => {
     } catch(e) { console.error('Visit status update error:', e) }
   }
   return c.redirect('/admin/maintenance')
+})
+
+app.post('/admin/maintenance/delete-visit', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.redirect('/admin/maintenance')
+  const body = await c.req.parseBody()
+  const visitId = parseInt(body['visit_id'] as string || '0')
+  if (visitId) {
+    try {
+      const visit = await db.prepare('SELECT contract_id FROM maintenance_visits WHERE id = ?').bind(visitId).first() as any
+      await db.prepare('DELETE FROM maintenance_visits WHERE id = ?').bind(visitId).run()
+      if (visit?.contract_id) {
+        const countRes = await db.prepare("SELECT COUNT(*) as cnt FROM maintenance_visits WHERE contract_id = ? AND status = 'effectuee'").bind(visit.contract_id).first() as any
+        const nextVisit = await db.prepare("SELECT visit_date FROM maintenance_visits WHERE contract_id = ? AND status IN ('planifiee','confirmee') ORDER BY visit_date ASC LIMIT 1").bind(visit.contract_id).first() as any
+        await db.prepare("UPDATE maintenance_contracts SET completed_visits = ?, next_visit_date = ?, updated_at = datetime('now') WHERE id = ?")
+          .bind(countRes?.cnt || 0, nextVisit?.visit_date || null, visit.contract_id).run()
+      }
+    } catch(e) { console.error('Delete visit error:', e) }
+  }
+  return c.redirect('/admin/maintenance?success=visit_deleted')
+})
+
+// Ajouter une visite manuellement
+app.post('/admin/maintenance/add-visit', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.redirect('/admin/maintenance')
+  const body = await c.req.parseBody()
+  const contractId = parseInt(body['contract_id'] as string || '0')
+  const clientName = (body['client_name'] as string || '').trim()
+  const clientPhone = (body['client_phone'] as string || '').trim()
+  const visitDate = (body['visit_date'] as string || '').trim()
+  const visitType = (body['visit_type'] as string || 'preventive').trim()
+  const technician = (body['technician'] as string || '').trim()
+  const description = (body['description'] as string || '').trim()
+
+  if (!clientName || !visitDate) {
+    return c.redirect('/admin/maintenance?error=invalid_visit_data')
+  }
+
+  try {
+    let clientId = 0
+    if (contractId) {
+      const cRow = await db.prepare('SELECT client_id, client_name, client_phone FROM maintenance_contracts WHERE id = ?').bind(contractId).first() as any
+      if (cRow) clientId = cRow.client_id || 0
+    }
+
+    await db.prepare(
+      `INSERT INTO maintenance_visits (contract_id, client_id, client_name, client_phone, visit_type, visit_date, status, technician, description)
+       VALUES (?, ?, ?, ?, ?, ?, 'planifiee', ?, ?)`
+    ).bind(
+      contractId || null,
+      clientId,
+      sanitizeText(clientName, 120),
+      sanitizeText(clientPhone, 20),
+      visitType,
+      visitDate,
+      technician ? sanitizeText(technician, 120) : null,
+      description ? sanitizeText(description, 1000) : 'Visite programmée manuellement'
+    ).run()
+
+    if (contractId) {
+      const nextVisit = await db.prepare("SELECT visit_date FROM maintenance_visits WHERE contract_id = ? AND status IN ('planifiee','confirmee') ORDER BY visit_date ASC LIMIT 1").bind(contractId).first() as any
+      if (nextVisit?.visit_date) {
+        await db.prepare("UPDATE maintenance_contracts SET next_visit_date = ?, updated_at = datetime('now') WHERE id = ?").bind(nextVisit.visit_date, contractId).run()
+      }
+    }
+  } catch(e) { console.error('Add visit error:', e) }
+  return c.redirect('/admin/maintenance?success=visit_added')
 })
 
 // Validate a visit with full details (technician, actions, etc.)
@@ -4577,26 +4896,22 @@ app.post('/admin/maintenance/validate-visit', adminAuth, async (c) => {
       return c.redirect('/admin/maintenance?error=visite_introuvable')
     }
 
-    // Update contract completed_visits count
     const visit = await db.prepare('SELECT contract_id FROM maintenance_visits WHERE id = ?').bind(visitId).first() as any
     if (visit?.contract_id) {
       const countRes = await db.prepare("SELECT COUNT(*) as cnt FROM maintenance_visits WHERE contract_id = ? AND status = 'effectuee'").bind(visit.contract_id).first() as any
       const completedCount = countRes?.cnt || 0
-      // Update completed_visits and recalculate next_visit_date
       const nextVisit = await db.prepare("SELECT visit_date FROM maintenance_visits WHERE contract_id = ? AND status IN ('planifiee','confirmee') ORDER BY visit_date ASC LIMIT 1").bind(visit.contract_id).first() as any
       await db.prepare(`UPDATE maintenance_contracts SET completed_visits = ?, next_visit_date = ?, updated_at = datetime('now') WHERE id = ?`)
         .bind(completedCount, nextVisit?.visit_date || null, visit.contract_id).run()
     }
   } catch(e) {
-    // Ne plus avaler l'erreur : le try/catch silencieux redirigeait vers un écran
-    // de succès alors que la visite n'était pas enregistrée (colonnes manquantes).
     console.error('Visit validation error:', e)
     return c.redirect('/admin/maintenance?error=visite_echec')
   }
   return c.redirect('/admin/maintenance?success=visite_validee')
 })
 
-// â”€â”€ Valider un contrat de maintenance (pending â†’ active) â”€â”€
+// Valider / Activer un contrat de maintenance et programmer ses visites
 app.post('/api/admin/maintenance/validate-contract', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB unavailable' }, 503)
@@ -4616,65 +4931,20 @@ app.post('/api/admin/maintenance/validate-contract', adminAuth, async (c) => {
     const contract = await db.prepare('SELECT * FROM maintenance_contracts WHERE id = ?').bind(contractId).first() as any
     if (!contract) return c.json({ error: 'Contrat introuvable' }, 404)
 
-    // Idempotence : un double clic (ou un renvoi de formulaire) replanifiait un
-    // second jeu de visites et renvoyait un second SMS au client. On n'active que
-    // depuis un statut en attente, et l'UPDATE conditionnel sert de verrou.
     if (contract.status === 'actif') {
       return c.req.header('content-type')?.includes('application/json')
-        ? c.json({ success: true, message: 'Contrat déjÃ  actif — aucune action' })
-        : c.redirect('/admin/maintenance?success=contract_already_active')
-    }
-    if (contract.status !== 'en_attente' && contract.status !== 'contacte') {
-      return c.json({ error: `Contrat au statut "${contract.status}" : activation impossible` }, 400)
-    }
-
-    // Activer le contrat (garde conditionnelle : si une requête concurrente est
-    // passée avant, changes vaut 0 et on s'arrête sans replanifier)
-    const activation = await db.prepare("UPDATE maintenance_contracts SET status = 'actif', updated_at = datetime('now') WHERE id = ? AND status IN ('en_attente','contacte')").bind(contractId).run()
-    if (!activation?.meta?.changes) {
-      return c.req.header('content-type')?.includes('application/json')
-        ? c.json({ success: true, message: 'Contrat déjÃ  activé par une autre requête' })
+        ? c.json({ success: true, message: 'Contrat déjà actif — aucune action' })
         : c.redirect('/admin/maintenance?success=contract_already_active')
     }
 
-    // Planifier les visites
-    const planConfig: Record<string, { months: number; visits: number }> = {
-      trimestriel: { months: 12, visits: 3 },
-      semestriel: { months: 12, visits: 2 },
-      annuel: { months: 12, visits: 1 }
-    }
-    const cfg = planConfig[contract.plan_type]
-    if (cfg) {
-      const startDate = contract.start_date || new Date().toISOString().split('T')[0]
-      const intervalMonths = Math.floor(cfg.months / cfg.visits)
-      for (let i = 1; i <= cfg.visits; i++) {
-        const vd = new Date(startDate)
-        vd.setMonth(vd.getMonth() + (intervalMonths * i))
-        await db.prepare(
-          `INSERT INTO maintenance_visits (contract_id, client_id, client_name, client_phone, visit_type, visit_date, status, description)
-           VALUES (?, ?, ?, ?, 'preventive', ?, 'planifiee', ?)`
-        ).bind(
-          contractId,
-          contract.client_id || 0,
-          contract.client_name,
-          contract.client_phone,
-          vd.toISOString().split('T')[0],
-          `Visite préventive — Contrat ${contract.plan_type}`
-        ).run()
-      }
-      // Mettre Ã  jour la prochaine visite
-      const firstVisit = new Date(startDate)
-      firstVisit.setMonth(firstVisit.getMonth() + intervalMonths)
-      await db.prepare("UPDATE maintenance_contracts SET next_visit_date = ? WHERE id = ?").bind(firstVisit.toISOString().split('T')[0], contractId).run()
-    }
+    await db.prepare("UPDATE maintenance_contracts SET status = 'actif', updated_at = datetime('now') WHERE id = ?").bind(contractId).run()
 
-    // Notification admin
-    await notifyAdmin(c.env as any, 'maintenance', `Contrat #${contractId} (${contract.plan_type}) VALIDÉ — ${contract.client_name} (${contract.client_phone})`)
+    // Planifier les visites selon la formule et total_visits
+    const totalVisits = contract.total_visits || (contract.plan_type === 'annuel' ? 1 : (contract.plan_type === 'trimestriel' || contract.plan_type === 'industriel' ? 3 : 2))
+    const startDate = contract.start_date || new Date().toISOString().split('T')[0]
+    await scheduleVisitsForContract(db, contractId, contract.client_name, contract.client_phone, contract.client_id, contract.plan_type, totalVisits, startDate, 12)
 
-    // Log SMS WhatsApp pour le client
-    await sendSmsWithLog(c.env, db, contract.client_phone,
-      `Bonjour ${contract.client_name}, votre contrat de maintenance MAASGA (${contract.plan_type}) a été validé ! Les dates d'intervention seront confirmées sous peu. Merci de votre confiance.`
-    )
+    await notifyAdmin(c.env as any, 'maintenance', `Contrat #${contractId} (${contract.plan_type}) ACTIVÉ avec ${totalVisits} visite(s) — ${contract.client_name}`)
 
     const isJson = c.req.header('content-type')?.includes('application/json')
     if (isJson) {
@@ -4687,6 +4957,7 @@ app.post('/api/admin/maintenance/validate-contract', adminAuth, async (c) => {
     return c.json({ error: 'Erreur serveur' }, 500)
   }
 })
+
 
 // â”€â”€ Refuser un contrat de maintenance (pending â†’ cancelled) â”€â”€
 app.post('/api/admin/maintenance/refuse-contract', adminAuth, async (c) => {
@@ -10963,22 +11234,22 @@ app.post('/api/mobile/maintenance', mobileAuth, async (c) => {
 
         const contractNote = `Formule: ${planNameFormatted} (v2) | ${nbClimatiseurs} clim(s) | ${frequenceVisites} | ${typeEtablissement ? typeEtablissement + ' | ' : ''}${exigences}`.trim()
 
-        try {
-          await db.prepare(
-            `INSERT INTO maintenance_contracts (client_id, client_name, client_phone, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date, notes)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'en_attente', ?, 0, ?, ?)`
-          ).bind(
-            clientId, sanitizeText(name, 120), sanitizeText(phone, 20),
-            dbPlanType, price, startDate, endDate, visits, visitDates[0] || null, sanitizeText(contractNote, 500)
-          ).run()
-        } catch(_) {
-          await db.prepare(
-            `INSERT INTO maintenance_contracts (client_id, client_name, client_phone, plan_type, plan_price, start_date, end_date, status, total_visits, completed_visits, next_visit_date)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'en_attente', ?, 0, ?)`
-          ).bind(
-            clientId, sanitizeText(name, 120), sanitizeText(phone, 20),
-            dbPlanType, price, startDate, endDate, visits, visitDates[0] || null
-          ).run()
+        const contractId = await insertContractSafe(db, {
+          clientId,
+          clientName: name,
+          clientPhone: phone,
+          planType,
+          planPrice: price,
+          startDate,
+          endDate,
+          status: 'actif',
+          totalVisits: visits,
+          nextVisitDate: visitDates[0] || null,
+          notes: contractNote
+        })
+
+        if (contractId) {
+          await scheduleVisitsForContract(db, contractId, name, phone, clientId, planType, visits, startDate, months)
         }
       }
 
