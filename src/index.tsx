@@ -9779,18 +9779,32 @@ app.post('/api/mobile/order/:id/devis-action', mobileAuth, async (c) => {
     .bind(newStatus, reason, new Date().toISOString(), orderId).run()
   return c.json({ success: true })
 })
-// app.get('/api/mobile/products', async (c) => {
-//   const db = c.env.DB
-//   let list: any[] = [...products]
-//   if (db) {
-//     try {
-//       const dbProducts = await getProducts(db)
-//       if (dbProducts.length > 0) list = dbProducts as any[]
-//     } catch (_) {}
-//   }
-//   list = list.filter((p: any) => p.available || p.stock > 0)
-//   return c.json(list)
-// })
+// ── GET /api/mobile/products ───────────────────────────────────
+// Catalogue public pour l'application mobile client et le web
+app.get('/api/mobile/products', async (c) => {
+  const db = c.env.DB
+  const availableOnly = c.req.query('available') === 'true'
+
+  if (db) {
+    try {
+      const sql = availableOnly
+        ? 'SELECT * FROM products WHERE available = 1 OR available IS NULL ORDER BY created_at DESC'
+        : 'SELECT * FROM products ORDER BY created_at DESC'
+      const result = await db.prepare(sql).all()
+      if (result.results && result.results.length > 0) {
+        return c.json(result.results)
+      }
+    } catch (e) {
+      console.error('Mobile products error:', e)
+    }
+  }
+
+  let list: any[] = [...products]
+  if (availableOnly) {
+    list = list.filter((p: any) => p.available || p.stock > 0)
+  }
+  return c.json(list)
+})
 
 // â”€â”€ GET /api/mobile/products/:id â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/api/mobile/products/:id', async (c) => {
@@ -10869,9 +10883,9 @@ app.get('/api/mobile/brands', async (c) => {
   }
 })
 
-// ── GET /api/mobile/products ───────────────────────────────────
+// ── GET /api/mobile/admin/products ─────────────────────────────
 // Liste des produits pour l'application mobile admin
-app.get('/api/mobile/products', mobileAdminAuth, async (c) => {
+app.get('/api/mobile/admin/products', mobileAdminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
 
