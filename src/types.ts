@@ -4,6 +4,15 @@ import type { D1Database } from '@cloudflare/workers-types'
 // Utilisé dans index.tsx (CORS, CSRF) et Layout.tsx (canonical, og:url).
 export const SITE_URL = 'https://maasga-website.pages.dev'
 
+export type MobileUser = {
+  uid: string
+  email: string
+  name: string
+  role: string
+  phone?: string
+  id?: number
+}
+
 export type HonoEnv = {
   Bindings: {
     DB?: D1Database
@@ -17,5 +26,10 @@ export type HonoEnv = {
     ADMIN_WHATSAPP?: string
     BREVO_API_KEY?: string
     IMGBB_API_KEY?: string
+    FIREBASE_PROJECT_ID?: string
+    FIREBASE_SERVICE_ACCOUNT_KEY?: string
+  }
+  Variables: {
+    mobileUser: MobileUser
   }
 }

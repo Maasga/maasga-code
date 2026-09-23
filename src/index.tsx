@@ -692,13 +692,22 @@ app.get('/realisations', async (c) => {
 
 app.get('/contrat-maintenance', async (c) => {
   const sessionToken = getCookie(c, 'maasga_session') || ''
-  const session = sessionToken ? getSession(sessionToken) : null
-  if (!session) {
+  const sessionData = sessionToken ? await getSession(c.env.DB, sessionToken) : null
+  if (!sessionData) {
     return c.redirect('/espace-client?redirect=contrat-maintenance&error=' + encodeURIComponent('Veuillez vous connecter pour souscrire un contrat de maintenance.'))
+  }
+  // Load client name/phone from D1
+  let clientName = ''
+  let clientPhone = ''
+  if (c.env.DB) {
+    try {
+      const client = await c.env.DB.prepare('SELECT name, phone FROM clients WHERE id = ?').bind(sessionData.clientId).first() as any
+      if (client) { clientName = client.name || ''; clientPhone = client.phone || '' }
+    } catch(_) {}
   }
   const success = c.req.query('success') === '1'
   const error = c.req.query('error')
-  return c.html(<ContratMaintenancePage success={success} error={error} clientName={session.name} clientPhone={session.phone} />)
+  return c.html(<ContratMaintenancePage success={success} error={error} clientName={clientName} clientPhone={clientPhone} />)
 })
 
 app.get('/contact', (c) => {
@@ -5360,7 +5369,7 @@ app.post('/api/admin/change-password', adminAuth, async (c) => {
   }
   // Audit log: password change successful
   logSecurityEvent(db, { event: 'admin_pwd_changed', severity: 'warn', ip, details: `Admin password changed successfully from ${ip}` })
-  logActivity(db, { type: 'admin', action: 'Mot de passe admin modifié', details: `Depuis IP: ${ip}`, ip })
+  logActivity(db, { clientId: 0, action: 'Mot de passe admin modifié', category: 'admin', details: `Depuis IP: ${ip}`, ip })
   await logAdminAudit(db, { action: 'admin_password_changed', detail: newUsername ? `Identifiant également modifié` : 'Mot de passe seul', ip, userAgent: c.req.header('User-Agent') })
   // Révoquer toutes les sessions admin : changer de mot de passe doit déconnecter
   // un éventuel intrus dont le cookie serait encore valable 24 h. La session
@@ -7219,11 +7228,12 @@ app.post('/api/admin/produit/image', adminAuth, async (c) => {
     // Upload vers ImgBB (remplace le stockage base64 en D1)
     const imgbbKey = (c.env as any).IMGBB_API_KEY as string
     let uploadedUrl = ''
+    let imgbbDelUrl = ''
     try {
       if (!imgbbKey) throw new Error('IMGBB_API_KEY manquante')
-    const r1 = await uploadToImgBB(imgbbKey, buffer, file.type)
-    uploadedUrl = r1.url
-    const imgbbDelUrl = r1.deleteUrl
+      const r1 = await uploadToImgBB(imgbbKey, buffer, file.type)
+      uploadedUrl = r1.url
+      imgbbDelUrl = r1.deleteUrl
     } catch(imgbbErr) {
       console.error('ImgBB upload error:', imgbbErr)
       return c.redirect('/admin/produits?error=' + encodeURIComponent('Upload image echoue. Verifiez la cle ImgBB.'))
@@ -9489,7 +9499,7 @@ async function verifyFirebaseToken(idToken: string): Promise<Record<string, any>
     const key = await importJwkPublicKey(freshJwk)
     const sig = base64urlToUint8Array(signatureB64)
     const data = new TextEncoder().encode(`${headerB64}.${payloadB64}`)
-    const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, sig, data)
+    const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, sig.buffer as ArrayBuffer, data.buffer as ArrayBuffer)
     if (!valid) throw new Error('Signature JWT invalide')
     return payload
   }
@@ -9497,7 +9507,7 @@ async function verifyFirebaseToken(idToken: string): Promise<Record<string, any>
   const key = await importJwkPublicKey(jwk)
   const sig = base64urlToUint8Array(signatureB64)
   const data = new TextEncoder().encode(`${headerB64}.${payloadB64}`)
-  const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, sig, data)
+  const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, sig.buffer as ArrayBuffer, data.buffer as ArrayBuffer)
   if (!valid) throw new Error('Signature JWT invalide')
 
   return payload
@@ -9682,16 +9692,16 @@ app.get('/api/mobile/client-dashboard', mobileAuth, async (c) => {
         ).bind(clientRow.id, clientRow.phone || '').all()
         orders = (ordersResult.results || []) as any[]
 
+        // Retroactive linking for client contracts & requests
+        const userPhone = clientRow.phone || (user as any).phone || ''
+        const userEmail = clientRow.email || (user as any).email || ''
+        const last8 = userPhone.replace(/\D/g, '').slice(-8)
+
         // Rendez-vous
         const rdvsResult = await db.prepare(
           'SELECT * FROM appointments WHERE (phone = ? OR phone LIKE ?) ORDER BY created_at DESC LIMIT 20'
         ).bind(userPhone, last8 ? `%${last8}` : '__none__').all()
         rdvs = (rdvsResult.results || []) as any[]
-
-        // Retroactive linking for client contracts & requests
-        const userPhone = clientRow.phone || user.phone || ''
-        const userEmail = clientRow.email || user.email || ''
-        const last8 = userPhone.replace(/\D/g, '').slice(-8)
 
         if (clientRow.id) {
           if (last8) {
@@ -9874,7 +9884,7 @@ app.post('/api/mobile/rdv', mobileAuth, async (c) => {
       return c.json({ success: true, id: Date.now() })
     } catch (e) { console.error('Mobile rdv error:', e) }
   }
-  const newRdv = { id: appointments.length + 1, name, phone, quartier, date, heure_debut: '08:00', heure_fin: '18:00', type, notes, latitude: null, longitude: null, adresse_precise: '', status: 'en_attente' as const, created_at: new Date().toISOString() }
+  const newRdv = { id: appointments.length + 1, name, phone, quartier, date, heure_debut: '08:00', heure_fin: '18:00', type, notes, latitude: null, longitude: null, adresse_precise: '', status: 'pending' as const, created_at: new Date().toISOString() }
   appointments.push(newRdv)
   return c.json({ success: true, id: newRdv.id })
 })
@@ -10401,9 +10411,9 @@ app.get('/api/mobile/admin/audit', mobileAdminAuth, async (c) => {
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
 
   try {
-    const { limit = 50, offset = 0 } = c.req.query()
-    const limitNum = Math.min(parseInt(limit) || 50, 100)
-    const offsetNum = parseInt(offset) || 0
+    const { limit = '50', offset = '0' } = c.req.query()
+    const limitNum = Math.min(parseInt(String(limit)) || 50, 100)
+    const offsetNum = parseInt(String(offset)) || 0
 
     const logs = await db.prepare(`
       SELECT * FROM admin_audit_log 
@@ -10428,7 +10438,7 @@ app.get('/api/mobile/admin/settings', mobileAdminAuth, async (c) => {
     const settings = await db.prepare('SELECT * FROM admin_settings').all()
     const settingsMap: Record<string, string> = {}
     for (const row of (settings.results || [])) {
-      settingsMap[row.key] = row.value
+      settingsMap[(row as any).key] = (row as any).value
     }
     return c.json(settingsMap)
   } catch (e: any) {
@@ -10644,9 +10654,9 @@ app.patch('/api/mobile/orders/:id', async (c) => {
     ).bind(orderId).first()
     
     return c.json(orderResult)
-  } catch (e) {
+  } catch (e: any) {
     console.error('Mobile order update error:', e)
-    return c.json({ error: 'Failed to update order', details: e.message }, 500)
+    return c.json({ error: 'Failed to update order', details: e?.message ?? String(e) }, 500)
   }
 })
 
