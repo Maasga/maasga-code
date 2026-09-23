@@ -19,7 +19,7 @@ import { RealisationsPage } from './pages/realisations'
 import { ContratMaintenancePage } from './pages/contrat-maintenance'
 import { MentionsLegalesPage } from './pages/mentions-legales'
 import { PolitiqueDeConfidentialitePage } from './pages/politique-de-confidentialite'
-import { appointments, reviews, orders, clients, notifications, setMaintenanceDueCount } from './data/store'
+import { appointments, reviews, orders, clients, notifications, setMaintenanceDueCount, setPendingMaintenanceContractsCount, setPendingMaintenanceRequestsCount, pendingMaintenanceContracts } from './data/store'
 import type { Order } from './data/store'
 import { products } from './data/products'
 import { quartiers } from './data/quartiers'
@@ -2689,7 +2689,7 @@ app.post('/api/maintenance/request', async (c) => {
         preferredDate || null,
         equipmentType || null,
         planType || null,
-        requestType === 'contrat' && planType ? 'done' : 'pending'
+        'pending'
       ).run()
 
       // If this is a contract subscription, auto-create the contract + schedule visits
@@ -3980,14 +3980,25 @@ const refreshAdminCache = async (c: any, next: any) => {
         dbNotifs.forEach((n: any) => notifications.push(n))
       } catch(e) { console.error('Notifications load cache error:', e) }
 
-      // ---------- Maintenance due visits count ----------
+      // ---------- Maintenance counts & pending contracts ----------
       try {
         const today = new Date().toISOString().split('T')[0]
-        const dueRes = await db.prepare(
-          "SELECT COUNT(*) as cnt FROM maintenance_visits WHERE visit_date <= ? AND status = 'planifiee'"
-        ).bind(today).first() as any
+        const [contractsRes, requestsRes, dueRes] = await Promise.all([
+          db.prepare("SELECT COUNT(*) as cnt FROM maintenance_contracts WHERE status = 'en_attente'").first() as any,
+          db.prepare("SELECT COUNT(*) as cnt FROM maintenance_requests WHERE status = 'pending'").first() as any,
+          db.prepare("SELECT COUNT(*) as cnt FROM maintenance_visits WHERE visit_date <= ? AND status = 'planifiee'").bind(today).first() as any
+        ])
+        setPendingMaintenanceContractsCount(contractsRes?.cnt || 0)
+        setPendingMaintenanceRequestsCount(requestsRes?.cnt || 0)
         setMaintenanceDueCount(dueRes?.cnt || 0)
-      } catch(e) { console.error('Maintenance due count error:', e) }
+
+        // Pending contracts for dashboard alert
+        pendingMaintenanceContracts.length = 0
+        const pConts = await db.prepare("SELECT * FROM maintenance_contracts WHERE status = 'en_attente' ORDER BY id DESC LIMIT 10").all()
+        if (pConts && pConts.results) {
+          pConts.results.forEach((c: any) => pendingMaintenanceContracts.push(c))
+        }
+      } catch(e) { console.error('Maintenance cache error:', e) }
     } catch (e) {
       console.error('Erreur refreshAdminCache D1:', e)
     }
@@ -10700,6 +10711,153 @@ app.post('/api/mobile/commandes', mobileAuth, async (c) => {
   return c.json({ success: true })
 })
 
+// ── GET /api/mobile/admin/maintenance/summary ────────────────────
+app.get('/api/mobile/admin/maintenance/summary', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  try {
+    await ensureMaintenanceTables(db)
+    const today = new Date().toISOString().split('T')[0]
+    const [cActive, cPending, rPending, vDue, vTotal] = await Promise.all([
+      db.prepare("SELECT COUNT(*) as cnt FROM maintenance_contracts WHERE status = 'actif'").first() as any,
+      db.prepare("SELECT COUNT(*) as cnt FROM maintenance_contracts WHERE status = 'en_attente'").first() as any,
+      db.prepare("SELECT COUNT(*) as cnt FROM maintenance_requests WHERE status = 'pending'").first() as any,
+      db.prepare("SELECT COUNT(*) as cnt FROM maintenance_visits WHERE status = 'planifiee' AND visit_date <= ?").bind(today).first() as any,
+      db.prepare("SELECT COUNT(*) as cnt FROM maintenance_visits").first() as any
+    ])
+    return c.json({
+      active_contracts: cActive?.cnt || 0,
+      pending_contracts: cPending?.cnt || 0,
+      pending_requests: rPending?.cnt || 0,
+      due_visits: vDue?.cnt || 0,
+      total_visits: vTotal?.cnt || 0,
+    })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/maintenance/contracts ──────────────────
+app.get('/api/mobile/admin/maintenance/contracts', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    await ensureMaintenanceTables(db)
+    const rows = await db.prepare('SELECT * FROM maintenance_contracts ORDER BY id DESC LIMIT 200').all()
+    return c.json(rows.results || [])
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/maintenance/requests ───────────────────
+app.get('/api/mobile/admin/maintenance/requests', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    await ensureMaintenanceTables(db)
+    let rows: any
+    try {
+      rows = await db.prepare('SELECT *, name as client_name, phone as client_phone FROM maintenance_requests ORDER BY id DESC LIMIT 200').all()
+    } catch(_) {
+      rows = await db.prepare('SELECT *, client_name, client_phone FROM maintenance_requests ORDER BY id DESC LIMIT 200').all()
+    }
+    return c.json(rows.results || [])
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/maintenance/visits ─────────────────────
+app.get('/api/mobile/admin/maintenance/visits', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    await ensureMaintenanceTables(db)
+    const rows = await db.prepare('SELECT * FROM maintenance_visits ORDER BY visit_date ASC LIMIT 200').all()
+    return c.json(rows.results || [])
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/maintenance/contracts/:id/activate ────
+app.post('/api/mobile/admin/maintenance/contracts/:id/activate', mobileAdminAuth, async (c) => {
+  const contractId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !contractId) return c.json({ error: 'ID invalide' }, 400)
+  try {
+    await ensureMaintenanceTables(db)
+    const contract = await db.prepare('SELECT * FROM maintenance_contracts WHERE id = ?').bind(contractId).first() as any
+    if (!contract) return c.json({ error: 'Contrat introuvable' }, 404)
+
+    await db.prepare("UPDATE maintenance_contracts SET status = 'actif', updated_at = datetime('now') WHERE id = ?").bind(contractId).run()
+
+    // Planifier les visites si non existantes
+    const existingVisits = await db.prepare("SELECT COUNT(*) as cnt FROM maintenance_visits WHERE contract_id = ?").bind(contractId).first() as any
+    if ((existingVisits?.cnt || 0) === 0) {
+      const visits = contract.total_visits || 2
+      const interval = Math.max(1, Math.floor(12 / visits))
+      const startDate = contract.start_date ? new Date(contract.start_date) : new Date()
+      for (let i = 1; i <= visits; i++) {
+        const vd = new Date(startDate)
+        vd.setMonth(vd.getMonth() + (interval * i))
+        const dateStr = vd.toISOString().split('T')[0]
+        await db.prepare(
+          `INSERT INTO maintenance_visits (contract_id, client_id, client_name, client_phone, visit_type, visit_date, status, description)
+           VALUES (?, ?, ?, ?, 'preventive', ?, 'planifiee', ?)`
+        ).bind(contractId, contract.client_id, contract.client_name, contract.client_phone, dateStr, `Visite préventive n°${i}/${visits}`).run()
+      }
+    }
+    return c.json({ success: true, message: 'Contrat activé avec succès' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/maintenance/requests/:id/status ───────
+app.post('/api/mobile/admin/maintenance/requests/:id/status', mobileAdminAuth, async (c) => {
+  const requestId = parseInt(c.req.param('id'), 10)
+  const body = await c.req.json().catch(() => ({}))
+  const status = (body.status || '').trim()
+  const db = c.env.DB
+  if (!db || !requestId || !status) return c.json({ error: 'Paramètres invalides' }, 400)
+  try {
+    await db.prepare('UPDATE maintenance_requests SET status = ? WHERE id = ?').bind(status, requestId).run()
+    return c.json({ success: true })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/maintenance/visits/:id/validate ───────
+app.post('/api/mobile/admin/maintenance/visits/:id/validate', mobileAdminAuth, async (c) => {
+  const visitId = parseInt(c.req.param('id'), 10)
+  const body = await c.req.json().catch(() => ({}))
+  const technician = body.technician || 'Technicien MAASGA'
+  const actions = body.actions || 'Entretien complet effectué'
+  const notes = body.notes || ''
+  const db = c.env.DB
+  if (!db || !visitId) return c.json({ error: 'ID invalide' }, 400)
+  try {
+    await db.prepare(
+      `UPDATE maintenance_visits SET status = 'effectuee', technician = ?, actions_performed = ?, notes = ?, updated_at = datetime('now') WHERE id = ?`
+    ).bind(technician, actions, notes, visitId).run()
+
+    const visit = await db.prepare('SELECT contract_id FROM maintenance_visits WHERE id = ?').bind(visitId).first() as any
+    if (visit?.contract_id) {
+      const countRes = await db.prepare("SELECT COUNT(*) as cnt FROM maintenance_visits WHERE contract_id = ? AND status = 'effectuee'").bind(visit.contract_id).first() as any
+      const nextVisit = await db.prepare("SELECT visit_date FROM maintenance_visits WHERE contract_id = ? AND status IN ('planifiee','confirmee') ORDER BY visit_date ASC LIMIT 1").bind(visit.contract_id).first() as any
+      await db.prepare(
+        `UPDATE maintenance_contracts SET completed_visits = ?, next_visit_date = ?, updated_at = datetime('now') WHERE id = ?`
+      ).bind(countRes?.cnt || 0, nextVisit?.visit_date || null, visit.contract_id).run()
+    }
+    return c.json({ success: true })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
 // â”€â”€ POST /api/mobile/maintenance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.post('/api/mobile/maintenance', mobileAuth, async (c) => {
   const body = await c.req.json().catch(() => ({}))
@@ -10750,7 +10908,7 @@ app.post('/api/mobile/maintenance', mobileAuth, async (c) => {
         user.email || null, body.quartier || null, requestType,
         sanitizeText(fullDescription, 2000), preferredDate || null,
         equipmentType || null, planType || null,
-        requestType === 'contrat' && planType ? 'done' : 'pending'
+        'pending'
       ).run()
 
       const isV2 = ['residentiel', 'professionnel', 'professionnel_pme', 'industriel', 'sur_mesure'].includes(planType)
@@ -10831,6 +10989,15 @@ app.post('/api/mobile/maintenance', mobileAuth, async (c) => {
 
     } catch (e) { console.error('Mobile maintenance error:', e) }
   }
+
+  // Notifier l'admin
+  try {
+    const productName = planType ? ` (Plan ${planType})` : "";
+    await notifyAdmin(c.env, 'maintenance', `Nouvelle souscription mobile de maintenance par ${name}${productName}. Tél: ${phone}`);
+  } catch(ne) {
+    console.error('Failed to notify admin on mobile maintenance:', ne);
+  }
+
   return c.json({ success: true })
 })
 

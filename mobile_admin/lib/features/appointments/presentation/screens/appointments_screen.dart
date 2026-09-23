@@ -96,14 +96,24 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                 List<Appointment> filteredAppointments = appointments;
                 if (_selectedStatus != 'Tous') {
                   filteredAppointments = filteredAppointments
-                      .where((a) => a.status.toLowerCase() == _selectedStatus.toLowerCase())
+                      .where(
+                        (a) =>
+                            a.status.toLowerCase() ==
+                            _selectedStatus.toLowerCase(),
+                      )
                       .toList();
                 }
                 if (_searchQuery.isNotEmpty) {
                   filteredAppointments = filteredAppointments
-                      .where((a) =>
-                          a.customerName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                          a.id.toLowerCase().contains(_searchQuery.toLowerCase()))
+                      .where(
+                        (a) =>
+                            a.customerName.toLowerCase().contains(
+                              _searchQuery.toLowerCase(),
+                            ) ||
+                            a.id.toLowerCase().contains(
+                              _searchQuery.toLowerCase(),
+                            ),
+                      )
                       .toList();
                 }
 
@@ -129,20 +139,120 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                   itemCount: filteredAppointments.length,
                   itemBuilder: (context, index) {
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: MaasgaTokens.spacingSm),
+                      padding: const EdgeInsets.only(
+                        bottom: MaasgaTokens.spacingSm,
+                      ),
                       child: AppointmentCard(
                         appointment: filteredAppointments[index],
-                        onStatusChange: (newStatus) {
-                          // TODO: Implémenter le changement de statut
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Statut changé en $newStatus (simulation)')),
-                          );
+                        onStatusChange: (newStatus) async {
+                          try {
+                            if (newStatus.toLowerCase() == 'confirmed') {
+                              await ref.read(
+                                confirmAppointmentProvider(
+                                  filteredAppointments[index].id,
+                                ).future,
+                              );
+                            } else {
+                              // Pour l'instant, seule la confirmation est implémentée
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Statut $newStatus pas encore implémenté',
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('RDV confirmé avec succès'),
+                                  backgroundColor: AdminTheme.success,
+                                ),
+                              );
+                              ref.invalidate(appointmentsProvider);
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Erreur: $e'),
+                                  backgroundColor: AdminTheme.error,
+                                ),
+                              );
+                            }
+                          }
                         },
-                        onCancel: () {
-                          // TODO: Implémenter l'annulation
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Annulation du RDV (simulation)')),
+                        onCancel: () async {
+                          // Dialog de confirmation avec raison optionnelle
+                          final controller = TextEditingController();
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Annuler le RDV'),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                    'Voulez-vous vraiment annuler ce RDV ?',
+                                  ),
+                                  const SizedBox(height: 16),
+                                  TextField(
+                                    controller: controller,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Raison (optionnel)',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(false),
+                                  child: const Text('Annuler'),
+                                ),
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(true),
+                                  child: const Text('Confirmer'),
+                                ),
+                              ],
+                            ),
                           );
+
+                          controller.dispose();
+
+                          if (confirmed != true) return; // User cancelled
+
+                          try {
+                            await ref.read(
+                              cancelAppointmentProvider((
+                                id: filteredAppointments[index].id,
+                                reason: controller.text.isEmpty
+                                    ? null
+                                    : controller.text,
+                              )).future,
+                            );
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('RDV annulé avec succès'),
+                                  backgroundColor: AdminTheme.success,
+                                ),
+                              );
+                              ref.invalidate(appointmentsProvider);
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Erreur: $e'),
+                                  backgroundColor: AdminTheme.error,
+                                ),
+                              );
+                            }
+                          }
                         },
                       ),
                     );

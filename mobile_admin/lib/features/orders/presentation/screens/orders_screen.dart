@@ -155,6 +155,14 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                       ),
                       child: OrderCard(
                         order: filteredOrders[index],
+                        onTap: () {
+                          // TODO: Afficher les détails de la commande
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Détails commande à implémenter'),
+                            ),
+                          );
+                        },
                         onStatusChange: (newStatus) async {
                           try {
                             await ref.read(
@@ -163,10 +171,26 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                                 status: newStatus,
                               )).future,
                             );
-                            // Force refresh after successful update
-                            ref.invalidate(ordersProvider);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Statut mis à jour avec succès',
+                                  ),
+                                  backgroundColor: AdminTheme.success,
+                                ),
+                              );
+                              ref.invalidate(ordersProvider);
+                            }
                           } catch (e) {
-                            // Error is already logged in repository
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Erreur: $e'),
+                                  backgroundColor: AdminTheme.error,
+                                ),
+                              );
+                            }
                           }
                         },
                         onCancel: () async {
@@ -176,10 +200,24 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                                 filteredOrders[index].id,
                               ).future,
                             );
-                            // Force refresh after successful cancellation
-                            ref.invalidate(ordersProvider);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Commande annulée avec succès'),
+                                  backgroundColor: AdminTheme.success,
+                                ),
+                              );
+                              ref.invalidate(ordersProvider);
+                            }
                           } catch (e) {
-                            // Error is already logged in repository
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Erreur: $e'),
+                                  backgroundColor: AdminTheme.error,
+                                ),
+                              );
+                            }
                           }
                         },
                       ),

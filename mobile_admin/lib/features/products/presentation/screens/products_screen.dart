@@ -60,7 +60,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                 const SizedBox(height: MaasgaTokens.spacingSm),
                 // Filtre marque
                 DropdownButtonFormField<String>(
-                  value: _selectedBrand,
+                  initialValue: _selectedBrand,
                   decoration: InputDecoration(
                     labelText: 'Marque',
                     border: OutlineInputBorder(),
@@ -227,14 +227,29 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     showDialog(
       context: context,
       builder: (context) => ProductForm(
-        onSubmit: (data) {
+        onSubmit: (data) async {
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Produit "${data["name"]}" ajouté (simulation)'),
-            ),
-          );
-          ref.invalidate(productsProvider);
+          try {
+            await ref.read(createProductProvider(data).future);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Produit "${data["name"]}" ajouté avec succès'),
+                  backgroundColor: AdminTheme.success,
+                ),
+              );
+              ref.invalidate(productsProvider);
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Erreur lors de l\'ajout: $e'),
+                  backgroundColor: AdminTheme.error,
+                ),
+              );
+            }
+          }
         },
       ),
     );
@@ -245,14 +260,33 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
       context: context,
       builder: (context) => ProductForm(
         product: product,
-        onSubmit: (data) {
+        onSubmit: (data) async {
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Produit "${data["name"]}" modifié (simulation)'),
-            ),
-          );
-          ref.invalidate(productsProvider);
+          try {
+            await ref.read(
+              updateProductProvider((id: product.id, data: data)).future,
+            );
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Produit "${data["name"]}" modifié avec succès',
+                  ),
+                  backgroundColor: AdminTheme.success,
+                ),
+              );
+              ref.invalidate(productsProvider);
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Erreur lors de la modification: $e'),
+                  backgroundColor: AdminTheme.error,
+                ),
+              );
+            }
+          }
         },
       ),
     );
@@ -270,16 +304,31 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
             child: const Text('Annuler'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Produit "${product.name}" supprimé (simulation)',
-                  ),
-                ),
-              );
-              ref.invalidate(productsProvider);
+              try {
+                await ref.read(deleteProductProvider(product.id).future);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Produit "${product.name}" supprimé avec succès',
+                      ),
+                      backgroundColor: AdminTheme.success,
+                    ),
+                  );
+                  ref.invalidate(productsProvider);
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Erreur lors de la suppression: $e'),
+                      backgroundColor: AdminTheme.error,
+                    ),
+                  );
+                }
+              }
             },
             style: TextButton.styleFrom(foregroundColor: AdminTheme.error),
             child: const Text('Supprimer'),

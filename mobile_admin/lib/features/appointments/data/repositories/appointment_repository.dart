@@ -9,68 +9,74 @@ class AppointmentRepository {
 
   Future<List<Appointment>> getAppointments() async {
     try {
-      print('📅 Chargement des RDV depuis: ${ApiEndpoints.appointments}');
       final response = await _dio.get(ApiEndpoints.appointments);
-      print('✅ Réponse reçue - Status: ${response.statusCode}');
-      print('📊 Données: ${response.data}');
       final List<dynamic> data = response.data;
       final appointments = data
           .map((json) => Appointment.fromJson(json))
           .toList();
-      print('📅 ${appointments.length} RDV chargés');
       return appointments;
     } catch (e) {
-      print('❌ Erreur lors du chargement des RDV: $e');
       if (e is DioException) {
-        print('🔍 DioException: ${e.type} - ${e.message}');
-        print('🔍 Response: ${e.response?.data}');
+        // Fallback avec liste vide si l'API échoue
+        return [];
       }
-      // Fallback avec liste vide si l'API échoue
-      print('⚠️ Utilisation d\'une liste vide pour les RDV');
-      return [];
+      throw Exception('Erreur lors du chargement des RDV: $e');
     }
   }
 
   Future<Appointment> getAppointment(String id) async {
     try {
-      print('📅 Chargement du RDV $id');
       final response = await _dio.get(
-        ApiEndpoints.replacePath(ApiEndpoints.appointments, {'id': id}),
+        ApiEndpoints.replacePath(ApiEndpoints.rdvDetail, {'id': id}),
       );
-      print('✅ RDV $id chargé');
       return Appointment.fromJson(response.data);
     } catch (e) {
-      print('❌ Erreur lors du chargement du RDV $id: $e');
       throw Exception('Erreur lors du chargement du RDV: $e');
     }
   }
 
-  Future<Appointment> updateAppointmentStatus(String id, String status) async {
+  Future<Appointment> confirmAppointment(String id) async {
     try {
-      print('📅 Mise à jour du statut du RDV $id: $status');
-      final response = await _dio.patch(
-        ApiEndpoints.replacePath(ApiEndpoints.appointments, {'id': id}),
-        data: {'status': status},
+      final response = await _dio.post(
+        ApiEndpoints.replacePath(ApiEndpoints.rdvConfirm, {'id': id}),
       );
-      print('✅ Statut du RDV $id mis à jour');
-      return Appointment.fromJson(response.data);
+      return Appointment.fromJson({...response.data, 'id': id});
     } catch (e) {
-      print('❌ Erreur lors de la mise à jour du statut: $e');
-      throw Exception('Erreur lors de la mise à jour du statut: $e');
+      if (e is DioException) {
+        throw Exception('Erreur lors de la confirmation du RDV: ${e.message}');
+      }
+      throw Exception('Erreur lors de la confirmation du RDV: $e');
     }
   }
 
-  Future<void> cancelAppointment(String id) async {
+  Future<Appointment> cancelAppointment(String id, {String? reason}) async {
     try {
-      print('📅 Annulation du RDV $id');
-      await _dio.patch(
-        ApiEndpoints.replacePath(ApiEndpoints.appointments, {'id': id}),
-        data: {'status': 'cancelled'},
+      final response = await _dio.post(
+        ApiEndpoints.replacePath(ApiEndpoints.rdvCancel, {'id': id}),
+        data: reason != null ? {'reason': reason} : null,
       );
-      print('✅ RDV $id annulé');
+      return Appointment.fromJson({...response.data, 'id': id});
     } catch (e) {
-      print('❌ Erreur lors de l\'annulation du RDV: $e');
+      if (e is DioException) {
+        throw Exception('Erreur lors de l\'annulation du RDV: ${e.message}');
+      }
       throw Exception('Erreur lors de l\'annulation du RDV: $e');
+    }
+  }
+
+  Future<List<Appointment>> getCalendarAppointments({
+    int? year,
+    int? month,
+  }) async {
+    try {
+      final response = await _dio.get(
+        ApiEndpoints.rdvCalendar,
+        queryParameters: {'year': ?year, 'month': ?month},
+      );
+      final List<dynamic> data = response.data;
+      return data.map((json) => Appointment.fromJson(json)).toList();
+    } catch (e) {
+      throw Exception('Erreur lors du chargement du calendrier: $e');
     }
   }
 }

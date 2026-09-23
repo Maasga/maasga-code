@@ -6,33 +6,20 @@ import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/products/presentation/screens/products_screen.dart';
 import '../../features/orders/presentation/screens/orders_screen.dart';
 import '../../features/appointments/presentation/screens/appointments_screen.dart';
+import '../../features/clients/presentation/screens/clients_screen.dart';
+import '../../features/reviews/presentation/screens/reviews_screen.dart';
+import '../../features/banners/presentation/screens/banners_screen.dart';
+import '../../features/maintenance/presentation/screens/maintenance_screen.dart';
+import '../../features/sav/presentation/screens/sav_screen.dart';
+import '../../features/notifications/presentation/screens/notifications_screen.dart';
+import '../../features/devis/presentation/screens/devis_screen.dart';
+import '../../features/paiements/presentation/screens/paiements_screen.dart';
+import '../../features/messages/presentation/screens/messages_screen.dart';
+import '../../features/realisations/presentation/screens/realisations_screen.dart';
+import '../../features/audit/presentation/screens/audit_screen.dart';
+import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../shell/admin_shell.dart';
 import '../../features/auth/data/providers/firebase_provider.dart';
-
-// Placeholder screens for routes not yet implemented
-class PlaceholderScreen extends StatelessWidget {
-  final String title;
-  const PlaceholderScreen({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.construction, size: 64, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(title, style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 8),
-          Text(
-            'Fonctionnalité en développement',
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateChangesProvider);
@@ -99,7 +86,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           key: state.pageKey,
           child: AdminShell(
             title: 'Notifications',
-            child: const PlaceholderScreen(title: 'Notifications'),
+            child: const NotificationsScreen(),
           ),
         ),
       ),
@@ -107,30 +94,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/devis',
         pageBuilder: (context, state) => MaterialPage(
           key: state.pageKey,
-          child: AdminShell(
-            title: 'Devis',
-            child: const PlaceholderScreen(title: 'Devis'),
-          ),
+          child: AdminShell(title: 'Devis', child: const DevisScreen()),
         ),
       ),
       GoRoute(
         path: '/paiements',
         pageBuilder: (context, state) => MaterialPage(
           key: state.pageKey,
-          child: AdminShell(
-            title: 'Paiements',
-            child: const PlaceholderScreen(title: 'Paiements'),
-          ),
+          child: AdminShell(title: 'Paiements', child: const PaiementsScreen()),
         ),
       ),
       GoRoute(
         path: '/clients',
         pageBuilder: (context, state) => MaterialPage(
           key: state.pageKey,
-          child: AdminShell(
-            title: 'Clients',
-            child: const PlaceholderScreen(title: 'Clients'),
-          ),
+          child: AdminShell(title: 'Clients', child: const ClientsScreen()),
         ),
       ),
       GoRoute(
@@ -139,7 +117,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           key: state.pageKey,
           child: AdminShell(
             title: 'Maintenance',
-            child: const PlaceholderScreen(title: 'Maintenance'),
+            child: const MaintenanceScreen(),
           ),
         ),
       ),
@@ -147,30 +125,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/sav',
         pageBuilder: (context, state) => MaterialPage(
           key: state.pageKey,
-          child: AdminShell(
-            title: 'SAV',
-            child: const PlaceholderScreen(title: 'SAV'),
-          ),
+          child: AdminShell(title: 'SAV', child: const SAVScreen()),
         ),
       ),
       GoRoute(
         path: '/messages',
         pageBuilder: (context, state) => MaterialPage(
           key: state.pageKey,
-          child: AdminShell(
-            title: 'Messages',
-            child: const PlaceholderScreen(title: 'Messages'),
-          ),
+          child: AdminShell(title: 'Messages', child: const MessagesScreen()),
         ),
       ),
       GoRoute(
         path: '/avis',
         pageBuilder: (context, state) => MaterialPage(
           key: state.pageKey,
-          child: AdminShell(
-            title: 'Avis',
-            child: const PlaceholderScreen(title: 'Avis'),
-          ),
+          child: AdminShell(title: 'Avis', child: const ReviewsScreen()),
         ),
       ),
       GoRoute(
@@ -179,7 +148,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           key: state.pageKey,
           child: AdminShell(
             title: 'Réalisations',
-            child: const PlaceholderScreen(title: 'Réalisations'),
+            child: const RealisationsScreen(),
           ),
         ),
       ),
@@ -187,30 +156,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/banners',
         pageBuilder: (context, state) => MaterialPage(
           key: state.pageKey,
-          child: AdminShell(
-            title: 'Bannières',
-            child: const PlaceholderScreen(title: 'Bannières'),
-          ),
+          child: AdminShell(title: 'Bannières', child: const BannersScreen()),
         ),
       ),
       GoRoute(
         path: '/audit',
         pageBuilder: (context, state) => MaterialPage(
           key: state.pageKey,
-          child: AdminShell(
-            title: 'Audit',
-            child: const PlaceholderScreen(title: 'Audit'),
-          ),
+          child: AdminShell(title: 'Audit', child: const AuditScreen()),
         ),
       ),
       GoRoute(
         path: '/parametres',
         pageBuilder: (context, state) => MaterialPage(
           key: state.pageKey,
-          child: AdminShell(
-            title: 'Paramètres',
-            child: const PlaceholderScreen(title: 'Paramètres'),
-          ),
+          child: AdminShell(title: 'Paramètres', child: const SettingsScreen()),
         ),
       ),
     ],

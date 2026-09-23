@@ -31,7 +31,7 @@ class OrderRepository {
     try {
       print('📦 Chargement de la commande $id');
       final response = await _dio.get(
-        ApiEndpoints.replacePath(ApiEndpoints.orders, {'id': id}),
+        ApiEndpoints.replacePath(ApiEndpoints.adminOrderDetail, {'id': id}),
       );
       print('✅ Commande $id chargée');
       return Order.fromJson(response.data);
@@ -52,6 +52,10 @@ class OrderRepository {
       return Order.fromJson(response.data);
     } catch (e) {
       print('❌ Erreur lors de la mise à jour du statut: $e');
+      if (e is DioException) {
+        print('🔍 DioException: ${e.type} - ${e.message}');
+        print('🔍 Response: ${e.response?.data}');
+      }
       throw Exception('Erreur lors de la mise à jour du statut: $e');
     }
   }
@@ -67,6 +71,39 @@ class OrderRepository {
     } catch (e) {
       print('❌ Erreur lors de l\'annulation de la commande: $e');
       throw Exception('Erreur lors de l\'annulation de la commande: $e');
+    }
+  }
+
+  Future<void> addOrderNotes(String id, String notes) async {
+    try {
+      print('📦 Ajout notes à la commande $id');
+      final response = await _dio.post(
+        ApiEndpoints.replacePath(ApiEndpoints.orderNotes, {'id': id}),
+        data: {'notes': notes},
+      );
+      print('✅ Notes ajoutées à la commande $id');
+      if (response.statusCode != 200) {
+        throw Exception('Erreur lors de l\'ajout des notes');
+      }
+    } catch (e) {
+      print('❌ Erreur lors de l\'ajout des notes: $e');
+      if (e is DioException) {
+        print('🔍 DioException: ${e.type} - ${e.message}');
+        print('🔍 Response: ${e.response?.data}');
+      }
+      throw Exception('Erreur lors de l\'ajout des notes: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getOrdersStats() async {
+    try {
+      print('📦 Chargement statistiques commandes');
+      final response = await _dio.get(ApiEndpoints.ordersStats);
+      print('✅ Statistiques chargées');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      print('❌ Erreur lors du chargement des statistiques: $e');
+      throw Exception('Erreur lors du chargement des statistiques: $e');
     }
   }
 }

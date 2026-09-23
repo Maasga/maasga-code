@@ -36,3 +36,20 @@ final orderCancelProvider = FutureProvider.family<void, String>((
   // Invalidate orders provider to refresh the list
   ref.invalidate(ordersProvider);
 });
+
+// Add order notes provider
+final addOrderNotesProvider =
+    FutureProvider.family<void, ({String id, String notes})>((
+      ref,
+      params,
+    ) async {
+      final repository = ref.watch(orderRepositoryProvider);
+      await repository.addOrderNotes(params.id, params.notes);
+      ref.invalidate(ordersProvider);
+    });
+
+// Orders stats provider
+final ordersStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  final repository = ref.watch(orderRepositoryProvider);
+  return repository.getOrdersStats();
+});

@@ -9,19 +9,13 @@ class ProductRepository {
 
   Future<List<Product>> getProducts() async {
     try {
-      print('📦 Chargement des produits depuis: ${ApiEndpoints.products}');
       final response = await _dio.get(ApiEndpoints.products);
-      print('✅ Réponse reçue - Status: ${response.statusCode}');
-      print('📊 Données: ${response.data}');
       final List<dynamic> data = response.data;
       final products = data.map((json) => Product.fromJson(json)).toList();
-      print('📦 ${products.length} produits chargés');
       return products;
     } catch (e) {
-      print('❌ Erreur lors du chargement des produits: $e');
       if (e is DioException) {
-        print('🔍 DioException: ${e.type} - ${e.message}');
-        print('🔍 Response: ${e.response?.data}');
+        throw Exception('Erreur lors du chargement des produits: ${e.message}');
       }
       throw Exception('Erreur lors du chargement des produits: $e');
     }
@@ -29,54 +23,59 @@ class ProductRepository {
 
   Future<Product> getProduct(String id) async {
     try {
-      print('📦 Chargement du produit $id');
       final response = await _dio.get(
         ApiEndpoints.replacePath(ApiEndpoints.productDetail, {'id': id}),
       );
-      print('✅ Produit $id chargé');
       return Product.fromJson(response.data);
     } catch (e) {
-      print('❌ Erreur lors du chargement du produit $id: $e');
       throw Exception('Erreur lors du chargement du produit: $e');
     }
   }
 
   Future<Product> createProduct(Map<String, dynamic> data) async {
     try {
-      print('📦 Création du produit: ${data["name"]}');
-      final response = await _dio.post(ApiEndpoints.products, data: data);
-      print('✅ Produit créé');
-      return Product.fromJson(response.data);
+      final response = await _dio.post(ApiEndpoints.adminProducts, data: data);
+      // Retourner le produit créé avec l'ID généré
+      return Product.fromJson({...data, 'id': response.data['id'].toString()});
     } catch (e) {
-      print('❌ Erreur lors de la création du produit: $e');
+      if (e is DioException) {
+        throw Exception('Erreur lors de la création du produit: ${e.message}');
+      }
       throw Exception('Erreur lors de la création du produit: $e');
     }
   }
 
   Future<Product> updateProduct(String id, Map<String, dynamic> data) async {
     try {
-      print('📦 Mise à jour du produit $id: ${data["name"]}');
       final response = await _dio.put(
-        ApiEndpoints.replacePath(ApiEndpoints.productDetail, {'id': id}),
+        ApiEndpoints.replacePath(ApiEndpoints.adminProductDetail, {'id': id}),
         data: data,
       );
-      print('✅ Produit $id mis à jour');
-      return Product.fromJson(response.data);
+      return Product.fromJson({...data, 'id': id});
     } catch (e) {
-      print('❌ Erreur lors de la mise à jour du produit: $e');
+      if (e is DioException) {
+        throw Exception(
+          'Erreur lors de la mise à jour du produit: ${e.message}',
+        );
+      }
       throw Exception('Erreur lors de la mise à jour du produit: $e');
     }
   }
 
   Future<void> deleteProduct(String id) async {
     try {
-      print('📦 Suppression du produit $id');
-      await _dio.delete(
-        ApiEndpoints.replacePath(ApiEndpoints.productDetail, {'id': id}),
+      final response = await _dio.delete(
+        ApiEndpoints.replacePath(ApiEndpoints.adminProductDetail, {'id': id}),
       );
-      print('✅ Produit $id supprimé');
+      if (response.statusCode != 200) {
+        throw Exception('Erreur lors de la suppression: ${response.data}');
+      }
     } catch (e) {
-      print('❌ Erreur lors de la suppression du produit: $e');
+      if (e is DioException) {
+        throw Exception(
+          'Erreur lors de la suppression du produit: ${e.message}',
+        );
+      }
       throw Exception('Erreur lors de la suppression du produit: $e');
     }
   }

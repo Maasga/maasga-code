@@ -1,5 +1,5 @@
 import { products } from '../data/products'
-import { reviews, appointments, orders, clients, maintenanceDueCount, notifications } from '../data/store'
+import { reviews, appointments, orders, clients, maintenanceDueCount, pendingMaintenanceContractsCount, pendingMaintenanceRequestsCount, pendingMaintenanceContracts, notifications } from '../data/store'
 import { SITE_URL } from '../types'
 // Référentiels de l'import produits, injectés dans le <script> de la modale plutôt
 // que recopiés côté navigateur : l'ancienne UI dupliquait les listes de marques,
@@ -188,9 +188,9 @@ const AdminLayout = ({ children, activePage = "" }: { children: any; activePage?
                   {reviews.filter(r => !r.approved).length}
                 </span>
               )}
-              {n.key === 'maintenance' && maintenanceDueCount > 0 && (
-                <span class="ml-auto text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold" style="background:#f59e0b;">
-                  {maintenanceDueCount}
+              {n.key === 'maintenance' && (maintenanceDueCount + pendingMaintenanceContractsCount + pendingMaintenanceRequestsCount) > 0 && (
+                <span class="ml-auto text-white text-xs rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center font-bold" style="background:#0284c7;">
+                  {maintenanceDueCount + pendingMaintenanceContractsCount + pendingMaintenanceRequestsCount}
                 </span>
               )}
               {n.key === 'commandes' && orders.filter(o => o.status === 'en_attente').length > 0 && (
@@ -609,10 +609,55 @@ export const AdminPage = () => {
         </div>
       )}
 
+      {/* ALERTE MAINTENANCE NOUVELLE */}
+      {(pendingMaintenanceContractsCount + pendingMaintenanceRequestsCount) > 0 && (
+        <div class="mb-6 rounded-2xl p-5 border-2 animate-pulse fade-in-up" style="background:rgba(14,165,233,0.08); border-color:rgba(14,165,233,0.35);">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="w-12 h-12 rounded-full flex items-center justify-center text-white" style="background:#0284c7;">
+                <i class="fas fa-tools text-lg"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-lg" style="color:var(--admin-text-primary);">Nouvelles souscriptions & demandes de maintenance</h3>
+                <p class="text-sm mt-0.5" style="color:#0284c7;">
+                  {pendingMaintenanceContractsCount} contrat(s) en attente d'activation · {pendingMaintenanceRequestsCount} demande(s) à traiter
+                </p>
+              </div>
+            </div>
+            <a href="/admin/maintenance" class="text-white font-semibold px-4 py-2.5 rounded-xl text-sm whitespace-nowrap transition-colors flex items-center space-x-2" style="background:#0284c7;">
+              <i class="fas fa-arrow-right"></i>
+              <span>Gérer la maintenance</span>
+            </a>
+          </div>
+
+          {/* Liste des contrats en attente */}
+          {pendingMaintenanceContracts.length > 0 && (
+            <div class="mt-4 pt-4 space-y-2" style="border-top:1px solid rgba(14,165,233,0.2);">
+              {pendingMaintenanceContracts.slice(0, 3).map((c: any) => (
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl p-3" style="background:rgba(14,165,233,0.05); border:1px solid rgba(14,165,233,0.15);">
+                  <div>
+                    <span class="inline-block text-xs font-bold px-2.5 py-0.5 rounded-full mr-2" style="background:rgba(14,165,233,0.15); color:#0284c7;">NOUVEAU CONTRAT</span>
+                    <span class="font-semibold" style="color:var(--admin-text-primary)">{c.client_name}</span>
+                    <span class="text-xs ml-2" style="color:var(--admin-text-muted)">
+                      Formule: {c.plan_type} · {(c.plan_price || 0).toLocaleString()} F CFA · {c.total_visits || 2} visites/an
+                    </span>
+                  </div>
+                  <div class="flex items-center space-x-3">
+                    <span class="text-xs" style="color:var(--admin-text-muted)">{c.client_phone}</span>
+                    <a href="/admin/maintenance" class="text-xs font-bold px-3 py-1 rounded-lg text-white" style="background:#0284c7;">Activer</a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* KPIs */}
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 fade-in-up">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 fade-in-up">
         {[
           { icon: "fa-calendar-check", color: "from-blue-500 to-blue-600", label: "RDV en attente", val: String(pendingRdv), sub: `${appointments.length} total · ${doneRdv} effectués`, href: "/admin/rdv" },
+          { icon: "fa-tools", color: "from-sky-500 to-blue-600", label: "Maintenance", val: String(pendingMaintenanceContractsCount + pendingMaintenanceRequestsCount), sub: `${pendingMaintenanceContractsCount} contrat(s) · ${pendingMaintenanceRequestsCount} req`, href: "/admin/maintenance" },
           { icon: "fa-boxes", color: "from-orange-500 to-red-500", label: "Alertes stock", val: String(lowStock + outOfStock), sub: `${outOfStock} rupture(s) · ${lowStock} limité(s)`, href: "/admin/produits" },
           { icon: "fa-star", color: "from-yellow-400 to-amber-500", label: "Avis en attente", val: String(pendingReviews), sub: `${approvedReviews} publiés · ${avgNote}/5`, href: "/admin/avis" },
           { icon: "fa-chart-line", color: "from-green-500 to-emerald-600", label: "Chiffre d'affaires", val: `${Math.round(estimatedCA / 1000)}K`, sub: "FCFA · commandes validées", href: "/admin/commandes" }
@@ -5738,7 +5783,16 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
               </thead>
               <tbody data-paginate="10">
                 {contracts.map((c: any) => {
-                  const planLabels: Record<string,string> = { trimestriel: 'Trimestriel (3/an)', semestriel: 'Semestriel (2/an)', annuel: 'Annuel (1/an)' }
+                  const planLabels: Record<string,string> = {
+                    trimestriel: 'Trimestriel (3/an)',
+                    semestriel: 'Semestriel (2/an)',
+                    annuel: 'Annuel (1/an)',
+                    residentiel: 'Résidentiel (1-4 clims)',
+                    professionnel: 'Professionnel / PME',
+                    professionnel_pme: 'Professionnel / PME',
+                    industriel: 'Industriel (16+ clims)',
+                    sur_mesure: 'Sur Mesure'
+                  }
                   const statusBadge: Record<string,{l:string;c:string}> = {
                     en_attente: {l:'En attente',c:'badge-pending'},
                     contacte: {l:'Client contacté',c:'badge-pending'},
@@ -5762,9 +5816,10 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                       <td class="px-5 py-3 cursor-pointer hover:text-blue-400" onClick={() => handleOpenClientDetail(c.client_id ?? null)}>
                         <div class="text-sm font-semibold" style="color:var(--admin-text-primary)">{c.client_name || c.client_phone || `Client #${c.client_id}`}</div>
                         {c.client_phone && <div class="text-xs" style="color:var(--admin-text-muted)">{c.client_phone}</div>}
+                        {c.notes && <div class="text-[11px] text-slate-400 truncate max-w-xs mt-0.5">{c.notes}</div>}
                       </td>
                       <td class="px-5 py-3 text-sm hidden md:table-cell" style="color:var(--admin-text-primary)">{planLabels[c.plan_type] || c.plan_type}</td>
-                      <td class="px-5 py-3 font-bold hidden md:table-cell" style="color:var(--admin-text-primary)">{(c.plan_price || 0).toLocaleString()} F</td>
+                      <td class="px-5 py-3 font-bold hidden md:table-cell" style="color:var(--admin-text-primary)">{(c.plan_price || 0) > 0 ? (c.plan_price || 0).toLocaleString() + ' F' : 'Sur devis'}</td>
                       <td class="px-5 py-3 text-xs hidden lg:table-cell" style="color:var(--admin-text-muted)">
                         {c.start_date ? new Date(c.start_date).toLocaleDateString('fr-FR') : '—'} → {c.end_date ? new Date(c.end_date).toLocaleDateString('fr-FR') : '—'}
                       </td>

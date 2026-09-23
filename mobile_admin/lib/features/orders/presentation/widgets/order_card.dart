@@ -7,12 +7,14 @@ class OrderCard extends StatelessWidget {
   final Order order;
   final Function(String) onStatusChange;
   final VoidCallback onCancel;
+  final VoidCallback? onTap;
 
   const OrderCard({
     super.key,
     required this.order,
     required this.onStatusChange,
     required this.onCancel,
+    this.onTap,
   });
 
   @override
@@ -23,9 +25,7 @@ class OrderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(MaasgaTokens.radiusMd),
       ),
       child: InkWell(
-        onTap: () {
-          // TODO: Naviguer vers les détails de la commande
-        },
+        onTap: onTap,
         borderRadius: BorderRadius.circular(MaasgaTokens.radiusMd),
         child: Padding(
           padding: const EdgeInsets.all(MaasgaTokens.spacingMd),
@@ -167,7 +167,7 @@ class OrderCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: order.status,
+                      initialValue: order.status,
                       decoration: InputDecoration(
                         labelText: 'Statut',
                         border: OutlineInputBorder(),

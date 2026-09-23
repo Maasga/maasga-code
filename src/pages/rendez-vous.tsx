@@ -485,29 +485,11 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
               <div id="location-status" class="text-xs mt-2 hidden"></div>
             </div>
 
-            {/* Carte */}
-            <div id="map-container" class="w-full h-80 rounded-xl overflow-hidden mb-4 flex items-center justify-center" style="background:#e8f2ff; border:1px solid rgba(59,130,246,0.2);">
-              <iframe 
-                id="map-iframe"
-                width="100%" 
-                height="100%" 
-                frameborder="0" 
-                style="border:0"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3987.7450623900347!2d-1.520926!3d12.365069!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1sOuagadougou!2sBurkina+Faso!5e0!3m2!1sfr!2sfr!4v1234567890"
-                allowfullscreen
-                loading="lazy">
-              </iframe>
-            </div>
-
-            {/* Affichage coordonnées */}
-            <div class="grid grid-cols-2 gap-4 mb-4">
-              <div class="rounded-lg p-3" style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.12);">
-                <label class="block text-xs font-semibold text-cyan-400 mb-1">Latitude</label>
-                <input type="text" id="map-lat" readonly class="w-full rounded px-2 py-1 text-xs text-gray-600" style="background:#f0f7ff; border:1px solid rgba(59,130,246,0.15);" placeholder="--" />
-              </div>
-              <div class="rounded-lg p-3" style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.12);">
-                <label class="block text-xs font-semibold text-cyan-400 mb-1">Longitude</label>
-                <input type="text" id="map-lng" readonly class="w-full rounded px-2 py-1 text-xs text-gray-600" style="background:#f0f7ff; border:1px solid rgba(59,130,246,0.15);" placeholder="--" />
+            {/* Message - Google Maps retiré */}
+            <div class="w-full h-80 rounded-xl overflow-hidden mb-4 flex items-center justify-center" style="background:#e8f2ff; border:1px solid rgba(59,130,246,0.2);">
+              <div class="text-center p-6">
+                <i class="fas fa-map-marker-alt text-4xl text-blue-400 mb-3"></i>
+                <p class="text-sm text-gray-600">Veuillez indiquer votre adresse précise dans le champ ci-dessous.</p>
               </div>
             </div>
 
@@ -570,18 +552,11 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                 mapLat = lat;
                 mapLng = lng;
 
-                document.getElementById('map-lat').value = lat.toFixed(6);
-                document.getElementById('map-lng').value = lng.toFixed(6);
-
                 // Reverse geocoding (simulation simple - en prod utiliser Google Maps API)
                 document.getElementById('address-input').value = \`Coordonnées: \${lat.toFixed(4)}, \${lng.toFixed(4)} (précision: ±\${accuracy}m)\`;
 
                 statusDiv.innerHTML = \`<i class="fas fa-check-circle"></i> Vous êtes localisé (précision: ±\${accuracy}m)\`;
                 statusDiv.className = 'text-xs mt-2 text-green-600 font-medium';
-
-                // Mettre à jour la carte
-                const newMapSrc = \`https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2000!2d\${lng}!3d\${lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1sVotre+localisation!2sBurkina+Faso!5e0!3m2!1sfr!2sfr!4v1234567890\`;
-                document.getElementById('map-iframe').src = newMapSrc;
               },
               function(error) {
                 let errorMsg = 'Erreur de localisation';
@@ -644,10 +619,6 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
             mapLng = lng;
             document.getElementById('address-suggestions').innerHTML = '';
             document.getElementById('location-status').classList.add('hidden');
-
-            // Mettre à jour la carte
-            const newMapSrc = \`https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2000!2d\${lng}!3d\${lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1sAdresse+sélectionnée!2sBurkina+Faso!5e0!3m2!1sfr!2sfr!4v1234567890\`;
-            document.getElementById('map-iframe').src = newMapSrc;
           }
 
           window.openLocationModal = openLocationModal;

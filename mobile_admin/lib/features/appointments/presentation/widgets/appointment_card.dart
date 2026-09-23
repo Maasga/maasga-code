@@ -65,7 +65,11 @@ class AppointmentCard extends StatelessWidget {
               // Date et heure
               Row(
                 children: [
-                  Icon(Icons.calendar_today, size: 16, color: AdminTheme.textSecondary),
+                  Icon(
+                    Icons.calendar_today,
+                    size: 16,
+                    color: AdminTheme.textSecondary,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     appointment.formattedDate,
@@ -75,7 +79,11 @@ class AppointmentCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: MaasgaTokens.spacingMd),
-                  Icon(Icons.access_time, size: 16, color: AdminTheme.textSecondary),
+                  Icon(
+                    Icons.access_time,
+                    size: 16,
+                    color: AdminTheme.textSecondary,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     appointment.time,
@@ -109,7 +117,11 @@ class AppointmentCard extends StatelessWidget {
                 const SizedBox(height: MaasgaTokens.spacingSm),
                 Row(
                   children: [
-                    Icon(Icons.location_on, size: 16, color: AdminTheme.textSecondary),
+                    Icon(
+                      Icons.location_on,
+                      size: 16,
+                      color: AdminTheme.textSecondary,
+                    ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
@@ -131,7 +143,7 @@ class AppointmentCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: appointment.status,
+                      initialValue: appointment.status,
                       decoration: InputDecoration(
                         labelText: 'Statut',
                         border: OutlineInputBorder(),
@@ -141,10 +153,22 @@ class AppointmentCard extends StatelessWidget {
                         ),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'pending', child: Text('En attente')),
-                        DropdownMenuItem(value: 'confirmed', child: Text('Confirmé')),
-                        DropdownMenuItem(value: 'completed', child: Text('Terminé')),
-                        DropdownMenuItem(value: 'cancelled', child: Text('Annulé')),
+                        DropdownMenuItem(
+                          value: 'pending',
+                          child: Text('En attente'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'confirmed',
+                          child: Text('Confirmé'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'completed',
+                          child: Text('Terminé'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'cancelled',
+                          child: Text('Annulé'),
+                        ),
                       ],
                       onChanged: (value) {
                         if (value != null) {

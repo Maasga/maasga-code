@@ -7,7 +7,7 @@ vars = { ENVIRONMENT = "production" }
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "maasga_db"
-database_id = "votre_database_id"  # À remplacer par l'ID réel
+database_id = "2317adea-fdbe-4597-b64d-11d68d03b63b"
 
 [env.preview]
 vars = { ENVIRONMENT = "preview" }

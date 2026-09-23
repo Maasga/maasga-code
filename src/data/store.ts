@@ -68,8 +68,16 @@ export const appointments: Appointment[] = []
 export const orders: Order[] = []
 export const clients: Client[] = []
 
-// Compteur de visites maintenance à faire (date échue, statut planifiee)
+// Compteurs et données maintenance
 export let maintenanceDueCount = 0
 export function setMaintenanceDueCount(n: number) { maintenanceDueCount = n }
+
+export let pendingMaintenanceContractsCount = 0
+export function setPendingMaintenanceContractsCount(n: number) { pendingMaintenanceContractsCount = n }
+
+export let pendingMaintenanceRequestsCount = 0
+export function setPendingMaintenanceRequestsCount(n: number) { pendingMaintenanceRequestsCount = n }
+
+export const pendingMaintenanceContracts: any[] = []
 
 export const notifications: any[] = []

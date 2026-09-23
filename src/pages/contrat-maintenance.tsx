@@ -71,7 +71,7 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
     </section>
 
     {/* SIMULATEUR DYNAMIQUE INTERACTIF (v2) */}
-    <section class="py-10 px-4 reveal" style="background:linear-gradient(180deg,#f8fafc 0%,#f0f9ff 100%);">
+    <section id="sim-section" class="py-10 px-4 reveal transition-all duration-300" style="background:linear-gradient(180deg,#f8fafc 0%,#f0f9ff 100%);">
       <div class="max-w-4xl mx-auto">
         <div class="glass-card rounded-3xl p-6 md:p-8 shadow-xl" style="border:2px solid #bae6fd; background:#ffffff;">
           <div class="flex items-center space-x-3 mb-6">
@@ -173,7 +173,7 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
         <div class="text-center mb-10">
           <h2 class="text-2xl md:text-3xl font-extrabold mb-3" style="color:#03045e;">Nos 4 formules de maintenance</h2>
           <p class="text-sm max-w-xl mx-auto" style="color:#64748b;">
-            Chaque formule est adaptée à votre taille de parc. Les tarifs s'ajustent selon la configuration choisie dans le simulateur.
+            Chaque formule est adaptée à votre taille de parc. Les tarifs unitaires sont dégressifs selon vos équipements.
           </p>
         </div>
 
@@ -191,11 +191,11 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
                 </div>
               </div>
               <h3 class="text-lg font-black mb-1" style="color:#03045e;">RÉSIDENTIEL</h3>
-              <div class="text-xs font-medium mb-3" style="color:#64748b;">Tarif unitaire : <strong style="color:#0077b6;">8 500 F</strong> / visite</div>
+              <div class="text-xs font-medium mb-3" style="color:#64748b;">Fréquence : <strong>Essentiel (1x) ou Confort (2x)</strong></div>
 
               <div class="p-3 rounded-2xl mb-4" style="background:#f8fafc; border:1px solid #e2e8f0;">
-                <div id="card-res-price" class="text-2xl font-black" style="color:#03045e;">34 000 <span class="text-xs font-bold text-slate-500">F CFA / an</span></div>
-                <div id="card-res-sub" class="text-[11px] mt-0.5" style="color:#64748b;">Ex: 2 clim, Confort (2 visites/an)</div>
+                <div class="text-2xl font-black" style="color:#03045e;">8 500 <span class="text-xs font-bold text-slate-500">F / clim / visite</span></div>
+                <div class="text-[11px] mt-0.5" style="color:#64748b;">Tarif unitaire applicable de 1 à 4 climatiseurs</div>
               </div>
 
               <div class="text-xs font-bold uppercase tracking-wider mb-2" style="color:#03045e;">Ce qui est inclus :</div>
@@ -219,8 +219,9 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
               <div class="text-[11px] text-center mb-4 p-2 rounded-xl" style="background:#f1f5f9; color:#64748b;">
                 <i class="fas fa-check mr-1 text-blue-500"></i>Logements et petits bureaux
               </div>
-              <button type="button" onclick="openMaintenanceModal('residentiel')" class="w-full text-center font-bold py-3 rounded-xl transition-all hover:-translate-y-0.5 cursor-pointer text-sm" style="background:rgba(0,119,182,0.08); color:#0077b6; border:1.5px solid rgba(0,119,182,0.2);">
-                Choisir cette formule
+              <button type="button" onclick="simulateFormula('residentiel')" class="w-full text-center font-bold py-3 rounded-xl transition-all hover:-translate-y-0.5 cursor-pointer text-sm flex items-center justify-center space-x-1.5" style="background:rgba(0,119,182,0.08); color:#0077b6; border:1.5px solid rgba(0,119,182,0.2);">
+                <i class="fas fa-calculator text-xs"></i>
+                <span>Simuler mon prix</span>
               </button>
             </div>
           </div>
@@ -240,11 +241,11 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
                 </div>
               </div>
               <h3 class="text-lg font-black mb-1" style="color:#03045e;">PROFESSIONNEL / PME</h3>
-              <div class="text-xs font-medium mb-3" style="color:#64748b;">Tarif dégressif : <strong style="color:#0077b6;">7 500 F à 6 000 F</strong></div>
+              <div class="text-xs font-medium mb-3" style="color:#64748b;">Fréquence : <strong>Confort (2x) ou Pro (3x)</strong></div>
 
               <div class="p-3 rounded-2xl mb-4" style="background:#f0f9ff; border:1px solid #bae6fd;">
-                <div id="card-pro-price" class="text-2xl font-black" style="color:#03045e;">120 000 <span class="text-xs font-bold text-slate-500">F CFA / an</span></div>
-                <div id="card-pro-sub" class="text-[11px] mt-0.5" style="color:#64748b;">Ex: 8 clim, Confort (2 visites/an)</div>
+                <div class="text-2xl font-black" style="color:#03045e;">7 500 à 6 000 <span class="text-xs font-bold text-slate-500">F / unité / visite</span></div>
+                <div class="text-[11px] mt-0.5" style="color:#64748b;">7 500 F (5-8 clims) · 6 000 F (9-15 clims)</div>
               </div>
 
               <div class="text-xs font-bold uppercase tracking-wider mb-2" style="color:#03045e;">Ce qui est inclus :</div>
@@ -273,8 +274,9 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
               <div class="text-[11px] text-center mb-4 p-2 rounded-xl" style="background:#f1f5f9; color:#64748b;">
                 <i class="fas fa-check mr-1 text-blue-500"></i>Bureaux, commerces, PME
               </div>
-              <button type="button" onclick="openMaintenanceModal('professionnel')" class="w-full text-center font-bold py-3 rounded-xl transition-all hover:-translate-y-0.5 cursor-pointer text-sm text-white" style="background:linear-gradient(135deg,#0077b6,#00b4d8); box-shadow:0 6px 18px rgba(0,119,182,0.3);">
-                Choisir cette formule
+              <button type="button" onclick="simulateFormula('professionnel')" class="w-full text-center font-bold py-3 rounded-xl transition-all hover:-translate-y-0.5 cursor-pointer text-sm text-white flex items-center justify-center space-x-1.5" style="background:linear-gradient(135deg,#0077b6,#00b4d8); box-shadow:0 6px 18px rgba(0,119,182,0.3);">
+                <i class="fas fa-calculator text-xs"></i>
+                <span>Simuler mon prix</span>
               </button>
             </div>
           </div>
@@ -294,11 +296,11 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
                 </div>
               </div>
               <h3 class="text-lg font-black mb-1" style="color:#03045e;">INDUSTRIEL</h3>
-              <div class="text-xs font-medium mb-3" style="color:#64748b;">Tarif unitaire : <strong style="color:#03045e;">Dès 5 000 F</strong> (dégressif)</div>
+              <div class="text-xs font-medium mb-3" style="color:#64748b;">Fréquence : <strong>Pro (3x) ou contrat sur mesure</strong></div>
 
               <div class="p-3 rounded-2xl mb-4" style="background:#f8fafc; border:1px solid #e2e8f0;">
-                <div class="text-2xl font-black" style="color:#03045e;">Sur devis</div>
-                <div class="text-[11px] mt-0.5" style="color:#64748b;">Base dégressive dès 5 000 F / unité (selon volume)</div>
+                <div class="text-2xl font-black" style="color:#03045e;">Dès 5 000 <span class="text-xs font-bold text-slate-500">F / unité / visite</span></div>
+                <div class="text-[11px] mt-0.5" style="color:#64748b;">Sur devis · Base de négociation dégressive selon volume</div>
               </div>
 
               <div class="text-xs font-bold uppercase tracking-wider mb-2" style="color:#03045e;">Ce qui est inclus :</div>
@@ -331,8 +333,9 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
               <div class="text-[11px] text-center mb-4 p-2 rounded-xl" style="background:#f1f5f9; color:#64748b;">
                 <i class="fas fa-check mr-1 text-blue-500"></i>Usines, hôtels, gros parcs
               </div>
-              <button type="button" onclick="openMaintenanceModal('industriel')" class="w-full text-center font-bold py-3 rounded-xl transition-all hover:-translate-y-0.5 cursor-pointer text-sm" style="background:rgba(3,4,94,0.08); color:#03045e; border:1.5px solid rgba(3,4,94,0.2);">
-                Demander un devis
+              <button type="button" onclick="openMaintenanceModal('industriel')" class="w-full text-center font-bold py-3 rounded-xl transition-all hover:-translate-y-0.5 cursor-pointer text-sm flex items-center justify-center space-x-1.5" style="background:rgba(3,4,94,0.08); color:#03045e; border:1.5px solid rgba(3,4,94,0.2);">
+                <i class="fas fa-file-invoice text-xs"></i>
+                <span>Demander un devis</span>
               </button>
             </div>
           </div>
@@ -370,8 +373,9 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
               <div class="text-[11px] text-center mb-4 p-2 rounded-xl" style="background:#f8fafc; color:#64748b;">
                 <i class="fas fa-check mr-1 text-slate-500"></i>Multi-sites, parcs mixtes, SLA
               </div>
-              <button type="button" onclick="openMaintenanceModal('sur_mesure')" class="w-full text-center font-bold py-3 rounded-xl transition-all hover:-translate-y-0.5 cursor-pointer text-sm mb-2" style="background:#334155; color:#ffffff;">
-                Demander un contrat personnalisé
+              <button type="button" onclick="openMaintenanceModal('sur_mesure')" class="w-full text-center font-bold py-3 rounded-xl transition-all hover:-translate-y-0.5 cursor-pointer text-sm mb-2 flex items-center justify-center space-x-1.5" style="background:#334155; color:#ffffff;">
+                <i class="fas fa-handshake text-xs"></i>
+                <span>Demander un contrat personnalisé</span>
               </button>
               <a href="https://wa.me/22655996418?text=Bonjour%20MAASGA%2C%20je%20souhaite%20un%20contrat%20de%20maintenance%20sur%20mesure%20pour%20mon%20parc%20de%20climatiseurs." target="_blank" rel="noopener noreferrer" class="w-full inline-flex items-center justify-center space-x-1.5 py-2 px-3 rounded-xl text-xs font-semibold border text-slate-700 hover:bg-slate-50 transition">
                 <i class="fab fa-whatsapp text-green-600"></i>
@@ -667,21 +671,6 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
           if (el) el.classList.add('card-active');
         }
 
-        // Live prices on cards
-        var resPrice = document.getElementById('card-res-price');
-        var resSub = document.getElementById('card-res-sub');
-        if (resPrice && count <= 4) {
-          resPrice.innerHTML = formatNumber(totalAnnual) + ' <span class="text-xs font-bold text-slate-500">F CFA / an</span>';
-          if (resSub) resSub.textContent = count + ' clim, ' + simState.frequency + ' (' + visits + 'x/an)';
-        }
-
-        var proPrice = document.getElementById('card-pro-price');
-        var proSub = document.getElementById('card-pro-sub');
-        if (proPrice && count >= 5 && count <= 15) {
-          proPrice.innerHTML = formatNumber(totalAnnual) + ' <span class="text-xs font-bold text-slate-500">F CFA / an</span>';
-          if (proSub) proSub.textContent = count + ' clim, ' + simState.frequency + ' (' + visits + 'x/an)';
-        }
-
         // Quick chip active styling
         document.querySelectorAll('.ac-quick-chip').forEach(function(chip) {
           if (parseInt(chip.getAttribute('data-count'), 10) === count) {
@@ -738,6 +727,23 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
           updateSimulatorUI();
         });
       });
+
+      // Simulate formula from card CTA
+      function simulateFormula(plan) {
+        var count = (plan === 'residentiel') ? 2 : 8;
+        simState.acCount = count;
+        simState.frequency = 'Confort';
+        simState.visits = 2;
+        updateSimulatorUI();
+        var simSec = document.getElementById('sim-section');
+        if (simSec) {
+          simSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          simSec.style.boxShadow = '0 0 0 4px rgba(0,119,182,0.35)';
+          setTimeout(function() {
+            simSec.style.boxShadow = '';
+          }, 1800);
+        }
+      }
 
       // Initialize simulator
       updateSimulatorUI();
@@ -859,6 +865,7 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
       window.openMaintenanceModal = openMaintenanceModal;
       window.openMaintenanceModalWithSim = openMaintenanceModalWithSim;
       window.closeMaintenanceModal = closeMaintenanceModal;
+      window.simulateFormula = simulateFormula;
 
       // Auto-open modal if query params present
       var urlParams = new URLSearchParams(window.location.search);

@@ -35,6 +35,30 @@ class BottomNav extends StatelessWidget {
       label: 'Produits',
       route: '/produits',
     ),
+    _BottomNavItem(
+      icon: Icons.people_outlined,
+      activeIcon: Icons.people,
+      label: 'Clients',
+      route: '/clients',
+    ),
+    _BottomNavItem(
+      icon: Icons.star_outlined,
+      activeIcon: Icons.star,
+      label: 'Avis',
+      route: '/avis',
+    ),
+    _BottomNavItem(
+      icon: Icons.image_outlined,
+      activeIcon: Icons.image,
+      label: 'Bannières',
+      route: '/banners',
+    ),
+    _BottomNavItem(
+      icon: Icons.settings_outlined,
+      activeIcon: Icons.settings,
+      label: 'Paramètres',
+      route: '/parametres',
+    ),
   ];
 
   @override
