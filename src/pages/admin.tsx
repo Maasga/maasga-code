@@ -5827,7 +5827,8 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                   <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">ID</th>
                   <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Client</th>
                   <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Type</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell" style="color:var(--admin-text-muted)">Formule / Équip.</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell" style="color:var(--admin-text-muted)">Formule & Détails</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell" style="color:var(--admin-text-muted)">Prix estimé</th>
                   <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden lg:table-cell" style="color:var(--admin-text-muted)">Description</th>
                   <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Statut</th>
                   <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden sm:table-cell" style="color:var(--admin-text-muted)">Date</th>
@@ -5837,6 +5838,16 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
               <tbody data-paginate="15">
                 {requests.map((r: any) => {
                   const typeLabels: Record<string,string> = { occasionnelle: 'Ponctuelle', urgence: '🚨 Urgence', contrat: '📋 Contrat' }
+                  const planNames: Record<string,string> = {
+                    residentiel: 'Résidentiel',
+                    professionnel: 'Professionnel / PME',
+                    professionnel_pme: 'Professionnel / PME',
+                    industriel: 'Industriel',
+                    sur_mesure: 'Sur Mesure',
+                    trimestriel: 'Trimestriel',
+                    semestriel: 'Semestriel',
+                    annuel: 'Annuel'
+                  }
                   const statusBadge: Record<string,{l:string;c:string}> = {
                     pending:{l:'En attente',c:'badge-pending'},
                     contacted:{l:'Contacté',c:'badge-done'},
@@ -5846,6 +5857,47 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                   }
                   const sb = statusBadge[r.status] || {l:r.status,c:'badge-pending'}
                   const isContractType = r.request_type === 'contrat' || r.plan_type
+                  const rawPlan = (r.plan_type || '').toLowerCase()
+                  const planLabel = planNames[rawPlan] || (r.plan_type ? r.plan_type : '')
+
+                  // Fallback intelligent pour le nombre de clims et la fréquence si non stockés séparément
+                  const parsedClims = r.nb_climatiseurs || (r.description?.match(/(\d+)\s*clim/i)?.[1])
+                  const parsedFreq = r.frequence_visites || (r.description?.includes('Essentiel') ? 'Essentiel' : r.description?.includes('Pro') ? 'Pro' : r.description?.includes('Confort') ? 'Confort' : null)
+
+                  // Calcul du prix estimé si r.plan_price est vide
+                  let displayPrice = Number(r.plan_price) || 0
+                  if (!displayPrice && rawPlan) {
+                    if (rawPlan === 'industriel' || rawPlan === 'sur_mesure') {
+                      displayPrice = 0
+                    } else {
+                      const cnt = parseInt(String(parsedClims || '1'), 10)
+                      const v = parsedFreq === 'Essentiel' ? 1 : (parsedFreq === 'Pro' ? 3 : 2)
+                      const rate = cnt <= 4 ? 8500 : cnt <= 8 ? 7500 : cnt <= 15 ? 6000 : 5000
+                      if (rawPlan === 'residentiel' || rawPlan === 'professionnel' || rawPlan === 'professionnel_pme') {
+                        displayPrice = rate * cnt * v
+                      } else if (rawPlan === 'semestriel') displayPrice = 55000
+                      else if (rawPlan === 'trimestriel') displayPrice = 30000
+                      else if (rawPlan === 'annuel') displayPrice = 100000
+                    }
+                  }
+
+                  // Price display logic
+                  let priceDisplay
+                  if (displayPrice > 0) {
+                    priceDisplay = (
+                      <div>
+                        <span class="text-emerald-400 font-extrabold">{displayPrice.toLocaleString('fr-FR')} F CFA</span>
+                        <div class="text-[10px] font-normal text-slate-400">estimation calculée</div>
+                      </div>
+                    )
+                  } else if (rawPlan === 'industriel' || rawPlan === 'sur_mesure') {
+                    priceDisplay = <span class="text-amber-400 text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">Sur devis</span>
+                  } else if (r.request_type === 'contrat' || r.plan_type) {
+                    priceDisplay = <span class="text-amber-400 text-xs font-medium">Sur devis</span>
+                  } else {
+                    priceDisplay = <span class="text-slate-500 text-xs">—</span>
+                  }
+
                   return (
                     <tr style="border-bottom:1px solid var(--admin-border);" class="hover:bg-[rgba(3,105,161,0.04)]">
                       <td class="px-5 py-3 font-mono text-xs" style="color:var(--admin-accent)">#{r.id}</td>
@@ -5856,10 +5908,21 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                       </td>
                       <td class="px-5 py-3 text-sm" style="color:var(--admin-text-primary);">{typeLabels[r.request_type] || r.request_type}</td>
                       <td class="px-5 py-3 text-xs hidden md:table-cell" style="color:var(--admin-text-muted);">
-                        {r.plan_type && <div class="font-semibold" style="color:#a78bfa;">{r.plan_type}</div>}
-                        {r.nb_climatiseurs && <div>{r.nb_climatiseurs} clim(s)</div>}
-                        {r.frequence_visites && <div>{r.frequence_visites}</div>}
-                        {!r.plan_type && (r.equipment_type || '—')}
+                        {planLabel ? (
+                          <div>
+                            <span class="inline-block px-2.5 py-1 rounded-lg font-bold text-xs bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                              <i class="fas fa-shield-alt mr-1 text-[10px]"></i>{planLabel}
+                            </span>
+                            {parsedClims && <div class="font-semibold text-slate-200 mt-1"><i class="fas fa-wind mr-1 text-sky-400 text-[10px]"></i>{parsedClims} climatiseur(s)</div>}
+                            {parsedFreq && <div class="text-[11px] text-sky-400 font-medium"><i class="fas fa-calendar-alt mr-1 text-[10px]"></i>Fréq: {parsedFreq}</div>}
+                            {r.type_etablissement && <div class="text-[10px] text-slate-400 mt-0.5">Site: {r.type_etablissement}</div>}
+                          </div>
+                        ) : (
+                          <div class="font-medium text-slate-300">{r.equipment_type || '—'}</div>
+                        )}
+                      </td>
+                      <td class="px-5 py-3 text-sm font-bold hidden md:table-cell" style="color:var(--admin-text-primary);">
+                        {priceDisplay}
                       </td>
                       <td class="px-5 py-3 text-xs max-w-xs truncate hidden lg:table-cell" style="color:var(--admin-text-muted);">{r.description || '—'}</td>
                       <td class="px-5 py-3"><span class={`text-xs font-bold px-2.5 py-1 rounded-full ${sb.c}`}>{sb.l}</span></td>

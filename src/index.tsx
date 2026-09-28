@@ -787,14 +787,81 @@ async function ensureMaintenanceTables(db: any) {
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`).run()
   } catch(_) { /* tables may already exist */ }
-  // Ensure missing columns are added to existing tables (migration-safe)
   try { await db.prepare('ALTER TABLE maintenance_requests ADD COLUMN plan_type TEXT').run() } catch(_) { /* column already exists */ }
   try { await db.prepare('ALTER TABLE maintenance_requests ADD COLUMN nb_climatiseurs INTEGER').run() } catch(_) {}
   try { await db.prepare('ALTER TABLE maintenance_requests ADD COLUMN frequence_visites TEXT').run() } catch(_) {}
   try { await db.prepare('ALTER TABLE maintenance_requests ADD COLUMN type_etablissement TEXT').run() } catch(_) {}
   try { await db.prepare('ALTER TABLE maintenance_requests ADD COLUMN exigences TEXT').run() } catch(_) {}
+  try { await db.prepare('ALTER TABLE maintenance_requests ADD COLUMN plan_price REAL DEFAULT 0').run() } catch(_) {}
   try { await db.prepare('ALTER TABLE maintenance_contracts ADD COLUMN notes TEXT').run() } catch(_) {}
   try { await db.prepare('ALTER TABLE maintenance_contracts ADD COLUMN next_visit_date TEXT').run() } catch(_) {}
+}
+
+// Pricing constants for maintenance plans
+const PRICING_THRESHOLDS = {
+  TIER_1: 4,
+  TIER_2: 8,
+  TIER_3: 15
+} as const
+
+const PRICING_RATES = {
+  TIER_1: 8500,
+  TIER_2: 7500,
+  TIER_3: 6000,
+  TIER_4: 5000
+} as const
+
+// Visit frequency mapping - standardized across the codebase
+const VISIT_FREQUENCY: Record<string, number> = {
+  Essentiel: 1,
+  Confort: 2,
+  Pro: 3
+} as const
+
+// Legacy plan visit counts
+const LEGACY_VISITS: Record<string, number> = {
+  trimestriel: 3,
+  semestriel: 2,
+  annuel: 1
+} as const
+
+// Shared pricing calculation function to eliminate duplication
+function calculatePlanPricing(planType: string, nbClimatiseurs: number, frequenceVisites: string) {
+  const isV2 = ['residentiel', 'professionnel', 'professionnel_pme', 'industriel', 'sur_mesure'].includes(planType)
+  const isLegacy = ['trimestriel', 'semestriel', 'annuel'].includes(planType)
+  
+  let months = 12
+  let visits = 2
+  let price = 0
+  
+  if (isV2) {
+    const getUnitRate = (cnt: number) => {
+      if (cnt <= PRICING_THRESHOLDS.TIER_1) return PRICING_RATES.TIER_1
+      if (cnt <= PRICING_THRESHOLDS.TIER_2) return PRICING_RATES.TIER_2
+      if (cnt <= PRICING_THRESHOLDS.TIER_3) return PRICING_RATES.TIER_3
+      return PRICING_RATES.TIER_4
+    }
+    visits = VISIT_FREQUENCY[frequenceVisites] || 2
+    if (planType === 'industriel' || planType === 'sur_mesure') {
+      price = 0
+    } else {
+      price = getUnitRate(nbClimatiseurs) * nbClimatiseurs * visits
+    }
+  } else if (isLegacy) {
+    const planConfig: Record<string, { months: number; visits: number; price: number }> = {
+      trimestriel: { months: 12, visits: LEGACY_VISITS.trimestriel, price: 30000 },
+      semestriel: { months: 12, visits: LEGACY_VISITS.semestriel, price: 55000 },
+      annuel: { months: 12, visits: LEGACY_VISITS.annuel, price: 100000 }
+    }
+    const cfg = planConfig[planType]
+    if (cfg) {
+      months = cfg.months
+      visits = cfg.visits
+      price = cfg.price
+    }
+  }
+  
+  return { months, visits, price }
 }
 
 async function scheduleVisitsForContract(
@@ -2803,70 +2870,65 @@ app.post('/api/maintenance/request', async (c) => {
         ].filter(Boolean).join(' | ')
       }
 
-      // Insert the maintenance request
-      await db.prepare(
-        `INSERT INTO maintenance_requests (client_id, name, phone, email, quartier, request_type, description, preferred_date, equipment_type, plan_type, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      ).bind(
-        clientId,
-        sanitizeText(name, 120),
-        sanitizeText(phone, 20),
-        email ? sanitizeText(email, 160) : null,
-        quartier ? sanitizeText(quartier, 120) : null,
-        requestType,
-        fullDescription ? sanitizeText(fullDescription, 2000) : null,
-        preferredDate || null,
-        equipmentType || null,
-        planType || null,
-        'pending'
-      ).run()
-
-      // If this is a contract subscription, auto-create the contract + schedule visits
+      // Calcul du tarif et des visites selon la formule souscrite
+      const { months, visits, price } = calculatePlanPricing(planType, nbClimatiseurs, frequenceVisites)
       const isV2 = ['residentiel', 'professionnel', 'professionnel_pme', 'industriel', 'sur_mesure'].includes(planType)
       const isLegacy = ['trimestriel', 'semestriel', 'annuel'].includes(planType)
 
-      if (requestType === 'contrat' && planType && (isV2 || isLegacy)) {
-        let months = 12
-        let visits = 2
-        let price = 34000
-        let dbPlanType = 'semestriel'
-
-        if (isV2) {
-          const getUnitRate = (cnt: number) => cnt <= 4 ? 8500 : cnt <= 8 ? 7500 : cnt <= 15 ? 6000 : 5000
-          visits = frequenceVisites === 'Essentiel' ? 1 : (frequenceVisites === 'Pro' ? 3 : 2)
-          if (planType === 'industriel' || planType === 'sur_mesure') {
-            price = 0
-            dbPlanType = 'annuel'
-          } else {
-            price = getUnitRate(nbClimatiseurs) * nbClimatiseurs * visits
-            dbPlanType = visits === 1 ? 'annuel' : (visits === 3 ? 'trimestriel' : 'semestriel')
-          }
+      // Enregistrement de la demande avec toutes les informations complètes
+      try {
+        await db.prepare(
+          `INSERT INTO maintenance_requests (client_id, name, phone, email, quartier, request_type, description, preferred_date, equipment_type, plan_type, plan_price, nb_climatiseurs, frequence_visites, type_etablissement, exigences, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`
+        ).bind(
+          clientId,
+          sanitizeText(name, 120),
+          sanitizeText(phone, 20),
+          email ? sanitizeText(email, 160) : null,
+          quartier ? sanitizeText(quartier, 120) : null,
+          requestType,
+          fullDescription ? sanitizeText(fullDescription, 2000) : null,
+          preferredDate || null,
+          equipmentType || null,
+          planType || null,
+          price,
+          nbClimatiseurs,
+          frequenceVisites,
+          typeEtablissement || null,
+          exigences || null
+        ).run()
+      } catch (err) {
+        console.error('[Maintenance Request] Failed to insert with full schema, attempting fallback:', err)
+        // Check if error is specifically about missing columns
+        const isColumnError = String(err).includes('no such column')
+        if (isColumnError) {
+          console.warn('[Maintenance Request] Schema migration needed - using fallback INSERT')
+          await db.prepare(
+            `INSERT INTO maintenance_requests (client_id, name, phone, email, quartier, request_type, description, preferred_date, equipment_type, plan_type, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`
+          ).bind(
+            clientId,
+            sanitizeText(name, 120),
+            sanitizeText(phone, 20),
+            email ? sanitizeText(email, 160) : null,
+            quartier ? sanitizeText(quartier, 120) : null,
+            requestType,
+            fullDescription ? sanitizeText(fullDescription, 2000) : null,
+            preferredDate || null,
+            equipmentType || null,
+            planType || null
+          ).run()
         } else {
-          const planConfig: Record<string, { months: number; visits: number; price: number }> = {
-            trimestriel: { months: 12, visits: 3, price: 30000 },
-            semestriel: { months: 12, visits: 2, price: 55000 },
-            annuel: { months: 12, visits: 1, price: 100000 }
-          }
-          const cfg = planConfig[planType]
-          months = cfg.months
-          visits = cfg.visits
-          price = cfg.price
-          dbPlanType = planType
+          throw err // Re-throw non-schema errors
         }
+      }
 
+      // Si c'est un contrat, créer au statut 'en_attente' (accord préalable admin requis avant activation des visites)
+      if (requestType === 'contrat' && planType && (isV2 || isLegacy)) {
         const startDate = preferredDate || new Date().toISOString().split('T')[0]
         const endDateObj = new Date(startDate)
         endDateObj.setMonth(endDateObj.getMonth() + months)
         const endDate = endDateObj.toISOString().split('T')[0]
-
-        // Compute visit dates evenly spaced
-        const intervalMonths = Math.max(1, Math.floor(months / visits))
-        const visitDates: string[] = []
-        for (let i = 1; i <= visits; i++) {
-          const vd = new Date(startDate)
-          vd.setMonth(vd.getMonth() + (intervalMonths * i))
-          visitDates.push(vd.toISOString().split('T')[0])
-        }
 
         const planNameFormatted = planType === 'residentiel' ? 'Résidentiel' :
           planType === 'professionnel' || planType === 'professionnel_pme' ? 'Professionnel / PME' :
@@ -2875,7 +2937,7 @@ app.post('/api/maintenance/request', async (c) => {
 
         const contractNote = `Formule: ${planNameFormatted} (v2) | ${nbClimatiseurs} clim(s) | ${frequenceVisites} | ${typeEtablissement ? typeEtablissement + ' | ' : ''}${exigences}`.trim()
 
-        const contractId = await insertContractSafe(db, {
+        await insertContractSafe(db, {
           clientId,
           clientName: name,
           clientPhone: phone,
@@ -2883,15 +2945,11 @@ app.post('/api/maintenance/request', async (c) => {
           planPrice: price,
           startDate,
           endDate,
-          status: 'actif',
+          status: 'en_attente',
           totalVisits: visits,
-          nextVisitDate: visitDates[0] || null,
           notes: contractNote
         })
-
-        if (contractId) {
-          await scheduleVisitsForContract(db, contractId, name, phone, clientId, planType, visits, startDate, months)
-        }
+      }
 
         // Log activity if client exists
         if (clientId) {
@@ -2901,7 +2959,6 @@ app.post('/api/maintenance/request', async (c) => {
             ).bind(clientId, 'Souscription contrat maintenance', `Plan ${planNameFormatted} — ${price > 0 ? price.toLocaleString() + ' FCFA' : 'Sur devis'} — ${visits} visite(s)`).run()
           } catch(_) {}
         }
-      }
     } catch (error) {
       console.error('Erreur maintenance request:', error)
       return sendErr("Erreur lors de l'envoi. Veuillez réessayer.")
@@ -6934,8 +6991,7 @@ app.post('/api/admin/produit/add', adminAuth, async (c) => {
   const file = body['image'] as File | null
   if (file && file instanceof File && file.size > 0) {
     // Limit image size to 500KB to prevent bloating D1
-    const MAX_IMAGE_SIZE = 500 * 1024
-    if (file.size > MAX_IMAGE_SIZE) {
+    if (file.size > IMAGE_SIZE_LIMITS.PRODUCT_IMAGE) {
       return c.redirect('/admin/produits?error=' + encodeURIComponent('Image trop grande (max 500 KB). Compressez-la avant upload.'))
     }
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
@@ -6948,11 +7004,11 @@ app.post('/api/admin/produit/add', adminAuth, async (c) => {
     if (!validateImageMagicBytes(bytes)) {
       return c.redirect('/admin/produits?error=' + encodeURIComponent('Le fichier ne semble pas être une image valide.'))
     }
-    // Upload vers ImgBB
+    // Upload vers ImgBB with retry
     const imgbbKey2 = (c.env as any).IMGBB_API_KEY as string
     try {
       if (!imgbbKey2) throw new Error('IMGBB_API_KEY manquante')
-      const r2 = await uploadToImgBB(imgbbKey2, buffer, file.type)
+      const r2 = await uploadToImgBBWithRetry(imgbbKey2, buffer, file.type)
       imageUrl = r2.url
       imgbbDeleteUrlCreate = r2.deleteUrl
     } catch(imgbbErr2) {
@@ -7476,13 +7532,46 @@ app.post('/api/admin/produit/delete', adminAuth, async (c) => {
 })
 
 // ============================================================
-// IMGBB IMAGE UPLOAD HELPER
+// IMAGE SIZE LIMITS - Centralized configuration
+// ============================================================
+const IMAGE_SIZE_LIMITS = {
+  PRODUCT_IMAGE: 500 * 1024,       // 500 KB
+  GALLERY_IMAGE: 5 * 1024 * 1024,  // 5 MB
+  MOBILE_UPLOAD: 10 * 1024 * 1024, // 10 MB
+  BRAND_MEDIA: 10 * 1024 * 1024    // 10 MB
+} as const
+
+// ============================================================
+// IMAGE UPLOAD RATE LIMITING
+// ============================================================
+const imageUploadRateLimit = new Map<string, { count: number; resetAt: number }>()
+const IMAGE_UPLOAD_MAX = 10 // 10 uploads per window
+const IMAGE_UPLOAD_WINDOW = 60000 // 1 minute window
+
+function checkImageUploadRateLimit(identifier: string): { allowed: boolean; remaining: number } {
+  const now = Date.now()
+  const entry = imageUploadRateLimit.get(identifier)
+  
+  if (!entry || now > entry.resetAt) {
+    imageUploadRateLimit.set(identifier, { count: 1, resetAt: now + IMAGE_UPLOAD_WINDOW })
+    return { allowed: true, remaining: IMAGE_UPLOAD_MAX - 1 }
+  }
+  
+  if (entry.count >= IMAGE_UPLOAD_MAX) {
+    return { allowed: false, remaining: 0 }
+  }
+  
+  entry.count++
+  return { allowed: true, remaining: IMAGE_UPLOAD_MAX - entry.count }
+}
+
+// ============================================================
+// IMGBB IMAGE UPLOAD HELPER WITH RETRY
 // ============================================================
 async function uploadToImgBB(apiKey: string, fileBuffer: ArrayBuffer, mimeType: string): Promise<{url: string, deleteUrl: string}> {
   const bytes = new Uint8Array(fileBuffer)
-  let binary = ''
-  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
-  const base64 = btoa(binary)
+  // Use more efficient base64 conversion
+  const base64 = btoa(String.fromCharCode(...bytes))
   const form = new FormData()
   form.append('key', apiKey)
   form.append('image', base64)
@@ -7493,15 +7582,33 @@ async function uploadToImgBB(apiKey: string, fileBuffer: ArrayBuffer, mimeType: 
   return { url: json.data.url as string, deleteUrl: (json.data.delete_url || '') as string }
 }
 
+async function uploadToImgBBWithRetry(apiKey: string, fileBuffer: ArrayBuffer, mimeType: string, maxRetries = 3): Promise<{url: string, deleteUrl: string}> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await uploadToImgBB(apiKey, fileBuffer, mimeType)
+    } catch (err) {
+      if (attempt === maxRetries) throw err
+      // Exponential backoff: 1s, 2s, 4s
+      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)))
+    }
+  }
+  throw new Error('Upload failed after retries')
+}
+
 // API Admin - Uploader/changer l'image d'un produit
 app.post('/api/admin/produit/image', adminAuth, async (c) => {
+  // Rate limiting for image uploads
+  const clientIp = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
+  const rateLimit = checkImageUploadRateLimit(clientIp)
+  if (!rateLimit.allowed) {
+    return c.json({ error: 'Trop d\'uploads récents. Attendez 1 minute.' }, 429)
+  }
   const body = await c.req.parseBody()
   const id = parseInt(body['id'] as string)
   const file = body['image'] as File | null
   if (file && file instanceof File && file.size > 0) {
     // Limit image size to 500KB
-    const MAX_IMAGE_SIZE = 500 * 1024
-    if (file.size > MAX_IMAGE_SIZE) {
+    if (file.size > IMAGE_SIZE_LIMITS.PRODUCT_IMAGE) {
       return c.redirect('/admin/produits?error=' + encodeURIComponent('Image trop grande (max 500 KB).'))
     }
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
@@ -7514,13 +7621,13 @@ app.post('/api/admin/produit/image', adminAuth, async (c) => {
     if (!validateImageMagicBytes(bytes)) {
       return c.redirect('/admin/produits?error=' + encodeURIComponent('Le fichier ne semble pas être une image valide.'))
     }
-    // Upload vers ImgBB (remplace le stockage base64 en D1)
+    // Upload vers ImgBB (remplace le stockage base64 en D1) with retry
     const imgbbKey = (c.env as any).IMGBB_API_KEY as string
     let uploadedUrl = ''
     let imgbbDelUrl = ''
     try {
       if (!imgbbKey) throw new Error('IMGBB_API_KEY manquante')
-      const r1 = await uploadToImgBB(imgbbKey, buffer, file.type)
+      const r1 = await uploadToImgBBWithRetry(imgbbKey, buffer, file.type)
       uploadedUrl = r1.url
       imgbbDelUrl = r1.deleteUrl
     } catch(imgbbErr) {
@@ -7553,20 +7660,30 @@ app.post('/api/admin/produit/image', adminAuth, async (c) => {
 
 // Ajouter une image a la galerie d'un produit
 app.post('/api/admin/produit/gallery/add', adminAuth, async (c) => {
+  // Rate limiting for image uploads
+  const clientIp = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
+  const rateLimit = checkImageUploadRateLimit(clientIp)
+  if (!rateLimit.allowed) {
+    return c.json({ error: 'Trop d\'uploads récents. Attendez 1 minute.' }, 429)
+  }
   const body = await c.req.parseBody()
   const id = parseInt(body['id'] as string)
   const file = body['image'] as File | null
   if (!file || !(file instanceof File) || file.size === 0) return c.json({ error: 'Fichier manquant' }, 400)
-  const MAX = 5 * 1024 * 1024
-  if (file.size > MAX) return c.json({ error: 'Image trop grande (max 5 MB)' }, 400)
+  if (file.size > IMAGE_SIZE_LIMITS.GALLERY_IMAGE) return c.json({ error: 'Image trop grande (max 5 MB)' }, 400)
   const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
   if (!allowed.includes(file.type)) return c.json({ error: 'Format non autorise' }, 400)
   const buffer = await file.arrayBuffer()
+  const bytes = new Uint8Array(buffer)
+  // Validate magic bytes before upload
+  if (!validateImageMagicBytes(bytes)) {
+    return c.json({ error: 'Format d\'image non valide' }, 400)
+  }
   const imgbbKey = (c.env as any).IMGBB_API_KEY as string
   if (!imgbbKey) return c.json({ error: 'IMGBB_API_KEY manquante' }, 500)
   let imgUrl = '', imgDelUrl = ''
   try {
-    const r = await uploadToImgBB(imgbbKey, buffer, file.type)
+    const r = await uploadToImgBBWithRetry(imgbbKey, buffer, file.type)
     imgUrl = r.url; imgDelUrl = r.deleteUrl
   } catch(e) { return c.json({ error: 'Upload ImgBB echoue' }, 500) }
   const db = c.env.DB
@@ -7694,8 +7811,7 @@ app.post('/api/admin/media/brand/upload', adminAuth, async (c) => {
   if (!file || typeof file !== 'object' || typeof file.arrayBuffer !== 'function' || !file.size) {
     return c.json({ error: 'Fichier image manquant ou corrompu' }, 400)
   }
-  const MAX = 10 * 1024 * 1024
-  if (file.size > MAX) return c.json({ error: 'Image trop volumineuse (max 10 MB)' }, 400)
+  if (file.size > IMAGE_SIZE_LIMITS.BRAND_MEDIA) return c.json({ error: 'Image trop volumineuse (max 10 MB)' }, 400)
   
   const rawType = (file.type || '').toLowerCase()
   const fileType = rawType.startsWith('image/') ? rawType : 'image/jpeg'
@@ -7704,8 +7820,13 @@ app.post('/api/admin/media/brand/upload', adminAuth, async (c) => {
   if (!imgbbKey) return c.json({ error: 'IMGBB_API_KEY non configurée sur le serveur Cloudflare' }, 500)
   
   const buffer = await file.arrayBuffer()
+  const bytes = new Uint8Array(buffer)
+  // Validate magic bytes before upload
+  if (!validateImageMagicBytes(bytes)) {
+    return c.json({ error: 'Format d\'image non valide' }, 400)
+  }
   try {
-    const r = await uploadToImgBB(imgbbKey, buffer, fileType)
+    const r = await uploadToImgBBWithRetry(imgbbKey, buffer, fileType)
     await db.prepare(
       'INSERT INTO brand_media_library (brand, url, delete_url, label) VALUES (?, ?, ?, ?)'
     ).bind(brand, r.url, r.deleteUrl, label).run()
@@ -10013,11 +10134,19 @@ app.get('/api/mobile/client-dashboard', mobileAuth, async (c) => {
         ).bind(clientRow.id || 0, userPhone, last8 ? `%${last8}` : '__none__', userEmail || '__none__').all()
         const rawContracts = (contractsResult.results || []) as any[]
         const planLabel: Record<string,string> = {
-          semestriel:'Sémestriel (2 visites/an)', trimestriel:'Trimestriel (4 visites/an)',
-          annuel:'Annuel (1 visite/an)', mensuel:'Mensuel (12 visites/an)',
-          bimestriel:'Bimestriel (6 visites/an)', sav_gratuit:'SAV Gratuit',
+          residentiel: 'Résidentiel',
+          professionnel: 'Professionnel / PME',
+          professionnel_pme: 'Professionnel / PME',
+          industriel: 'Industriel',
+          sur_mesure: 'Sur Mesure',
+          semestriel: 'Semestriel (2 visites/an)',
+          trimestriel: 'Trimestriel (3 visites/an)',
+          annuel: 'Annuel (1 visite/an)',
+          mensuel: 'Mensuel (12 visites/an)',
+          bimestriel: 'Bimestriel (6 visites/an)',
+          sav_gratuit: 'SAV Gratuit',
         }
-        const planVis: Record<string,number> = { semestriel:2, trimestriel:4, annuel:1, mensuel:12, bimestriel:6, sav_gratuit:1 }
+        const planVis: Record<string,number> = { residentiel: 2, professionnel: 2, professionnel_pme: 2, industriel: 3, sur_mesure: 2, semestriel: 2, trimestriel: 3, annuel: 1, mensuel: 12, bimestriel: 6, sav_gratuit: 1 }
         const stLabel: Record<string,string> = { en_attente:'En attente', pending:'En attente', contacte:'Contacté', contacted:'Contacté', actif:'Actif', active:'Actif', expire:'Expiré', expired:'Expiré', annule:'Annulé', cancelled:'Annulé', refused:'Refusé' }
         const fmtMY = (d: string) => { try { return d ? new Date(d).toLocaleDateString('fr-FR',{month:'short',year:'numeric'}) : '' } catch { return d||'' } }
         const fmtP  = (p: number|null|undefined) => (!p ? '—' : p.toLocaleString('fr-FR') + ' FCFA')
@@ -11178,61 +11307,49 @@ app.post('/api/mobile/maintenance', mobileAuth, async (c) => {
         ].filter(Boolean).join(' | ')
       }
 
-      await db.prepare(
-        `INSERT INTO maintenance_requests (client_id, name, phone, email, quartier, request_type, description, preferred_date, equipment_type, plan_type, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      ).bind(
-        clientId, sanitizeText(name, 120), sanitizeText(phone, 20),
-        user.email || null, body.quartier || null, requestType,
-        sanitizeText(fullDescription, 2000), preferredDate || null,
-        equipmentType || null, planType || null,
-        'pending'
-      ).run()
+      // Calcul du tarif et des visites selon la formule souscrite
+      const { months, visits, price } = calculatePlanPricing(planType, nbClimatiseurs, frequenceVisites)
 
+      // Enregistrement de la demande avec toutes les informations complètes
+      try {
+        await db.prepare(
+          `INSERT INTO maintenance_requests (client_id, name, phone, email, quartier, request_type, description, preferred_date, equipment_type, plan_type, plan_price, nb_climatiseurs, frequence_visites, type_etablissement, exigences, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`
+        ).bind(
+          clientId, sanitizeText(name, 120), sanitizeText(phone, 20),
+          user.email || null, body.quartier || null, requestType,
+          sanitizeText(fullDescription, 2000), preferredDate || null,
+          equipmentType || null, planType || null, price,
+          nbClimatiseurs, frequenceVisites, typeEtablissement || null, exigences || null
+        ).run()
+      } catch (err) {
+        console.error('[Mobile Maintenance] Failed to insert with full schema, attempting fallback:', err)
+        // Check if error is specifically about missing columns
+        const isColumnError = String(err).includes('no such column')
+        if (isColumnError) {
+          console.warn('[Mobile Maintenance] Schema migration needed - using fallback INSERT')
+          await db.prepare(
+            `INSERT INTO maintenance_requests (client_id, name, phone, email, quartier, request_type, description, preferred_date, equipment_type, plan_type, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`
+          ).bind(
+            clientId, sanitizeText(name, 120), sanitizeText(phone, 20),
+            user.email || null, body.quartier || null, requestType,
+            sanitizeText(fullDescription, 2000), preferredDate || null,
+            equipmentType || null, planType || null
+          ).run()
+        } else {
+          throw err // Re-throw non-schema errors
+        }
+      }
+
+      // Si c'est un contrat, créer le contrat au statut 'en_attente' (accord préalable admin requis avant activation)
       const isV2 = ['residentiel', 'professionnel', 'professionnel_pme', 'industriel', 'sur_mesure'].includes(planType)
       const isLegacy = ['trimestriel', 'semestriel', 'annuel'].includes(planType)
-
       if (requestType === 'contrat' && planType && (isV2 || isLegacy)) {
-        let months = 12
-        let visits = 2
-        let price = 34000
-        let dbPlanType = 'semestriel'
-
-        if (isV2) {
-          const getUnitRate = (cnt: number) => cnt <= 4 ? 8500 : cnt <= 8 ? 7500 : cnt <= 15 ? 6000 : 5000
-          visits = frequenceVisites === 'Essentiel' ? 1 : (frequenceVisites === 'Pro' ? 3 : 2)
-          if (planType === 'industriel' || planType === 'sur_mesure') {
-            price = 0
-            dbPlanType = 'annuel'
-          } else {
-            price = getUnitRate(nbClimatiseurs) * nbClimatiseurs * visits
-            dbPlanType = visits === 1 ? 'annuel' : (visits === 3 ? 'trimestriel' : 'semestriel')
-          }
-        } else {
-          const planConfig: Record<string, { months: number; visits: number; price: number }> = {
-            trimestriel: { months: 12, visits: 3, price: 30000 },
-            semestriel: { months: 12, visits: 2, price: 55000 },
-            annuel: { months: 12, visits: 1, price: 100000 }
-          }
-          const cfg = planConfig[planType]
-          months = cfg.months
-          visits = cfg.visits
-          price = cfg.price
-          dbPlanType = planType
-        }
-
         const startDate = preferredDate || new Date().toISOString().split('T')[0]
         const endDateObj = new Date(startDate)
         endDateObj.setMonth(endDateObj.getMonth() + months)
         const endDate = endDateObj.toISOString().split('T')[0]
-
-        const intervalMonths = Math.max(1, Math.floor(months / visits))
-        const visitDates: string[] = []
-        for (let i = 1; i <= visits; i++) {
-          const vd = new Date(startDate)
-          vd.setMonth(vd.getMonth() + (intervalMonths * i))
-          visitDates.push(vd.toISOString().split('T')[0])
-        }
 
         const planNameFormatted = planType === 'residentiel' ? 'Résidentiel' :
           planType === 'professionnel' || planType === 'professionnel_pme' ? 'Professionnel / PME' :
@@ -11241,7 +11358,7 @@ app.post('/api/mobile/maintenance', mobileAuth, async (c) => {
 
         const contractNote = `Formule: ${planNameFormatted} (v2) | ${nbClimatiseurs} clim(s) | ${frequenceVisites} | ${typeEtablissement ? typeEtablissement + ' | ' : ''}${exigences}`.trim()
 
-        const contractId = await insertContractSafe(db, {
+        await insertContractSafe(db, {
           clientId,
           clientName: name,
           clientPhone: phone,
@@ -11249,23 +11366,25 @@ app.post('/api/mobile/maintenance', mobileAuth, async (c) => {
           planPrice: price,
           startDate,
           endDate,
-          status: 'actif',
+          status: 'en_attente',
           totalVisits: visits,
-          nextVisitDate: visitDates[0] || null,
           notes: contractNote
         })
-
-        if (contractId) {
-          await scheduleVisitsForContract(db, contractId, name, phone, clientId, planType, visits, startDate, months)
-        }
       }
 
-      const notes = [`Formule: ${planType}`, `Type: ${requestType}`, `Équipement: ${equipmentType}`, preferredDate ? `Date souhaitée: ${preferredDate}` : '', fullDescription].filter(Boolean).join(' | ')
-      await db.prepare(
-        'INSERT INTO appointments (name, phone, quartier, date, heure_debut, heure_fin, type, notes, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-      ).bind(name, phone, body.quartier || '', preferredDate || new Date().toISOString().split('T')[0], '08:00', '18:00', 'maintenance', notes, 'pending', new Date().toISOString()).run()
+      // Log activity if client exists
+      if (clientId) {
+        try {
+          await db.prepare(
+            `INSERT INTO user_activity_log (client_id, action, category, details) VALUES (?, ?, 'maintenance', ?)`
+          ).bind(clientId, 'Souscription contrat maintenance mobile', `Plan ${planType} — ${price > 0 ? price.toLocaleString() + ' FCFA' : 'Sur devis'} — ${visits} visite(s)`).run()
+        } catch(_) {}
+      }
 
-    } catch (e) { console.error('Mobile maintenance error:', e) }
+    } catch (e) { 
+      console.error('Mobile maintenance error:', e)
+      return c.json({ error: 'Erreur lors de la souscription maintenance' }, 500)
+    }
   }
 
   // Notifier l'admin
@@ -11276,7 +11395,7 @@ app.post('/api/mobile/maintenance', mobileAuth, async (c) => {
     console.error('Failed to notify admin on mobile maintenance:', ne);
   }
 
-  return c.json({ success: true })
+  return c.json({ success: true, message: 'Souscription enregistrée avec succès' })
 })
 
 // â”€â”€ GET /api/mobile/activity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -11687,6 +11806,12 @@ app.get('/api/mobile/admin-dashboard', mobileAdminAuth, async (c) => {
 // ── POST /api/admin/upload/image — téléverse une image vers ImgBB (banners/logos) ──
 // Retourne { success, url } sans sauvegarder en DB (l'appelant place l'URL dans son form)
 app.post('/api/admin/upload/image', adminAuth, async (c) => {
+  // Rate limiting for image uploads
+  const clientIp = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
+  const rateLimit = checkImageUploadRateLimit(clientIp)
+  if (!rateLimit.allowed) {
+    return c.json({ error: 'Trop d\'uploads récents. Attendez 1 minute.' }, 429)
+  }
   const imgbbKey = (c.env as any).IMGBB_API_KEY as string
   if (!imgbbKey) return c.json({ error: 'IMGBB_API_KEY non configurée' }, 500)
   let file: any = null
@@ -11700,13 +11825,17 @@ app.post('/api/admin/upload/image', adminAuth, async (c) => {
   if (!file || typeof file !== 'object' || typeof file.arrayBuffer !== 'function' || !file.size) {
     return c.json({ error: 'Fichier image manquant ou corrompu' }, 400)
   }
-  const MAX = 10 * 1024 * 1024
-  if (file.size > MAX) return c.json({ error: 'Image trop volumineuse (max 10 MB)' }, 400)
+  if (file.size > IMAGE_SIZE_LIMITS.BRAND_MEDIA) return c.json({ error: 'Image trop volumineuse (max 10 MB)' }, 400)
   const rawType = (file.type || '').toLowerCase()
   const fileType = rawType.startsWith('image/') ? rawType : 'image/jpeg'
   const buffer = await file.arrayBuffer()
+  const bytes = new Uint8Array(buffer)
+  // Validate magic bytes before upload
+  if (!validateImageMagicBytes(bytes)) {
+    return c.json({ error: 'Format d\'image non valide' }, 400)
+  }
   try {
-    const r = await uploadToImgBB(imgbbKey, buffer, fileType)
+    const r = await uploadToImgBBWithRetry(imgbbKey, buffer, fileType)
     return c.json({ success: true, url: r.url, delete_url: r.deleteUrl })
   } catch (e: any) {
     console.error('Admin image upload error:', e)

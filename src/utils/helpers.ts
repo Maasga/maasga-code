@@ -43,7 +43,7 @@ export function normalizePhone(phone: string): string {
 
 // Validate image file magic bytes to prevent Content-Type spoofing
 export function validateImageMagicBytes(bytes: Uint8Array): boolean {
-  if (bytes.length < 4) return false
+  if (bytes.length < 2) return false
   // JPEG: FF D8 FF
   if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) return true
   // PNG: 89 50 4E 47
@@ -52,5 +52,7 @@ export function validateImageMagicBytes(bytes: Uint8Array): boolean {
   if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38) return true
   // WebP: RIFF....WEBP
   if (bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) return true
+  // BMP: 42 4D
+  if (bytes[0] === 0x42 && bytes[1] === 0x4D) return true
   return false
 }
