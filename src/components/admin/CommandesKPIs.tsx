@@ -19,7 +19,7 @@ export const CommandesKPIs = ({ orders }: CommandesKPIsProps) => {
 
   const kpis = [
     { label: 'Total commandes', val: totalOrders,  icon: 'fa-shopping-bag',    bg: 'rgba(59,130,246,0.1)',  border: 'rgba(59,130,246,0.2)',  color: '#60a5fa' },
-    { label: 'Payées',          val: paidOrders,   icon: 'fa-credit-card',     bg: 'rgba(16,185,129,0.1)',  border: 'rgba(16,185,129,0.2)',  color: '#34d399' },
+    { label: 'Confirmées',       val: paidOrders,   icon: 'fa-credit-card',     bg: 'rgba(16,185,129,0.1)',  border: 'rgba(16,185,129,0.2)',  color: '#34d399' },
     { label: 'Installées',      val: installedOrders, icon: 'fa-tools',        bg: 'rgba(56,189,248,0.1)',  border: 'rgba(56,189,248,0.2)',  color: '#38bdf8' },
     { label: 'En attente',      val: pendingOnline, icon: 'fa-hourglass-half', bg: 'rgba(251,191,36,0.1)', border: 'rgba(251,191,36,0.2)',  color: '#fbbf24' },
     { label: 'CA total',        val: estimatedCA.toLocaleString('fr-FR') + ' F', icon: 'fa-coins', bg: 'rgba(251,191,36,0.1)', border: 'rgba(251,191,36,0.2)', color: '#fbbf24' },

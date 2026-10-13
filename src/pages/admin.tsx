@@ -12,7 +12,6 @@ import { CommandesKPIs } from '../components/admin/CommandesKPIs';
 import { CommandesProcessDiagram } from '../components/admin/CommandesProcessDiagram';
 import { OrderDetailModal } from '../components/admin/OrderDetailModal';
 import { BulkActionsToolbar } from '../components/admin/BulkActionsToolbar';
-import { ClientDetailModal } from '../components/admin/ClientDetailModal';
 
 
 // ============================================================
@@ -3219,6 +3218,7 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
                       <span><i class="fas fa-phone mr-1 text-gray-400"></i>{a.phone}</span>
                       <span><i class="fas fa-map-marker-alt mr-1 text-gray-400"></i>{a.quartier}</span>
+                      {a.adresse_precise && <span class="text-xs text-blue-400 mt-0.5 block"><i class="fas fa-location-arrow mr-1"></i>{a.adresse_precise}</span>}
                       <span><i class="fas fa-calendar mr-1 text-gray-400"></i>{a.date}</span>
                       {(a.heure_debut || a.heure_fin) && <span><i class="fas fa-clock mr-1 text-gray-400"></i>{a.heure_debut}–{a.heure_fin}</span>}
                       <span><i class="fas fa-tag mr-1 text-gray-400"></i>{{ devis: 'Devis/Dimensionnement', installation: 'Installation', entretien: 'Entretien', depannage: 'Dépannage' }[a.type] || a.type}</span>
@@ -3984,6 +3984,8 @@ export const AdminClientsPage = () => {
                 + '<div><span class="font-semibold" style="color:var(--admin-text-primary)">' + (x.visit_type==='preventive'?'Préventive':'Corrective') + '</span>'
                 + '<span class="ml-2" style="color:var(--admin-text-muted)">' + _esc(x.visit_date||'') + '</span>'
                 + (x.technician ? '<span class="ml-2" style="color:var(--admin-text-muted)">— ' + _esc(x.technician) + '</span>' : '') + '</div>'
+                + (x.notes ? '<div style="margin-top:2px;color:#94a3b8;font-style:italic">' + _esc(x.notes) + '</div>' : '')
+                + (x.actions_performed ? '<div style="margin-top:2px;color:#64748b">' + _esc(x.actions_performed) + '</div>' : '')
                 + '<span class="px-2 py-0.5 rounded-full font-bold" style="background:rgba(217,119,6,0.1);color:' + (statusColors[x.status]||'#94a3b8') + ';">'
                 + ((x.status==='planifiee')?'Planifiée':(x.status==='realisee')?'Réalisée':'Annulée') + '</span></div>';
             }).join('') : '<p class="text-xs py-2" style="color:var(--admin-text-muted)">Aucune visite</p>';
@@ -3993,7 +3995,8 @@ export const AdminClientsPage = () => {
             r.innerHTML = d.rdvs.length ? d.rdvs.map(function(x) {
               return '<div class="rounded-xl p-3 text-xs flex items-center justify-between" style="background:var(--admin-bg);border:1px solid var(--admin-border);">'
                 + '<div><span class="font-semibold" style="color:var(--admin-text-primary)">' + _esc(x.type||'RDV') + '</span>'
-                + '<span class="ml-2" style="color:var(--admin-text-muted)">' + _esc(x.date||'') + (x.heure_debut?' à '+_esc(x.heure_debut):'') + '</span></div>'
+                + '<span class="ml-2" style="color:var(--admin-text-muted)">' + _esc(x.date||'') + (x.heure_debut?' à '+_esc(x.heure_debut):'') + '</span>'
+                + (x.notes ? '<div style="margin-top:2px;color:#94a3b8;font-style:italic">' + _esc(x.notes) + '</div>' : '') + '</div>'
                 + '<span class="text-xs" style="color:var(--admin-status-pending)">' + _esc(x.status||'') + '</span></div>';
             }).join('') : '<p class="text-xs py-2" style="color:var(--admin-text-muted)">Aucun rendez-vous</p>';
             // Devis
@@ -4016,7 +4019,8 @@ export const AdminClientsPage = () => {
                 + '<div class="flex items-center justify-between mb-1">'
                 + '<span class="font-semibold" style="color:var(--admin-text-primary)">' + _esc(x.ticket_ref||'#'+x.id) + '</span>'
                 + '<span class="px-2 py-0.5 rounded-full font-bold" style="background:rgba(220,38,38,0.1);color:' + (pc[x.priority]||'#94a3b8') + ';">' + _esc(x.priority||'') + '</span></div>'
-                + '<p style="color:var(--admin-text-muted)">' + _esc(x.subject||'') + '</p></div>';
+                + '<p style="color:var(--admin-text-muted)">' + _esc(x.subject||'') + '</p>'
+                + (x.resolved_at ? '<div style="color:#4ade80;font-size:10px">Résolu: ' + _esc(x.resolved_at.substring(0,10)) + '</div>' : '') + '</div>';
             }).join('') : '<p class="text-xs py-2" style="color:var(--admin-text-muted)">Aucun ticket SAV</p>';
           }).catch(function() {
             loader.classList.add('hidden');
@@ -4165,15 +4169,10 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
         {/* Order Detail Modal */}
         <OrderDetailModal
           order={onlineOrders.find(o => o.id === selectedOrderId) || null}
+          payment={paymentsByOrder[selectedOrderId ?? -1]}
           isOpen={isOrderDetailOpen}
           onClose={() => {}}
           onUpdateOrder={handleUpdateStatus}
-        />
-        {/* Client Detail Modal */}
-        <ClientDetailModal
-          client={null}
-          isOpen={isClientDetailOpen}
-          onClose={handleCloseClientDetail}
         />
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
@@ -4676,7 +4675,7 @@ export const AdminAvisPage = ({ success, deleted, allReviews = [] }: { success?:
                         ))}
                       </div>
                     </td>
-                    <td class="py-3 px-4 text-xs max-w-xs truncate italic hidden md:table-cell" style="color:var(--admin-text-muted)">"{r.comment}"</td>
+                    <td class="py-3 px-4 text-xs italic hidden md:table-cell" title={r.comment} style="color:var(--admin-text-muted)"><span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">"{r.comment}"</span></td>
                     <td class="py-3 px-4 text-xs hidden sm:table-cell" style="color:var(--admin-text-muted)">{r.service}</td>
                     <td class="py-3 px-4 text-xs hidden sm:table-cell" style="color:var(--admin-text-muted)">{r.date}</td>
                     <td class="py-3 px-4">
@@ -5924,7 +5923,7 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                       <td class="px-5 py-3 text-sm font-bold hidden md:table-cell" style="color:var(--admin-text-primary);">
                         {priceDisplay}
                       </td>
-                      <td class="px-5 py-3 text-xs max-w-xs truncate hidden lg:table-cell" style="color:var(--admin-text-muted);">{r.description || '—'}</td>
+                      <td class="px-5 py-3 text-xs hidden lg:table-cell" title={r.description} style="color:var(--admin-text-muted);word-break:break-word;">{r.description || '—'}</td>
                       <td class="px-5 py-3"><span class={`text-xs font-bold px-2.5 py-1 rounded-full ${sb.c}`}>{sb.l}</span></td>
                       <td class="px-5 py-3 text-xs hidden sm:table-cell" style="color:#94a3b8;">{r.created_at ? new Date(r.created_at).toLocaleDateString('fr-FR') : '—'}</td>
                       <td class="px-5 py-3">
@@ -6053,7 +6052,7 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                       <td class="px-5 py-3 cursor-pointer hover:text-blue-400">
                         <div class="text-sm font-semibold" style="color:var(--admin-text-primary)">{c.client_name || c.client_phone || `Client #${c.client_id}`}</div>
                         {c.client_phone && <div class="text-xs" style="color:var(--admin-text-muted)">{c.client_phone}</div>}
-                        {c.notes && <div class="text-[11px] text-slate-400 truncate max-w-xs mt-0.5">{c.notes}</div>}
+                        {c.notes && <div class="text-[11px] text-slate-400 mt-0.5" title={c.notes}>{c.notes}</div>}
                       </td>
                       <td class="px-5 py-3 text-sm hidden md:table-cell" style="color:var(--admin-text-primary)">{planLabels[c.plan_type] || c.plan_type}</td>
                       <td class="px-5 py-3 font-bold hidden md:table-cell" style="color:var(--admin-text-primary)">{(c.plan_price || 0) > 0 ? (c.plan_price || 0).toLocaleString() + ' F' : 'Sur devis'}</td>
@@ -6178,7 +6177,7 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                                       {v.technician && <span class="text-xs" style="color:#64748b;">· {v.technician}</span>}
                                     </div>
                                     <div class="flex items-center gap-1">
-                                      {v.actions_performed && <span class="text-xs truncate max-w-[140px]" style="color:#94a3b8;">{v.actions_performed}</span>}
+                                      {v.actions_performed && <span class="text-xs" title={v.actions_performed} style="color:#94a3b8;">{v.actions_performed}</span>}
                                       <form method="post" action="/admin/maintenance/delete-visit" style="display:inline;">
                                         <input type="hidden" name="visit_id" value={String(v.id)} />
                                         <button type="submit" class="text-xs p-1 rounded" style="color:#64748b;" onclick="return confirm('Supprimer cette visite effectuée ?')" title="Supprimer">
@@ -6454,12 +6453,6 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
       });
     `}} />
 
-    {/* Client Detail Modal */}
-    <ClientDetailModal
-      client={null}
-      isOpen={isClientDetailOpen}
-      onClose={handleCloseClientDetail}
-    />
   </AdminLayout>
   )
 }
@@ -6921,7 +6914,7 @@ export const AdminSAVPage = ({ tickets = [], filterStatus = '' }: { tickets: any
                     <i class="fas fa-flag mr-1"></i>{pr.label}
                   </span>
                 </div>
-                <h3 class="font-semibold text-sm truncate" style="color:var(--admin-text-primary)">{t.subject}</h3>
+                <h3 class="font-semibold text-sm" style="color:var(--admin-text-primary);word-break:break-word;">{t.subject}</h3>
                 <div class="flex items-center gap-3 mt-1.5 text-xs text-gray-500">
                   <span><i class={`fas ${cat.icon} mr-1`} style={`color:${cat.color};`}></i>{cat.label}</span>
                   <span><i class="fas fa-user mr-1"></i>{t.client_name || t.client_phone}</span>
@@ -7180,7 +7173,7 @@ export const AdminAuditLogPage = ({ logs = [] }: { logs: any[] }) => {
                     </span>
                   </td>
                   <td class="py-3 px-4 font-medium" style="color:var(--admin-text-primary)">{l.action}</td>
-                  <td class="py-3 px-4 max-w-xs truncate hidden md:table-cell" style="color:var(--admin-text-muted)">{l.details || '-'}</td>
+                  <td class="py-3 px-4 hidden md:table-cell" title={l.details} style="color:var(--admin-text-muted)"><span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:300px;">{l.details || '-'}</span></td>
                   <td class="py-3 px-4 font-mono text-xs hidden lg:table-cell" style="color:var(--admin-text-muted)">{l.ip_address || '-'}</td>
                 </tr>
                 )

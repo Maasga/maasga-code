@@ -75,8 +75,8 @@ export const CommandesTable = ({
               <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider hidden md:table-cell" style="color: var(--admin-text-muted);">Produit / Notes</th>
               <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider" style="color: var(--admin-text-muted);">Montant</th>
               <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider" style="color: var(--admin-text-muted);">Statut</th>
-              <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider hidden sm:table-cell" style="color: var(--admin-text-muted);">Date</th>
-              <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider hidden sm:table-cell" style="color: var(--admin-text-muted);">Actions</th>
+              <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider hidden md:table-cell" style="color: var(--admin-text-muted);">Date</th>
+              <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider" style="color: var(--admin-text-muted);">Actions</th>
             </tr>
           </thead>
           <tbody data-paginate="20">
@@ -90,7 +90,7 @@ export const CommandesTable = ({
               return (
                 <tr
                   key={order.id}
-                  data-search={`${order.client_name} ${order.client_phone} ${order.notes || ''} ${order.total_price || ''}`}
+                  data-search={`${order.client_name} ${order.client_phone} ${order.client_email || ''} ${order.notes || ''} ${order.quartier || ''} ${order.type || ''} ${order.status} CMD-${String(order.id).padStart(4,'0')}`}
                   class="border-t hover:bg-[rgba(3,105,161,0.04)] transition-colors"
                   style="border-color: var(--admin-border);"
                 >
@@ -102,8 +102,8 @@ export const CommandesTable = ({
                     <div class="text-xs" style="color: var(--admin-text-muted);">{order.client_phone}</div>
                     {payment && <div class="text-xs mt-0.5" style="color: var(--admin-text-muted);">{paymentLabel}</div>}
                   </td>
-                  <td class="py-3 px-4 text-xs max-w-[200px] truncate hidden md:table-cell" style="color: var(--admin-text-muted);">
-                    {order.notes || '—'}
+                  <td class="py-3 px-4 text-xs hidden md:table-cell" style="color: var(--admin-text-muted);" title={order.notes || ''}>
+                    <span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{order.notes || '—'}</span>
                   </td>
                   <td class="py-3 px-4 text-sm font-bold" style="color: var(--admin-text-primary);">
                     {order.total_price ? order.total_price.toLocaleString('fr-FR') + ' F' : '—'}
@@ -125,10 +125,10 @@ export const CommandesTable = ({
                       </select>
                     </form>
                   </td>
-                  <td class="py-3 px-4 text-xs hidden sm:table-cell" style="color: var(--admin-text-muted);">
+                  <td class="py-3 px-4 text-xs hidden md:table-cell" style="color: var(--admin-text-muted);">
                     {new Date(order.created_at).toLocaleDateString('fr-FR')}
                   </td>
-                  <td class="py-3 px-4 hidden sm:table-cell">
+                  <td class="py-3 px-4">
                     <div class="flex items-center gap-1.5 flex-wrap">
                       {(order.status === 'confirme' || order.status === 'en_livraison' || order.status === 'livre') && (
                         <a

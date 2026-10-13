@@ -4,6 +4,7 @@ import type { Order } from '../../data/store';
 
 interface OrderDetailModalProps {
   order: Order | null;
+  payment?: any;
   isOpen: boolean;
   onClose?: () => void;
   onUpdateOrder?: (orderId: number, updates: Partial<Order>) => void;
@@ -18,7 +19,7 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   annule:       { label: 'Annulée',            color: '#dc2626', bg: 'rgba(220,38,38,0.12)'   },
 };
 
-export const OrderDetailModal = ({ order, isOpen }: OrderDetailModalProps) => {
+export const OrderDetailModal = ({ order, isOpen, payment }: OrderDetailModalProps) => {
   if (!isOpen || !order) return null;
 
   const si = STATUS_MAP[order.status] ?? { label: order.status, color: '#94a3b8', bg: 'rgba(148,163,184,0.1)' };
@@ -82,6 +83,85 @@ export const OrderDetailModal = ({ order, isOpen }: OrderDetailModalProps) => {
             <div>
               <p class="text-xs mb-2" style="color: var(--admin-text-muted);">Notes / Produit</p>
               <p class="text-sm whitespace-pre-wrap" style="color: var(--admin-text-primary);">{order.notes}</p>
+            </div>
+          )}
+
+          {/* Détails commande */}
+          <div style="border-top:1px solid var(--admin-border); padding-top:1rem;">
+            <p class="text-xs font-semibold mb-3" style="color: var(--admin-text-muted); text-transform:uppercase; letter-spacing:0.05em;">Détails commande</p>
+            <div class="grid grid-cols-2 gap-4">
+              {order.type && (
+                <div>
+                  <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Type</p>
+                  <p class="text-sm" style="color: var(--admin-text-primary);">{order.type}</p>
+                </div>
+              )}
+              {order.product_id && (
+                <div>
+                  <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Produit</p>
+                  <p class="text-sm font-mono" style="color: var(--admin-text-primary);">#{order.product_id}{order.quantity ? ` × ${order.quantity}` : ''}</p>
+                </div>
+              )}
+              {order.installation_price && (
+                <div>
+                  <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Prix installation</p>
+                  <p class="text-sm font-bold" style="color: var(--admin-accent);">{order.installation_price.toLocaleString('fr-FR')} F</p>
+                </div>
+              )}
+              {order.delivered_at && (
+                <div>
+                  <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Livré le</p>
+                  <p class="text-sm" style="color: var(--admin-text-primary);">{new Date(order.delivered_at).toLocaleDateString('fr-FR')}</p>
+                </div>
+              )}
+              {order.installed_at && (
+                <div>
+                  <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Installé le</p>
+                  <p class="text-sm" style="color: var(--admin-text-primary);">{new Date(order.installed_at).toLocaleDateString('fr-FR')}</p>
+                </div>
+              )}
+              {order.delivery_confirmed_by && (
+                <div>
+                  <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Livraison confirmée par</p>
+                  <p class="text-sm" style="color: var(--admin-text-primary);">{order.delivery_confirmed_by}</p>
+                </div>
+              )}
+              {order.installation_confirmed_by && (
+                <div>
+                  <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Installation confirmée par</p>
+                  <p class="text-sm" style="color: var(--admin-text-primary);">{order.installation_confirmed_by}</p>
+                </div>
+              )}
+              {order.appointment_id && (
+                <div>
+                  <p class="text-xs mb-1" style="color: var(--admin-text-muted);">RDV lié</p>
+                  <p class="text-sm font-mono" style="color: var(--admin-text-primary);">#{order.appointment_id}</p>
+                </div>
+              )}
+              {order.client_id && (
+                <div>
+                  <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Fiche client</p>
+                  <a href={`/admin/clients?id=${order.client_id}`} class="text-xs text-blue-400 hover:underline">Client #{order.client_id}</a>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Paiement */}
+          {payment && (
+            <div style="border-top:1px solid var(--admin-border); padding-top:1rem;">
+              <p class="text-xs font-semibold mb-3" style="color: var(--admin-text-muted); text-transform:uppercase; letter-spacing:0.05em;">Paiement</p>
+              <div class="flex items-center gap-3 flex-wrap">
+                <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style={`background:${payment.status === 'completed' ? 'rgba(5,150,105,0.12)' : 'rgba(217,119,6,0.12)'}; color:${payment.status === 'completed' ? '#34d399' : '#fbbf24'};`}>
+                  {payment.status === 'completed' ? 'Payé' : 'En attente'}
+                </span>
+                {payment.method && (
+                  <span class="text-xs" style="color: var(--admin-text-muted);">{payment.method}</span>
+                )}
+                {payment.reference && (
+                  <span class="text-xs font-mono" style="color: var(--admin-text-primary);">{payment.reference}</span>
+                )}
+              </div>
             </div>
           )}
 
