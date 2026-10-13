@@ -1,4 +1,4 @@
-// Mobile API endpoints updated 2026-09-12
+﻿// Mobile API endpoints updated 2026-09-12
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { serveStatic } from 'hono/cloudflare-workers'
@@ -38,7 +38,11 @@ const app = new Hono<HonoEnv>()
 // SITE_URL importé depuis src/types.ts — modifier lÃ -bas quand le domaine change.
 
 app.use('/api/*', cors({
-  origin: [SITE_URL, 'http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: (origin) => {
+    if (!origin) return '*' // curl/server-to-server sans Origin
+    const allowed = [SITE_URL, 'http://localhost:5173', 'http://127.0.0.1:5173']
+    return allowed.includes(origin) ? origin : null
+  },
   allowHeaders: ['Content-Type', 'Authorization'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
@@ -385,6 +389,8 @@ app.use(async (c, next) => {
     if (path === '/api/payment/callback') return next()
     if (path === '/api/telegram/webhook') return next()
     if (path === '/api/products' && c.req.header('Authorization')?.startsWith('Bearer ')) return next()
+    // Bootstrap endpoint: protégé par ADMIN_SECRET dans le body, pas besoin de CSRF
+    if (path === '/api/admin/set-role-secret') return next()
     // Mobile app routes: no browser origin, authenticated via Bearer token
     if (path.startsWith('/api/mobile/') || path === '/api/auth/google/mobile') return next()
     // Push token endpoints — authenticated via Bearer Firebase, no browser origin
@@ -8486,7 +8492,7 @@ async function createFirebaseJWT(serviceAccount: any): Promise<string> {
     aud: 'https://oauth2.googleapis.com/token',
     iat: now,
     exp: now + 3600,
-    scope: 'https://www.googleapis.com/auth/firebase'
+    scope: 'https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/firebase'
   })).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
   const signingInput = `${header}.${payload}`
   const keyData = serviceAccount.private_key.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\n/g, '')
@@ -8496,6 +8502,52 @@ async function createFirebaseJWT(serviceAccount: any): Promise<string> {
   const sigB64 = btoa(String.fromCharCode(...new Uint8Array(signature))).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
   return `${signingInput}.${sigB64}`
 }
+
+// ── POST /api/admin/set-role-secret ──────────────────────────────
+// Endpoint alternatif protégé par ADMIN_SECRET (pour bootstrap initial)
+app.post('/api/admin/set-role-secret', async (c) => {
+  let reqBody: any = {}
+  try { reqBody = await c.req.json() } catch (e) { return c.json({ error: 'JSON invalide', e: String(e) }, 400) }
+  const { uid, role, secret } = reqBody
+  const envSecret = (c.env as any).ADMIN_SECRET as string | undefined
+  if (!secret || !envSecret || secret !== envSecret) {
+    return c.json({ error: 'Secret invalide', debug: { secretLen: secret?.length, envLen: envSecret?.length, equal: secret === envSecret } }, 403)
+  }
+  if (!uid) return c.json({ error: 'UID requis' }, 400)
+  if (!role || (role !== 'admin' && role !== 'client')) return c.json({ error: 'Role invalide' }, 400)
+  if (!(c.env as any).FIREBASE_PROJECT_ID || !(c.env as any).FIREBASE_SERVICE_ACCOUNT_KEY) {
+    return c.json({ error: 'Configuration Firebase manquante' }, 500)
+  }
+  try {
+    const serviceAccount = JSON.parse((c.env as any).FIREBASE_SERVICE_ACCOUNT_KEY as string)
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        assertion: await createFirebaseJWT(serviceAccount)
+      }).toString()
+    })
+    const tokenData = await tokenRes.json() as any
+    if (!tokenData.access_token) return c.json({ error: 'Impossible d\'obtenir le token Firebase' }, 500)
+    const claimsRes = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/projects/${(c.env as any).FIREBASE_PROJECT_ID}/accounts:update`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ localId: uid, customAttributes: JSON.stringify({ role }) })
+      }
+    )
+    const claimsData = await claimsRes.json() as any
+    if (claimsData.error) return c.json({ error: claimsData.error.message }, 500)
+    return c.json({ success: true, message: `Rôle '${role}' assigné à ${uid}` })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
 
 // ── POST /api/admin/set-admin-role ───────────────────────────────
 // Définit le custom claim "role": "admin" pour un utilisateur Firebase
@@ -9718,7 +9770,7 @@ app.post('/api/telegram/webhook', async (c) => {
       case '/avis': {
         if (!db) { await reply('âŒ Base de données indisponible'); break }
         const rows = await db.prepare(
-          `SELECT id, client_name, rating, comment, service, created_at FROM reviews WHERE approved=0 ORDER BY created_at DESC LIMIT 10`
+          `SELECT id, client_name, note, comment, service, created_at FROM reviews WHERE approved=0 ORDER BY created_at DESC LIMIT 10`
         ).all()
         if (!rows.results?.length) { await reply("âœ… Aucun avis en attente d'approbation."); break }
         let txt = `â­ *Avis en attente*\n\n`
@@ -11109,9 +11161,42 @@ app.post('/api/mobile/commandes', mobileAuth, async (c) => {
       }
       const totalPrice = unitPrice * quantity
 
+      // Support multi-items (panier avec plusieurs produits)
+      const items = body.items as Array<{ product_id: number; name: string; quantity: number; unit_price: number; line_total: number }> | undefined
+      const resolvedTotal = items
+        ? items.reduce((sum: number, item: any) => sum + (item.line_total || item.unit_price * item.quantity || 0), 0)
+        : totalPrice
+      const productLabel = items && items.length > 0
+        ? items.map((i: any) => `${i.quantity}x ${i.name}`).join(', ')
+        : null
+      const resolvedProductId = items && items.length === 1 ? items[0].product_id : productId
+      const resolvedQuantity = items ? items.reduce((sum: number, i: any) => sum + (i.quantity || 1), 0) : quantity
+      const resolvedNotes = [
+        `[${paymentMethod}]`,
+        productLabel ? `Produits: ${productLabel}` : '',
+        notes,
+      ].filter(Boolean).join(' | ').trim()
+
+      // Récupérer client_id et email si disponibles
+      const clientId = body.client_id ? parseInt(body.client_id) : null
+      const clientEmail = body.client_email || user.email || null
+
       await db.prepare(
-        'INSERT INTO orders (client_name, client_phone, quartier, product_id, quantity, notes, total_price, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-      ).bind(clientName, clientPhone, quartier, productId, quantity, `[${paymentMethod}] ${notes}`.trim(), totalPrice, 'pending', new Date().toISOString()).run()
+        'INSERT INTO orders (client_id, client_name, client_phone, client_email, quartier, product_id, quantity, notes, total_price, type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      ).bind(
+        clientId,
+        clientName,
+        clientPhone,
+        clientEmail,
+        quartier,
+        resolvedProductId,
+        resolvedQuantity,
+        resolvedNotes,
+        resolvedTotal,
+        'commande',
+        'en_attente',
+        new Date().toISOString()
+      ).run()
       return c.json({ success: true })
     } catch (e) { console.error('Mobile commande create error:', e) }
   }
@@ -11661,7 +11746,7 @@ app.get('/api/mobile/admin-dashboard', mobileAdminAuth, async (c) => {
       approvedReviews = approvedReviewsResult?.total || 0
 
       const avgNoteResult = await db.prepare(
-        'SELECT AVG(rating) as avg FROM reviews WHERE approved = 1'
+        'SELECT AVG(note) as avg FROM reviews WHERE approved = 1'
       ).first() as any
       avgNote = avgNoteResult?.avg || 0
     } catch (e) {
@@ -11687,7 +11772,7 @@ app.get('/api/mobile/admin-dashboard', mobileAdminAuth, async (c) => {
 
       // CA estimé
       const caResult = await db.prepare(
-        'SELECT SUM(total) as total FROM orders WHERE status != ? AND status != ?'
+        'SELECT SUM(total_price) as total FROM orders WHERE status != ? AND status != ?'
       ).bind('annule', 'cancelled').first() as any
       estimatedCA = caResult?.total || 0
     } catch (e) {
@@ -12097,10 +12182,1161 @@ app.delete('/api/client/push-token', mobileAuth, async (c) => {
 })
 
 // ============================================================
+// PAIEMENTS ADMIN - LIGDICASH INTEGRATION
+// ============================================================
+
+// ── GET /api/mobile/admin/payments ───────────────────────────────
+// Liste des transactions de paiement
+app.get('/api/mobile/admin/payments', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    // Créer la table payments si elle n'existe pas
+    await db.prepare(`CREATE TABLE IF NOT EXISTS payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER,
+      client_id INTEGER,
+      amount REAL NOT NULL,
+      currency TEXT DEFAULT 'XOF',
+      status TEXT DEFAULT 'pending',
+      payment_method TEXT,
+      transaction_id TEXT,
+      ligdi_status TEXT,
+      ligdi_response TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (order_id) REFERENCES orders(id),
+      FOREIGN KEY (client_id) REFERENCES clients(id)
+    )`).run()
+
+    const { search, status, limit = 50, offset = 0 } = c.req.query()
+    let query = 'SELECT * FROM payments WHERE 1=1'
+    const params: any[] = []
+
+    if (search) {
+      query += ' AND (transaction_id LIKE ? OR ligdi_status LIKE ?)'
+      params.push(`%${search}%`, `%${search}%`)
+    }
+
+    if (status) {
+      query += ' AND status = ?'
+      params.push(status)
+    }
+
+    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+    params.push(parseInt(limit), parseInt(offset))
+
+    const rows = await db.prepare(query).bind(...params).all()
+    return c.json(rows.results || [])
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/payments/:id ────────────────────────────
+// Détails d'un paiement spécifique
+app.get('/api/mobile/admin/payments/:id', mobileAdminAuth, async (c) => {
+  const paymentId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !paymentId) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    const payment = await db.prepare('SELECT * FROM payments WHERE id = ?').bind(paymentId).first()
+    if (!payment) return c.json({ error: 'Paiement introuvable' }, 404)
+    return c.json(payment)
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/payments ───────────────────────────────
+// Créer un nouveau paiement manuel
+app.post('/api/mobile/admin/payments', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  const body = await c.req.json().catch(() => ({}))
+  const { order_id, client_id, amount, currency = 'XOF', payment_method, notes } = body
+
+  if (!amount) return c.json({ error: 'Montant requis' }, 400)
+
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER,
+      client_id INTEGER,
+      amount REAL NOT NULL,
+      currency TEXT DEFAULT 'XOF',
+      status TEXT DEFAULT 'pending',
+      payment_method TEXT,
+      transaction_id TEXT,
+      ligdi_status TEXT,
+      ligdi_response TEXT,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (order_id) REFERENCES orders(id),
+      FOREIGN KEY (client_id) REFERENCES clients(id)
+    )`).run()
+
+    const transactionId = `MANUAL-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const result = await db.prepare(`
+      INSERT INTO payments (order_id, client_id, amount, currency, status, payment_method, transaction_id, notes)
+      VALUES (?, ?, ?, ?, 'completed', ?, ?, ?)
+    `).bind(order_id || null, client_id || null, amount, currency, payment_method || 'manual', transactionId, notes || null).run()
+
+    return c.json({ success: true, id: result.meta.last_row_id, transaction_id: transactionId })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── PATCH /api/mobile/admin/payments/:id/status ───────────────────
+// Mettre à jour le statut d'un paiement
+app.patch('/api/mobile/admin/payments/:id/status', mobileAdminAuth, async (c) => {
+  const paymentId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !paymentId) return c.json({ error: 'ID invalide' }, 400)
+
+  const body = await c.req.json().catch(() => ({}))
+  const { status } = body
+
+  if (!status || !['pending', 'completed', 'failed', 'refunded'].includes(status)) {
+    return c.json({ error: 'Statut invalide' }, 400)
+  }
+
+  try {
+    await db.prepare("UPDATE payments SET status = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(status, paymentId).run()
+
+    return c.json({ success: true, message: 'Statut mis à jour' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/payments/stats ───────────────────────────
+// Statistiques des paiements
+app.get('/api/mobile/admin/payments/stats', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const total = await db.prepare('SELECT COUNT(*) as count, SUM(amount) as total FROM payments WHERE status = "completed"').first() as any
+    const pending = await db.prepare('SELECT COUNT(*) as count, SUM(amount) as total FROM payments WHERE status = "pending"').first() as any
+    const failed = await db.prepare('SELECT COUNT(*) as count, SUM(amount) as total FROM payments WHERE status = "failed"').first() as any
+    const today = await db.prepare('SELECT COUNT(*) as count, SUM(amount) as total FROM payments WHERE status = "completed" AND date(created_at) = date("now")').first() as any
+
+    return c.json({
+      total: { count: total?.count || 0, amount: total?.total || 0 },
+      pending: { count: pending?.count || 0, amount: pending?.total || 0 },
+      failed: { count: failed?.count || 0, amount: failed?.total || 0 },
+      today: { count: today?.count || 0, amount: today?.total || 0 }
+    })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ============================================================
+// DEVIS ADMIN - GESTION DES DEVIS ET FACTURES PROFORMA
+// ============================================================
+
+// ── GET /api/mobile/admin/devis ────────────────────────────────
+// Liste des devis
+app.get('/api/mobile/admin/devis', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    // Créer la table devis si elle n'existe pas
+    await db.prepare(`CREATE TABLE IF NOT EXISTS devis (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      client_id INTEGER,
+      client_name TEXT NOT NULL,
+      client_phone TEXT NOT NULL,
+      client_email TEXT,
+      items TEXT NOT NULL,
+      subtotal REAL NOT NULL,
+      tax REAL DEFAULT 0,
+      total REAL NOT NULL,
+      status TEXT DEFAULT 'draft',
+      notes TEXT,
+      valid_until TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (client_id) REFERENCES clients(id)
+    )`).run()
+
+    const { search, status, limit = 50, offset = 0 } = c.req.query()
+    let query = 'SELECT * FROM devis WHERE 1=1'
+    const params: any[] = []
+
+    if (search) {
+      query += ' AND (client_name LIKE ? OR client_phone LIKE ?)'
+      params.push(`%${search}%`, `%${search}%`)
+    }
+
+    if (status) {
+      query += ' AND status = ?'
+      params.push(status)
+    }
+
+    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+    params.push(parseInt(limit), parseInt(offset))
+
+    const rows = await db.prepare(query).bind(...params).all()
+    return c.json(rows.results || [])
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/devis/:id ─────────────────────────────
+// Détails d'un devis spécifique
+app.get('/api/mobile/admin/devis/:id', mobileAdminAuth, async (c) => {
+  const devisId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !devisId) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    const devis = await db.prepare('SELECT * FROM devis WHERE id = ?').bind(devisId).first()
+    if (!devis) return c.json({ error: 'Devis introuvable' }, 404)
+    return c.json(devis)
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/devis ────────────────────────────────
+// Créer un nouveau devis
+app.post('/api/mobile/admin/devis', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  const body = await c.req.json().catch(() => ({}))
+  const { client_id, client_name, client_phone, client_email, items, subtotal, tax = 0, total, notes, valid_until } = body
+
+  if (!client_name || !client_phone || !items || !total) {
+    return c.json({ error: 'Champs requis manquants' }, 400)
+  }
+
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS devis (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      client_id INTEGER,
+      client_name TEXT NOT NULL,
+      client_phone TEXT NOT NULL,
+      client_email TEXT,
+      items TEXT NOT NULL,
+      subtotal REAL NOT NULL,
+      tax REAL DEFAULT 0,
+      total REAL NOT NULL,
+      status TEXT DEFAULT 'draft',
+      notes TEXT,
+      valid_until TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (client_id) REFERENCES clients(id)
+    )`).run()
+
+    const result = await db.prepare(`
+      INSERT INTO devis (client_id, client_name, client_phone, client_email, items, subtotal, tax, total, notes, valid_until)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      client_id || null,
+      client_name,
+      client_phone,
+      client_email || null,
+      JSON.stringify(items),
+      subtotal,
+      tax,
+      total,
+      notes || null,
+      valid_until || null
+    ).run()
+
+    return c.json({ success: true, id: result.meta.last_row_id })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── PATCH /api/mobile/admin/devis/:id/status ────────────────────
+// Mettre à jour le statut d'un devis
+app.patch('/api/mobile/admin/devis/:id/status', mobileAdminAuth, async (c) => {
+  const devisId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !devisId) return c.json({ error: 'ID invalide' }, 400)
+
+  const body = await c.req.json().catch(() => ({}))
+  const { status } = body
+
+  if (!status || !['draft', 'sent', 'accepted', 'rejected', 'expired'].includes(status)) {
+    return c.json({ error: 'Statut invalide' }, 400)
+  }
+
+  try {
+    await db.prepare("UPDATE devis SET status = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(status, devisId).run()
+
+    return c.json({ success: true, message: 'Statut mis à jour' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/devis/:id/convert ────────────────────
+// Convertir un devis en commande
+app.post('/api/mobile/admin/devis/:id/convert', mobileAdminAuth, async (c) => {
+  const devisId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !devisId) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    const devis = await db.prepare('SELECT * FROM devis WHERE id = ?').bind(devisId).first() as any
+    if (!devis) return c.json({ error: 'Devis introuvable' }, 404)
+
+    // Créer une commande à partir du devis
+    const orderResult = await db.prepare(`
+      INSERT INTO orders (client_id, client_name, client_phone, total, status, items, notes)
+      VALUES (?, ?, ?, ?, 'pending', ?, ?)
+    `).bind(
+      devis.client_id,
+      devis.client_name,
+      devis.client_phone,
+      devis.total,
+      devis.items,
+      `Converti depuis devis #${devisId}`
+    ).run()
+
+    // Mettre à jour le statut du devis
+    await db.prepare("UPDATE devis SET status = 'accepted', updated_at = datetime('now') WHERE id = ?")
+      .bind(devisId).run()
+
+    return c.json({ success: true, order_id: orderResult.meta.last_row_id })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/devis/stats ────────────────────────────
+// Statistiques des devis
+app.get('/api/mobile/admin/devis/stats', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const total = await db.prepare('SELECT COUNT(*) as count, SUM(total_ht) as total FROM devis').first() as any
+    const draft = await db.prepare('SELECT COUNT(*) as count, SUM(total_ht) as total FROM devis WHERE status = "draft"').first() as any
+    const sent = await db.prepare('SELECT COUNT(*) as count, SUM(total_ht) as total FROM devis WHERE status = "sent"').first() as any
+    const accepted = await db.prepare('SELECT COUNT(*) as count, SUM(total_ht) as total FROM devis WHERE status = "accepted"').first() as any
+
+    return c.json({
+      total: { count: total?.count || 0, amount: total?.total || 0 },
+      draft: { count: draft?.count || 0, amount: draft?.total || 0 },
+      sent: { count: sent?.count || 0, amount: sent?.total || 0 },
+      accepted: { count: accepted?.count || 0, amount: accepted?.total || 0 }
+    })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ============================================================
+// MESSAGES ADMIN - COMMUNICATION CLIENT
+// ============================================================
+
+// ── GET /api/mobile/admin/messages ───────────────────────────────
+// Liste des messages clients
+app.get('/api/mobile/admin/messages', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    // Créer la table messages si elle n'existe pas
+    await db.prepare(`CREATE TABLE IF NOT EXISTS client_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      client_id INTEGER,
+      client_name TEXT NOT NULL,
+      client_phone TEXT NOT NULL,
+      client_email TEXT,
+      subject TEXT,
+      message TEXT NOT NULL,
+      status TEXT DEFAULT 'unread',
+      admin_response TEXT,
+      responded_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (client_id) REFERENCES clients(id)
+    )`).run()
+
+    const { search, status, limit = 50, offset = 0 } = c.req.query()
+    let query = 'SELECT * FROM client_messages WHERE 1=1'
+    const params: any[] = []
+
+    if (search) {
+      query += ' AND (client_name LIKE ? OR client_phone LIKE ? OR subject LIKE ? OR message LIKE ?)'
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`)
+    }
+
+    if (status) {
+      query += ' AND status = ?'
+      params.push(status)
+    }
+
+    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+    params.push(parseInt(limit), parseInt(offset))
+
+    const rows = await db.prepare(query).bind(...params).all()
+    return c.json(rows.results || [])
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/messages/:id ────────────────────────────
+// Détails d'un message spécifique
+app.get('/api/mobile/admin/messages/:id', mobileAdminAuth, async (c) => {
+  const messageId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !messageId) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    const message = await db.prepare('SELECT * FROM client_messages WHERE id = ?').bind(messageId).first()
+    if (!message) return c.json({ error: 'Message introuvable' }, 404)
+    return c.json(message)
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/messages/:id/respond ────────────────────
+// Répondre à un message client
+app.post('/api/mobile/admin/messages/:id/respond', mobileAdminAuth, async (c) => {
+  const messageId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !messageId) return c.json({ error: 'ID invalide' }, 400)
+
+  const body = await c.req.json().catch(() => ({}))
+  const { response } = body
+
+  if (!response) return c.json({ error: 'Réponse requise' }, 400)
+
+  try {
+    await db.prepare(`
+      UPDATE client_messages 
+      SET admin_response = ?, status = 'responded', responded_at = datetime('now'), updated_at = datetime('now')
+      WHERE id = ?
+    `).bind(response, messageId).run()
+
+    return c.json({ success: true, message: 'Réponse envoyée' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── PATCH /api/mobile/admin/messages/:id/status ────────────────────
+// Mettre à jour le statut d'un message
+app.patch('/api/mobile/admin/messages/:id/status', mobileAdminAuth, async (c) => {
+  const messageId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !messageId) return c.json({ error: 'ID invalide' }, 400)
+
+  const body = await c.req.json().catch(() => ({}))
+  const { status } = body
+
+  if (!status || !['unread', 'read', 'responded', 'archived'].includes(status)) {
+    return c.json({ error: 'Statut invalide' }, 400)
+  }
+
+  try {
+    await db.prepare("UPDATE client_messages SET status = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(status, messageId).run()
+
+    return c.json({ success: true, message: 'Statut mis à jour' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── DELETE /api/mobile/admin/messages/:id ─────────────────────────
+// Supprimer un message
+app.delete('/api/mobile/admin/messages/:id', mobileAdminAuth, async (c) => {
+  const messageId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !messageId) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    await db.prepare('DELETE FROM client_messages WHERE id = ?').bind(messageId).run()
+    return c.json({ success: true, message: 'Message supprimé' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/messages/stats ────────────────────────────
+// Statistiques des messages
+app.get('/api/mobile/admin/messages/stats', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const total = await db.prepare('SELECT COUNT(*) as count FROM client_messages').first() as any
+    const unread = await db.prepare('SELECT COUNT(*) as count FROM client_messages WHERE status = "unread"').first() as any
+    const responded = await db.prepare('SELECT COUNT(*) as count FROM client_messages WHERE status = "responded"').first() as any
+    const today = await db.prepare('SELECT COUNT(*) as count FROM client_messages WHERE date(created_at) = date("now")').first() as any
+
+    return c.json({
+      total: total?.count || 0,
+      unread: unread?.count || 0,
+      responded: responded?.count || 0,
+      today: today?.count || 0
+    })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ============================================================
+// SAV ADMIN - SERVICE APRÈS-VENTE
+// ============================================================
+
+// ── GET /api/mobile/admin/sav ────────────────────────────────────
+// Liste des tickets SAV
+app.get('/api/mobile/admin/sav', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    // Créer la table sav_tickets si elle n'existe pas
+    await db.prepare(`CREATE TABLE IF NOT EXISTS sav_tickets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      client_id INTEGER,
+      client_name TEXT NOT NULL,
+      client_phone TEXT NOT NULL,
+      client_email TEXT,
+      equipment_type TEXT,
+      serial_number TEXT,
+      issue_description TEXT NOT NULL,
+      priority TEXT DEFAULT 'normal',
+      status TEXT DEFAULT 'open',
+      assigned_technician TEXT,
+      resolution TEXT,
+      resolution_date TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (client_id) REFERENCES clients(id)
+    )`).run()
+
+    const { search, status, priority, limit = 50, offset = 0 } = c.req.query()
+    let query = 'SELECT * FROM sav_tickets WHERE 1=1'
+    const params: any[] = []
+
+    if (search) {
+      query += ' AND (client_name LIKE ? OR client_phone LIKE ? OR serial_number LIKE ? OR issue_description LIKE ?)'
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`)
+    }
+
+    if (status) {
+      query += ' AND status = ?'
+      params.push(status)
+    }
+
+    if (priority) {
+      query += ' AND priority = ?'
+      params.push(priority)
+    }
+
+    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+    params.push(parseInt(limit), parseInt(offset))
+
+    const rows = await db.prepare(query).bind(...params).all()
+    return c.json(rows.results || [])
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/sav/:id ────────────────────────────────
+// Détails d'un ticket SAV spécifique
+app.get('/api/mobile/admin/sav/:id', mobileAdminAuth, async (c) => {
+  const ticketId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !ticketId) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    const ticket = await db.prepare('SELECT * FROM sav_tickets WHERE id = ?').bind(ticketId).first()
+    if (!ticket) return c.json({ error: 'Ticket introuvable' }, 404)
+    return c.json(ticket)
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/sav ────────────────────────────────────
+// Créer un nouveau ticket SAV
+app.post('/api/mobile/admin/sav', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  const body = await c.req.json().catch(() => ({}))
+  const { client_id, client_name, client_phone, client_email, equipment_type, serial_number, issue_description, priority = 'normal' } = body
+
+  if (!client_name || !client_phone || !issue_description) {
+    return c.json({ error: 'Champs requis manquants' }, 400)
+  }
+
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS sav_tickets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      client_id INTEGER,
+      client_name TEXT NOT NULL,
+      client_phone TEXT NOT NULL,
+      client_email TEXT,
+      equipment_type TEXT,
+      serial_number TEXT,
+      issue_description TEXT NOT NULL,
+      priority TEXT DEFAULT 'normal',
+      status TEXT DEFAULT 'open',
+      assigned_technician TEXT,
+      resolution TEXT,
+      resolution_date TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (client_id) REFERENCES clients(id)
+    )`).run()
+
+    const result = await db.prepare(`
+      INSERT INTO sav_tickets (client_id, client_name, client_phone, client_email, equipment_type, serial_number, issue_description, priority)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      client_id || null,
+      client_name,
+      client_phone,
+      client_email || null,
+      equipment_type || null,
+      serial_number || null,
+      issue_description,
+      priority
+    ).run()
+
+    return c.json({ success: true, id: result.meta.last_row_id })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── PATCH /api/mobile/admin/sav/:id/status ────────────────────────
+// Mettre à jour le statut d'un ticket SAV
+app.patch('/api/mobile/admin/sav/:id/status', mobileAdminAuth, async (c) => {
+  const ticketId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !ticketId) return c.json({ error: 'ID invalide' }, 400)
+
+  const body = await c.req.json().catch(() => ({}))
+  const { status } = body
+
+  if (!status || !['open', 'in_progress', 'resolved', 'closed'].includes(status)) {
+    return c.json({ error: 'Statut invalide' }, 400)
+  }
+
+  try {
+    await db.prepare("UPDATE sav_tickets SET status = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(status, ticketId).run()
+
+    return c.json({ success: true, message: 'Statut mis à jour' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── PATCH /api/mobile/admin/sav/:id/assign ────────────────────────
+// Assigner un technicien à un ticket
+app.patch('/api/mobile/admin/sav/:id/assign', mobileAdminAuth, async (c) => {
+  const ticketId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !ticketId) return c.json({ error: 'ID invalide' }, 400)
+
+  const body = await c.req.json().catch(() => ({}))
+  const { technician } = body
+
+  if (!technician) return c.json({ error: 'Technicien requis' }, 400)
+
+  try {
+    await db.prepare(`
+      UPDATE sav_tickets 
+      SET assigned_technician = ?, status = 'in_progress', updated_at = datetime('now')
+      WHERE id = ?
+    `).bind(technician, ticketId).run()
+
+    return c.json({ success: true, message: 'Technicien assigné' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── PATCH /api/mobile/admin/sav/:id/resolve ────────────────────────
+// Résoudre un ticket SAV
+app.patch('/api/mobile/admin/sav/:id/resolve', mobileAdminAuth, async (c) => {
+  const ticketId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !ticketId) return c.json({ error: 'ID invalide' }, 400)
+
+  const body = await c.req.json().catch(() => ({}))
+  const { resolution } = body
+
+  if (!resolution) return c.json({ error: 'Résolution requise' }, 400)
+
+  try {
+    await db.prepare(`
+      UPDATE sav_tickets 
+      SET resolution = ?, resolution_date = datetime('now'), status = 'resolved', updated_at = datetime('now')
+      WHERE id = ?
+    `).bind(resolution, ticketId).run()
+
+    return c.json({ success: true, message: 'Ticket résolu' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/sav/stats ────────────────────────────────
+// Statistiques des tickets SAV
+app.get('/api/mobile/admin/sav/stats', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const total = await db.prepare('SELECT COUNT(*) as count FROM sav_tickets').first() as any
+    const open = await db.prepare('SELECT COUNT(*) as count FROM sav_tickets WHERE status = "open"').first() as any
+    const inProgress = await db.prepare('SELECT COUNT(*) as count FROM sav_tickets WHERE status = "in_progress"').first() as any
+    const resolved = await db.prepare('SELECT COUNT(*) as count FROM sav_tickets WHERE status = "resolved"').first() as any
+    const urgent = await db.prepare('SELECT COUNT(*) as count FROM sav_tickets WHERE priority = "urgent"').first() as any
+
+    return c.json({
+      total: total?.count || 0,
+      open: open?.count || 0,
+      in_progress: inProgress?.count || 0,
+      resolved: resolved?.count || 0,
+      urgent: urgent?.count || 0
+    })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ============================================================
+// NOTIFICATIONS ADMIN - GESTION DES NOTIFICATIONS PUSH
+// ============================================================
+
+// ── GET /api/mobile/admin/notifications ────────────────────────────
+// Liste des notifications envoyées
+app.get('/api/mobile/admin/notifications', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    // Créer la table notifications si elle n'existe pas
+    await db.prepare(`CREATE TABLE IF NOT EXISTS notification_campaigns (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      target_segment TEXT DEFAULT 'all',
+      scheduled_for TEXT,
+      sent_at TEXT,
+      status TEXT DEFAULT 'draft',
+      recipient_count INTEGER DEFAULT 0,
+      opened_count INTEGER DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`).run()
+
+    const { status, limit = 50, offset = 0 } = c.req.query()
+    let query = 'SELECT * FROM notification_campaigns WHERE 1=1'
+    const params: any[] = []
+
+    if (status) {
+      query += ' AND status = ?'
+      params.push(status)
+    }
+
+    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+    params.push(parseInt(limit), parseInt(offset))
+
+    const rows = await db.prepare(query).bind(...params).all()
+    return c.json(rows.results || [])
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/notifications/:id ────────────────────────────
+// Détails d'une notification spécifique
+app.get('/api/mobile/admin/notifications/:id', mobileAdminAuth, async (c) => {
+  const notificationId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !notificationId) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    const notification = await db.prepare('SELECT * FROM notification_campaigns WHERE id = ?').bind(notificationId).first()
+    if (!notification) return c.json({ error: 'Notification introuvable' }, 404)
+    return c.json(notification)
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/notifications ────────────────────────────────
+// Créer une nouvelle notification
+app.post('/api/mobile/admin/notifications', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  const notifBody = await c.req.json().catch(() => ({}))
+  const { title, body: messageBody, target_segment = 'all', scheduled_for } = notifBody
+
+  if (!title || !messageBody) {
+    return c.json({ error: 'Titre et message requis' }, 400)
+  }
+
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS notification_campaigns (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      target_segment TEXT DEFAULT 'all',
+      scheduled_for TEXT,
+      sent_at TEXT,
+      status TEXT DEFAULT 'draft',
+      recipient_count INTEGER DEFAULT 0,
+      opened_count INTEGER DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`).run()
+
+    const result = await db.prepare(`
+      INSERT INTO notification_campaigns (title, body, target_segment, scheduled_for, status)
+      VALUES (?, ?, ?, ?, 'draft')
+    `).bind(title, messageBody, target_segment, scheduled_for || null).run()
+
+    return c.json({ success: true, id: result.meta.last_row_id })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/notifications/:id/send ────────────────────────
+// Envoyer une notification
+app.post('/api/mobile/admin/notifications/:id/send', mobileAdminAuth, async (c) => {
+  const notificationId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !notificationId) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    const notification = await db.prepare('SELECT * FROM notification_campaigns WHERE id = ?').bind(notificationId).first() as any
+    if (!notification) return c.json({ error: 'Notification introuvable' }, 404)
+
+    // Simuler l'envoi de notification (Firebase FCM serait implémenté ici)
+    const recipientCount = await db.prepare('SELECT COUNT(*) as count FROM push_tokens').first() as any
+    const count = recipientCount?.count || 0
+
+    await db.prepare(`
+      UPDATE notification_campaigns 
+      SET status = 'sent', sent_at = datetime('now'), recipient_count = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `).bind(count, notificationId).run()
+
+    return c.json({ success: true, message: 'Notification envoyée', recipient_count: count })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── PATCH /api/mobile/admin/notifications/:id/status ────────────────────
+// Mettre à jour le statut d'une notification
+app.patch('/api/mobile/admin/notifications/:id/status', mobileAdminAuth, async (c) => {
+  const notificationId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !notificationId) return c.json({ error: 'ID invalide' }, 400)
+
+  const body = await c.req.json().catch(() => ({}))
+  const { status } = body
+
+  if (!status || !['draft', 'scheduled', 'sent', 'cancelled'].includes(status)) {
+    return c.json({ error: 'Statut invalide' }, 400)
+  }
+
+  try {
+    await db.prepare("UPDATE notification_campaigns SET status = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(status, notificationId).run()
+
+    return c.json({ success: true, message: 'Statut mis à jour' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── DELETE /api/mobile/admin/notifications/:id ─────────────────────────
+// Supprimer une notification
+app.delete('/api/mobile/admin/notifications/:id', mobileAdminAuth, async (c) => {
+  const notificationId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !notificationId) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    await db.prepare('DELETE FROM notification_campaigns WHERE id = ?').bind(notificationId).run()
+    return c.json({ success: true, message: 'Notification supprimée' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/notifications/stats ────────────────────────────
+// Statistiques des notifications
+app.get('/api/mobile/admin/notifications/stats', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const total = await db.prepare('SELECT COUNT(*) as count FROM notification_campaigns').first() as any
+    const sent = await db.prepare('SELECT COUNT(*) as count, SUM(recipient_count) as total_recipients FROM notification_campaigns WHERE status = "sent"').first() as any
+    const draft = await db.prepare('SELECT COUNT(*) as count FROM notification_campaigns WHERE status = "draft"').first() as any
+    const opened = await db.prepare('SELECT SUM(opened_count) as total_opened FROM notification_campaigns WHERE status = "sent"').first() as any
+
+    return c.json({
+      total: total?.count || 0,
+      sent: { count: sent?.count || 0, recipients: sent?.total_recipients || 0 },
+      draft: draft?.count || 0,
+      opened: opened?.total_opened || 0
+    })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ============================================================
+// REALISATIONS ADMIN - GALERIE DE PROJETS
+// ============================================================
+
+// ── GET /api/mobile/admin/realisations ──────────────────────────────
+// Liste des réalisations/projets
+app.get('/api/mobile/admin/realisations', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    // Créer la table realisations si elle n'existe pas
+    await db.prepare(`CREATE TABLE IF NOT EXISTS realisations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      description TEXT,
+      category TEXT,
+      images TEXT NOT NULL,
+      client_name TEXT,
+      location TEXT,
+      completion_date TEXT,
+      status TEXT DEFAULT 'published',
+      featured INTEGER DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`).run()
+
+    const { category, status, limit = 50, offset = 0 } = c.req.query()
+    let query = 'SELECT * FROM realisations WHERE 1=1'
+    const params: any[] = []
+
+    if (category) {
+      query += ' AND category = ?'
+      params.push(category)
+    }
+
+    if (status) {
+      query += ' AND status = ?'
+      params.push(status)
+    }
+
+    query += ' ORDER BY featured DESC, created_at DESC LIMIT ? OFFSET ?'
+    params.push(parseInt(limit), parseInt(offset))
+
+    const rows = await db.prepare(query).bind(...params).all()
+    return c.json(rows.results || [])
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/realisations/:id ────────────────────────────────
+// Détails d'une réalisation spécifique
+app.get('/api/mobile/admin/realisations/:id', mobileAdminAuth, async (c) => {
+  const realisationId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !realisationId) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    const realisation = await db.prepare('SELECT * FROM realisations WHERE id = ?').bind(realisationId).first()
+    if (!realisation) return c.json({ error: 'Réalisation introuvable' }, 404)
+    return c.json(realisation)
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/realisations ────────────────────────────────
+// Créer une nouvelle réalisation
+app.post('/api/mobile/admin/realisations', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  const body = await c.req.json().catch(() => ({}))
+  const { title, description, category, images, client_name, location, completion_date, featured = false } = body
+
+  if (!title || !images || !Array.isArray(images) || images.length === 0) {
+    return c.json({ error: 'Titre et images requis' }, 400)
+  }
+
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS realisations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      description TEXT,
+      category TEXT,
+      images TEXT NOT NULL,
+      client_name TEXT,
+      location TEXT,
+      completion_date TEXT,
+      status TEXT DEFAULT 'published',
+      featured INTEGER DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`).run()
+
+    const result = await db.prepare(`
+      INSERT INTO realisations (title, description, category, images, client_name, location, completion_date, featured)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      title,
+      description || null,
+      category || null,
+      JSON.stringify(images),
+      client_name || null,
+      location || null,
+      completion_date || null,
+      featured ? 1 : 0
+    ).run()
+
+    return c.json({ success: true, id: result.meta.last_row_id })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── PUT /api/mobile/admin/realisations/:id ────────────────────────────────
+// Modifier une réalisation
+app.put('/api/mobile/admin/realisations/:id', mobileAdminAuth, async (c) => {
+  const realisationId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !realisationId) return c.json({ error: 'ID invalide' }, 400)
+
+  const body = await c.req.json().catch(() => ({}))
+  const { title, description, category, images, client_name, location, completion_date, featured, status } = body
+
+  try {
+    await db.prepare(`
+      UPDATE realisations 
+      SET title = COALESCE(?, title),
+          description = COALESCE(?, description),
+          category = COALESCE(?, category),
+          images = COALESCE(?, images),
+          client_name = COALESCE(?, client_name),
+          location = COALESCE(?, location),
+          completion_date = COALESCE(?, completion_date),
+          featured = COALESCE(?, featured),
+          status = COALESCE(?, status),
+          updated_at = datetime('now')
+      WHERE id = ?
+    `).bind(
+      title || null,
+      description || null,
+      category || null,
+      images ? JSON.stringify(images) : null,
+      client_name || null,
+      location || null,
+      completion_date || null,
+      featured !== undefined ? (featured ? 1 : 0) : null,
+      status || null,
+      realisationId
+    ).run()
+
+    return c.json({ success: true, message: 'Réalisation mise à jour' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── PATCH /api/mobile/admin/realisations/:id/featured ────────────────────
+// Mettre en avant une réalisation
+app.patch('/api/mobile/admin/realisations/:id/featured', mobileAdminAuth, async (c) => {
+  const realisationId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !realisationId) return c.json({ error: 'ID invalide' }, 400)
+
+  const body = await c.req.json().catch(() => ({}))
+  const { featured } = body
+
+  try {
+    await db.prepare("UPDATE realisations SET featured = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(featured ? 1 : 0, realisationId).run()
+
+    return c.json({ success: true, message: 'Mise en avant mise à jour' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── DELETE /api/mobile/admin/realisations/:id ──────────────────────────
+// Supprimer une réalisation
+app.delete('/api/mobile/admin/realisations/:id', mobileAdminAuth, async (c) => {
+  const realisationId = parseInt(c.req.param('id'), 10)
+  const db = c.env.DB
+  if (!db || !realisationId) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    await db.prepare('DELETE FROM realisations WHERE id = ?').bind(realisationId).run()
+    return c.json({ success: true, message: 'Réalisation supprimée' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ── GET /api/mobile/admin/realisations/stats ────────────────────────────
+// Statistiques des réalisations
+app.get('/api/mobile/admin/realisations/stats', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const total = await db.prepare('SELECT COUNT(*) as count FROM realisations').first() as any
+    const published = await db.prepare('SELECT COUNT(*) as count FROM realisations WHERE status = "published"').first() as any
+    const featured = await db.prepare('SELECT COUNT(*) as count FROM realisations WHERE featured = 1').first() as any
+    const draft = await db.prepare('SELECT COUNT(*) as count FROM realisations WHERE status = "draft"').first() as any
+
+    return c.json({
+      total: total?.count || 0,
+      published: published?.count || 0,
+      featured: featured?.count || 0,
+      draft: draft?.count || 0
+    })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ============================================================
 // EXPORT : Hono app (Pages-compatible)
 // For Workers with cron, use: export default { fetch: app.fetch, scheduled(...) { ... } }
 // ============================================================
 
 
 export default app
-
