@@ -1605,6 +1605,7 @@ app.post('/api/login', async (c) => {
       identifier.toLowerCase() === 'admin' ||
       identifier.toLowerCase() === 'maasgabf' ||
       identifier.toLowerCase() === 'maasgabf@gmail.com'
+    const isAdminValid = await verifyPassword(password, validAdminHash)
     if (isAdminUserMatch && isAdminValid) {
       // Migration auto vers PBKDF2 si ancien hash
       if (!validAdminHash.startsWith('pbkdf2:') && db) {
@@ -2929,17 +2930,17 @@ app.post('/api/maintenance/request', async (c) => {
         }
       }
 
+      const planNameFormatted = planType === 'residentiel' ? 'Résidentiel' :
+        planType === 'professionnel' || planType === 'professionnel_pme' ? 'Professionnel / PME' :
+        planType === 'industriel' ? 'Industriel' :
+        planType === 'sur_mesure' ? 'Sur Mesure' : (planType || 'Standard')
+
       // Si c'est un contrat, créer au statut 'en_attente' (accord préalable admin requis avant activation des visites)
       if (requestType === 'contrat' && planType && (isV2 || isLegacy)) {
         const startDate = preferredDate || new Date().toISOString().split('T')[0]
         const endDateObj = new Date(startDate)
         endDateObj.setMonth(endDateObj.getMonth() + months)
         const endDate = endDateObj.toISOString().split('T')[0]
-
-        const planNameFormatted = planType === 'residentiel' ? 'Résidentiel' :
-          planType === 'professionnel' || planType === 'professionnel_pme' ? 'Professionnel / PME' :
-          planType === 'industriel' ? 'Industriel' :
-          planType === 'sur_mesure' ? 'Sur Mesure' : planType
 
         const contractNote = `Formule: ${planNameFormatted} (v2) | ${nbClimatiseurs} clim(s) | ${frequenceVisites} | ${typeEtablissement ? typeEtablissement + ' | ' : ''}${exigences}`.trim()
 
@@ -10366,7 +10367,7 @@ app.post('/api/mobile/rdv', mobileAuth, async (c) => {
       return c.json({ success: true, id: Date.now() })
     } catch (e) { console.error('Mobile rdv error:', e) }
   }
-  const newRdv = { id: appointments.length + 1, name, phone, quartier, date, heure_debut: '08:00', heure_fin: '18:00', type, notes, latitude: null, longitude: null, adresse_precise: '', status: 'pending' as const, created_at: new Date().toISOString() }
+  const newRdv = { id: appointments.length + 1, name, phone, quartier, date, heure_debut: '08:00', heure_fin: '18:00', type: type as any, notes, latitude: null, longitude: null, adresse_precise: '', status: 'pending' as const, created_at: new Date().toISOString() }
   appointments.push(newRdv)
   return c.json({ success: true, id: newRdv.id })
 })
@@ -11049,6 +11050,191 @@ app.patch('/api/mobile/admin/brands/:id/toggle', mobileAdminAuth, async (c) => {
   } catch (e: any) {
     console.error('Toggle mobile admin brand error:', e)
     return c.json({ error: 'Erreur activation marque: ' + e.message }, 500)
+  }
+})
+
+// ============================================================
+// BRAND MEDIA LIBRARY ADMIN MOBILE — MÉDIATHÈQUE PAR MARQUE
+// Permet d'uploader des images groupées par marque, de les lister,
+// supprimer, et d'affecter à tous les climatiseurs d'une marque (ou un produit)
+// ============================================================
+
+// ── GET /api/mobile/admin/media/brand ──
+app.get('/api/mobile/admin/media/brand', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ images: [] })
+  await ensureBrandMediaTable(db)
+  const brand = c.req.query('brand') || ''
+  try {
+    const sql = brand
+      ? 'SELECT * FROM brand_media_library WHERE LOWER(brand) = LOWER(?) ORDER BY created_at DESC'
+      : 'SELECT * FROM brand_media_library ORDER BY brand ASC, created_at DESC'
+    const res = brand
+      ? await db.prepare(sql).bind(brand).all()
+      : await db.prepare(sql).all()
+    return c.json({ images: (res as any)?.results || [] })
+  } catch (e) {
+    console.error('GET mobile brand_media_library error:', e)
+    return c.json({ images: [] })
+  }
+})
+
+// ── POST /api/mobile/admin/media/brand/upload ──
+app.post('/api/mobile/admin/media/brand/upload', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Base de données D1 indisponible' }, 500)
+  await ensureBrandMediaTable(db)
+
+  let brand = ''
+  let label = ''
+  let file: any = null
+
+  try {
+    const form = await c.req.formData()
+    brand = sanitizeText(form.get('brand') as string, 120)
+    label = sanitizeText(form.get('label') as string, 200) || ''
+    file = form.get('image')
+  } catch (e) {
+    const body = await c.req.parseBody()
+    brand = sanitizeText(body['brand'] as string, 120)
+    label = sanitizeText(body['label'] as string, 200) || ''
+    file = body['image']
+  }
+
+  if (!brand) return c.json({ error: 'Marque requise pour ranger l\'image dans la médiathèque' }, 400)
+  if (!file || typeof file !== 'object' || typeof file.arrayBuffer !== 'function' || !file.size) {
+    return c.json({ error: 'Fichier image manquant ou corrompu' }, 400)
+  }
+  if (file.size > IMAGE_SIZE_LIMITS.BRAND_MEDIA) return c.json({ error: 'Image trop volumineuse (max 10 MB)' }, 400)
+  
+  const rawType = (file.type || '').toLowerCase()
+  const fileType = rawType.startsWith('image/') ? rawType : 'image/jpeg'
+
+  const imgbbKey = (c.env as any).IMGBB_API_KEY as string
+  if (!imgbbKey) return c.json({ error: 'IMGBB_API_KEY non configurée' }, 500)
+  
+  const buffer = await file.arrayBuffer()
+  const bytes = new Uint8Array(buffer)
+  if (!validateImageMagicBytes(bytes)) {
+    return c.json({ error: 'Format d\'image non valide' }, 400)
+  }
+  try {
+    const r = await uploadToImgBBWithRetry(imgbbKey, buffer, fileType)
+    const result = await db.prepare(
+      'INSERT INTO brand_media_library (brand, url, delete_url, label) VALUES (?, ?, ?, ?)'
+    ).bind(brand, r.url, r.deleteUrl, label).run()
+
+    await logAdminAudit(db, {
+      action: 'mobile_upload_brand_media',
+      detail: `Brand: ${brand}, Label: ${label}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+
+    return c.json({ success: true, image: { id: result.meta?.last_row_id, brand, url: r.url, delete_url: r.deleteUrl, label } })
+  } catch (e: any) {
+    console.error('Brand media upload error:', e)
+    return c.json({ error: 'Upload ImgBB échoué : ' + (e?.message || 'Erreur API') }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/media/brand/delete ──
+app.post('/api/mobile/admin/media/brand/delete', mobileAdminAuth, async (c) => {
+  let body: any = {}
+  try { body = await c.req.json() } catch (_) {
+    try { body = await c.req.parseBody() } catch (__) {}
+  }
+  const id = parseInt(String(body['id'] || ''))
+  if (!id) return c.json({ error: 'ID manquant' }, 400)
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'DB indisponible' }, 500)
+  await ensureBrandMediaTable(db)
+  try {
+    const row = await db.prepare('SELECT delete_url FROM brand_media_library WHERE id = ?').bind(id).first() as any
+    await db.prepare('DELETE FROM brand_media_library WHERE id = ?').bind(id).run()
+    if (row?.delete_url) { await fetch(row.delete_url).catch(() => {}) }
+    await logAdminAudit(db, {
+      action: 'mobile_delete_brand_media',
+      detail: `Media ID: ${id}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+    return c.json({ success: true })
+  } catch (e) {
+    return c.json({ error: 'Erreur DB' }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/media/brand/assign ──
+app.post('/api/mobile/admin/media/brand/assign', mobileAdminAuth, async (c) => {
+  let body: any = {}
+  try { body = await c.req.json() } catch (_) {
+    try { body = await c.req.formData() } catch (__) {
+      body = await c.req.parseBody()
+    }
+  }
+
+  const getVal = (k: string) => typeof body.get === 'function' ? body.get(k) : body[k]
+  const scope = (getVal('scope') as string) === 'brand' ? 'brand' : 'single'
+  const productId = parseInt(String(getVal('product_id') || '0'))
+  const mediaId = parseInt(String(getVal('media_id') || '0'))
+  const target = (getVal('target') as string) === 'gallery' ? 'gallery' : 'main'
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Base de données D1 indisponible' }, 500)
+  await ensureBrandMediaTable(db)
+
+  try {
+    const mediaRow = await db.prepare('SELECT * FROM brand_media_library WHERE id = ?').bind(mediaId).first() as any
+    if (!mediaRow) return c.json({ error: 'Image introuvable dans la médiathèque' }, 404)
+
+    if (scope === 'brand') {
+      const brandName = mediaRow.brand
+      if (!brandName) return c.json({ error: 'Aucune marque associée à cette image' }, 400)
+
+      if (target === 'main') {
+        const updateRes = await db.prepare('UPDATE products SET imageUrl = ? WHERE LOWER(brand) = LOWER(?)').bind(mediaRow.url, brandName).run()
+        let count = 0
+        products.forEach(p => {
+          if ((p.brand || '').toLowerCase() === brandName.toLowerCase()) {
+            (p as any).imageUrl = mediaRow.url
+            count++
+          }
+        })
+        const affected = updateRes.meta?.changes ?? count
+        return c.json({ success: true, count: affected, message: `Image principale appliquée à tous les ${affected} climatiseurs ${brandName}.` })
+      } else {
+        const matchingProds = await db.prepare('SELECT id, media_urls FROM products WHERE LOWER(brand) = LOWER(?)').bind(brandName).all() as any
+        let count = 0
+        for (const p of ((matchingProds?.results || []) as any[])) {
+          let urls: string[] = []
+          try { urls = JSON.parse(p.media_urls || '[]') } catch (_) {}
+          if (!urls.includes(mediaRow.url)) {
+            urls.push(mediaRow.url)
+            await db.prepare('UPDATE products SET media_urls = ? WHERE id = ?').bind(JSON.stringify(urls), p.id).run()
+            count++
+          }
+        }
+        return c.json({ success: true, count, message: `Image ajoutée à la galerie de ${count} climatiseurs ${brandName}.` })
+      }
+    } else {
+      if (!productId) return c.json({ error: 'Produit cible requis' }, 400)
+      if (target === 'main') {
+        await db.prepare('UPDATE products SET imageUrl = ? WHERE id = ?').bind(mediaRow.url, productId).run()
+        const found = products.find(p => p.id === productId)
+        if (found) (found as any).imageUrl = mediaRow.url
+        return c.json({ success: true, message: 'Image principale du climatiseur mise à jour.' })
+      } else {
+        const row = await db.prepare('SELECT media_urls FROM products WHERE id = ?').bind(productId).first() as any
+        let urls: string[] = []
+        try { urls = JSON.parse(row?.media_urls || '[]') } catch (_) {}
+        if (!urls.includes(mediaRow.url)) urls.push(mediaRow.url)
+        await db.prepare('UPDATE products SET media_urls = ? WHERE id = ?').bind(JSON.stringify(urls), productId).run()
+        return c.json({ success: true, message: 'Image ajoutée à la galerie du climatiseur.' })
+      }
+    }
+  } catch (e: any) {
+    console.error('Assign media error:', e)
+    return c.json({ error: 'Erreur lors de l\'affectation: ' + (e?.message || '') }, 500)
   }
 })
 
@@ -11861,6 +12047,33 @@ app.delete('/api/mobile/admin/products/:id', mobileAdminAuth, async (c) => {
   }
 })
 
+// ── PATCH /api/mobile/admin/products/:id/image ────────────────────
+// Met à jour directement l'image principale d'un produit
+app.patch('/api/mobile/admin/products/:id/image', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Base de données D1 indisponible' }, 503)
+  const id = parseInt(c.req.param('id'))
+  if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+  const body = await c.req.json().catch(() => ({}))
+  const imageUrl = (body.image_url || body.imageUrl || '').trim()
+  if (!imageUrl) return c.json({ error: 'URL d\'image requise' }, 400)
+  try {
+    const res = await db.prepare('UPDATE products SET imageUrl = ? WHERE id = ?').bind(imageUrl, id).run()
+    if (res.meta?.changes === 0) return c.json({ error: 'Produit non trouvé' }, 404)
+    const found = products.find(p => p.id === id)
+    if (found) (found as any).imageUrl = imageUrl
+    await logAdminAudit(db, {
+      action: 'update_product_image',
+      detail: `Product ID: ${id}, Image: ${imageUrl}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+    return c.json({ success: true, imageUrl })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
 // ── GET /api/mobile/admin-dashboard ───────────────────────────────
 // Dashboard pour l'application mobile admin - Robust error handling v3
 app.get('/api/mobile/admin-dashboard', mobileAdminAuth, async (c) => {
@@ -12141,7 +12354,7 @@ app.post('/api/mobile/commandes/:id/annuler', mobileAuth, async (c) => {
   ).run()
 
   await logActivity(db, {
-    clientId: user.id,
+    clientId: user.id || 0,
     clientPhone: user.phone,
     action: `Commande annulée — #${orderId}${reason ? ' — ' + reason : ''}`,
     category: 'order',
@@ -12403,7 +12616,7 @@ app.get('/api/mobile/admin/payments', mobileAdminAuth, async (c) => {
     }
 
     query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
-    params.push(parseInt(limit), parseInt(offset))
+    params.push(parseInt(String(limit), 10), parseInt(String(offset), 10))
 
     const rows = await db.prepare(query).bind(...params).all()
     return c.json(rows.results || [])
@@ -12562,7 +12775,7 @@ app.get('/api/mobile/admin/devis', mobileAdminAuth, async (c) => {
     }
 
     query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
-    params.push(parseInt(limit), parseInt(offset))
+    params.push(parseInt(String(limit), 10), parseInt(String(offset), 10))
 
     const rows = await db.prepare(query).bind(...params).all()
     return c.json(rows.results || [])
@@ -12765,7 +12978,7 @@ app.get('/api/mobile/admin/messages', mobileAdminAuth, async (c) => {
     }
 
     query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
-    params.push(parseInt(limit), parseInt(offset))
+    params.push(parseInt(String(limit), 10), parseInt(String(offset), 10))
 
     const rows = await db.prepare(query).bind(...params).all()
     return c.json(rows.results || [])
@@ -12928,7 +13141,7 @@ app.get('/api/mobile/admin/sav', mobileAdminAuth, async (c) => {
     }
 
     query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
-    params.push(parseInt(limit), parseInt(offset))
+    params.push(parseInt(String(limit), 10), parseInt(String(offset), 10))
 
     const rows = await db.prepare(query).bind(...params).all()
     return c.json(rows.results || [])
@@ -13141,7 +13354,7 @@ app.get('/api/mobile/admin/notifications', mobileAdminAuth, async (c) => {
     }
 
     query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
-    params.push(parseInt(limit), parseInt(offset))
+    params.push(parseInt(String(limit), 10), parseInt(String(offset), 10))
 
     const rows = await db.prepare(query).bind(...params).all()
     return c.json(rows.results || [])
@@ -13336,7 +13549,7 @@ app.get('/api/mobile/admin/realisations', mobileAdminAuth, async (c) => {
     }
 
     query += ' ORDER BY featured DESC, created_at DESC LIMIT ? OFFSET ?'
-    params.push(parseInt(limit), parseInt(offset))
+    params.push(parseInt(String(limit), 10), parseInt(String(offset), 10))
 
     const rows = await db.prepare(query).bind(...params).all()
     return c.json(rows.results || [])
