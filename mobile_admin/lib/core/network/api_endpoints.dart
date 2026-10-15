@@ -52,6 +52,15 @@ class ApiEndpoints {
   static const String adminBannerToggle =
       '/api/mobile/admin/banners/{id}/toggle';
 
+  // Brands endpoints (admin mobile)
+  static const String adminBrands = '/api/mobile/admin/brands';
+  static const String adminBrandDetail = '/api/mobile/admin/brands/{id}';
+  static const String adminBrandToggle =
+      '/api/mobile/admin/brands/{id}/toggle';
+
+  // Upload image (admin mobile)
+  static const String adminUploadImage = '/api/mobile/admin/upload/image';
+
   // Maintenance endpoints
   static const String maintenanceSummary =
       '/api/mobile/admin/maintenance/summary';
@@ -73,6 +82,54 @@ class ApiEndpoints {
 
   // Settings endpoints
   static const String settings = '/api/mobile/admin/settings';
+
+  // Payments endpoints
+  static const String payments = '/api/mobile/admin/payments';
+  static const String paymentDetail = '/api/mobile/admin/payments/{id}';
+  static const String paymentStatus = '/api/mobile/admin/payments/{id}/status';
+  static const String paymentsStats = '/api/mobile/admin/payments/stats';
+
+  // Devis endpoints
+  static const String devis = '/api/mobile/admin/devis';
+  static const String devisDetail = '/api/mobile/admin/devis/{id}';
+  static const String devisStatus = '/api/mobile/admin/devis/{id}/status';
+  static const String devisConvert = '/api/mobile/admin/devis/{id}/convert';
+  static const String devisStats = '/api/mobile/admin/devis/stats';
+
+  // Messages endpoints
+  static const String messages = '/api/mobile/admin/messages';
+  static const String messageDetail = '/api/mobile/admin/messages/{id}';
+  static const String messageRespond =
+      '/api/mobile/admin/messages/{id}/respond';
+  static const String messageStatus = '/api/mobile/admin/messages/{id}/status';
+  static const String messagesStats = '/api/mobile/admin/messages/stats';
+
+  // SAV endpoints
+  static const String sav = '/api/mobile/admin/sav';
+  static const String savDetail = '/api/mobile/admin/sav/{id}';
+  static const String savStatus = '/api/mobile/admin/sav/{id}/status';
+  static const String savAssign = '/api/mobile/admin/sav/{id}/assign';
+  static const String savResolve = '/api/mobile/admin/sav/{id}/resolve';
+  static const String savStats = '/api/mobile/admin/sav/stats';
+
+  // Notifications endpoints
+  static const String notifications = '/api/mobile/admin/notifications';
+  static const String notificationDetail =
+      '/api/mobile/admin/notifications/{id}';
+  static const String notificationSend =
+      '/api/mobile/admin/notifications/{id}/send';
+  static const String notificationStatus =
+      '/api/mobile/admin/notifications/{id}/status';
+  static const String notificationsStats =
+      '/api/mobile/admin/notifications/stats';
+
+  // Réalisations endpoints
+  static const String realisations = '/api/mobile/admin/realisations';
+  static const String realisationDetail = '/api/mobile/admin/realisations/{id}';
+  static const String realisationFeatured =
+      '/api/mobile/admin/realisations/{id}/featured';
+  static const String realisationsStats =
+      '/api/mobile/admin/realisations/stats';
 
   // Other endpoints
   static const String quartiers = '/api/mobile/quartiers';
