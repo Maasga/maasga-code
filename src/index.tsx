@@ -1,4 +1,4 @@
-﻿// Mobile API endpoints updated 2026-09-12
+// Mobile API endpoints updated 2026-09-12
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { serveStatic } from 'hono/cloudflare-workers'
@@ -8718,7 +8718,8 @@ app.post('/api/admin/commande/delete', adminAuth, async (c) => {
   return c.redirect('/admin/commandes?success=1')
 })
 
-app.post('/api/admin/commande/update-statut', adminAuth, async (c) => {
+// Handler shared by both /api/admin/commande/status and /api/admin/commande/update-statut
+const handleCommandeStatus = async (c: any) => {
   const body = await c.req.parseBody()
   const id = parseInt(body['id'] as string)
   const status = body['status'] as string
@@ -8829,7 +8830,12 @@ app.post('/api/admin/commande/update-statut', adminAuth, async (c) => {
   }
 
   return c.json({ success: true })
-})
+}
+
+// Register under the route name the frontend uses (/status)
+// and keep the old name (/update-statut) as a backward-compatible alias
+app.post('/api/admin/commande/status', adminAuth, handleCommandeStatus)
+app.post('/api/admin/commande/update-statut', adminAuth, handleCommandeStatus)
 
 // ============================================================
 // CRON API : Maintenance reminder notifications
@@ -10331,7 +10337,13 @@ app.post('/api/mobile/rdv', mobileAuth, async (c) => {
   const phone = (body.phone || '').trim()
   const quartier = (body.quartier || '').trim()
   const date = (body.date || '').trim()
-  const type = (body.type || 'devis').toLowerCase()
+  // Normalisation du type RDV : les labels Flutter (ex. "Devis / Dimensionnement")
+  // sont mappés vers les valeurs admin attendues ('devis', 'installation', 'entretien', 'depannage')
+  const rawType = (body.type || body.service_type || 'devis').toLowerCase()
+  const type = rawType.includes('install') ? 'installation'
+    : rawType.includes('mainten') || rawType.includes('entretien') ? 'entretien'
+    : rawType.includes('panne') || rawType.includes('r%C3%A9par') || rawType.includes('reparation') || rawType.includes('dépannage') || rawType.includes('depannage') ? 'depannage'
+    : 'devis'
   const notes = (body.notes || '').trim()
 
   if (!name || !phone || !quartier || !date) return c.json({ error: 'Champs obligatoires manquants' }, 400)
@@ -10871,6 +10883,172 @@ app.patch('/api/mobile/admin/banners/:id/toggle', mobileAdminAuth, async (c) => 
   } catch (e: any) {
     console.error('Toggle banner error:', e)
     return c.json({ error: 'Erreur activation bannière: ' + e.message }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/upload/image ──────────────────────────
+// Téléverse une image vers ImgBB depuis l'app mobile admin
+// Retourne { success, url, delete_url } sans sauvegarder en DB
+app.post('/api/mobile/admin/upload/image', mobileAdminAuth, async (c) => {
+  const clientIp = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
+  const rateLimit = checkImageUploadRateLimit(clientIp)
+  if (!rateLimit.allowed) {
+    return c.json({ error: 'Trop d\'uploads récents. Attendez 1 minute.' }, 429)
+  }
+  const imgbbKey = (c.env as any).IMGBB_API_KEY as string
+  if (!imgbbKey) return c.json({ error: 'IMGBB_API_KEY non configurée' }, 500)
+  let file: any = null
+  try {
+    const form = await c.req.formData()
+    file = form.get('image')
+  } catch (_) {
+    const body = await c.req.parseBody()
+    file = body['image']
+  }
+  if (!file || typeof file !== 'object' || typeof file.arrayBuffer !== 'function' || !file.size) {
+    return c.json({ error: 'Fichier image manquant ou corrompu' }, 400)
+  }
+  if (file.size > IMAGE_SIZE_LIMITS.BRAND_MEDIA) return c.json({ error: 'Image trop volumineuse (max 10 MB)' }, 400)
+  const rawType = (file.type || '').toLowerCase()
+  const fileType = rawType.startsWith('image/') ? rawType : 'image/jpeg'
+  const buffer = await file.arrayBuffer()
+  const bytes = new Uint8Array(buffer)
+  if (!validateImageMagicBytes(bytes)) {
+    return c.json({ error: 'Format d\'image non valide' }, 400)
+  }
+  try {
+    const r = await uploadToImgBBWithRetry(imgbbKey, buffer, fileType)
+    return c.json({ success: true, url: r.url, delete_url: r.deleteUrl })
+  } catch (e: any) {
+    console.error('Mobile admin image upload error:', e)
+    return c.json({ error: 'Upload ImgBB échoué : ' + (e?.message || 'Erreur') }, 500)
+  }
+})
+
+// ============================================================
+// BRANDS ADMIN MOBILE — CRUD MARQUES
+// ============================================================
+
+// ── GET /api/mobile/admin/brands ─────────────────────────────────
+// Retourne la liste complète des marques triées par display_order
+app.get('/api/mobile/admin/brands', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  try {
+    const brands = await db.prepare(
+      'SELECT * FROM brands ORDER BY display_order ASC, id ASC'
+    ).all()
+    return c.json(brands.results || [])
+  } catch (e: any) {
+    console.error('Get mobile admin brands error:', e)
+    return c.json({ error: 'Erreur récupération marques: ' + e.message }, 500)
+  }
+})
+
+// ── POST /api/mobile/admin/brands ────────────────────────────────
+// Crée une nouvelle marque
+app.post('/api/mobile/admin/brands', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  try {
+    const body = await c.req.json()
+    const name          = ((body.name          as string) || '').trim().toUpperCase()
+    const asset_key     = ((body.asset_key     as string) || '').trim().toLowerCase() || null
+    const logo_url      = ((body.logo_url      as string) || '').trim() || null
+    const display_order = parseInt(String(body.display_order || '0')) || 0
+    const is_active     = body.is_active ? 1 : 0
+    if (!name) return c.json({ error: 'Nom de marque obligatoire' }, 400)
+    const result = await db.prepare(
+      'INSERT INTO brands (name, asset_key, logo_url, display_order, is_active, updated_at) VALUES (?,?,?,?,?,datetime(\'now\'))'
+    ).bind(name, asset_key, logo_url, display_order, is_active).run()
+    await logAdminAudit(db, {
+      action: 'mobile_create_brand',
+      detail: `Brand: ${name}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+    return c.json({ success: true, id: result.meta?.last_row_id }, 201)
+  } catch (e: any) {
+    console.error('Create mobile admin brand error:', e)
+    const msg = e?.message?.includes('UNIQUE') ? 'Cette marque existe déjà' : e.message
+    return c.json({ error: 'Erreur création marque: ' + msg }, 500)
+  }
+})
+
+// ── PUT /api/mobile/admin/brands/:id ─────────────────────────────
+// Met à jour une marque existante
+app.put('/api/mobile/admin/brands/:id', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  try {
+    const id = parseInt(c.req.param('id'))
+    if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+    const body = await c.req.json()
+    const name          = ((body.name          as string) || '').trim().toUpperCase()
+    const asset_key     = ((body.asset_key     as string) || '').trim().toLowerCase() || null
+    const logo_url      = ((body.logo_url      as string) || '').trim() || null
+    const display_order = parseInt(String(body.display_order || '0')) || 0
+    const is_active     = body.is_active ? 1 : 0
+    if (!name) return c.json({ error: 'Nom obligatoire' }, 400)
+    const result = await db.prepare(
+      'UPDATE brands SET name=?,asset_key=?,logo_url=?,display_order=?,is_active=?,updated_at=datetime(\'now\') WHERE id=?'
+    ).bind(name, asset_key, logo_url, display_order, is_active, id).run()
+    if (result.meta?.changes === 0) return c.json({ error: 'Marque non trouvée' }, 404)
+    await logAdminAudit(db, {
+      action: 'mobile_update_brand',
+      detail: `Brand ID: ${id}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+    return c.json({ success: true })
+  } catch (e: any) {
+    console.error('Update mobile admin brand error:', e)
+    return c.json({ error: 'Erreur modification marque: ' + e.message }, 500)
+  }
+})
+
+// ── DELETE /api/mobile/admin/brands/:id ──────────────────────────
+// Supprime une marque
+app.delete('/api/mobile/admin/brands/:id', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  try {
+    const id = parseInt(c.req.param('id'))
+    if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+    await db.prepare('DELETE FROM brands WHERE id=?').bind(id).run()
+    await logAdminAudit(db, {
+      action: 'mobile_delete_brand',
+      detail: `Brand ID: ${id}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown'
+    })
+    return c.json({ success: true })
+  } catch (e: any) {
+    console.error('Delete mobile admin brand error:', e)
+    return c.json({ error: 'Erreur suppression marque: ' + e.message }, 500)
+  }
+})
+
+// ── PATCH /api/mobile/admin/brands/:id/toggle ────────────────────
+// Active ou désactive une marque
+app.patch('/api/mobile/admin/brands/:id/toggle', mobileAdminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  try {
+    const id = parseInt(c.req.param('id'))
+    if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+    const { is_active } = await c.req.json()
+    if (typeof is_active !== 'boolean') {
+      return c.json({ error: 'is_active doit être un booléen' }, 400)
+    }
+    const result = await db.prepare(
+      'UPDATE brands SET is_active = ?, updated_at = datetime(\'now\') WHERE id = ?'
+    ).bind(is_active ? 1 : 0, id).run()
+    if (result.meta?.changes === 0) return c.json({ error: 'Marque non trouvée' }, 404)
+    return c.json({ success: true })
+  } catch (e: any) {
+    console.error('Toggle mobile admin brand error:', e)
+    return c.json({ error: 'Erreur activation marque: ' + e.message }, 500)
   }
 })
 
