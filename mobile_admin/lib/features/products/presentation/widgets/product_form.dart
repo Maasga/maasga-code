@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/product.dart';
 import '../../../../shared/design_tokens/maasga_tokens.dart';
 import '../../../../core/theme/admin_theme.dart';
+import '../../../../shared/widgets/image_picker_widget.dart';
 
 class ProductForm extends ConsumerStatefulWidget {
   final Product? product;
@@ -413,34 +414,16 @@ class _ProductFormState extends ConsumerState<ProductForm> {
                   // Image
                   _buildSectionTitle('Image'),
                   const SizedBox(height: MaasgaTokens.spacingSm),
-                  ElevatedButton.icon(
-                    onPressed: _pickImage,
-                    icon: const Icon(Icons.image),
-                    label: Text(
-                      _imageUrl == null
-                          ? 'Ajouter une image'
-                          : 'Changer l\'image',
-                    ),
+                  ImagePickerWidget(
+                    currentImageUrl: _imageUrl != null &&
+                            !_imageUrl!.startsWith('data:')
+                        ? _imageUrl
+                        : null,
+                    onImageSelected: (data) {
+                      setState(() => _imageUrl = data);
+                    },
+                    label: 'Ajouter une image produit',
                   ),
-                  if (_imageUrl != null) ...[
-                    const SizedBox(height: MaasgaTokens.spacingSm),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(
-                        MaasgaTokens.radiusMd,
-                      ),
-                      child: Image.network(
-                        _imageUrl!,
-                        height: 150,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Center(
-                            child: Text('Erreur de chargement'),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
 
                   const SizedBox(height: MaasgaTokens.spacingLg),
 
@@ -490,15 +473,6 @@ class _ProductFormState extends ConsumerState<ProductForm> {
     super.didChangeDependencies();
     // Ensure AdminTheme is available
     if (!mounted) return;
-  }
-
-  void _pickImage() {
-    // TODO: Implémenter la sélection d'image depuis la galerie avec image_picker
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Sélection d\'image à implémenter avec image_picker'),
-      ),
-    );
   }
 
   void _submitForm() {

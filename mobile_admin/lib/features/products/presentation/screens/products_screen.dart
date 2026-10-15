@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../data/providers/product_provider.dart';
 import '../../data/models/product.dart';
 import '../../../../shared/design_tokens/maasga_tokens.dart';
 import '../../../../core/theme/admin_theme.dart';
+import '../../../../core/utils/error_handler.dart';
 import '../widgets/product_card.dart';
 import '../widgets/product_filter.dart';
 import '../widgets/product_form.dart';
@@ -37,6 +39,57 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
             ),
             child: Column(
               children: [
+                // Raccourci Médiathèque par marque
+                InkWell(
+                  onTap: () => context.push('/mediatheque'),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    margin: const EdgeInsets.only(bottom: MaasgaTokens.spacingSm),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.purple.shade700, Colors.deepPurple.shade600],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.purple.withValues(alpha: 0.25),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.collections, color: Colors.white, size: 20),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Médiathèque de groupe par marque',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              Text(
+                                'Uploadez & affectez des photos par marque en 1 clic',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 14),
+                      ],
+                    ),
+                  ),
+                ),
                 // Barre de recherche
                 TextField(
                   decoration: InputDecoration(
@@ -224,70 +277,86 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
   }
 
   void _showAddProductDialog() {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => ProductForm(
-        onSubmit: (data) async {
-          Navigator.pop(context);
-          try {
-            await ref.read(createProductProvider(data).future);
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Produit "${data["name"]}" ajouté avec succès'),
-                  backgroundColor: AdminTheme.success,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.92,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, controller) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 8),
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: AdminTheme.border, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(height: 8),
+              Expanded(
+                child: ProductForm(
+                  onSubmit: (data) async {
+                    Navigator.pop(ctx);
+                    try {
+                      await ref.read(createProductProvider(data).future);
+                      if (mounted) {
+                        ErrorHandler.showSuccess(context, 'Produit ajout\u00e9 avec succ\u00e8s');
+                        ref.invalidate(productsProvider);
+                      }
+                    } catch (e) {
+                      if (mounted) ErrorHandler.showError(context, e);
+                    }
+                  },
                 ),
-              );
-              ref.invalidate(productsProvider);
-            }
-          } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Erreur lors de l\'ajout: $e'),
-                  backgroundColor: AdminTheme.error,
-                ),
-              );
-            }
-          }
-        },
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   void _showEditProductDialog(Product product) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => ProductForm(
-        product: product,
-        onSubmit: (data) async {
-          Navigator.pop(context);
-          try {
-            await ref.read(
-              updateProductProvider((id: product.id, data: data)).future,
-            );
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Produit "${data["name"]}" modifié avec succès',
-                  ),
-                  backgroundColor: AdminTheme.success,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.92,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, controller) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 8),
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: AdminTheme.border, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(height: 8),
+              Expanded(
+                child: ProductForm(
+                  product: product,
+                  onSubmit: (data) async {
+                    Navigator.pop(ctx);
+                    try {
+                      await ref.read(updateProductProvider((id: product.id, data: data)).future);
+                      if (mounted) {
+                        ErrorHandler.showSuccess(context, 'Produit modifi\u00e9 avec succ\u00e8s');
+                        ref.invalidate(productsProvider);
+                      }
+                    } catch (e) {
+                      if (mounted) ErrorHandler.showError(context, e);
+                    }
+                  },
                 ),
-              );
-              ref.invalidate(productsProvider);
-            }
-          } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Erreur lors de la modification: $e'),
-                  backgroundColor: AdminTheme.error,
-                ),
-              );
-            }
-          }
-        },
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

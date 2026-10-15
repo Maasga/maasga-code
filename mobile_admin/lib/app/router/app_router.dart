@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/products/presentation/screens/products_screen.dart';
+import '../../features/products/presentation/screens/mediatheque_screen.dart';
 import '../../features/orders/presentation/screens/orders_screen.dart';
 import '../../features/appointments/presentation/screens/appointments_screen.dart';
 import '../../features/clients/presentation/screens/clients_screen.dart';
@@ -18,24 +19,40 @@ import '../../features/messages/presentation/screens/messages_screen.dart';
 import '../../features/realisations/presentation/screens/realisations_screen.dart';
 import '../../features/audit/presentation/screens/audit_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
+import '../../features/auth/presentation/screens/unauthorized_screen.dart';
 import '../shell/admin_shell.dart';
 import '../../features/auth/data/providers/firebase_provider.dart';
+import '../../features/auth/data/providers/admin_role_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateChangesProvider);
+  final adminRoleState = ref.watch(adminRoleProvider);
 
   return GoRouter(
     initialLocation: '/dashboard',
     redirect: (context, state) {
       final isAuthenticated = authState.value != null;
       final isLoggingIn = state.matchedLocation == '/login';
+      final isUnauthorized = state.matchedLocation == '/unauthorized';
 
+      // 1. Non authentifié : redirection vers /login
       if (!isAuthenticated && !isLoggingIn) {
         return '/login';
       }
 
-      if (isAuthenticated && isLoggingIn) {
-        return '/dashboard';
+      // 2. Authentifié mais rôle non-admin vérifié : redirection vers /unauthorized
+      if (isAuthenticated) {
+        final isAdmin = adminRoleState.value ?? false;
+        final isRoleResolved = !adminRoleState.isLoading;
+
+        if (isRoleResolved && !isAdmin) {
+          return isUnauthorized ? null : '/unauthorized';
+        }
+
+        // Si l'utilisateur est admin ou en cours de vérification mais sur login/unauthorized
+        if (isLoggingIn || (isUnauthorized && isAdmin)) {
+          return '/dashboard';
+        }
       }
 
       return null;
@@ -45,6 +62,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/login',
         pageBuilder: (context, state) =>
             MaterialPage(key: state.pageKey, child: const LoginScreen()),
+      ),
+      GoRoute(
+        path: '/unauthorized',
+        pageBuilder: (context, state) =>
+            MaterialPage(key: state.pageKey, child: const UnauthorizedScreen()),
       ),
       GoRoute(
         path: '/dashboard',
@@ -78,6 +100,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => MaterialPage(
           key: state.pageKey,
           child: AdminShell(title: 'Produits', child: const ProductsScreen()),
+        ),
+      ),
+      GoRoute(
+        path: '/mediatheque',
+        pageBuilder: (context, state) => MaterialPage(
+          key: state.pageKey,
+          child: AdminShell(
+            title: 'Médiathèque de groupe',
+            child: const MediathequeScreen(),
+          ),
         ),
       ),
       GoRoute(

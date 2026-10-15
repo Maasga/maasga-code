@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../features/auth/data/repositories/auth_repository.dart';
 
 class NavDrawer extends ConsumerWidget {
@@ -83,6 +84,12 @@ class NavDrawer extends ConsumerWidget {
       icon: Icons.campaign_outlined,
       label: 'Bannières',
       route: '/banners',
+      category: 'Marketing',
+    ),
+    NavItem(
+      icon: Icons.collections_outlined,
+      label: 'Médiathèque marques',
+      route: '/mediatheque',
       category: 'Marketing',
     ),
     NavItem(
@@ -210,8 +217,11 @@ class NavDrawer extends ConsumerWidget {
             'Voir le site public',
             style: TextStyle(color: Color(0xFF93C5FD)),
           ),
-          onTap: () {
-            // TODO: Ouvrir site public
+          onTap: () async {
+            final uri = Uri.parse('https://maasga-website.pages.dev');
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            }
           },
         ),
         ListTile(

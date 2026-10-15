@@ -61,6 +61,17 @@ class ApiEndpoints {
   // Upload image (admin mobile)
   static const String adminUploadImage = '/api/mobile/admin/upload/image';
 
+  // Brand media library (admin mobile)
+  static const String adminMediaBrand = '/api/mobile/admin/media/brand';
+  static const String adminMediaBrandUpload =
+      '/api/mobile/admin/media/brand/upload';
+  static const String adminMediaBrandDelete =
+      '/api/mobile/admin/media/brand/delete';
+  static const String adminMediaBrandAssign =
+      '/api/mobile/admin/media/brand/assign';
+  static const String adminProductImage =
+      '/api/mobile/admin/products/{id}/image';
+
   // Maintenance endpoints
   static const String maintenanceSummary =
       '/api/mobile/admin/maintenance/summary';

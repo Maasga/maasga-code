@@ -51,6 +51,9 @@ class ProductRepository {
         ApiEndpoints.replacePath(ApiEndpoints.adminProductDetail, {'id': id}),
         data: data,
       );
+      if (response.data is Map<String, dynamic>) {
+        return Product.fromJson(response.data as Map<String, dynamic>);
+      }
       return Product.fromJson({...data, 'id': id});
     } catch (e) {
       if (e is DioException) {
