@@ -21,9 +21,28 @@ class _BrandFormState extends ConsumerState<BrandForm> {
   final _nameController = TextEditingController();
   final _assetKeyController = TextEditingController();
   final _displayOrderController = TextEditingController(text: '0');
+  final _logoUrlController = TextEditingController();
   bool _isActive = true;
   String? _logoUrl;
   bool _isSaving = false;
+
+  final List<String> _commonBrands = [
+    'LG',
+    'SAMSUNG',
+    'DAIKIN',
+    'MIDEA',
+    'GREE',
+    'CARRIER',
+    'TCL',
+    'HISENSE',
+    'PANASONIC',
+    'AIRWELL',
+    'NASCO',
+    'GENERAL',
+    'MITSUBISHI',
+    'TOSHIBA',
+    'BOREAL',
+  ];
 
   @override
   void initState() {
@@ -34,6 +53,7 @@ class _BrandFormState extends ConsumerState<BrandForm> {
       _displayOrderController.text = widget.brand!.displayOrder.toString();
       _isActive = widget.brand!.isActive;
       _logoUrl = widget.brand!.logoUrl;
+      _logoUrlController.text = widget.brand!.logoUrl ?? '';
     }
   }
 
@@ -42,7 +62,15 @@ class _BrandFormState extends ConsumerState<BrandForm> {
     _nameController.dispose();
     _assetKeyController.dispose();
     _displayOrderController.dispose();
+    _logoUrlController.dispose();
     super.dispose();
+  }
+
+  void _selectBrandPreset(String brandName) {
+    setState(() {
+      _nameController.text = brandName;
+      _assetKeyController.text = brandName.toLowerCase();
+    });
   }
 
   Future<void> _submit() async {
@@ -50,12 +78,16 @@ class _BrandFormState extends ConsumerState<BrandForm> {
 
     setState(() => _isSaving = true);
 
+    final finalLogoUrl = _logoUrlController.text.trim().isNotEmpty
+        ? _logoUrlController.text.trim()
+        : _logoUrl?.trim();
+
     final data = {
-      'name': _nameController.text.trim(),
+      'name': _nameController.text.trim().toUpperCase(),
       'asset_key': _assetKeyController.text.trim().isEmpty
           ? null
           : _assetKeyController.text.trim().toLowerCase(),
-      'logo_url': _logoUrl?.trim().isEmpty ?? true ? null : _logoUrl,
+      'logo_url': (finalLogoUrl == null || finalLogoUrl.isEmpty) ? null : finalLogoUrl,
       'display_order': int.tryParse(_displayOrderController.text) ?? 0,
       'is_active': _isActive,
     };
@@ -83,7 +115,7 @@ class _BrandFormState extends ConsumerState<BrandForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              widget.brand != null ? 'Marque mise à jour' : 'Marque créée',
+              widget.brand != null ? 'Marque mise à jour avec succès' : 'Marque créée avec succès',
             ),
             backgroundColor: AdminTheme.success,
           ),
@@ -110,22 +142,82 @@ class _BrandFormState extends ConsumerState<BrandForm> {
       child: ListView(
         padding: const EdgeInsets.all(MaasgaTokens.spacingMd),
         children: [
-          // ── Logo ──────────────────────────────────────────────────
+          // ── Suggestions rapides de marques ───────────────────────
           const Text(
-            'Logo de la marque',
-            style: TextStyle(fontWeight: FontWeight.w600),
+            'Suggestions rapides de climatiseurs :',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+          const SizedBox(height: 6),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _commonBrands.map((b) {
+                final isSelected = _nameController.text.trim().toUpperCase() == b;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: ActionChip(
+                    label: Text(b),
+                    backgroundColor: isSelected
+                        ? AdminTheme.primary
+                        : AdminTheme.primary.withValues(alpha: 0.08),
+                    labelStyle: TextStyle(
+                      color: isSelected ? Colors.white : AdminTheme.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                    onPressed: () => _selectBrandPreset(b),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: MaasgaTokens.spacingLg),
+
+          // ── 1. Logo ──────────────────────────────────────────────
+          const Text(
+            'Logo de la marque (Mise en ligne)',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Mettez en ligne le logo officiel de la marque (PNG transparent conseillé)',
+            style: TextStyle(color: AdminTheme.textSecondary, fontSize: 12),
           ),
           const SizedBox(height: MaasgaTokens.spacingSm),
           ImageUploadField(
-            currentUrl: _logoUrl,
+            currentUrl: _logoUrlController.text.isNotEmpty ? _logoUrlController.text : _logoUrl,
             previewHeight: 140,
-            onUrlChanged: (url) => setState(() => _logoUrl = url),
+            onUrlChanged: (url) {
+              setState(() {
+                _logoUrl = url;
+                _logoUrlController.text = url;
+              });
+            },
           ),
-          const SizedBox(height: MaasgaTokens.spacingMd),
-          // ── Nom ───────────────────────────────────────────────────
+          const SizedBox(height: MaasgaTokens.spacingSm),
+          TextFormField(
+            controller: _logoUrlController,
+            decoration: AdminTheme.inputDecoration('Ou URL du logo https://...').copyWith(
+              suffixIcon: _logoUrlController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () => setState(() {
+                        _logoUrlController.clear();
+                        _logoUrl = null;
+                      }),
+                    )
+                  : null,
+            ),
+            onChanged: (val) => setState(() => _logoUrl = val),
+          ),
+          const SizedBox(height: MaasgaTokens.spacingLg),
+
+          // ── 2. Nom de la marque ──────────────────────────────────
           TextFormField(
             controller: _nameController,
-            decoration: AdminTheme.inputDecoration('Nom de la marque *'),
+            decoration: AdminTheme.inputDecoration('Nom de la marque *').copyWith(
+              hintText: 'Ex: DAIKIN, LG, SAMSUNG...',
+            ),
             textCapitalization: TextCapitalization.characters,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
@@ -133,49 +225,90 @@ class _BrandFormState extends ConsumerState<BrandForm> {
               }
               return null;
             },
+            onChanged: (val) {
+              if (_assetKeyController.text.isEmpty ||
+                  _assetKeyController.text == val.substring(0, val.length - 1).toLowerCase()) {
+                _assetKeyController.text = val.trim().toLowerCase();
+              }
+              setState(() {});
+            },
           ),
           const SizedBox(height: MaasgaTokens.spacingMd),
-          // ── Asset key ─────────────────────────────────────────────
+
+          // ── 3. Clé asset Flutter ─────────────────────────────────
           TextFormField(
             controller: _assetKeyController,
-            decoration: AdminTheme.inputDecoration(
-              'Clé asset (ex: samsung)',
+            decoration: AdminTheme.inputDecoration('Clé asset Flutter (optionnel)').copyWith(
+              hintText: 'Ex: daikin, lg, samsung (pour assets/brands/<cle>.png)',
             ),
             keyboardType: TextInputType.text,
           ),
-          const SizedBox(height: MaasgaTokens.spacingMd),
-          // ── Ordre d'affichage ─────────────────────────────────────
-          TextFormField(
-            controller: _displayOrderController,
-            decoration: AdminTheme.inputDecoration("Ordre d'affichage"),
-            keyboardType: TextInputType.number,
-          ),
-          const SizedBox(height: MaasgaTokens.spacingMd),
-          // ── Statut ────────────────────────────────────────────────
-          SwitchListTile(
-            title: const Text('Active'),
-            subtitle: const Text('Afficher la marque sur le site'),
-            value: _isActive,
-            onChanged: (value) => setState(() => _isActive = value),
-          ),
           const SizedBox(height: MaasgaTokens.spacingLg),
-          // ── Bouton ────────────────────────────────────────────────
+
+          // ── 4. Ordre et Statut ───────────────────────────────────
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _displayOrderController,
+                  decoration: AdminTheme.inputDecoration("Ordre d'affichage"),
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AdminTheme.background,
+                    borderRadius: BorderRadius.circular(MaasgaTokens.radiusMd),
+                    border: Border.all(color: AdminTheme.border),
+                  ),
+                  child: SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Visible', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    subtitle: Text(
+                      _isActive ? 'Affichée' : 'Masquée',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: _isActive ? AdminTheme.success : AdminTheme.textSecondary,
+                      ),
+                    ),
+                    value: _isActive,
+                    activeColor: AdminTheme.primary,
+                    onChanged: (value) => setState(() => _isActive = value),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: MaasgaTokens.spacingXl),
+
+          // ── 5. Bouton Enregistrer ────────────────────────────────
           ElevatedButton(
             onPressed: _isSaving ? null : _submit,
-            style: AdminTheme.primaryButtonStyle,
+            style: AdminTheme.primaryButtonStyle.copyWith(
+              padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 14)),
+            ),
             child: _isSaving
                 ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
+                    height: 22,
+                    width: 22,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                   )
-                : Text(
-                    widget.brand != null ? 'Mettre à jour' : 'Créer',
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        widget.brand != null ? 'Mettre à jour la marque' : 'Enregistrer la marque',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                    ],
                   ),
           ),
+          const SizedBox(height: 24),
         ],
       ),
     );

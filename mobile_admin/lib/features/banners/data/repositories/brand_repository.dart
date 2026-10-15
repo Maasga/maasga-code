@@ -9,12 +9,35 @@ class BrandRepository {
 
   BrandRepository(this._dio);
 
+  String _formatError(dynamic e) {
+    if (e is DioException) {
+      final dynamic data = e.response?.data;
+      if (data is Map) {
+        final err = data['error'] ?? data['message'];
+        if (err != null && err.toString().trim().isNotEmpty) {
+          return err.toString();
+        }
+      }
+      if (data is String && data.isNotEmpty && !data.contains('<html') && !data.contains('<!DOCTYPE')) {
+        return data;
+      }
+      if (e.response?.statusCode != null) {
+        return 'Erreur serveur (Code ${e.response?.statusCode})';
+      }
+      return e.message ?? 'Erreur de connexion';
+    }
+    return e.toString();
+  }
+
   // ── Upload image vers ImgBB via le backend mobile admin ───────────────
   Future<String> uploadImage(File file) async {
     try {
       AppLogger.info('Upload image via mobile admin endpoint');
       final ext = file.path.split('.').last.toLowerCase();
-      final mime = ext == 'png' ? 'image/png' : 'image/jpeg';
+      final mime = ext == 'png'
+          ? 'image/png'
+          : (ext == 'webp' ? 'image/webp' : 'image/jpeg');
+
       final formData = FormData.fromMap({
         'image': await MultipartFile.fromFile(
           file.path,
@@ -22,12 +45,15 @@ class BrandRepository {
           contentType: DioMediaType.parse(mime),
         ),
       });
+
       final response = await _dio.post(
         ApiEndpoints.adminUploadImage,
         data: formData,
         options: Options(contentType: 'multipart/form-data'),
       );
-      final url = response.data['url'] as String?;
+
+      final dynamic data = response.data;
+      final String? url = (data is Map) ? data['url'] as String? : null;
       if (url == null || url.isEmpty) {
         throw Exception("URL manquante dans la réponse de l'upload");
       }
@@ -35,7 +61,7 @@ class BrandRepository {
       return url;
     } catch (e) {
       AppLogger.error(e, null, 'BrandRepository.uploadImage');
-      throw Exception("Erreur upload image: $e");
+      throw Exception("Erreur upload image: ${_formatError(e)}");
     }
   }
 
@@ -45,13 +71,23 @@ class BrandRepository {
     try {
       AppLogger.info('Chargement des marques');
       final response = await _dio.get(ApiEndpoints.adminBrands);
-      final List<dynamic> data = response.data;
-      final brands = data.map((json) => Brand.fromJson(json)).toList();
+      final dynamic raw = response.data;
+      final List<dynamic> list = raw is List
+          ? raw
+          : (raw is Map && raw['brands'] is List
+              ? (raw['brands'] as List)
+              : (raw is Map && raw['results'] is List ? (raw['results'] as List) : []));
+
+      final brands = list
+          .whereType<Map<String, dynamic>>()
+          .map((json) => Brand.fromJson(json))
+          .toList();
+
       AppLogger.response(ApiEndpoints.adminBrands, response.statusCode, brands.length);
       return brands;
     } catch (e) {
       AppLogger.error(e, null, 'BrandRepository.getBrands');
-      throw Exception('Erreur lors du chargement des marques: $e');
+      throw Exception('Erreur lors du chargement des marques: ${_formatError(e)}');
     }
   }
 
@@ -60,10 +96,18 @@ class BrandRepository {
       AppLogger.info('Création de la marque');
       final response = await _dio.post(ApiEndpoints.adminBrands, data: data);
       AppLogger.response(ApiEndpoints.adminBrands, response.statusCode);
-      return Brand.fromJson({...data, 'id': response.data['id'].toString()});
+
+      final dynamic resData = response.data;
+      final String id = (resData is Map && resData['id'] != null)
+          ? resData['id'].toString()
+          : (resData is Map && resData['brand'] is Map && resData['brand']['id'] != null
+              ? resData['brand']['id'].toString()
+              : DateTime.now().millisecondsSinceEpoch.toString());
+
+      return Brand.fromJson({...data, 'id': id});
     } catch (e) {
       AppLogger.error(e, null, 'BrandRepository.createBrand');
-      throw Exception('Erreur lors de la création de la marque: $e');
+      throw Exception('Erreur lors de la création de la marque: ${_formatError(e)}');
     }
   }
 
@@ -80,7 +124,7 @@ class BrandRepository {
       }
     } catch (e) {
       AppLogger.error(e, null, 'BrandRepository.updateBrand');
-      throw Exception('Erreur lors de la mise à jour de la marque: $e');
+      throw Exception('Erreur lors de la mise à jour de la marque: ${_formatError(e)}');
     }
   }
 
@@ -96,7 +140,7 @@ class BrandRepository {
       }
     } catch (e) {
       AppLogger.error(e, null, 'BrandRepository.deleteBrand');
-      throw Exception('Erreur lors de la suppression de la marque: $e');
+      throw Exception('Erreur lors de la suppression de la marque: ${_formatError(e)}');
     }
   }
 
@@ -113,7 +157,7 @@ class BrandRepository {
       }
     } catch (e) {
       AppLogger.error(e, null, 'BrandRepository.toggleBrand');
-      throw Exception("Erreur lors de l'activation de la marque: $e");
+      throw Exception("Erreur lors de l'activation de la marque: ${_formatError(e)}");
     }
   }
 }
