@@ -462,3 +462,695 @@ mobileAdminRouter.get('/admin/settings', async (c) => {
     return c.json({})
   }
 })
+
+mobileAdminRouter.post('/admin/settings', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  try {
+    const body = await c.req.json().catch(() => ({}))
+    for (const [key, value] of Object.entries(body)) {
+      await db.prepare('INSERT INTO admin_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value')
+        .bind(key, String(value)).run()
+    }
+    return c.json({ success: true })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ─── BRAND MEDIA ─────────────────────────────────────────────────────────────
+
+mobileAdminRouter.get('/admin/media/brand', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    const brandId = Number(c.req.query('brand_id')) || 0
+    const bannerRepo = new BannerRepository(db)
+    const list = await bannerRepo.findBrandMedia(brandId)
+    return c.json(list)
+  } catch (e) {
+    return c.json([])
+  }
+})
+
+mobileAdminRouter.post('/admin/media/brand', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  try {
+    const body = await c.req.json().catch(() => ({}))
+    const bannerRepo = new BannerRepository(db)
+    const created = await bannerRepo.createBrandMedia(body)
+    return c.json({ success: true, media: created })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.delete('/admin/media/brand/:id', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const id = Number(c.req.param('id'))
+  try {
+    const bannerRepo = new BannerRepository(db)
+    await bannerRepo.deleteBrandMedia(id)
+    return c.json({ success: true })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ─── MAINTENANCE ─────────────────────────────────────────────────────────────
+
+mobileAdminRouter.get('/admin/maintenance/summary', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({})
+  try {
+    const contracts = await db.prepare('SELECT COUNT(*) as count FROM maintenance_contracts WHERE status = "active"').first() as any
+    const requests = await db.prepare('SELECT COUNT(*) as count FROM maintenance_requests WHERE status = "pending"').first() as any
+    const visits = await db.prepare('SELECT COUNT(*) as count FROM maintenance_visits WHERE status = "scheduled"').first() as any
+    return c.json({
+      active_contracts: contracts?.count || 0,
+      pending_requests: requests?.count || 0,
+      scheduled_visits: visits?.count || 0,
+    })
+  } catch (e) {
+    return c.json({})
+  }
+})
+
+mobileAdminRouter.get('/admin/maintenance/contracts', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    const maintRepo = new MaintenanceRepository(db)
+    const list = await maintRepo.findContracts()
+    return c.json(list)
+  } catch (e) {
+    return c.json([])
+  }
+})
+
+mobileAdminRouter.get('/admin/maintenance/requests', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    const maintRepo = new MaintenanceRepository(db)
+    const list = await maintRepo.findRequests()
+    return c.json(list)
+  } catch (e) {
+    return c.json([])
+  }
+})
+
+mobileAdminRouter.get('/admin/maintenance/visits', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    const maintRepo = new MaintenanceRepository(db)
+    const list = await maintRepo.findVisits()
+    return c.json(list)
+  } catch (e) {
+    return c.json([])
+  }
+})
+
+// ─── PAYMENTS ────────────────────────────────────────────────────────────────
+
+mobileAdminRouter.get('/admin/payments', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    const { search, status, limit = 50, offset = 0 } = c.req.query()
+    let query = 'SELECT * FROM payments WHERE 1=1'
+    const params: any[] = []
+    if (search) {
+      query += ' AND (transaction_id LIKE ? OR ligdi_status LIKE ?)'
+      params.push(`%${search}%`, `%${search}%`)
+    }
+    if (status) {
+      query += ' AND status = ?'
+      params.push(status)
+    }
+    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+    params.push(parseInt(String(limit), 10), parseInt(String(offset), 10))
+
+    const rows = await db.prepare(query).bind(...params).all()
+    return c.json(rows.results || [])
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.get('/admin/payments/:id', async (c) => {
+  const id = Number(c.req.param('id'))
+  const db = c.env.DB
+  if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
+  try {
+    const payment = await db.prepare('SELECT * FROM payments WHERE id = ?').bind(id).first()
+    if (!payment) return c.json({ error: 'Paiement introuvable' }, 404)
+    return c.json(payment)
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.post('/admin/payments', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const body = await c.req.json().catch(() => ({}))
+  const { order_id, client_id, amount, currency = 'XOF', payment_method, notes } = body
+  if (!amount) return c.json({ error: 'Montant requis' }, 400)
+
+  try {
+    const transactionId = `MANUAL-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const result = await db.prepare(`
+      INSERT INTO payments (order_id, client_id, amount, currency, status, payment_method, transaction_id, notes)
+      VALUES (?, ?, ?, ?, 'completed', ?, ?, ?)
+    `).bind(order_id || null, client_id || null, amount, currency, payment_method || 'manual', transactionId, notes || null).run()
+
+    return c.json({ success: true, id: result.meta?.last_row_id, transaction_id: transactionId })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.patch('/admin/payments/:id/status', async (c) => {
+  const id = Number(c.req.param('id'))
+  const db = c.env.DB
+  if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
+  const { status } = await c.req.json().catch(() => ({}))
+  if (!status || !['pending', 'completed', 'failed', 'refunded'].includes(status)) {
+    return c.json({ error: 'Statut invalide' }, 400)
+  }
+  try {
+    await db.prepare("UPDATE payments SET status = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(status, id).run()
+    return c.json({ success: true, message: 'Statut mis à jour' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.get('/admin/payments/stats', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({})
+  try {
+    const total = await db.prepare('SELECT COUNT(*) as count, SUM(amount) as total FROM payments WHERE status = "completed"').first() as any
+    const pending = await db.prepare('SELECT COUNT(*) as count, SUM(amount) as total FROM payments WHERE status = "pending"').first() as any
+    const failed = await db.prepare('SELECT COUNT(*) as count, SUM(amount) as total FROM payments WHERE status = "failed"').first() as any
+    const today = await db.prepare('SELECT COUNT(*) as count, SUM(amount) as total FROM payments WHERE status = "completed" AND date(created_at) = date("now")').first() as any
+    return c.json({
+      total: { count: total?.count || 0, amount: total?.total || 0 },
+      pending: { count: pending?.count || 0, amount: pending?.total || 0 },
+      failed: { count: failed?.count || 0, amount: failed?.total || 0 },
+      today: { count: today?.count || 0, amount: today?.total || 0 },
+    })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ─── DEVIS ───────────────────────────────────────────────────────────────────
+
+mobileAdminRouter.get('/admin/devis', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    const { search, status, limit = 50, offset = 0 } = c.req.query()
+    let query = 'SELECT * FROM devis WHERE 1=1'
+    const params: any[] = []
+    if (search) {
+      query += ' AND (client_name LIKE ? OR client_phone LIKE ?)'
+      params.push(`%${search}%`, `%${search}%`)
+    }
+    if (status) {
+      query += ' AND status = ?'
+      params.push(status)
+    }
+    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+    params.push(parseInt(String(limit), 10), parseInt(String(offset), 10))
+
+    const rows = await db.prepare(query).bind(...params).all()
+    return c.json(rows.results || [])
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.get('/admin/devis/:id', async (c) => {
+  const id = Number(c.req.param('id'))
+  const db = c.env.DB
+  if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
+  try {
+    const devis = await db.prepare('SELECT * FROM devis WHERE id = ?').bind(id).first()
+    if (!devis) return c.json({ error: 'Devis introuvable' }, 404)
+    return c.json(devis)
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.post('/admin/devis', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const body = await c.req.json().catch(() => ({}))
+  const { client_id, client_name, client_phone, client_email, items, subtotal, tax = 0, total, notes, valid_until } = body
+  if (!client_name || !client_phone || !items || !total) {
+    return c.json({ error: 'Champs requis manquants' }, 400)
+  }
+
+  try {
+    const result = await db.prepare(`
+      INSERT INTO devis (client_id, client_name, client_phone, client_email, items, subtotal, tax, total, notes, valid_until)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      client_id || null,
+      client_name,
+      client_phone,
+      client_email || null,
+      JSON.stringify(items),
+      subtotal,
+      tax,
+      total,
+      notes || null,
+      valid_until || null
+    ).run()
+
+    return c.json({ success: true, id: result.meta?.last_row_id })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.patch('/admin/devis/:id/status', async (c) => {
+  const id = Number(c.req.param('id'))
+  const db = c.env.DB
+  if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
+  const { status } = await c.req.json().catch(() => ({}))
+  if (!status || !['draft', 'sent', 'accepted', 'rejected', 'expired'].includes(status)) {
+    return c.json({ error: 'Statut invalide' }, 400)
+  }
+  try {
+    await db.prepare("UPDATE devis SET status = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(status, id).run()
+    return c.json({ success: true, message: 'Statut mis à jour' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.get('/admin/devis/stats', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({})
+  try {
+    const total = await db.prepare('SELECT COUNT(*) as count, SUM(total_ht) as total FROM devis').first() as any
+    const draft = await db.prepare('SELECT COUNT(*) as count, SUM(total_ht) as total FROM devis WHERE status = "draft"').first() as any
+    const sent = await db.prepare('SELECT COUNT(*) as count, SUM(total_ht) as total FROM devis WHERE status = "sent"').first() as any
+    const accepted = await db.prepare('SELECT COUNT(*) as count, SUM(total_ht) as total FROM devis WHERE status = "accepted"').first() as any
+    return c.json({
+      total: { count: total?.count || 0, amount: total?.total || 0 },
+      draft: { count: draft?.count || 0, amount: draft?.total || 0 },
+      sent: { count: sent?.count || 0, amount: sent?.total || 0 },
+      accepted: { count: accepted?.count || 0, amount: accepted?.total || 0 },
+    })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ─── MESSAGES ────────────────────────────────────────────────────────────────
+
+mobileAdminRouter.get('/admin/messages', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    const { search, status, limit = 50, offset = 0 } = c.req.query()
+    let query = 'SELECT * FROM client_messages WHERE 1=1'
+    const params: any[] = []
+    if (search) {
+      query += ' AND (client_name LIKE ? OR client_phone LIKE ? OR subject LIKE ? OR message LIKE ?)'
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`)
+    }
+    if (status) {
+      query += ' AND status = ?'
+      params.push(status)
+    }
+    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+    params.push(parseInt(String(limit), 10), parseInt(String(offset), 10))
+
+    const rows = await db.prepare(query).bind(...params).all()
+    return c.json(rows.results || [])
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.get('/admin/messages/:id', async (c) => {
+  const id = Number(c.req.param('id'))
+  const db = c.env.DB
+  if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
+  try {
+    const message = await db.prepare('SELECT * FROM client_messages WHERE id = ?').bind(id).first()
+    if (!message) return c.json({ error: 'Message introuvable' }, 404)
+    return c.json(message)
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.post('/admin/messages/:id/respond', async (c) => {
+  const id = Number(c.req.param('id'))
+  const db = c.env.DB
+  if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
+  const { response } = await c.req.json().catch(() => ({}))
+  if (!response) return c.json({ error: 'Réponse requise' }, 400)
+  try {
+    await db.prepare(`
+      UPDATE client_messages 
+      SET admin_response = ?, status = 'responded', responded_at = datetime('now'), updated_at = datetime('now')
+      WHERE id = ?
+    `).bind(response, id).run()
+    return c.json({ success: true, message: 'Réponse envoyée' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.patch('/admin/messages/:id/status', async (c) => {
+  const id = Number(c.req.param('id'))
+  const db = c.env.DB
+  if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
+  const { status } = await c.req.json().catch(() => ({}))
+  if (!status || !['unread', 'read', 'responded', 'archived'].includes(status)) {
+    return c.json({ error: 'Statut invalide' }, 400)
+  }
+  try {
+    await db.prepare("UPDATE client_messages SET status = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(status, id).run()
+    return c.json({ success: true, message: 'Statut mis à jour' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.get('/admin/messages/stats', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({})
+  try {
+    const total = await db.prepare('SELECT COUNT(*) as count FROM client_messages').first() as any
+    const unread = await db.prepare('SELECT COUNT(*) as count FROM client_messages WHERE status = "unread"').first() as any
+    const responded = await db.prepare('SELECT COUNT(*) as count FROM client_messages WHERE status = "responded"').first() as any
+    const today = await db.prepare('SELECT COUNT(*) as count FROM client_messages WHERE date(created_at) = date("now")').first() as any
+    return c.json({
+      total: total?.count || 0,
+      unread: unread?.count || 0,
+      responded: responded?.count || 0,
+      today: today?.count || 0,
+    })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ─── SAV ─────────────────────────────────────────────────────────────────────
+
+mobileAdminRouter.get('/admin/sav', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    const { search, status, priority, limit = 50, offset = 0 } = c.req.query()
+    let query = 'SELECT * FROM sav_tickets WHERE 1=1'
+    const params: any[] = []
+    if (search) {
+      query += ' AND (client_name LIKE ? OR client_phone LIKE ? OR serial_number LIKE ? OR issue_description LIKE ?)'
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`)
+    }
+    if (status) {
+      query += ' AND status = ?'
+      params.push(status)
+    }
+    if (priority) {
+      query += ' AND priority = ?'
+      params.push(priority)
+    }
+    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+    params.push(parseInt(String(limit), 10), parseInt(String(offset), 10))
+
+    const rows = await db.prepare(query).bind(...params).all()
+    return c.json(rows.results || [])
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.get('/admin/sav/:id', async (c) => {
+  const id = Number(c.req.param('id'))
+  const db = c.env.DB
+  if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
+  try {
+    const ticket = await db.prepare('SELECT * FROM sav_tickets WHERE id = ?').bind(id).first()
+    if (!ticket) return c.json({ error: 'Ticket introuvable' }, 404)
+    return c.json(ticket)
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.post('/admin/sav', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const body = await c.req.json().catch(() => ({}))
+  const { client_id, client_name, client_phone, client_email, equipment_type, serial_number, issue_description, priority = 'normal' } = body
+  if (!client_name || !client_phone || !issue_description) {
+    return c.json({ error: 'Champs requis manquants' }, 400)
+  }
+  try {
+    const result = await db.prepare(`
+      INSERT INTO sav_tickets (client_id, client_name, client_phone, client_email, equipment_type, serial_number, issue_description, priority)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(client_id || null, client_name, client_phone, client_email || null, equipment_type || null, serial_number || null, issue_description, priority).run()
+    return c.json({ success: true, id: result.meta?.last_row_id })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.patch('/admin/sav/:id/status', async (c) => {
+  const id = Number(c.req.param('id'))
+  const db = c.env.DB
+  if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
+  const { status } = await c.req.json().catch(() => ({}))
+  if (!status || !['open', 'in_progress', 'resolved', 'closed'].includes(status)) {
+    return c.json({ error: 'Statut invalide' }, 400)
+  }
+  try {
+    await db.prepare("UPDATE sav_tickets SET status = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(status, id).run()
+    return c.json({ success: true, message: 'Statut mis à jour' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.patch('/admin/sav/:id/assign', async (c) => {
+  const id = Number(c.req.param('id'))
+  const db = c.env.DB
+  if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
+  const { technician } = await c.req.json().catch(() => ({}))
+  if (!technician) return c.json({ error: 'Technicien requis' }, 400)
+  try {
+    await db.prepare(`
+      UPDATE sav_tickets 
+      SET assigned_technician = ?, status = 'in_progress', updated_at = datetime('now')
+      WHERE id = ?
+    `).bind(technician, id).run()
+    return c.json({ success: true, message: 'Technicien assigné' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.get('/admin/sav/stats', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({})
+  try {
+    const total = await db.prepare('SELECT COUNT(*) as count FROM sav_tickets').first() as any
+    const open = await db.prepare('SELECT COUNT(*) as count FROM sav_tickets WHERE status = "open"').first() as any
+    const inProgress = await db.prepare('SELECT COUNT(*) as count FROM sav_tickets WHERE status = "in_progress"').first() as any
+    const resolved = await db.prepare('SELECT COUNT(*) as count FROM sav_tickets WHERE status = "resolved"').first() as any
+    const urgent = await db.prepare('SELECT COUNT(*) as count FROM sav_tickets WHERE priority = "urgent"').first() as any
+    return c.json({
+      total: total?.count || 0,
+      open: open?.count || 0,
+      in_progress: inProgress?.count || 0,
+      resolved: resolved?.count || 0,
+      urgent: urgent?.count || 0,
+    })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ─── NOTIFICATIONS ───────────────────────────────────────────────────────────
+
+mobileAdminRouter.get('/admin/notifications', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    const { status, limit = 50, offset = 0 } = c.req.query()
+    let query = 'SELECT * FROM notification_campaigns WHERE 1=1'
+    const params: any[] = []
+    if (status) {
+      query += ' AND status = ?'
+      params.push(status)
+    }
+    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+    params.push(parseInt(String(limit), 10), parseInt(String(offset), 10))
+
+    const rows = await db.prepare(query).bind(...params).all()
+    return c.json(rows.results || [])
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.get('/admin/notifications/:id', async (c) => {
+  const id = Number(c.req.param('id'))
+  const db = c.env.DB
+  if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
+  try {
+    const notification = await db.prepare('SELECT * FROM notification_campaigns WHERE id = ?').bind(id).first()
+    if (!notification) return c.json({ error: 'Notification introuvable' }, 404)
+    return c.json(notification)
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.post('/admin/notifications', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const notifBody = await c.req.json().catch(() => ({}))
+  const { title, body: messageBody, target_segment = 'all', scheduled_for } = notifBody
+  if (!title || !messageBody) return c.json({ error: 'Titre et message requis' }, 400)
+
+  try {
+    const result = await db.prepare(`
+      INSERT INTO notification_campaigns (title, body, target_segment, scheduled_for, status)
+      VALUES (?, ?, ?, ?, 'draft')
+    `).bind(title, messageBody, target_segment, scheduled_for || null).run()
+
+    return c.json({ success: true, id: result.meta?.last_row_id })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.get('/admin/notifications/stats', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({})
+  try {
+    const total = await db.prepare('SELECT COUNT(*) as count FROM notification_campaigns').first() as any
+    const sent = await db.prepare('SELECT COUNT(*) as count, SUM(recipient_count) as total_recipients FROM notification_campaigns WHERE status = "sent"').first() as any
+    const draft = await db.prepare('SELECT COUNT(*) as count FROM notification_campaigns WHERE status = "draft"').first() as any
+    const opened = await db.prepare('SELECT SUM(opened_count) as total_opened FROM notification_campaigns WHERE status = "sent"').first() as any
+    return c.json({
+      total: total?.count || 0,
+      sent: { count: sent?.count || 0, recipients: sent?.total_recipients || 0 },
+      draft: draft?.count || 0,
+      opened: opened?.total_opened || 0,
+    })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ─── REALISATIONS ────────────────────────────────────────────────────────────
+
+mobileAdminRouter.get('/admin/realisations', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    const { category, status, limit = 50, offset = 0 } = c.req.query()
+    let query = 'SELECT * FROM realisations WHERE 1=1'
+    const params: any[] = []
+    if (category) {
+      query += ' AND category = ?'
+      params.push(category)
+    }
+    if (status) {
+      query += ' AND status = ?'
+      params.push(status)
+    }
+    query += ' ORDER BY featured DESC, created_at DESC LIMIT ? OFFSET ?'
+    params.push(parseInt(String(limit), 10), parseInt(String(offset), 10))
+
+    const rows = await db.prepare(query).bind(...params).all()
+    return c.json(rows.results || [])
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.get('/admin/realisations/:id', async (c) => {
+  const id = Number(c.req.param('id'))
+  const db = c.env.DB
+  if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
+  try {
+    const item = await db.prepare('SELECT * FROM realisations WHERE id = ?').bind(id).first()
+    if (!item) return c.json({ error: 'Réalisation introuvable' }, 404)
+    return c.json(item)
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.post('/admin/realisations', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const body = await c.req.json().catch(() => ({}))
+  const { title, description, category, images, client_name, location, completion_date, featured = false } = body
+  if (!title || !images || !Array.isArray(images) || images.length === 0) {
+    return c.json({ error: 'Titre et images requis' }, 400)
+  }
+  try {
+    const result = await db.prepare(`
+      INSERT INTO realisations (title, description, category, images, client_name, location, completion_date, featured)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(title, description || null, category || null, JSON.stringify(images), client_name || null, location || null, completion_date || null, featured ? 1 : 0).run()
+    return c.json({ success: true, id: result.meta?.last_row_id })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.delete('/admin/realisations/:id', async (c) => {
+  const id = Number(c.req.param('id'))
+  const db = c.env.DB
+  if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
+  try {
+    await db.prepare('DELETE FROM realisations WHERE id = ?').bind(id).run()
+    return c.json({ success: true, message: 'Réalisation supprimée' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.get('/admin/realisations/stats', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({})
+  try {
+    const total = await db.prepare('SELECT COUNT(*) as count FROM realisations').first() as any
+    const published = await db.prepare('SELECT COUNT(*) as count FROM realisations WHERE status = "published"').first() as any
+    const featured = await db.prepare('SELECT COUNT(*) as count FROM realisations WHERE featured = 1').first() as any
+    const draft = await db.prepare('SELECT COUNT(*) as count FROM realisations WHERE status = "draft"').first() as any
+    return c.json({
+      total: total?.count || 0,
+      published: published?.count || 0,
+      featured: featured?.count || 0,
+      draft: draft?.count || 0,
+    })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
