@@ -480,6 +480,171 @@ adminRouter.post('/api/admin/order/create-devis', adminAuth, async (c) => {
 // ADMIN ROUTES
 // ============================================================
 
+async function ensureContactMessages(db: any) {
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS contact_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT,
+      phone TEXT,
+      message TEXT NOT NULL,
+      is_read INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`).run()
+  } catch(_) {}
+}
+
+async function ensureRealisationsTable(db: any) {
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS realisations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      description TEXT,
+      category TEXT DEFAULT 'climatisation',
+      client_name TEXT,
+      quartier TEXT,
+      image_url TEXT,
+      date_realisation TEXT,
+      is_featured INTEGER DEFAULT 0,
+      is_visible INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`).run()
+  } catch(_) {}
+}
+
+async function ensureStockMovements(db: any) {
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS stock_movements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      product_name TEXT DEFAULT '',
+      movement_type TEXT NOT NULL DEFAULT 'ajustement',
+      quantity INTEGER NOT NULL,
+      stock_before INTEGER NOT NULL,
+      stock_after INTEGER NOT NULL,
+      reason TEXT DEFAULT '',
+      reference TEXT DEFAULT '',
+      created_by TEXT DEFAULT 'admin',
+      created_at TEXT DEFAULT (datetime('now'))
+    )`).run()
+    await db.prepare(`CREATE INDEX IF NOT EXISTS idx_stock_moves_product ON stock_movements(product_id)`).run()
+  } catch(_) {}
+}
+
+async function ensureSiteSettings(db: any) {
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS site_settings (
+      key TEXT PRIMARY KEY NOT NULL,
+      value TEXT NOT NULL DEFAULT '',
+      updated_at TEXT DEFAULT (datetime('now'))
+    )`).run()
+    // Insert defaults if empty
+    const count = await db.prepare('SELECT COUNT(*) as cnt FROM site_settings').first()
+    if (!(count as any)?.cnt) {
+      const defaults: [string, string][] = [
+        ['phone', '+226 55 99 64 18'], ['email', 'maasgabf@gmail.com'],
+        ['address', 'Ouagadougou, Burkina Faso'], ['hours', 'Lundi–Dimanche · 8h00–18h00'],
+        ['company_name', 'MAASGA'], ['whatsapp', '+226 55 99 64 18'],
+        ['facebook', ''], ['instagram', ''], ['slogan', 'Spécialiste climatisation & froid Ã  Ouagadougou']
+      ]
+      for (const [k, v] of defaults) {
+        await db.prepare('INSERT OR IGNORE INTO site_settings (key, value) VALUES (?, ?)').bind(k, v).run()
+      }
+    }
+  } catch(_) {}
+}
+
+async function ensureResetCodesTable(db: any) {
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS password_reset_codes (token TEXT PRIMARY KEY, code TEXT NOT NULL, phone TEXT NOT NULL DEFAULT '', email TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0)`).run()
+    // Add email column if missing (migration-safe)
+    try { await db.prepare(`ALTER TABLE password_reset_codes ADD COLUMN email TEXT NOT NULL DEFAULT ''`).run() } catch (_) { /* already exists */ }
+  } catch(_) {}
+}
+
+async function getSiteSettings(db: any): Promise<Record<string, string>> {
+  try {
+    await ensureSiteSettings(db)
+    const rows = (await db.prepare('SELECT key, value FROM site_settings').all())?.results || []
+    const settings: Record<string, string> = {}
+    ;(rows as any[]).forEach((r: any) => { settings[r.key] = r.value })
+    return settings
+  } catch(_) { return {} }
+}
+
+async function scheduleVisitsForContract(
+  db: any,
+  contractId: number,
+  clientName: string,
+  clientPhone: string,
+  clientId: number,
+  planType: string,
+  visitsCount: number,
+  startDateStr: string,
+  months: number = 12
+) {
+  if (!db || !contractId) return
+  const count = Math.max(1, visitsCount || 2)
+  const intervalMonths = Math.max(1, Math.floor(months / count))
+  let firstDate = ''
+
+  for (let i = 1; i <= count; i++) {
+    const vd = new Date(startDateStr || new Date().toISOString().split('T')[0])
+    vd.setMonth(vd.getMonth() + (intervalMonths * i))
+    const dateStr = vd.toISOString().split('T')[0]
+    if (i === 1) firstDate = dateStr
+
+    try {
+      const existing = await db.prepare("SELECT id FROM maintenance_visits WHERE contract_id = ? AND visit_date = ?").bind(contractId, dateStr).first()
+      if (!existing) {
+        await db.prepare(
+          `INSERT INTO maintenance_visits (contract_id, client_id, client_name, client_phone, visit_type, visit_date, status, description)
+           VALUES (?, ?, ?, ?, 'preventive', ?, 'planifiee', ?)`
+        ).bind(
+          contractId,
+          clientId || 0,
+          sanitizeText(clientName, 120),
+          sanitizeText(clientPhone, 20),
+          dateStr,
+          `Visite préventive #${i}/${count} — Formule ${planType.toUpperCase()}`
+        ).run()
+      }
+    } catch(e) {
+      console.error('scheduleVisitsForContract error:', e)
+    }
+  }
+
+  if (firstDate) {
+    try {
+      await db.prepare("UPDATE maintenance_contracts SET next_visit_date = ? WHERE id = ?").bind(firstDate, contractId).run()
+    } catch(_) {}
+  }
+}
+
+async function logStockMovement(db: any, productId: number, productName: string, type: string, quantity: number, stockBefore: number, stockAfter: number, reason: string = '', reference: string = '') {
+  try {
+    await ensureStockMovements(db)
+    await db.prepare('INSERT INTO stock_movements (product_id, product_name, movement_type, quantity, stock_before, stock_after, reason, reference) VALUES (?,?,?,?,?,?,?,?)').bind(productId, productName, type, quantity, stockBefore, stockAfter, reason, reference).run()
+  } catch(_) {}
+}
+
+async function verifyAdminPassword(env: any, password: string): Promise<boolean> {
+  if (!password || typeof password !== 'string') return false
+  let hash = ''
+  const db = env?.DB
+  if (db) {
+    try {
+      const row = await db.prepare('SELECT value FROM admin_settings WHERE key = ?').bind('admin_password_hash').first() as any
+      if (row?.value) hash = row.value
+    } catch(_) { /* table absente */ }
+  }
+  if (!hash && env?.ADMIN_INITIAL_PASSWORD) hash = await hashPassword(env.ADMIN_INITIAL_PASSWORD)
+  if (!hash) return false
+  return await verifyPassword(password, hash)
+}
+
+
 // Crée les tables essentielles si elles n'existent pas (garde-fou DB vide en dev local)
 async function ensureCoreTables(db: any): Promise<void> {
   try {
