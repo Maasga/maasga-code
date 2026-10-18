@@ -18,7 +18,10 @@ class BrandMediaRepository {
           return err.toString();
         }
       }
-      if (data is String && data.isNotEmpty && !data.contains('<html') && !data.contains('<!DOCTYPE')) {
+      if (data is String &&
+          data.isNotEmpty &&
+          !data.contains('<html') &&
+          !data.contains('<!DOCTYPE')) {
         return data;
       }
       if (statusCode == 404) {
@@ -39,7 +42,9 @@ class BrandMediaRepository {
     try {
       final response = await _dio.get(
         ApiEndpoints.adminMediaBrand,
-        queryParameters: (brand != null && brand.isNotEmpty) ? {'brand': brand} : null,
+        queryParameters: (brand != null && brand.isNotEmpty)
+            ? {'brand': brand}
+            : null,
       );
       final dynamic raw = response.data;
       final List<dynamic> list = (raw is Map && raw['images'] is List)
@@ -50,7 +55,9 @@ class BrandMediaRepository {
           .map((item) => BrandMediaImage.fromJson(item))
           .toList();
     } catch (e) {
-      throw Exception('Erreur chargement médiathèque: ${_formatError(e, 'Impossible de charger la médiathèque')}');
+      throw Exception(
+        'Erreur chargement médiathèque: ${_formatError(e, 'Impossible de charger la médiathèque')}',
+      );
     }
   }
 
@@ -75,21 +82,22 @@ class BrandMediaRepository {
       final dynamic data = response.data;
       if (data is Map) {
         if (data['image'] is Map) {
-          return BrandMediaImage.fromJson(Map<String, dynamic>.from(data['image'] as Map));
+          return BrandMediaImage.fromJson(
+            Map<String, dynamic>.from(data['image'] as Map),
+          );
         }
         final rawId = data['id'];
-        final int id = rawId is num ? rawId.toInt() : (int.tryParse(rawId?.toString() ?? '') ?? 0);
+        final int id = rawId is num
+            ? rawId.toInt()
+            : (int.tryParse(rawId?.toString() ?? '') ?? 0);
         final String url = data['url']?.toString() ?? '';
-        return BrandMediaImage(
-          id: id,
-          brand: brand,
-          url: url,
-          label: label,
-        );
+        return BrandMediaImage(id: id, brand: brand, url: url, label: label);
       }
       throw Exception('Format de réponse inattendu lors de l\'upload');
     } catch (e) {
-      throw Exception('Erreur upload médiathèque: ${_formatError(e, 'Échec de l\'envoi de l\'image')}');
+      throw Exception(
+        'Erreur upload médiathèque: ${_formatError(e, 'Échec de l\'envoi de l\'image')}',
+      );
     }
   }
 
@@ -101,11 +109,15 @@ class BrandMediaRepository {
       );
       if (response.statusCode != 200) {
         final dynamic data = response.data;
-        final errorMsg = (data is Map) ? (data['error']?.toString() ?? 'Échec de suppression') : 'Échec de suppression';
+        final errorMsg = (data is Map)
+            ? (data['error']?.toString() ?? 'Échec de suppression')
+            : 'Échec de suppression';
         throw Exception(errorMsg);
       }
     } catch (e) {
-      throw Exception('Erreur suppression image: ${_formatError(e, 'Impossible de supprimer l\'image')}');
+      throw Exception(
+        'Erreur suppression image: ${_formatError(e, 'Impossible de supprimer l\'image')}',
+      );
     }
   }
 
@@ -121,7 +133,7 @@ class BrandMediaRepository {
         data: {
           'media_id': mediaId,
           'scope': scope,
-          if (productId != null) 'product_id': productId,
+          'product_id': ?productId,
           'target': target,
         },
       );
@@ -131,7 +143,9 @@ class BrandMediaRepository {
       }
       return 'Image affectée avec succès';
     } catch (e) {
-      throw Exception('Erreur affectation: ${_formatError(e, 'Impossible d\'affecter l\'image')}');
+      throw Exception(
+        'Erreur affectation: ${_formatError(e, 'Impossible d\'affecter l\'image')}',
+      );
     }
   }
 }

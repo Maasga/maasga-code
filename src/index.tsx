@@ -519,6 +519,33 @@ app.use('/static/*', async (c, next) => {
 })
 app.use('/static/*', serveStatic({ root: './' } as any))
 
+// ── GET /media/:key{.*} ─────────────────────────────────────
+// Diffusion publique des images Cloudflare R2 avec mise en cache CDN
+app.get('/media/:key{.*}', async (c) => {
+  const key = c.req.param('key')
+  if (!key || key.includes('..')) {
+    return c.text('Image non trouvée', 404)
+  }
+  const r2 = c.env.IMAGES_BUCKET
+  if (!r2) {
+    return c.text('Service R2 non configuré', 503)
+  }
+  try {
+    const object = await r2.get(key)
+    if (!object) {
+      return c.text('Image non trouvée', 404)
+    }
+    const headers = new Headers()
+    object.writeHttpMetadata(headers)
+    headers.set('etag', object.httpEtag)
+    headers.set('Cache-Control', 'public, max-age=31536000, immutable')
+    return new Response(object.body, { headers })
+  } catch (err: any) {
+    console.error('Erreur lecture R2:', err)
+    return c.text('Erreur lors du chargement de l\'image', 500)
+  }
+})
+
 // Favicon inline
 app.get('/favicon.ico', (c) => c.body(null, 204))
 app.get('/favicon.svg', (c) => {
@@ -7011,16 +7038,14 @@ app.post('/api/admin/produit/add', adminAuth, async (c) => {
     if (!validateImageMagicBytes(bytes)) {
       return c.redirect('/admin/produits?error=' + encodeURIComponent('Le fichier ne semble pas être une image valide.'))
     }
-    // Upload vers ImgBB with retry
-    const imgbbKey2 = (c.env as any).IMGBB_API_KEY as string
+    // Upload vers Cloudflare R2 avec fallback ImgBB
     try {
-      if (!imgbbKey2) throw new Error('IMGBB_API_KEY manquante')
-      const r2 = await uploadToImgBBWithRetry(imgbbKey2, buffer, file.type)
+      const r2 = await uploadToStorage(c, buffer, file.type, 'produits')
       imageUrl = r2.url
       imgbbDeleteUrlCreate = r2.deleteUrl
-    } catch(imgbbErr2) {
-      console.error('ImgBB upload error (create):', imgbbErr2)
-      return c.redirect('/admin/produits?error=' + encodeURIComponent('Upload image echoue.'))
+    } catch(uploadErr2) {
+      console.error('Upload error (create):', uploadErr2)
+      return c.redirect('/admin/produits?error=' + encodeURIComponent('Upload image échoué.'))
     }
   }
 
@@ -7421,26 +7446,20 @@ app.post('/api/admin/produit/update', adminAuth, async (c) => {
   try {
     const mediaJson = body['media_json'] as string
     if (mediaJson) {
-      const parsed: any[] = JSON.parse(mediaJson)
-      const imgbbKey = (c.env as any).IMGBB_API_KEY as string
       for (const item of parsed) {
         if (typeof item.url === 'string' && item.url.startsWith('data:image/')) {
-          if (imgbbKey) {
-            try {
-              const base64Data = item.url.split(',')[1]
-              const mimeMatch = item.url.match(/data:(image\/[^;]+)/)
-              const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg'
-              const binaryStr = atob(base64Data)
-              const bytes = new Uint8Array(binaryStr.length)
-              for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i)
-              const result = await uploadToImgBB(imgbbKey, bytes.buffer, mime)
-              media.push({ type: 'image', url: result.url, deleteUrl: result.deleteUrl, caption: item.caption || '' })
-            } catch (uploadErr) {
-              console.error('ImgBB upload for media item failed:', uploadErr)
-              // En cas d'échec on ignore l'item — on ne stocke pas de blob en D1
-            }
+          try {
+            const base64Data = item.url.split(',')[1]
+            const mimeMatch = item.url.match(/data:(image\/[^;]+)/)
+            const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg'
+            const binaryStr = atob(base64Data)
+            const bytes = new Uint8Array(binaryStr.length)
+            for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i)
+            const result = await uploadToStorage(c, bytes.buffer, mime, 'produits/galerie')
+            media.push({ type: 'image', url: result.url, deleteUrl: result.deleteUrl, caption: item.caption || '' })
+          } catch (uploadErr) {
+            console.error('Upload for media item failed:', uploadErr)
           }
-          // Sans clé ImgBB, les data: URLs sont ignorés silencieusement
         } else {
           // URL HTTPS déjà hébergée (ImgBB ou autre) : conserver l'item intact
           media.push(item)
@@ -7602,6 +7621,51 @@ async function uploadToImgBBWithRetry(apiKey: string, fileBuffer: ArrayBuffer, m
   throw new Error('Upload failed after retries')
 }
 
+// ============================================================
+// STORAGE UPLOAD HELPER (CLOUDFLARE R2 + FALLBACK IMGBB)
+// ============================================================
+async function uploadToStorage(
+  c: { env: any; req: { url: string; header: (name: string) => string | undefined } },
+  fileBuffer: ArrayBuffer,
+  mimeType: string,
+  folder: string = 'uploads'
+): Promise<{ url: string; deleteUrl: string }> {
+  const r2 = c.env.IMAGES_BUCKET
+  if (r2) {
+    const ext = mimeType === 'image/png' ? 'png'
+      : mimeType === 'image/webp' ? 'webp'
+      : mimeType === 'image/gif' ? 'gif'
+      : mimeType === 'image/svg+xml' ? 'svg'
+      : 'jpg'
+    const randomSuffix = Math.random().toString(36).substring(2, 10)
+    const key = `${folder}/${Date.now()}-${randomSuffix}.${ext}`
+    
+    await r2.put(key, fileBuffer, {
+      httpMetadata: {
+        contentType: mimeType,
+        cacheControl: 'public, max-age=31536000, immutable',
+      },
+    })
+    
+    let baseUrl = SITE_URL
+    try {
+      const parsedUrl = new URL(c.req.url)
+      baseUrl = parsedUrl.origin
+    } catch (_) {}
+    
+    const url = `${baseUrl}/media/${key}`
+    return { url, deleteUrl: '' }
+  }
+
+  // Fallback ImgBB si R2 n'est pas encore lié/disponible
+  const imgbbKey = c.env.IMGBB_API_KEY
+  if (imgbbKey) {
+    return await uploadToImgBBWithRetry(imgbbKey, fileBuffer, mimeType)
+  }
+  
+  throw new Error('Aucun service de stockage disponible (Cloudflare R2 ou IMGBB non configuré)')
+}
+
 // API Admin - Uploader/changer l'image d'un produit
 app.post('/api/admin/produit/image', adminAuth, async (c) => {
   // Rate limiting for image uploads
@@ -7628,18 +7692,16 @@ app.post('/api/admin/produit/image', adminAuth, async (c) => {
     if (!validateImageMagicBytes(bytes)) {
       return c.redirect('/admin/produits?error=' + encodeURIComponent('Le fichier ne semble pas être une image valide.'))
     }
-    // Upload vers ImgBB (remplace le stockage base64 en D1) with retry
-    const imgbbKey = (c.env as any).IMGBB_API_KEY as string
+    // Upload vers Cloudflare R2 avec fallback ImgBB
     let uploadedUrl = ''
     let imgbbDelUrl = ''
     try {
-      if (!imgbbKey) throw new Error('IMGBB_API_KEY manquante')
-      const r1 = await uploadToImgBBWithRetry(imgbbKey, buffer, file.type)
+      const r1 = await uploadToStorage(c, buffer, file.type, 'produits')
       uploadedUrl = r1.url
       imgbbDelUrl = r1.deleteUrl
-    } catch(imgbbErr) {
-      console.error('ImgBB upload error:', imgbbErr)
-      return c.redirect('/admin/produits?error=' + encodeURIComponent('Upload image echoue. Verifiez la cle ImgBB.'))
+    } catch(uploadErr) {
+      console.error('Image upload error:', uploadErr)
+      return c.redirect('/admin/produits?error=' + encodeURIComponent('Upload image échoué.'))
     }
     const db = c.env.DB
     if (db) {
@@ -7686,13 +7748,11 @@ app.post('/api/admin/produit/gallery/add', adminAuth, async (c) => {
   if (!validateImageMagicBytes(bytes)) {
     return c.json({ error: 'Format d\'image non valide' }, 400)
   }
-  const imgbbKey = (c.env as any).IMGBB_API_KEY as string
-  if (!imgbbKey) return c.json({ error: 'IMGBB_API_KEY manquante' }, 500)
   let imgUrl = '', imgDelUrl = ''
   try {
-    const r = await uploadToImgBBWithRetry(imgbbKey, buffer, file.type)
+    const r = await uploadToStorage(c, buffer, file.type, 'produits/galerie')
     imgUrl = r.url; imgDelUrl = r.deleteUrl
-  } catch(e) { return c.json({ error: 'Upload ImgBB echoue' }, 500) }
+  } catch(e) { return c.json({ error: 'Upload image échoué' }, 500) }
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB indisponible' }, 500)
   try {
@@ -7823,9 +7883,6 @@ app.post('/api/admin/media/brand/upload', adminAuth, async (c) => {
   const rawType = (file.type || '').toLowerCase()
   const fileType = rawType.startsWith('image/') ? rawType : 'image/jpeg'
 
-  const imgbbKey = (c.env as any).IMGBB_API_KEY as string
-  if (!imgbbKey) return c.json({ error: 'IMGBB_API_KEY non configurée sur le serveur Cloudflare' }, 500)
-  
   const buffer = await file.arrayBuffer()
   const bytes = new Uint8Array(buffer)
   // Validate magic bytes before upload
@@ -7833,7 +7890,9 @@ app.post('/api/admin/media/brand/upload', adminAuth, async (c) => {
     return c.json({ error: 'Format d\'image non valide' }, 400)
   }
   try {
-    const r = await uploadToImgBBWithRetry(imgbbKey, buffer, fileType)
+    const safeBrand = encodeURIComponent(brand.toLowerCase().replace(/[^a-z0-9_-]/g, '')) || 'generale'
+    const folder = `marques/${safeBrand}`
+    const r = await uploadToStorage(c, buffer, fileType, folder)
     await db.prepare(
       'INSERT INTO brand_media_library (brand, url, delete_url, label) VALUES (?, ?, ?, ?)'
     ).bind(brand, r.url, r.deleteUrl, label).run()
@@ -7841,7 +7900,7 @@ app.post('/api/admin/media/brand/upload', adminAuth, async (c) => {
     return c.json({ success: true, image: { brand, url: r.url, delete_url: r.deleteUrl, label } })
   } catch (e: any) {
     console.error('Brand media upload error:', e)
-    return c.json({ error: 'Upload ImgBB échoué : ' + (e?.message || 'Erreur API') }, 500)
+    return c.json({ error: 'Upload image échoué : ' + (e?.message || 'Erreur API') }, 500)
   }
 })
 
@@ -10896,8 +10955,6 @@ app.post('/api/mobile/admin/upload/image', mobileAdminAuth, async (c) => {
   if (!rateLimit.allowed) {
     return c.json({ error: 'Trop d\'uploads récents. Attendez 1 minute.' }, 429)
   }
-  const imgbbKey = (c.env as any).IMGBB_API_KEY as string
-  if (!imgbbKey) return c.json({ error: 'IMGBB_API_KEY non configurée' }, 500)
   let file: any = null
   try {
     const form = await c.req.formData()
@@ -10918,11 +10975,11 @@ app.post('/api/mobile/admin/upload/image', mobileAdminAuth, async (c) => {
     return c.json({ error: 'Format d\'image non valide' }, 400)
   }
   try {
-    const r = await uploadToImgBBWithRetry(imgbbKey, buffer, fileType)
+    const r = await uploadToStorage(c, buffer, fileType, 'admin')
     return c.json({ success: true, url: r.url, delete_url: r.deleteUrl })
   } catch (e: any) {
     console.error('Mobile admin image upload error:', e)
-    return c.json({ error: 'Upload ImgBB échoué : ' + (e?.message || 'Erreur') }, 500)
+    return c.json({ error: 'Upload image échoué : ' + (e?.message || 'Erreur') }, 500)
   }
 })
 
@@ -11110,16 +11167,15 @@ app.post('/api/mobile/admin/media/brand/upload', mobileAdminAuth, async (c) => {
   const rawType = (file.type || '').toLowerCase()
   const fileType = rawType.startsWith('image/') ? rawType : 'image/jpeg'
 
-  const imgbbKey = (c.env as any).IMGBB_API_KEY as string
-  if (!imgbbKey) return c.json({ error: 'IMGBB_API_KEY non configurée' }, 500)
-  
   const buffer = await file.arrayBuffer()
   const bytes = new Uint8Array(buffer)
   if (!validateImageMagicBytes(bytes)) {
     return c.json({ error: 'Format d\'image non valide' }, 400)
   }
   try {
-    const r = await uploadToImgBBWithRetry(imgbbKey, buffer, fileType)
+    const safeBrand = encodeURIComponent(brand.toLowerCase().replace(/[^a-z0-9_-]/g, '')) || 'generale'
+    const folder = `marques/${safeBrand}`
+    const r = await uploadToStorage(c, buffer, fileType, folder)
     const result = await db.prepare(
       'INSERT INTO brand_media_library (brand, url, delete_url, label) VALUES (?, ?, ?, ?)'
     ).bind(brand, r.url, r.deleteUrl, label).run()
@@ -11134,7 +11190,7 @@ app.post('/api/mobile/admin/media/brand/upload', mobileAdminAuth, async (c) => {
     return c.json({ success: true, image: { id: result.meta?.last_row_id, brand, url: r.url, delete_url: r.deleteUrl, label } })
   } catch (e: any) {
     console.error('Brand media upload error:', e)
-    return c.json({ error: 'Upload ImgBB échoué : ' + (e?.message || 'Erreur API') }, 500)
+    return c.json({ error: 'Upload image échoué : ' + (e?.message || 'Erreur API') }, 500)
   }
 })
 
@@ -12288,8 +12344,6 @@ app.post('/api/admin/upload/image', adminAuth, async (c) => {
   if (!rateLimit.allowed) {
     return c.json({ error: 'Trop d\'uploads récents. Attendez 1 minute.' }, 429)
   }
-  const imgbbKey = (c.env as any).IMGBB_API_KEY as string
-  if (!imgbbKey) return c.json({ error: 'IMGBB_API_KEY non configurée' }, 500)
   let file: any = null
   try {
     const form = await c.req.formData()
@@ -12311,11 +12365,11 @@ app.post('/api/admin/upload/image', adminAuth, async (c) => {
     return c.json({ error: 'Format d\'image non valide' }, 400)
   }
   try {
-    const r = await uploadToImgBBWithRetry(imgbbKey, buffer, fileType)
+    const r = await uploadToStorage(c, buffer, fileType, 'banners')
     return c.json({ success: true, url: r.url, delete_url: r.deleteUrl })
   } catch (e: any) {
     console.error('Admin image upload error:', e)
-    return c.json({ error: 'Upload ImgBB échoué : ' + (e?.message || 'Erreur') }, 500)
+    return c.json({ error: 'Upload image échoué : ' + (e?.message || 'Erreur') }, 500)
   }
 })
 

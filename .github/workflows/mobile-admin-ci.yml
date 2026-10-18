@@ -1,0 +1,42 @@
+name: Mobile Admin CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile_admin/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'mobile_admin/**'
+
+concurrency:
+  group: mobile-admin-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-test:
+    name: Analyze & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile_admin
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed lib/
+
+      - name: Analyze
+        run: flutter analyze lib/
+
+      - name: Run unit tests
+        run: flutter test

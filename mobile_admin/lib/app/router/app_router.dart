@@ -14,7 +14,7 @@ import '../../features/maintenance/presentation/screens/maintenance_screen.dart'
 import '../../features/sav/presentation/screens/sav_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/devis/presentation/screens/devis_screen.dart';
-import '../../features/paiements/presentation/screens/paiements_screen.dart';
+import '../../features/payments/presentation/screens/payments_screen.dart';
 import '../../features/messages/presentation/screens/messages_screen.dart';
 import '../../features/realisations/presentation/screens/realisations_screen.dart';
 import '../../features/audit/presentation/screens/audit_screen.dart';
@@ -133,7 +133,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/paiements',
         pageBuilder: (context, state) => MaterialPage(
           key: state.pageKey,
-          child: AdminShell(title: 'Paiements', child: const PaiementsScreen()),
+          child: AdminShell(title: 'Paiements', child: const PaymentsScreen()),
         ),
       ),
       GoRoute(

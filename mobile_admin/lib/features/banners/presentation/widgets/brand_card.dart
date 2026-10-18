@@ -36,21 +36,19 @@ class BrandCard extends ConsumerWidget {
               ),
               child: brand.logoUrl != null && brand.logoUrl!.isNotEmpty
                   ? ClipRRect(
-                      borderRadius:
-                          BorderRadius.circular(MaasgaTokens.radiusMd),
+                      borderRadius: BorderRadius.circular(
+                        MaasgaTokens.radiusMd,
+                      ),
                       child: Image.network(
                         brand.logoUrl!,
                         fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const Icon(
+                        errorBuilder: (_, _, _) => const Icon(
                           Icons.branding_watermark_outlined,
                           size: 28,
                         ),
                       ),
                     )
-                  : const Icon(
-                      Icons.branding_watermark_outlined,
-                      size: 28,
-                    ),
+                  : const Icon(Icons.branding_watermark_outlined, size: 28),
             ),
             const SizedBox(width: MaasgaTokens.spacingMd),
             // ── Infos ──────────────────────────────────────────────────
@@ -80,8 +78,7 @@ class BrandCard extends ConsumerWidget {
                     label: Text('Ordre: ${brand.displayOrder}'),
                     padding: EdgeInsets.zero,
                     labelStyle: const TextStyle(fontSize: 11),
-                    backgroundColor:
-                        AdminTheme.primary.withValues(alpha: 0.1),
+                    backgroundColor: AdminTheme.primary.withValues(alpha: 0.1),
                   ),
                 ],
               ),
@@ -92,16 +89,13 @@ class BrandCard extends ConsumerWidget {
               onChanged: (value) async {
                 try {
                   await ref.read(
-                    toggleBrandProvider((
-                      id: brand.id,
-                      isActive: value,
-                    )).future,
+                    toggleBrandProvider((id: brand.id, isActive: value)).future,
                   );
                 } catch (e) {
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Erreur: $e')),
-                    );
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
                   }
                 }
               },

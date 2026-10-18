@@ -75,7 +75,7 @@ The stack is Hono JSX SSR + vanilla JS inline. No React runtime. Tests use Vites
     - Vérifier que les 18 variables `--admin-*` listées dans Req 10.4 sont toutes présentes
     - _Requirements: 10.2, 10.4, 10.7, 17.1_
 
-- [~] 3. Checkpoint — Compiler et vérifier les fondations
+- [ ] 3. Checkpoint — Compiler et vérifier les fondations
   - Lancer `tsc --noEmit` — zéro erreur attendue avant de migrer les composants
   - Vérifier que `admin-tokens.css` est lisible depuis un navigateur sur n'importe quelle page admin
   - Si des erreurs subsistent, corriger avant de continuer. Poser toute question à l'utilisateur si nécessaire.
@@ -135,7 +135,7 @@ The stack is Hono JSX SSR + vanilla JS inline. No React runtime. Tests use Vites
     - Implémenter `window.adminClearSelection` : vider `window.adminSelectedIds`, décocher `.order-checkbox`, masquer `#bulk-toolbar`
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7_
 
-  - [-] 4.9 Tests unitaires — AdminLayout light theme
+  - [ ] 4.9 Tests unitaires — AdminLayout light theme
     - Vérifier que `<body>` a la classe `admin-ui` dans le rendu de `AdminLayout`
     - Vérifier que `admin-tokens.css` est chargé après `tailwind.css` et avant `style.css`
     - Vérifier que `window.adminBulkAction` et `window.adminClearSelection` sont des fonctions après rendu de `AdminCommandesPage`
@@ -177,7 +177,7 @@ The stack is Hono JSX SSR + vanilla JS inline. No React runtime. Tests use Vites
     - Icônes gardent leur couleur sémantique spécifique pour la lisibilité rapide
     - _Requirements: 12.1, 12.2, 12.3_
 
-  - [~] 5.7 Tests unitaires et property tests — CommandesTable
+  - [ ] 5.7 Tests unitaires et property tests — CommandesTable
     - **Property 2: Pagination invariant** — pour tout n > 20 commandes rendues, après exécution de `adminPaginate()`, au plus 20 `<tr>` sont visibles simultanément
       - Annotée `// Feature: admin-ui-light-refactor, Property 2: Pagination invariant`
       - Validates: Requirements 5.1, 5.2
@@ -218,7 +218,7 @@ The stack is Hono JSX SSR + vanilla JS inline. No React runtime. Tests use Vites
     - Conserver `id="client-detail-modal"` (déjà vérifié en Task 1.3)
     - _Requirements: 19.1, 19.2, 19.3, 19.5_
 
-  - [~] 6.5 Tests unitaires — modales
+  - [ ] 6.5 Tests unitaires — modales
     - Vérifier que `OrderDetailModal` rendu a un fond `var(--admin-card-bg)` et non une couleur foncée hardcodée
     - Vérifier que `ClientDetailModal` rendu a des liens pointant vers `/admin/commandes` et `/admin/rdv` (déjà couvert en 1.7, re-vérifier après migration visuelle)
     - Vérifier que l'overlay est `rgba(0,0,0,0.5)`
@@ -226,7 +226,7 @@ The stack is Hono JSX SSR + vanilla JS inline. No React runtime. Tests use Vites
 
 - [ ] 7. Migrer `BulkActionsToolbar.tsx` et toutes les pages admin restantes
   - Dépend de : Tasks 2, 4
-  - [-] 7.1 Dans `BulkActionsToolbar.tsx` : migration light theme complète
+  - [ ] 7.1 Dans `BulkActionsToolbar.tsx` : migration light theme complète
     - Conteneur : `background:rgba(59,130,246,0.08); border:rgba(59,130,246,0.15)` → `background: var(--admin-accent-light); border: 1px solid var(--admin-border)`
     - Texte compteur : `text-white` → `color: var(--admin-text-primary)`
     - Bouton "Statut en lot" : → `background: var(--admin-warning-light); color: var(--admin-warning); border: 1px solid rgba(217,119,6,0.25)`
@@ -235,22 +235,22 @@ The stack is Hono JSX SSR + vanilla JS inline. No React runtime. Tests use Vites
     - Bouton "Effacer sélection" : → `background: var(--admin-bg-elevated); color: var(--admin-text-muted)`
     - _Requirements: 11.2, 19.1_
 
-  - [-] 7.2 Dans `src/pages/admin.tsx` — migrer les tableaux inline des 14 pages admin non couvertes par Tasks 4–6
+  - [ ] 7.2 Dans `src/pages/admin.tsx` — migrer les tableaux inline des 14 pages admin non couvertes par Tasks 4–6
     - Pages : `AdminProduitsPage`, `AdminRDVPage`, `AdminClientsPage`, `AdminAvisPage`, `AdminDevisListPage`, `AdminDevisNewPage`, `AdminPaiementsPage`, `AdminMaintenancePage`, `AdminMessagesPage`, `AdminSAVPage`, `AdminSAVDetailPage`, `AdminAuditLogPage`, `AdminNotificationsPage`, `AdminRealisationsPage`, `AdminParametresPage`
     - Pour chaque tableau : `<thead>` background → `#f1f5f9` ; `<th>` color → `var(--admin-text-muted)` ; séparateurs → `var(--admin-border)` ; textes `<td>` → `var(--admin-text-primary)` / `var(--admin-text-muted)`
     - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5_
 
-  - [-] 7.3 Dans `src/pages/admin.tsx` — migrer toutes les modales inline
+  - [ ] 7.3 Dans `src/pages/admin.tsx` — migrer toutes les modales inline
     - Toutes les `<div>` de modal (`id="add-product-modal"`, `id="edit-product-modal"`, `id="add-rdv-modal"`, `id="add-client-modal"`, `id="edit-client-modal"`, modale galerie, validation-modal, etc.) : fond `#0b1120` / `#111827` → `var(--admin-card-bg)` ; bordures → `var(--admin-border)` ; titres/textes → tokens
     - Overlays conservés à `background:rgba(0,0,0,0.5)` ou `rgba(0,0,0,0.75)` (lisibilité sur fond clair)
     - _Requirements: 19.1, 19.2, 19.3, 19.4, 19.5_
 
-  - [-] 7.4 Dans `src/pages/admin.tsx` — vérifier et migrer les KPI stat-cards de chaque page
+  - [ ] 7.4 Dans `src/pages/admin.tsx` — vérifier et migrer les KPI stat-cards de chaque page
     - S'assurer que les styles inline hardcodés sur les cartes KPI de chaque page utilisent les tokens (ou s'appuient sur la classe `.stat-card` déjà migrée en Task 4.4)
     - `AdminPage` dashboard : migrer les widgets spécifiques (grille "Cette semaine", "Actions rapides") vers les tokens
     - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5_
 
-  - [~] 7.5 Tests property-based — invariants transversaux
+  - [ ] 7.5 Tests property-based — invariants transversaux
     - **Property 1: Function existence invariant** — pour tout tableau de commandes rendu (0 à 50 commandes), `window.adminBulkAction` et `window.adminClearSelection` sont des fonctions avant toute interaction
       - Annotée `// Feature: admin-ui-light-refactor, Property 1: Function existence invariant`
       - Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.5
@@ -265,7 +265,7 @@ The stack is Hono JSX SSR + vanilla JS inline. No React runtime. Tests use Vites
       - Validates: Requirements 10.2, 11.5, 12.1, 13.1, 19.1
     - _Requirements: 1.1–1.5, 6.1–6.4, 9.1–9.3, 10.2_
 
-- [~] 8. Checkpoint final — Vérification complète
+- [ ] 8. Checkpoint final — Vérification complète
   - Lancer `tsc --noEmit` — zéro erreur de compilation attendue
   - Parcourir les 16 pages admin pour vérifier : fond clair `#f8fafc`, sidebar navy conservée, topbar blanc translucide, tableaux sur fond blanc, badges uniformes, modales sur fond blanc
   - Vérifier en console browser : aucune `ReferenceError` pour `adminBulkAction` / `adminClearSelection` / `filterTable`

@@ -1,8 +1,23 @@
 name = "maasga-website"
 compatibility_date = "2024-01-01"
 
+pages_build_output_dir = "./dist"
+
+[[r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "maasga-images"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "maasga_db"
+database_id = "2317adea-fdbe-4597-b64d-11d68d03b63b"
+
 [env.production]
 vars = { ENVIRONMENT = "production" }
+
+[[env.production.r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "maasga-images"
 
 [[env.production.d1_databases]]
 binding = "DB"
@@ -11,3 +26,7 @@ database_id = "2317adea-fdbe-4597-b64d-11d68d03b63b"
 
 [env.preview]
 vars = { ENVIRONMENT = "preview" }
+
+[[env.preview.r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "maasga-images"

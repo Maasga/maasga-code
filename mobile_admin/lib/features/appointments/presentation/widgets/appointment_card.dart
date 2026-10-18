@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../data/models/appointment.dart';
 import '../../../../shared/design_tokens/maasga_tokens.dart';
 import '../../../../core/theme/admin_theme.dart';
+import '../screens/appointment_detail_screen.dart';
 
 class AppointmentCard extends StatelessWidget {
   final Appointment appointment;
@@ -24,7 +25,14 @@ class AppointmentCard extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () {
-          // TODO: Naviguer vers les détails du RDV
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AppointmentDetailScreen(
+                appointmentId: appointment.id,
+              ),
+            ),
+          );
         },
         borderRadius: BorderRadius.circular(MaasgaTokens.radiusMd),
         child: Padding(
@@ -216,7 +224,7 @@ class AppointmentCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: badgeColor.withOpacity(0.1),
+        color: badgeColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(MaasgaTokens.radiusSm),
         border: Border.all(color: badgeColor),
       ),

@@ -34,7 +34,7 @@ class AdminShell extends ConsumerWidget {
     final bool isOffline = connectivityAsync.when(
       data: (result) => result == ConnectivityResult.none,
       loading: () => false,
-      error: (_, __) => false,
+      error: (_, _) => false,
     );
 
     return Listener(
@@ -90,4 +90,3 @@ class AdminShell extends ConsumerWidget {
     );
   }
 }
-

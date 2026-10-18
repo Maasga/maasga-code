@@ -6,6 +6,7 @@ import '../../../../shared/design_tokens/maasga_tokens.dart';
 import '../../../../core/theme/admin_theme.dart';
 import '../widgets/order_card.dart';
 import '../widgets/order_filter.dart';
+import 'order_detail_screen.dart';
 
 class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
@@ -156,14 +157,17 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                       child: OrderCard(
                         order: filteredOrders[index],
                         onTap: () {
-                          // TODO: Afficher les détails de la commande
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Détails commande à implémenter'),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => OrderDetailScreen(
+                                orderId: filteredOrders[index].id,
+                              ),
                             ),
                           );
                         },
                         onStatusChange: (newStatus) async {
+                          final messenger = ScaffoldMessenger.of(context);
                           try {
                             await ref.read(
                               orderStatusUpdateProvider((
@@ -171,53 +175,46 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                                 status: newStatus,
                               )).future,
                             );
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Statut mis à jour avec succès',
-                                  ),
-                                  backgroundColor: AdminTheme.success,
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Statut mis à jour avec succès',
                                 ),
-                              );
-                              ref.invalidate(ordersProvider);
-                            }
+                                backgroundColor: AdminTheme.success,
+                              ),
+                            );
+                            ref.invalidate(ordersProvider);
                           } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Erreur: $e'),
-                                  backgroundColor: AdminTheme.error,
-                                ),
-                              );
-                            }
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text('Erreur: $e'),
+                                backgroundColor: AdminTheme.error,
+                              ),
+                            );
                           }
                         },
                         onCancel: () async {
+                          final messenger = ScaffoldMessenger.of(context);
                           try {
                             await ref.read(
                               orderCancelProvider(
                                 filteredOrders[index].id,
                               ).future,
                             );
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Commande annulée avec succès'),
-                                  backgroundColor: AdminTheme.success,
-                                ),
-                              );
-                              ref.invalidate(ordersProvider);
-                            }
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Commande annulée avec succès'),
+                                backgroundColor: AdminTheme.success,
+                              ),
+                            );
+                            ref.invalidate(ordersProvider);
                           } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Erreur: $e'),
-                                  backgroundColor: AdminTheme.error,
-                                ),
-                              );
-                            }
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text('Erreur: $e'),
+                                backgroundColor: AdminTheme.error,
+                              ),
+                            );
                           }
                         },
                       ),

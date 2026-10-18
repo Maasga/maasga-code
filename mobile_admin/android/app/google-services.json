@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "80812184966-l8vafc6ojk2uguvc9gv775esmmvm97lp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.maasga.admin.mobile_admin",
+            "certificate_hash": "c884ccfcfe026c600fd5d1149d9b5f9d37f05841"
+          }
+        },
+        {
           "client_id": "80812184966-rqc9o2sj4n4fa0a9jba1kcnmg2fubsam.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -48,6 +56,14 @@
           "android_info": {
             "package_name": "com.maasga.app",
             "certificate_hash": "c884ccfcfe026c600fd5d1149d9b5f9d37f05841"
+          }
+        },
+        {
+          "client_id": "80812184966-jp7l12ur7f6viu3g3mvkddcnqlnl0ju4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.maasga.app",
+            "certificate_hash": "54c1f8b2a65a27838f7075fa11adf45557298c2b"
           }
         },
         {

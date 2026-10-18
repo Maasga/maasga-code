@@ -1,4 +1,4 @@
-import type { D1Database } from '@cloudflare/workers-types'
+import type { D1Database, R2Bucket } from '@cloudflare/workers-types'
 
 // URL de base du site — à mettre à jour ici quand le domaine personnalisé sera configuré.
 // Utilisé dans index.tsx (CORS, CSRF) et Layout.tsx (canonical, og:url).
@@ -16,6 +16,7 @@ export type MobileUser = {
 export type HonoEnv = {
   Bindings: {
     DB?: D1Database
+    IMAGES_BUCKET?: R2Bucket
     ADMIN_SECRET?: string
     ADMIN_INITIAL_PASSWORD?: string
     GOOGLE_CLIENT_ID?: string

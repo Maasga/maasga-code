@@ -87,7 +87,9 @@ class _BrandFormState extends ConsumerState<BrandForm> {
       'asset_key': _assetKeyController.text.trim().isEmpty
           ? null
           : _assetKeyController.text.trim().toLowerCase(),
-      'logo_url': (finalLogoUrl == null || finalLogoUrl.isEmpty) ? null : finalLogoUrl,
+      'logo_url': (finalLogoUrl == null || finalLogoUrl.isEmpty)
+          ? null
+          : finalLogoUrl,
       'display_order': int.tryParse(_displayOrderController.text) ?? 0,
       'is_active': _isActive,
     };
@@ -115,7 +117,9 @@ class _BrandFormState extends ConsumerState<BrandForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              widget.brand != null ? 'Marque mise à jour avec succès' : 'Marque créée avec succès',
+              widget.brand != null
+                  ? 'Marque mise à jour avec succès'
+                  : 'Marque créée avec succès',
             ),
             backgroundColor: AdminTheme.success,
           ),
@@ -152,7 +156,8 @@ class _BrandFormState extends ConsumerState<BrandForm> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: _commonBrands.map((b) {
-                final isSelected = _nameController.text.trim().toUpperCase() == b;
+                final isSelected =
+                    _nameController.text.trim().toUpperCase() == b;
                 return Padding(
                   padding: const EdgeInsets.only(right: 6),
                   child: ActionChip(
@@ -185,7 +190,9 @@ class _BrandFormState extends ConsumerState<BrandForm> {
           ),
           const SizedBox(height: MaasgaTokens.spacingSm),
           ImageUploadField(
-            currentUrl: _logoUrlController.text.isNotEmpty ? _logoUrlController.text : _logoUrl,
+            currentUrl: _logoUrlController.text.isNotEmpty
+                ? _logoUrlController.text
+                : _logoUrl,
             previewHeight: 140,
             onUrlChanged: (url) {
               setState(() {
@@ -197,17 +204,18 @@ class _BrandFormState extends ConsumerState<BrandForm> {
           const SizedBox(height: MaasgaTokens.spacingSm),
           TextFormField(
             controller: _logoUrlController,
-            decoration: AdminTheme.inputDecoration('Ou URL du logo https://...').copyWith(
-              suffixIcon: _logoUrlController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, size: 18),
-                      onPressed: () => setState(() {
-                        _logoUrlController.clear();
-                        _logoUrl = null;
-                      }),
-                    )
-                  : null,
-            ),
+            decoration: AdminTheme.inputDecoration('Ou URL du logo https://...')
+                .copyWith(
+                  suffixIcon: _logoUrlController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () => setState(() {
+                            _logoUrlController.clear();
+                            _logoUrl = null;
+                          }),
+                        )
+                      : null,
+                ),
             onChanged: (val) => setState(() => _logoUrl = val),
           ),
           const SizedBox(height: MaasgaTokens.spacingLg),
@@ -215,9 +223,9 @@ class _BrandFormState extends ConsumerState<BrandForm> {
           // ── 2. Nom de la marque ──────────────────────────────────
           TextFormField(
             controller: _nameController,
-            decoration: AdminTheme.inputDecoration('Nom de la marque *').copyWith(
-              hintText: 'Ex: DAIKIN, LG, SAMSUNG...',
-            ),
+            decoration: AdminTheme.inputDecoration(
+              'Nom de la marque *',
+            ).copyWith(hintText: 'Ex: DAIKIN, LG, SAMSUNG...'),
             textCapitalization: TextCapitalization.characters,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
@@ -227,7 +235,8 @@ class _BrandFormState extends ConsumerState<BrandForm> {
             },
             onChanged: (val) {
               if (_assetKeyController.text.isEmpty ||
-                  _assetKeyController.text == val.substring(0, val.length - 1).toLowerCase()) {
+                  _assetKeyController.text ==
+                      val.substring(0, val.length - 1).toLowerCase()) {
                 _assetKeyController.text = val.trim().toLowerCase();
               }
               setState(() {});
@@ -238,9 +247,13 @@ class _BrandFormState extends ConsumerState<BrandForm> {
           // ── 3. Clé asset Flutter ─────────────────────────────────
           TextFormField(
             controller: _assetKeyController,
-            decoration: AdminTheme.inputDecoration('Clé asset Flutter (optionnel)').copyWith(
-              hintText: 'Ex: daikin, lg, samsung (pour assets/brands/<cle>.png)',
-            ),
+            decoration:
+                AdminTheme.inputDecoration(
+                  'Clé asset Flutter (optionnel)',
+                ).copyWith(
+                  hintText:
+                      'Ex: daikin, lg, samsung (pour assets/brands/<cle>.png)',
+                ),
             keyboardType: TextInputType.text,
           ),
           const SizedBox(height: MaasgaTokens.spacingLg),
@@ -258,7 +271,10 @@ class _BrandFormState extends ConsumerState<BrandForm> {
               const SizedBox(width: 16),
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: AdminTheme.background,
                     borderRadius: BorderRadius.circular(MaasgaTokens.radiusMd),
@@ -266,16 +282,24 @@ class _BrandFormState extends ConsumerState<BrandForm> {
                   ),
                   child: SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Visible', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    title: const Text(
+                      'Visible',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
                     subtitle: Text(
                       _isActive ? 'Affichée' : 'Masquée',
                       style: TextStyle(
                         fontSize: 11,
-                        color: _isActive ? AdminTheme.success : AdminTheme.textSecondary,
+                        color: _isActive
+                            ? AdminTheme.success
+                            : AdminTheme.textSecondary,
                       ),
                     ),
                     value: _isActive,
-                    activeColor: AdminTheme.primary,
+                    activeThumbColor: AdminTheme.primary,
                     onChanged: (value) => setState(() => _isActive = value),
                   ),
                 ),
@@ -288,22 +312,36 @@ class _BrandFormState extends ConsumerState<BrandForm> {
           ElevatedButton(
             onPressed: _isSaving ? null : _submit,
             style: AdminTheme.primaryButtonStyle.copyWith(
-              padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 14)),
+              padding: WidgetStateProperty.all(
+                const EdgeInsets.symmetric(vertical: 14),
+              ),
             ),
             child: _isSaving
                 ? const SizedBox(
                     height: 22,
                     width: 22,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
                   )
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                      const Icon(
+                        Icons.check_circle_outline,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Text(
-                        widget.brand != null ? 'Mettre à jour la marque' : 'Enregistrer la marque',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        widget.brand != null
+                            ? 'Mettre à jour la marque'
+                            : 'Enregistrer la marque',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
                       ),
                     ],
                   ),

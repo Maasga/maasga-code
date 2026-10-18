@@ -126,35 +126,31 @@ class _ImageUploadFieldState extends ConsumerState<ImageUploadField> {
                     ),
                   )
                 : hasImage
-                    ? ClipRRect(
-                        borderRadius:
-                            BorderRadius.circular(MaasgaTokens.radiusMd),
-                        child: _localFile != null && _uploadedUrl == null
-                            // Prévisualisation locale avant upload
-                            ? Image.file(
-                                _localFile!,
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                              )
-                            // Image uploadée ou existante
-                            : Image.network(
-                                _displayUrl!,
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                errorBuilder: (_, __, ___) => _placeholder(),
-                              ),
-                      )
-                    : _placeholder(),
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(MaasgaTokens.radiusMd),
+                    child: _localFile != null && _uploadedUrl == null
+                        // Prévisualisation locale avant upload
+                        ? Image.file(
+                            _localFile!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                          )
+                        // Image uploadée ou existante
+                        : Image.network(
+                            _displayUrl!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            errorBuilder: (_, _, _) => _placeholder(),
+                          ),
+                  )
+                : _placeholder(),
           ),
         ),
         if (_uploadError != null) ...[
           const SizedBox(height: 4),
           Text(
             _uploadError!,
-            style: const TextStyle(
-              color: AdminTheme.error,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: AdminTheme.error, fontSize: 12),
           ),
         ],
         const SizedBox(height: MaasgaTokens.spacingSm),
@@ -174,8 +170,8 @@ class _ImageUploadFieldState extends ConsumerState<ImageUploadField> {
               _isUploading
                   ? 'Upload en cours…'
                   : hasImage
-                      ? 'Changer l\'image'
-                      : 'Choisir une image',
+                  ? 'Changer l\'image'
+                  : 'Choisir une image',
             ),
             style: OutlinedButton.styleFrom(
               foregroundColor: AdminTheme.primary,
@@ -204,10 +200,7 @@ class _ImageUploadFieldState extends ConsumerState<ImageUploadField> {
         const SizedBox(height: MaasgaTokens.spacingSm),
         Text(
           'Appuyer pour choisir',
-          style: TextStyle(
-            fontSize: 12,
-            color: AdminTheme.textSecondary,
-          ),
+          style: TextStyle(fontSize: 12, color: AdminTheme.textSecondary),
         ),
       ],
     );

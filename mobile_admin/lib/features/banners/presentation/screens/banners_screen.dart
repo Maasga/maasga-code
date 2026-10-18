@@ -43,9 +43,7 @@ class _BannersScreenState extends ConsumerState<BannersScreen>
             title: const Text('Nouvelle bannière carrousel'),
             backgroundColor: AdminTheme.surface,
           ),
-          body: BannerForm(
-            onSave: (_) => ref.invalidate(bannersProvider),
-          ),
+          body: BannerForm(onSave: (_) => ref.invalidate(bannersProvider)),
         ),
       ),
     );
@@ -60,9 +58,7 @@ class _BannersScreenState extends ConsumerState<BannersScreen>
             title: const Text('Nouvelle marque partenaire'),
             backgroundColor: AdminTheme.surface,
           ),
-          body: BrandForm(
-            onSave: (_) => ref.invalidate(brandsProvider),
-          ),
+          body: BrandForm(onSave: (_) => ref.invalidate(brandsProvider)),
         ),
       ),
     );
@@ -102,8 +98,14 @@ class _BannersScreenState extends ConsumerState<BannersScreen>
                 dividerColor: Colors.transparent,
                 labelColor: Colors.white,
                 unselectedLabelColor: AdminTheme.textSecondary,
-                labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                labelStyle: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
                 tabs: const [
                   Tab(
                     icon: Icon(Icons.view_carousel_outlined, size: 18),
@@ -133,10 +135,18 @@ class _BannersScreenState extends ConsumerState<BannersScreen>
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _tabController.index == 0 ? _addBanner : _addBrand,
         backgroundColor: AdminTheme.primary,
-        icon: const Icon(Icons.add_photo_alternate_outlined, color: Colors.white),
+        icon: const Icon(
+          Icons.add_photo_alternate_outlined,
+          color: Colors.white,
+        ),
         label: Text(
-          _tabController.index == 0 ? 'Ajouter une bannière' : 'Ajouter une marque',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          _tabController.index == 0
+              ? 'Ajouter une bannière'
+              : 'Ajouter une marque',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
@@ -166,7 +176,11 @@ class _BannersTab extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: AdminTheme.error),
+                const Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: AdminTheme.error,
+                ),
                 const SizedBox(height: 12),
                 Text(
                   error.toString().replaceAll('Exception: ', ''),
@@ -211,7 +225,10 @@ class _BannersTab extends ConsumerWidget {
                         color: AdminTheme.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.photo_size_select_actual_outlined, color: AdminTheme.primary),
+                      child: const Icon(
+                        Icons.photo_size_select_actual_outlined,
+                        color: AdminTheme.primary,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -220,18 +237,27 @@ class _BannersTab extends ConsumerWidget {
                         children: [
                           Text(
                             'Carrousel d\'accueil (${banners.length} bannière${banners.length > 1 ? 's' : ''})',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
                           const SizedBox(height: 2),
                           const Text(
                             'Uploadez des photos depuis votre mobile pour le site web et l\'app.',
-                            style: TextStyle(fontSize: 12, color: AdminTheme.textSecondary),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AdminTheme.textSecondary,
+                            ),
                           ),
                         ],
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.collections_outlined, color: AdminTheme.primary),
+                      icon: const Icon(
+                        Icons.collections_outlined,
+                        color: AdminTheme.primary,
+                      ),
                       tooltip: 'Médiathèque de groupe',
                       onPressed: () => context.push('/mediatheque'),
                     ),
@@ -246,30 +272,47 @@ class _BannersTab extends ConsumerWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.image_not_supported_outlined, size: 64, color: Colors.grey.shade400),
+                        Icon(
+                          Icons.image_not_supported_outlined,
+                          size: 64,
+                          color: Colors.grey.shade400,
+                        ),
                         const SizedBox(height: 16),
                         const Text(
                           'Aucune bannière configurée',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                         const SizedBox(height: 6),
                         const Text(
                           'Ajoutez une première bannière avec votre photo.',
-                          style: TextStyle(color: AdminTheme.textSecondary, fontSize: 13),
+                          style: TextStyle(
+                            color: AdminTheme.textSecondary,
+                            fontSize: 13,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton.icon(
                           onPressed: onAdd,
                           icon: const Icon(Icons.add, color: Colors.white),
-                          label: const Text('Créer une bannière', style: TextStyle(color: Colors.white)),
-                          style: ElevatedButton.styleFrom(backgroundColor: AdminTheme.primary),
+                          label: const Text(
+                            'Créer une bannière',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AdminTheme.primary,
+                          ),
                         ),
                       ],
                     ),
                   ),
                 )
               else
-                ...banners.map((banner) => _buildBannerCard(context, ref, banner)),
+                ...banners.map(
+                  (banner) => _buildBannerCard(context, ref, banner),
+                ),
 
               const SizedBox(height: 60),
             ],
@@ -279,7 +322,11 @@ class _BannersTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildBannerCard(BuildContext context, WidgetRef ref, banner_model.Banner banner) {
+  Widget _buildBannerCard(
+    BuildContext context,
+    WidgetRef ref,
+    banner_model.Banner banner,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -301,18 +348,24 @@ class _BannersTab extends ConsumerWidget {
           Stack(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(13)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(13),
+                ),
                 child: banner.imageUrl.isNotEmpty
                     ? Image.network(
                         banner.imageUrl,
                         height: 140,
                         width: double.infinity,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+                        errorBuilder: (_, _, _) => Container(
                           height: 140,
                           color: AdminTheme.background,
                           child: const Center(
-                            child: Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                            child: Icon(
+                              Icons.broken_image,
+                              size: 40,
+                              color: Colors.grey,
+                            ),
                           ),
                         ),
                       )
@@ -320,7 +373,11 @@ class _BannersTab extends ConsumerWidget {
                         height: 140,
                         color: AdminTheme.background,
                         child: const Center(
-                          child: Icon(Icons.image, size: 40, color: Colors.grey),
+                          child: Icon(
+                            Icons.image,
+                            size: 40,
+                            color: Colors.grey,
+                          ),
                         ),
                       ),
               ),
@@ -328,23 +385,34 @@ class _BannersTab extends ConsumerWidget {
                 top: 8,
                 left: 8,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: banner.isActive ? Colors.green.shade600 : Colors.grey.shade700,
+                    color: banner.isActive
+                        ? Colors.green.shade600
+                        : Colors.grey.shade700,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        banner.isActive ? Icons.check_circle : Icons.visibility_off,
+                        banner.isActive
+                            ? Icons.check_circle
+                            : Icons.visibility_off,
                         color: Colors.white,
                         size: 12,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         banner.isActive ? 'Actif' : 'Masqué',
-                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
@@ -354,14 +422,21 @@ class _BannersTab extends ConsumerWidget {
                 top: 8,
                 right: 8,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.65),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     'Ordre: ${banner.displayOrder}',
-                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -380,12 +455,15 @@ class _BannersTab extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         banner.title,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                     Switch(
                       value: banner.isActive,
-                      activeColor: AdminTheme.primary,
+                      activeThumbColor: AdminTheme.primary,
                       onChanged: (value) async {
                         try {
                           await ref.read(
@@ -397,7 +475,10 @@ class _BannersTab extends ConsumerWidget {
                         } catch (e) {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Erreur: $e'), backgroundColor: AdminTheme.error),
+                              SnackBar(
+                                content: Text('Erreur: $e'),
+                                backgroundColor: AdminTheme.error,
+                              ),
                             );
                           }
                         }
@@ -409,28 +490,45 @@ class _BannersTab extends ConsumerWidget {
                   const SizedBox(height: 2),
                   Text(
                     banner.subtitle!,
-                    style: const TextStyle(color: AdminTheme.textSecondary, fontSize: 13),
+                    style: const TextStyle(
+                      color: AdminTheme.textSecondary,
+                      fontSize: 13,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    if (banner.targetPage != null && banner.targetPage!.isNotEmpty) ...[
+                    if (banner.targetPage != null &&
+                        banner.targetPage!.isNotEmpty) ...[
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: AdminTheme.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AdminTheme.primary.withValues(alpha: 0.2)),
+                          border: Border.all(
+                            color: AdminTheme.primary.withValues(alpha: 0.2),
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.link, size: 12, color: AdminTheme.primary),
+                            const Icon(
+                              Icons.link,
+                              size: 12,
+                              color: AdminTheme.primary,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               banner.targetPage!,
-                              style: const TextStyle(fontSize: 11, color: AdminTheme.primary, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AdminTheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                         ),
@@ -440,7 +538,11 @@ class _BannersTab extends ConsumerWidget {
                     const Spacer(),
                     // Bouton Modifier
                     IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 20, color: AdminTheme.primary),
+                      icon: const Icon(
+                        Icons.edit_outlined,
+                        size: 20,
+                        color: AdminTheme.primary,
+                      ),
                       tooltip: 'Modifier',
                       onPressed: () {
                         Navigator.push(
@@ -462,30 +564,43 @@ class _BannersTab extends ConsumerWidget {
                     ),
                     // Bouton Supprimer
                     IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 20, color: AdminTheme.error),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: 20,
+                        color: AdminTheme.error,
+                      ),
                       tooltip: 'Supprimer',
                       onPressed: () async {
                         final confirmed = await showDialog<bool>(
                           context: context,
                           builder: (context) => AlertDialog(
                             title: const Text('Supprimer la bannière ?'),
-                            content: Text('Voulez-vous supprimer "${banner.title}" ?'),
+                            content: Text(
+                              'Voulez-vous supprimer "${banner.title}" ?',
+                            ),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(context, false),
                                 child: const Text('Annuler'),
                               ),
                               ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: AdminTheme.error),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AdminTheme.error,
+                                ),
                                 onPressed: () => Navigator.pop(context, true),
-                                child: const Text('Supprimer', style: TextStyle(color: Colors.white)),
+                                child: const Text(
+                                  'Supprimer',
+                                  style: TextStyle(color: Colors.white),
+                                ),
                               ),
                             ],
                           ),
                         );
                         if (confirmed == true) {
                           try {
-                            await ref.read(deleteBannerProvider(banner.id).future);
+                            await ref.read(
+                              deleteBannerProvider(banner.id).future,
+                            );
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -497,7 +612,10 @@ class _BannersTab extends ConsumerWidget {
                           } catch (e) {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Erreur: $e'), backgroundColor: AdminTheme.error),
+                                SnackBar(
+                                  content: Text('Erreur: $e'),
+                                  backgroundColor: AdminTheme.error,
+                                ),
                               );
                             }
                           }
@@ -538,7 +656,11 @@ class _BrandsTab extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: AdminTheme.error),
+                const Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: AdminTheme.error,
+                ),
                 const SizedBox(height: 12),
                 Text(
                   error.toString().replaceAll('Exception: ', ''),
@@ -583,7 +705,10 @@ class _BrandsTab extends ConsumerWidget {
                         color: Colors.purple.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.branding_watermark_outlined, color: Colors.purple),
+                      child: const Icon(
+                        Icons.branding_watermark_outlined,
+                        color: Colors.purple,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -592,18 +717,27 @@ class _BrandsTab extends ConsumerWidget {
                         children: [
                           Text(
                             'Marques partenaires (${brands.length})',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
                           const SizedBox(height: 2),
                           const Text(
                             'Ajoutez les logos des marques (DAIKIN, LG, etc.) affichées sur l\'accueil.',
-                            style: TextStyle(fontSize: 12, color: AdminTheme.textSecondary),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AdminTheme.textSecondary,
+                            ),
                           ),
                         ],
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.photo_library_outlined, color: Colors.purple),
+                      icon: const Icon(
+                        Icons.photo_library_outlined,
+                        color: Colors.purple,
+                      ),
                       tooltip: 'Médiathèque groupée par marque',
                       onPressed: () => context.push('/mediatheque'),
                     ),
@@ -618,86 +752,113 @@ class _BrandsTab extends ConsumerWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.branding_watermark_outlined, size: 64, color: Colors.grey.shade400),
+                        Icon(
+                          Icons.branding_watermark_outlined,
+                          size: 64,
+                          color: Colors.grey.shade400,
+                        ),
                         const SizedBox(height: 16),
                         const Text(
                           'Aucune marque partenaire',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                         const SizedBox(height: 6),
                         const Text(
                           'Ajoutez les marques officielles pour les afficher sur le site.',
-                          style: TextStyle(color: AdminTheme.textSecondary, fontSize: 13),
+                          style: TextStyle(
+                            color: AdminTheme.textSecondary,
+                            fontSize: 13,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton.icon(
                           onPressed: onAdd,
                           icon: const Icon(Icons.add, color: Colors.white),
-                          label: const Text('Ajouter une marque', style: TextStyle(color: Colors.white)),
-                          style: ElevatedButton.styleFrom(backgroundColor: AdminTheme.primary),
+                          label: const Text(
+                            'Ajouter une marque',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AdminTheme.primary,
+                          ),
                         ),
                       ],
                     ),
                   ),
                 )
               else
-                ...brands.map((brand) => BrandCard(
-                      brand: brand,
-                      onEdit: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => Scaffold(
-                            appBar: AppBar(
-                              title: Text('Modifier: ${brand.name}'),
-                              backgroundColor: AdminTheme.surface,
-                            ),
-                            body: BrandForm(
-                              brand: brand,
-                              onSave: (_) => ref.invalidate(brandsProvider),
-                            ),
+                ...brands.map(
+                  (brand) => BrandCard(
+                    brand: brand,
+                    onEdit: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => Scaffold(
+                          appBar: AppBar(
+                            title: Text('Modifier: ${brand.name}'),
+                            backgroundColor: AdminTheme.surface,
+                          ),
+                          body: BrandForm(
+                            brand: brand,
+                            onSave: (_) => ref.invalidate(brandsProvider),
                           ),
                         ),
                       ),
-                      onDelete: () async {
-                        final confirmed = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Supprimer la marque ?'),
-                            content: Text('Voulez-vous supprimer la marque "${brand.name}" ?'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('Annuler'),
-                              ),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: AdminTheme.error),
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text('Supprimer', style: TextStyle(color: Colors.white)),
-                              ),
-                            ],
+                    ),
+                    onDelete: () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Supprimer la marque ?'),
+                          content: Text(
+                            'Voulez-vous supprimer la marque "${brand.name}" ?',
                           ),
-                        );
-                        if (confirmed == true) {
-                          try {
-                            await ref.read(deleteBrandProvider(brand.id).future);
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Marque supprimée'),
-                                  backgroundColor: AdminTheme.success,
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Erreur: $e'), backgroundColor: AdminTheme.error),
-                              );
-                            }
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Annuler'),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AdminTheme.error,
+                              ),
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text(
+                                'Supprimer',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed == true) {
+                        try {
+                          await ref.read(deleteBrandProvider(brand.id).future);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Marque supprimée'),
+                                backgroundColor: AdminTheme.success,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Erreur: $e'),
+                                backgroundColor: AdminTheme.error,
+                              ),
+                            );
                           }
                         }
-                      },
-                    )),
+                      }
+                    },
+                  ),
+                ),
 
               const SizedBox(height: 60),
             ],

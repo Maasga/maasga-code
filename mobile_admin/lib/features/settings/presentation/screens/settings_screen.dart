@@ -282,20 +282,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(setting.label),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: (setting.options ?? []).map((option) {
-            return RadioListTile<String>(
-              title: Text(option),
-              value: option,
-              groupValue: selectedValue,
-              onChanged: (value) {
-                selectedValue = value;
-                Navigator.pop(context);
-                _updateSetting(setting.key, value!);
-              },
-            );
-          }).toList(),
+        content: RadioGroup<String>(
+          groupValue: selectedValue,
+          onChanged: (value) {
+            selectedValue = value;
+            Navigator.pop(context);
+            if (value != null) _updateSetting(setting.key, value);
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: (setting.options ?? []).map((option) {
+              return RadioListTile<String>(
+                title: Text(option),
+                value: option,
+              );
+            }).toList(),
+          ),
         ),
         actions: [
           TextButton(

@@ -9,4 +9,8 @@
 "database_name": "maasga_db",
 "database_id": "2317adea-fdbe-4597-b64d-11d68d03b63b"
 }],
+"r2_buckets": [{
+"binding": "IMAGES_BUCKET",
+"bucket_name": "maasga-images"
+}]
 }

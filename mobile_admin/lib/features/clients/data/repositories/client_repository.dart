@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../models/client.dart';
 import '../../../../core/network/api_endpoints.dart';
+import '../../../../core/utils/app_logger.dart';
 
 class ClientRepository {
   final Dio _dio;
@@ -9,96 +10,83 @@ class ClientRepository {
 
   Future<List<Client>> getClients() async {
     try {
-      print('👥 Chargement des clients depuis: ${ApiEndpoints.clients}');
+      AppLogger.info('Chargement des clients');
       final response = await _dio.get(ApiEndpoints.clients);
-      print('✅ Réponse reçue - Status: ${response.statusCode}');
       final List<dynamic> data = response.data;
       final clients = data.map((json) => Client.fromJson(json)).toList();
-      print('👥 ${clients.length} clients chargés');
+      AppLogger.response(ApiEndpoints.clients, response.statusCode, clients.length);
       return clients;
     } catch (e) {
-      print('❌ Erreur lors du chargement des clients: $e');
-      if (e is DioException) {
-        print('🔍 DioException: ${e.type} - ${e.message}');
-        print('🔍 Response: ${e.response?.data}');
-      }
+      AppLogger.error(e, null, 'ClientRepository.getClients');
       throw Exception('Erreur lors du chargement des clients: $e');
     }
   }
 
   Future<Client> getClient(String id) async {
     try {
-      print('👥 Chargement du client $id');
+      AppLogger.info('Chargement du client $id');
       final response = await _dio.get(
         ApiEndpoints.replacePath(ApiEndpoints.clientDetail, {'id': id}),
       );
-      print('✅ Client $id chargé');
+      AppLogger.response(ApiEndpoints.clientDetail, response.statusCode);
       return Client.fromJson(response.data);
     } catch (e) {
-      print('❌ Erreur lors du chargement du client $id: $e');
-      throw Exception('Erreur lors du chargement du client: $e');
+      AppLogger.error(e, null, 'ClientRepository.getClient');
+      throw Exception('Erreur lors du chargement du client $id: $e');
     }
   }
 
   Future<Client> createClient(Map<String, dynamic> data) async {
     try {
-      print('👥 Création du client: ${data["name"]}');
+      AppLogger.info('Création d\'un nouveau client');
       final response = await _dio.post(ApiEndpoints.clients, data: data);
-      print('✅ Client créé avec ID: ${response.data['id']}');
+      AppLogger.response(ApiEndpoints.clients, response.statusCode);
       return Client.fromJson({...data, 'id': response.data['id'].toString()});
     } catch (e) {
-      print('❌ Erreur lors de la création du client: $e');
-      if (e is DioException) {
-        print('🔍 DioException: ${e.type} - ${e.message}');
-        print('🔍 Response: ${e.response?.data}');
-      }
+      AppLogger.error(e, null, 'ClientRepository.createClient');
       throw Exception('Erreur lors de la création du client: $e');
     }
   }
 
   Future<Client> updateClient(String id, Map<String, dynamic> data) async {
     try {
-      print('👥 Mise à jour du client $id: ${data["name"]}');
+      AppLogger.info('Mise à jour du client $id');
       final response = await _dio.put(
         ApiEndpoints.replacePath(ApiEndpoints.clientDetail, {'id': id}),
         data: data,
       );
-      print('✅ Client $id mis à jour');
+      AppLogger.response(ApiEndpoints.clientDetail, response.statusCode);
       return Client.fromJson({...data, 'id': id});
     } catch (e) {
-      print('❌ Erreur lors de la mise à jour du client: $e');
-      if (e is DioException) {
-        print('🔍 DioException: ${e.type} - ${e.message}');
-        print('🔍 Response: ${e.response?.data}');
-      }
+      AppLogger.error(e, null, 'ClientRepository.updateClient');
       throw Exception('Erreur lors de la mise à jour du client: $e');
     }
   }
 
   Future<List<dynamic>> getClientOrders(String id) async {
     try {
-      print('📦 Chargement des commandes du client $id');
+      AppLogger.info('Chargement des commandes du client $id');
       final response = await _dio.get(
         ApiEndpoints.replacePath(ApiEndpoints.clientOrders, {'id': id}),
       );
-      print('✅ Commandes chargées');
+      AppLogger.response(ApiEndpoints.clientOrders, response.statusCode);
       return response.data as List<dynamic>;
     } catch (e) {
-      print('❌ Erreur lors du chargement des commandes: $e');
+      AppLogger.error(e, null, 'ClientRepository.getClientOrders');
       throw Exception('Erreur lors du chargement des commandes: $e');
     }
   }
 
   Future<List<dynamic>> getClientRdv(String id) async {
     try {
-      print('📅 Chargement des RDV du client $id');
+      AppLogger.info('Chargement des RDV du client $id');
       final response = await _dio.get(
         ApiEndpoints.replacePath(ApiEndpoints.clientRdv, {'id': id}),
       );
-      print('✅ RDV chargés');
+      AppLogger.response(ApiEndpoints.clientRdv, response.statusCode);
       return response.data as List<dynamic>;
     } catch (e) {
-      print('❌ Erreur lors du chargement des RDV: $e');
+      AppLogger.error(e, null, 'ClientRepository.getClientRdv');
       throw Exception('Erreur lors du chargement des RDV: $e');
     }
   }

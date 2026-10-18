@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/providers/client_provider.dart';
 import '../../data/models/client.dart';
 import '../widgets/client_form.dart';
+import '../screens/client_detail_screen.dart';
 import '../../../../shared/design_tokens/maasga_tokens.dart';
 import '../../../../core/theme/admin_theme.dart';
 
@@ -156,16 +157,8 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => Scaffold(
-                                appBar: AppBar(
-                                  title: Text(filteredClients[index].name),
-                                ),
-                                body: ClientForm(
-                                  client: filteredClients[index],
-                                  onSave: (client) {
-                                    ref.invalidate(clientsProvider);
-                                  },
-                                ),
+                              builder: (context) => ClientDetailScreen(
+                                client: filteredClients[index],
                               ),
                             ),
                           );

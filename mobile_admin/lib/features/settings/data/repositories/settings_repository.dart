@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../../core/network/api_endpoints.dart';
+import '../../../../core/utils/app_logger.dart';
 
 class SettingsRepository {
   final Dio _dio;
@@ -8,35 +9,28 @@ class SettingsRepository {
 
   Future<Map<String, dynamic>> getSettings() async {
     try {
-      print('⚙️ Chargement des paramètres');
+      AppLogger.info('Chargement des paramètres');
       final response = await _dio.get(ApiEndpoints.settings);
-      print('✅ Paramètres chargés');
+      AppLogger.response(ApiEndpoints.settings, response.statusCode);
       return response.data as Map<String, dynamic>;
     } catch (e) {
-      print('❌ Erreur lors du chargement des paramètres: $e');
-      if (e is DioException) {
-        print('🔍 DioException: ${e.type} - ${e.message}');
-        print('🔍 Response: ${e.response?.data}');
-      }
+      AppLogger.error(e, null, 'SettingsRepository.getSettings');
       throw Exception('Erreur lors du chargement des paramètres: $e');
     }
   }
 
   Future<void> updateSettings(Map<String, dynamic> settings) async {
     try {
-      print('⚙️ Mise à jour des paramètres');
+      AppLogger.info('Mise à jour des paramètres');
       final response = await _dio.patch(ApiEndpoints.settings, data: settings);
-      print('✅ Paramètres mis à jour');
+      AppLogger.response(ApiEndpoints.settings, response.statusCode);
       if (response.statusCode != 200) {
         throw Exception('Erreur lors de la mise à jour');
       }
     } catch (e) {
-      print('❌ Erreur lors de la mise à jour des paramètres: $e');
-      if (e is DioException) {
-        print('🔍 DioException: ${e.type} - ${e.message}');
-        print('🔍 Response: ${e.response?.data}');
-      }
+      AppLogger.error(e, null, 'SettingsRepository.updateSettings');
       throw Exception('Erreur lors de la mise à jour des paramètres: $e');
     }
   }
 }
+

@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/admin_theme.dart';
+import '../../../features/products/data/providers/product_provider.dart';
+import '../../../features/orders/data/providers/order_provider.dart';
+import '../../../features/appointments/data/providers/appointment_provider.dart';
+import '../../../features/clients/data/providers/client_provider.dart';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Provider pour la recherche globale
@@ -126,10 +130,11 @@ class _SearchResult {
 
 class _AdminSearchDelegate extends SearchDelegate<String> {
   final BuildContext _rootContext;
+  final WidgetRef _ref;
 
-  _AdminSearchDelegate(this._rootContext, WidgetRef ref)
+  _AdminSearchDelegate(this._rootContext, this._ref)
       : super(
-          searchFieldLabel: 'Rechercher commandes, clients, RDV...',
+          searchFieldLabel: 'Rechercher produits, commandes, clients...',
           searchFieldStyle: const TextStyle(fontSize: 15),
         );
 
@@ -288,12 +293,67 @@ class _AdminSearchDelegate extends SearchDelegate<String> {
 
   Future<List<List<Map<String, dynamic>>>> _performSearch(String q) async {
     if (q.length < 2) return [[], [], [], []];
+    final query = q.toLowerCase().trim();
 
-    // Recherche locale dans les providers déjà chargés
-    // On utilise les données en cache des providers existants
-    // pour une recherche rapide sans appels API supplémentaires.
-    // Dans une version avancée, on pourrait appeler un endpoint /search global.
-    return [[], [], [], []];
+    // 1. Commandes
+    final orders = _ref.read(ordersProvider).asData?.value ?? [];
+    final matchingOrders = orders
+        .where((o) =>
+            o.id.toLowerCase().contains(query) ||
+            o.clientName.toLowerCase().contains(query) ||
+            o.status.toLowerCase().contains(query))
+        .map((o) => {
+              'id': o.id,
+              'client_name': '${o.clientName} (${o.status})',
+            })
+        .toList();
+
+    // 2. Rendez-vous
+    final rdvs = _ref.read(appointmentsProvider).asData?.value ?? [];
+    final matchingRdvs = rdvs
+        .where((r) =>
+            r.id.toLowerCase().contains(query) ||
+            r.customerName.toLowerCase().contains(query) ||
+            r.type.toLowerCase().contains(query) ||
+            r.status.toLowerCase().contains(query))
+        .map((r) => {
+              'id': r.id,
+              'name': '${r.customerName} - ${r.type} (${r.status})',
+            })
+        .toList();
+
+    // 3. Clients
+    final clients = _ref.read(clientsProvider).asData?.value ?? [];
+    final matchingClients = clients
+        .where((c) =>
+            c.name.toLowerCase().contains(query) ||
+            c.phone.contains(query) ||
+            (c.email?.toLowerCase().contains(query) ?? false) ||
+            (c.quartier?.toLowerCase().contains(query) ?? false))
+        .map((c) => {
+              'id': c.id,
+              'name': c.name,
+              'phone': c.phone,
+            })
+        .toList();
+
+    // 4. Produits
+    final products = _ref.read(productsProvider).asData?.value ?? [];
+    final matchingProducts = products
+        .where((p) =>
+            p.name.toLowerCase().contains(query) ||
+            p.brand.toLowerCase().contains(query) ||
+            p.category.toLowerCase().contains(query) ||
+            p.description.toLowerCase().contains(query) ||
+            (p.btu != null && p.btu.toString().contains(query)))
+        .map((p) => {
+              'id': p.id.toString(),
+              'name': p.name,
+              'brand': '${p.brand} • ${p.category} (${p.price} FCFA)',
+            })
+        .toList();
+
+    return [matchingOrders, matchingRdvs, matchingClients, matchingProducts];
   }
 
   Widget _buildSectionHeader(IconData icon, String title, int count, Color color) {

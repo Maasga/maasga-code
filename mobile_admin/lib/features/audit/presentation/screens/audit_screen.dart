@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/providers/audit_provider.dart';
 import '../../data/models/audit_log.dart';
@@ -157,18 +157,33 @@ class _AuditScreenState extends ConsumerState<AuditScreen> {
           Expanded(
             child: logsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(
+              error: (error, stack) => Padding(
+                padding: const EdgeInsets.all(MaasgaTokens.spacingLg),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(
-                      Icons.error_outline,
+                      Icons.lock_outline,
                       size: 48,
                       color: AdminTheme.error,
                     ),
                     const SizedBox(height: MaasgaTokens.spacingMd),
-                    Text('Erreur: $error'),
+                    const Text(
+                      'Accès refusé',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: AdminTheme.error,
+                      ),
+                    ),
                     const SizedBox(height: MaasgaTokens.spacingSm),
+                    const Text(
+                      'Votre compte n\'a pas le rôle admin.\nContactez l\'administrateur.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AdminTheme.textSecondary),
+                    ),
+                    const SizedBox(height: MaasgaTokens.spacingMd),
                     ElevatedButton(
                       onPressed: () => ref.invalidate(auditLogsProvider),
                       child: const Text('Réessayer'),

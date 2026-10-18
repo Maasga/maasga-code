@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../models/audit_log.dart';
 import '../../../../core/network/api_endpoints.dart';
+import '../../../../core/utils/app_logger.dart';
 
 class AuditRepository {
   final Dio _dio;
@@ -9,20 +10,17 @@ class AuditRepository {
 
   Future<List<AuditLog>> getAuditLogs({int limit = 50, int offset = 0}) async {
     try {
-      print('📋 Chargement des logs d\'audit');
+      AppLogger.info('Chargement des logs d\'audit');
       final response = await _dio.get(
         ApiEndpoints.audit,
         queryParameters: {'limit': limit, 'offset': offset},
       );
-      print('✅ Logs d\'audit chargés');
       final List<dynamic> data = response.data;
-      return data.map((json) => AuditLog.fromJson(json)).toList();
+      final logs = data.map((json) => AuditLog.fromJson(json)).toList();
+      AppLogger.response(ApiEndpoints.audit, response.statusCode, logs.length);
+      return logs;
     } catch (e) {
-      print('❌ Erreur lors du chargement des logs: $e');
-      if (e is DioException) {
-        print('🔍 DioException: ${e.type} - ${e.message}');
-        print('🔍 Response: ${e.response?.data}');
-      }
+      AppLogger.error(e, null, 'AuditRepository.getAuditLogs');
       throw Exception('Erreur lors du chargement des logs: $e');
     }
   }

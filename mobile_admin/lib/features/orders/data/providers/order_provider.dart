@@ -48,6 +48,12 @@ final addOrderNotesProvider =
       ref.invalidate(ordersProvider);
     });
 
+// Order detail provider
+final orderDetailProvider = FutureProvider.family<Order, String>((ref, id) async {
+  final repository = ref.watch(orderRepositoryProvider);
+  return repository.getOrder(id);
+});
+
 // Orders stats provider
 final ordersStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final repository = ref.watch(orderRepositoryProvider);

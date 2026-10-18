@@ -24,8 +24,10 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: BottomNav(currentRoute: '/', onNavigate: (_) {}),
+      ProviderScope(
+        child: MaterialApp(
+          home: BottomNav(currentRoute: '/', onNavigate: (_) {}),
+        ),
       ),
     );
 

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../models/dashboard_data.dart';
 import '../../../../core/network/api_endpoints.dart';
+import '../../../../core/utils/app_logger.dart';
 
 class DashboardRepository {
   final Dio _dio;
@@ -9,19 +10,13 @@ class DashboardRepository {
 
   Future<DashboardData> getDashboardData() async {
     try {
-      print('📊 Chargement du dashboard depuis: ${ApiEndpoints.dashboard}');
+      AppLogger.info('Chargement du dashboard');
       final response = await _dio.get(ApiEndpoints.dashboard);
-      print('✅ Réponse reçue - Status: ${response.statusCode}');
-      print('📊 Données: ${response.data}');
+      AppLogger.response(ApiEndpoints.dashboard, response.statusCode);
       return DashboardData.fromJson(response.data);
     } catch (e) {
-      print('❌ Erreur lors du chargement du dashboard: $e');
-      if (e is DioException) {
-        print('🔍 DioException: ${e.type} - ${e.message}');
-        print('🔍 Response: ${e.response?.data}');
-      }
-      // Fallback avec valeurs par défaut (0) si l'API échoue
-      print('⚠️ Utilisation des valeurs par défaut (0) pour le dashboard');
+      AppLogger.error(e, null, 'DashboardRepository');
+      AppLogger.warning('Utilisation des valeurs par défaut (0) pour le dashboard');
       return _getDefaultDashboardData();
     }
   }

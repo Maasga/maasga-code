@@ -1,1 +1,1 @@
-{"version":1,"include":["/*"],"exclude":["/*.mp4","/*.jpeg","/*.jpg","/*.png","/*.svg","/*.webp","/*.gif","/*.ico","/favicon.svg","/manifest.json","/static/*"]}
+{"version":1,"include":["/*"],"exclude":["/static/*","/hero/*","/favicon.*","/manifest.json","/og-image.png","/logo-site.png","/techman.png","/cherif.jpeg","/ines.jpeg","/malick.jpg","/one.jpeg","/HOMZ3.mp4","/mann.mp4"]}

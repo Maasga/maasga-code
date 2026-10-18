@@ -19,7 +19,9 @@ class MediathequeScreen extends ConsumerStatefulWidget {
 
 class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
   final ImagePicker _picker = ImagePicker();
-  final TextEditingController _brandController = TextEditingController(text: 'LG');
+  final TextEditingController _brandController = TextEditingController(
+    text: 'LG',
+  );
   final TextEditingController _labelController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
 
@@ -141,7 +143,9 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
       if (errorCount == 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$successCount image(s) ajoutée(s) à la médiathèque pour $brand !'),
+            content: Text(
+              '$successCount image(s) ajoutée(s) à la médiathèque pour $brand !',
+            ),
             backgroundColor: AdminTheme.success,
           ),
         );
@@ -159,10 +163,15 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
   void _showAssignSheet(BrandMediaImage media, List<Product> products) {
     String scope = 'brand'; // 'brand' or 'single'
     String target = 'main'; // 'main' or 'gallery'
-    int? selectedProductId = products.isNotEmpty ? int.tryParse(products.first.id) : null;
+    int? selectedProductId = products.isNotEmpty
+        ? int.tryParse(products.first.id)
+        : null;
 
     final matchingProducts = products
-        .where((p) => p.brand.trim().toUpperCase() == media.brand.trim().toUpperCase())
+        .where(
+          (p) =>
+              p.brand.trim().toUpperCase() == media.brand.trim().toUpperCase(),
+        )
         .toList();
 
     if (matchingProducts.isNotEmpty) {
@@ -214,7 +223,10 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                     ),
                     const Spacer(),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.purple.shade50,
                         border: Border.all(color: Colors.purple.shade200),
@@ -243,8 +255,10 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                       child: CachedNetworkImage(
                         imageUrl: media.url,
                         fit: BoxFit.cover,
-                        placeholder: (_, _) => const Center(child: CircularProgressIndicator()),
-                        errorWidget: (_, _, _) => const Icon(Icons.broken_image, size: 40),
+                        placeholder: (_, _) =>
+                            const Center(child: CircularProgressIndicator()),
+                        errorWidget: (_, _, _) =>
+                            const Icon(Icons.broken_image, size: 40),
                       ),
                     ),
                   ),
@@ -255,102 +269,134 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 const SizedBox(height: 8),
-                // Radio Option 1: Tous les climatiseurs de la marque
-                InkWell(
-                  onTap: () => setModalState(() => scope = 'brand'),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: scope == 'brand' ? Colors.purple.shade50 : Colors.white,
-                      border: Border.all(
-                        color: scope == 'brand' ? Colors.purple : Colors.grey.shade300,
-                        width: scope == 'brand' ? 1.5 : 1,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Radio<String>(
-                          value: 'brand',
-                          groupValue: scope,
-                          onChanged: (v) => setModalState(() => scope = v!),
-                          activeColor: Colors.purple,
-                        ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                RadioGroup<String>(
+                  groupValue: scope,
+                  onChanged: (v) => setModalState(() => scope = v ?? scope),
+                  child: Column(
+                    children: [
+                      // Radio Option 1: Tous les climatiseurs de la marque
+                      InkWell(
+                        onTap: () => setModalState(() => scope = 'brand'),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: scope == 'brand'
+                                ? Colors.purple.shade50
+                                : Colors.white,
+                            border: Border.all(
+                              color: scope == 'brand'
+                                  ? Colors.purple
+                                  : Colors.grey.shade300,
+                              width: scope == 'brand' ? 1.5 : 1,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
                             children: [
-                              Text(
-                                'Tous les climatiseurs ${media.brand} (Groupé)',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              const Radio<String>(
+                                value: 'brand',
+                                activeColor: Colors.purple,
                               ),
-                              Text(
-                                '${matchingProducts.length} climatiseur(s) ${media.brand} détecté(s)',
-                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Tous les climatiseurs ${media.brand} (Groupé)',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${matchingProducts.length} climatiseur(s) ${media.brand} détecté(s)',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                // Radio Option 2: Un seul produit
-                InkWell(
-                  onTap: () => setModalState(() => scope = 'single'),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: scope == 'single' ? Colors.purple.shade50 : Colors.white,
-                      border: Border.all(
-                        color: scope == 'single' ? Colors.purple : Colors.grey.shade300,
-                        width: scope == 'single' ? 1.5 : 1,
                       ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Radio<String>(
-                          value: 'single',
-                          groupValue: scope,
-                          onChanged: (v) => setModalState(() => scope = v!),
-                          activeColor: Colors.purple,
-                        ),
-                        const Expanded(
-                          child: Text(
-                            'Un seul climatiseur spécifique',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      const SizedBox(height: 10),
+                      // Radio Option 2: Un seul produit
+                      InkWell(
+                        onTap: () => setModalState(() => scope = 'single'),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: scope == 'single'
+                                ? Colors.purple.shade50
+                                : Colors.white,
+                            border: Border.all(
+                              color: scope == 'single'
+                                  ? Colors.purple
+                                  : Colors.grey.shade300,
+                              width: scope == 'single' ? 1.5 : 1,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Row(
+                            children: [
+                              Radio<String>(
+                                value: 'single',
+                                activeColor: Colors.purple,
+                              ),
+                              Expanded(
+                                child: Text(
+                                  'Un seul climatiseur spécifique',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
                 if (scope == 'single') ...[
                   const SizedBox(height: 12),
                   DropdownButtonFormField<int>(
-                    value: selectedProductId,
+                    initialValue: selectedProductId,
                     isExpanded: true,
                     decoration: InputDecoration(
                       labelText: 'Sélectionner le climatiseur',
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
-                    items: (matchingProducts.isNotEmpty ? matchingProducts : products).map((p) {
-                      final pIdInt = int.tryParse(p.id) ?? 0;
-                      return DropdownMenuItem<int>(
-                        value: pIdInt,
-                        child: Text(
-                          '${p.name} (${p.brand})',
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (v) => setModalState(() => selectedProductId = v),
+                    items:
+                        (matchingProducts.isNotEmpty
+                                ? matchingProducts
+                                : products)
+                            .map((p) {
+                              final pIdInt = int.tryParse(p.id) ?? 0;
+                              return DropdownMenuItem<int>(
+                                value: pIdInt,
+                                child: Text(
+                                  '${p.name} (${p.brand})',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              );
+                            })
+                            .toList(),
+                    onChanged: (v) =>
+                        setModalState(() => selectedProductId = v),
                   ),
                 ],
                 const SizedBox(height: 20),
@@ -366,11 +412,18 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                         onTap: () => setModalState(() => target = 'main'),
                         borderRadius: BorderRadius.circular(10),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 12,
+                          ),
                           decoration: BoxDecoration(
-                            color: target == 'main' ? Colors.blue.shade50 : Colors.grey.shade50,
+                            color: target == 'main'
+                                ? Colors.blue.shade50
+                                : Colors.grey.shade50,
                             border: Border.all(
-                              color: target == 'main' ? AdminTheme.primary : Colors.grey.shade300,
+                              color: target == 'main'
+                                  ? AdminTheme.primary
+                                  : Colors.grey.shade300,
                             ),
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -380,12 +433,17 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                               Icon(
                                 Icons.image,
                                 size: 18,
-                                color: target == 'main' ? AdminTheme.primary : Colors.grey,
+                                color: target == 'main'
+                                    ? AdminTheme.primary
+                                    : Colors.grey,
                               ),
                               const SizedBox(width: 6),
                               const Text(
                                 'Image principale',
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
@@ -398,11 +456,18 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                         onTap: () => setModalState(() => target = 'gallery'),
                         borderRadius: BorderRadius.circular(10),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 12,
+                          ),
                           decoration: BoxDecoration(
-                            color: target == 'gallery' ? Colors.blue.shade50 : Colors.grey.shade50,
+                            color: target == 'gallery'
+                                ? Colors.blue.shade50
+                                : Colors.grey.shade50,
                             border: Border.all(
-                              color: target == 'gallery' ? AdminTheme.primary : Colors.grey.shade300,
+                              color: target == 'gallery'
+                                  ? AdminTheme.primary
+                                  : Colors.grey.shade300,
                             ),
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -412,12 +477,17 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                               Icon(
                                 Icons.photo_library,
                                 size: 18,
-                                color: target == 'gallery' ? AdminTheme.primary : Colors.grey,
+                                color: target == 'gallery'
+                                    ? AdminTheme.primary
+                                    : Colors.grey,
                               ),
                               const SizedBox(width: 6),
                               const Text(
                                 'Galerie photos',
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
@@ -435,44 +505,48 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                       backgroundColor: Colors.purple.shade700,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     icon: const Icon(Icons.check_circle_outline, size: 20),
                     label: Text(
                       scope == 'brand'
                           ? 'Appliquer à TOUS les ${media.brand}'
                           : 'Affecter à ce climatiseur',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                     onPressed: () async {
+                      final messenger = ScaffoldMessenger.of(context);
                       Navigator.pop(ctx);
                       try {
                         final msg = await ref.read(
                           assignBrandMediaProvider((
                             mediaId: media.id,
                             scope: scope,
-                            productId: scope == 'single' ? selectedProductId : null,
+                            productId: scope == 'single'
+                                ? selectedProductId
+                                : null,
                             target: target,
                           )).future,
                         );
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(msg),
-                              backgroundColor: AdminTheme.success,
-                            ),
-                          );
-                          ref.invalidate(productsProvider);
-                        }
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(msg),
+                            backgroundColor: AdminTheme.success,
+                          ),
+                        );
+                        ref.invalidate(productsProvider);
                       } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Erreur: $e'),
-                              backgroundColor: AdminTheme.error,
-                            ),
-                          );
-                        }
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text('Erreur: $e'),
+                            backgroundColor: AdminTheme.error,
+                          ),
+                        );
                       }
                     },
                   ),
@@ -490,7 +564,9 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Supprimer de la médiathèque ?'),
-        content: Text('Voulez-vous supprimer cette photo associée à la marque "${media.brand}" ?'),
+        content: Text(
+          'Voulez-vous supprimer cette photo associée à la marque "${media.brand}" ?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -521,7 +597,10 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                 }
               }
             },
-            child: const Text('Supprimer', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Supprimer',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -530,7 +609,11 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mediaAsync = ref.watch(brandMediaImagesProvider(_selectedBrandFilter.isEmpty ? null : _selectedBrandFilter));
+    final mediaAsync = ref.watch(
+      brandMediaImagesProvider(
+        _selectedBrandFilter.isEmpty ? null : _selectedBrandFilter,
+      ),
+    );
     final productsAsync = ref.watch(productsProvider);
     final products = productsAsync.asData?.value ?? [];
 
@@ -576,10 +659,16 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                   children: [
                     // Header pliable
                     InkWell(
-                      onTap: () => setState(() => _showUploadPanel = !_showUploadPanel),
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                      onTap: () =>
+                          setState(() => _showUploadPanel = !_showUploadPanel),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
                         child: Row(
                           children: [
                             Container(
@@ -588,7 +677,11 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                                 color: Colors.purple.shade50,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: Icon(Icons.cloud_upload_outlined, color: Colors.purple.shade700, size: 22),
+                              child: Icon(
+                                Icons.cloud_upload_outlined,
+                                color: Colors.purple.shade700,
+                                size: 22,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -597,17 +690,25 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                                 children: [
                                   const Text(
                                     'Mise en ligne groupée par marque',
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
                                   ),
                                   Text(
                                     'Ajoutez plusieurs photos pour LG, Samsung, etc.',
-                                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
                             Icon(
-                              _showUploadPanel ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                              _showUploadPanel
+                                  ? Icons.keyboard_arrow_up
+                                  : Icons.keyboard_arrow_down,
                               color: Colors.grey[600],
                             ),
                           ],
@@ -624,7 +725,10 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                             // Choix marque
                             const Text(
                               'Marque des climatiseurs cible :',
-                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             // Quick chips de marques
@@ -632,9 +736,21 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                               spacing: 6,
                               runSpacing: 6,
                               children: _popularBrands.map((b) {
-                                final isSelected = _brandController.text.trim().toUpperCase() == b.toUpperCase();
+                                final isSelected =
+                                    _brandController.text
+                                        .trim()
+                                        .toUpperCase() ==
+                                    b.toUpperCase();
                                 return ChoiceChip(
-                                  label: Text(b, style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                                  label: Text(
+                                    b,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
                                   selected: isSelected,
                                   selectedColor: Colors.purple.shade100,
                                   onSelected: (val) {
@@ -656,11 +772,17 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                                     controller: _brandController,
                                     decoration: InputDecoration(
                                       labelText: 'Nom de la marque',
-                                      prefixIcon: const Icon(Icons.branding_watermark, size: 18),
+                                      prefixIcon: const Icon(
+                                        Icons.branding_watermark,
+                                        size: 18,
+                                      ),
                                       isDense: true,
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
                                     ),
-                                    textCapitalization: TextCapitalization.characters,
+                                    textCapitalization:
+                                        TextCapitalization.characters,
                                   ),
                                 ),
                                 const SizedBox(width: 10),
@@ -671,9 +793,14 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                                     decoration: InputDecoration(
                                       labelText: 'Libellé (optionnel)',
                                       hintText: 'Ex: Dual Inverter 2024',
-                                      prefixIcon: const Icon(Icons.label_outline, size: 18),
+                                      prefixIcon: const Icon(
+                                        Icons.label_outline,
+                                        size: 18,
+                                      ),
                                       isDense: true,
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -687,26 +814,42 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                                   child: OutlinedButton.icon(
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: Colors.purple.shade700,
-                                      side: BorderSide(color: Colors.purple.shade300),
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      side: BorderSide(
+                                        color: Colors.purple.shade300,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
                                     ),
-                                    icon: const Icon(Icons.add_photo_alternate_outlined),
+                                    icon: const Icon(
+                                      Icons.add_photo_alternate_outlined,
+                                    ),
                                     label: Text(
                                       _selectedFiles.isEmpty
                                           ? 'Choisir des photos (Galérie)'
                                           : '${_selectedFiles.length} photo(s) sélectionnée(s)',
-                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                    onPressed: _isUploading ? null : _pickImages,
+                                    onPressed: _isUploading
+                                        ? null
+                                        : _pickImages,
                                   ),
                                 ),
                                 if (_selectedFiles.isNotEmpty) ...[
                                   const SizedBox(width: 8),
                                   IconButton(
-                                    icon: const Icon(Icons.close, color: Colors.red),
+                                    icon: const Icon(
+                                      Icons.close,
+                                      color: Colors.red,
+                                    ),
                                     tooltip: 'Effacer sélection',
-                                    onPressed: () => setState(() => _selectedFiles = []),
+                                    onPressed: () =>
+                                        setState(() => _selectedFiles = []),
                                   ),
                                 ],
                               ],
@@ -719,7 +862,8 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                                 child: ListView.separated(
                                   scrollDirection: Axis.horizontal,
                                   itemCount: _selectedFiles.length,
-                                  separatorBuilder: (_, _) => const SizedBox(width: 8),
+                                  separatorBuilder: (_, _) =>
+                                      const SizedBox(width: 8),
                                   itemBuilder: (context, idx) {
                                     return ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
@@ -741,23 +885,34 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.purple.shade700,
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 13),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 13,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
                                   ),
                                   icon: _isUploading
                                       ? const SizedBox(
                                           width: 18,
                                           height: 18,
-                                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
                                         )
                                       : const Icon(Icons.cloud_upload),
                                   label: Text(
                                     _isUploading
                                         ? 'Upload en cours ($_uploadProgress/$_totalToUpload)...'
                                         : 'Téléverser ${_selectedFiles.length} photo(s) pour ${_brandController.text.trim().toUpperCase()}',
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                  onPressed: _isUploading ? null : _startBulkUpload,
+                                  onPressed: _isUploading
+                                      ? null
+                                      : _startBulkUpload,
                                 ),
                               ),
                             ],
@@ -773,23 +928,36 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
             // Section 2: Filtres par marque
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: MaasgaTokens.spacingMd),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: MaasgaTokens.spacingMd,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.filter_list, size: 18, color: AdminTheme.textSecondary),
+                        const Icon(
+                          Icons.filter_list,
+                          size: 18,
+                          color: AdminTheme.textSecondary,
+                        ),
                         const SizedBox(width: 6),
                         const Text(
                           'Filtrer la médiathèque :',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
                         ),
                         const Spacer(),
                         if (_selectedBrandFilter.isNotEmpty)
                           TextButton(
-                            onPressed: () => setState(() => _selectedBrandFilter = ''),
-                            child: const Text('Tout voir', style: TextStyle(fontSize: 12)),
+                            onPressed: () =>
+                                setState(() => _selectedBrandFilter = ''),
+                            child: const Text(
+                              'Tout voir',
+                              style: TextStyle(fontSize: 12),
+                            ),
                           ),
                       ],
                     ),
@@ -802,11 +970,14 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                             label: const Text('Toutes'),
                             selected: _selectedBrandFilter.isEmpty,
                             selectedColor: Colors.purple.shade100,
-                            onSelected: (_) => setState(() => _selectedBrandFilter = ''),
+                            onSelected: (_) =>
+                                setState(() => _selectedBrandFilter = ''),
                           ),
                           const SizedBox(width: 6),
                           ..._popularBrands.map((b) {
-                            final isSel = _selectedBrandFilter.toUpperCase() == b.toUpperCase();
+                            final isSel =
+                                _selectedBrandFilter.toUpperCase() ==
+                                b.toUpperCase();
                             return Padding(
                               padding: const EdgeInsets.only(right: 6),
                               child: ChoiceChip(
@@ -814,7 +985,9 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                                 selected: isSel,
                                 selectedColor: Colors.purple.shade100,
                                 onSelected: (val) {
-                                  setState(() => _selectedBrandFilter = val ? b : '');
+                                  setState(
+                                    () => _selectedBrandFilter = val ? b : '',
+                                  );
                                 },
                               ),
                             );
@@ -840,16 +1013,25 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.error_outline, size: 48, color: AdminTheme.error),
+                        const Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: AdminTheme.error,
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           err.toString().replaceAll('Exception: ', ''),
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: AdminTheme.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
+                          style: const TextStyle(
+                            color: AdminTheme.textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton.icon(
-                          onPressed: () => ref.invalidate(brandMediaImagesProvider),
+                          onPressed: () =>
+                              ref.invalidate(brandMediaImagesProvider),
                           icon: const Icon(Icons.refresh, size: 18),
                           label: const Text('Réessayer'),
                           style: ElevatedButton.styleFrom(
@@ -872,19 +1054,29 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.photo_library_outlined, size: 64, color: Colors.grey[400]),
+                            Icon(
+                              Icons.photo_library_outlined,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
                             const SizedBox(height: 16),
                             Text(
                               _selectedBrandFilter.isEmpty
                                   ? 'Aucune image dans la médiathèque.'
                                   : 'Aucune image pour la marque $_selectedBrandFilter.',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'Uploadez des photos groupées ci-dessus pour les affecter facilement à vos climatiseurs.',
-                              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 13,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                           ],
@@ -897,19 +1089,17 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                 return SliverPadding(
                   padding: const EdgeInsets.all(MaasgaTokens.spacingMd),
                   sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.76,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final img = images[index];
-                        return _buildMediaCard(img, products);
-                      },
-                      childCount: images.length,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 0.76,
+                        ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final img = images[index];
+                      return _buildMediaCard(img, products);
+                    }, childCount: images.length),
                   ),
                 );
               },
@@ -943,17 +1133,25 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
               children: [
                 Positioned.fill(
                   child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(14),
+                    ),
                     child: CachedNetworkImage(
                       imageUrl: img.url,
                       fit: BoxFit.cover,
                       placeholder: (_, _) => Container(
                         color: Colors.grey[100],
-                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
                       ),
                       errorWidget: (_, _, _) => Container(
                         color: Colors.grey[100],
-                        child: const Icon(Icons.broken_image, size: 32, color: Colors.grey),
+                        child: const Icon(
+                          Icons.broken_image,
+                          size: 32,
+                          color: Colors.grey,
+                        ),
                       ),
                     ),
                   ),
@@ -962,7 +1160,10 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                   top: 8,
                   left: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.purple.shade700.withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(8),
@@ -986,7 +1187,10 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                     child: IconButton(
                       padding: EdgeInsets.zero,
                       iconSize: 16,
-                      icon: const Icon(Icons.delete_outline, color: Colors.white),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.white,
+                      ),
                       onPressed: () => _confirmDelete(img),
                     ),
                   ),
@@ -1005,7 +1209,10 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                     img.label!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                    ),
                   )
                 else
                   Text(
@@ -1021,11 +1228,19 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                       backgroundColor: Colors.purple.shade600,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 6),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       visualDensity: VisualDensity.compact,
                     ),
                     icon: const Icon(Icons.link, size: 14),
-                    label: const Text('Affecter', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    label: const Text(
+                      'Affecter',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     onPressed: () => _showAssignSheet(img, products),
                   ),
                 ),

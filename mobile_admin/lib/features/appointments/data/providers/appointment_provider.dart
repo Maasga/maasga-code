@@ -20,7 +20,10 @@ final confirmAppointmentProvider = FutureProvider.family<Appointment, String>((
   id,
 ) async {
   final repository = ref.watch(appointmentRepositoryProvider);
-  return repository.confirmAppointment(id);
+  final res = await repository.confirmAppointment(id);
+  ref.invalidate(appointmentsProvider);
+  ref.invalidate(appointmentDetailProvider(id));
+  return res;
 });
 
 // Cancel appointment provider
@@ -30,7 +33,10 @@ final cancelAppointmentProvider =
       params,
     ) async {
       final repository = ref.watch(appointmentRepositoryProvider);
-      return repository.cancelAppointment(params.id, reason: params.reason);
+      final res = await repository.cancelAppointment(params.id, reason: params.reason);
+      ref.invalidate(appointmentsProvider);
+      ref.invalidate(appointmentDetailProvider(params.id));
+      return res;
     });
 
 // Calendar appointments provider
@@ -45,3 +51,63 @@ final calendarAppointmentsProvider =
         month: params.month,
       );
     });
+
+// Appointment detail provider
+final appointmentDetailProvider =
+    FutureProvider.family<Appointment, String>((ref, id) async {
+  final repository = ref.watch(appointmentRepositoryProvider);
+  return repository.getAppointment(id);
+});
+
+// Create appointment provider
+final createAppointmentProvider =
+    FutureProvider.family<Appointment, Map<String, dynamic>>((ref, data) async {
+  final repository = ref.watch(appointmentRepositoryProvider);
+  final result = await repository.createAppointment(data);
+  ref.invalidate(appointmentsProvider);
+  return result;
+});
+
+// Update appointment status provider
+final updateAppointmentStatusProvider =
+    FutureProvider.family<void, ({String id, String status})>((ref, params) async {
+  final repository = ref.watch(appointmentRepositoryProvider);
+  await repository.updateAppointmentStatus(params.id, params.status);
+  ref.invalidate(appointmentsProvider);
+  ref.invalidate(appointmentDetailProvider(params.id));
+});
+
+// T5: Assign technician provider
+final assignTechnicianProvider =
+    FutureProvider.family<void, ({String id, String technician})>((ref, params) async {
+  final repository = ref.watch(appointmentRepositoryProvider);
+  await repository.assignTechnician(params.id, params.technician);
+  ref.invalidate(appointmentsProvider);
+  ref.invalidate(appointmentDetailProvider(params.id));
+});
+
+// T5: Update notes provider
+final updateAppointmentNotesProvider =
+    FutureProvider.family<void, ({String id, String notes})>((ref, params) async {
+  final repository = ref.watch(appointmentRepositoryProvider);
+  await repository.updateNotes(params.id, params.notes);
+  ref.invalidate(appointmentsProvider);
+  ref.invalidate(appointmentDetailProvider(params.id));
+});
+
+// T7: Reschedule appointment provider
+final rescheduleAppointmentProvider =
+    FutureProvider.family<void, ({String id, DateTime date, String heureDebut, String? heureFin})>((
+      ref,
+      params,
+    ) async {
+  final repository = ref.watch(appointmentRepositoryProvider);
+  await repository.reschedule(
+    params.id,
+    params.date,
+    params.heureDebut,
+    params.heureFin,
+  );
+  ref.invalidate(appointmentsProvider);
+  ref.invalidate(appointmentDetailProvider(params.id));
+});

@@ -18,10 +18,17 @@ class ProductsScreen extends ConsumerStatefulWidget {
 }
 
 class _ProductsScreenState extends ConsumerState<ProductsScreen> {
+  final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = 'Tous';
   String? _selectedBrand;
   int? _selectedBtu;
   String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -92,9 +99,22 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                 ),
                 // Barre de recherche
                 TextField(
+                  controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Rechercher un produit...',
+                    hintText: 'Rechercher un produit (nom, marque, btu, type)...',
+                    hintStyle: const TextStyle(fontSize: 13, color: AdminTheme.textSecondary),
                     prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                _searchQuery = '';
+                              });
+                            },
+                          )
+                        : null,
                     filled: true,
                     fillColor: AdminTheme.background,
                     border: OutlineInputBorder(
@@ -102,6 +122,10 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                         MaasgaTokens.radiusMd,
                       ),
                       borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
                     ),
                   ),
                   onChanged: (value) {
@@ -208,39 +232,79 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                       .where((p) => p.btu != null && p.btu! <= _selectedBtu!)
                       .toList();
                 }
-                if (_searchQuery.isNotEmpty) {
+                if (_searchQuery.trim().isNotEmpty) {
+                  final q = _searchQuery.trim().toLowerCase();
                   filteredProducts = filteredProducts
                       .where(
                         (p) =>
-                            p.name.toLowerCase().contains(
-                              _searchQuery.toLowerCase(),
-                            ) ||
-                            p.description.toLowerCase().contains(
-                              _searchQuery.toLowerCase(),
-                            ),
+                            p.name.toLowerCase().contains(q) ||
+                            p.description.toLowerCase().contains(q) ||
+                            p.brand.toLowerCase().contains(q) ||
+                            p.category.toLowerCase().contains(q) ||
+                            (p.btu != null && p.btu.toString().contains(q)),
                       )
                       .toList();
                 }
 
                 if (filteredProducts.isEmpty) {
                   return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.inventory_2_outlined,
-                          size: 64,
-                          color: AdminTheme.textSecondary,
-                        ),
-                        const SizedBox(height: MaasgaTokens.spacingMd),
-                        const Text('Aucun produit trouvé'),
-                        const SizedBox(height: MaasgaTokens.spacingSm),
-                        ElevatedButton.icon(
-                          onPressed: _showAddProductDialog,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Ajouter un produit'),
-                        ),
-                      ],
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.search_off_rounded,
+                            size: 56,
+                            color: AdminTheme.textSecondary,
+                          ),
+                          const SizedBox(height: MaasgaTokens.spacingMd),
+                          Text(
+                            _searchQuery.isNotEmpty
+                                ? 'Aucun produit pour « $_searchQuery »'
+                                : 'Aucun produit trouvé',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _searchQuery.isNotEmpty
+                                ? 'Essayez de modifier votre terme de recherche ou de réinitialiser les filtres.'
+                                : 'Aucun produit ne correspond aux filtres sélectionnés.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AdminTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: MaasgaTokens.spacingMd),
+                          if (_searchQuery.isNotEmpty ||
+                              _selectedCategory != 'Tous' ||
+                              _selectedBrand != null ||
+                              _selectedBtu != null)
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _searchController.clear();
+                                  _searchQuery = '';
+                                  _selectedCategory = 'Tous';
+                                  _selectedBrand = null;
+                                  _selectedBtu = null;
+                                });
+                              },
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Réinitialiser les filtres'),
+                            ),
+                          const SizedBox(height: MaasgaTokens.spacingSm),
+                          ElevatedButton.icon(
+                            onPressed: _showAddProductDialog,
+                            icon: const Icon(Icons.add),
+                            label: const Text('Ajouter un produit'),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 }
@@ -374,29 +438,26 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
           ),
           TextButton(
             onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(context);
               try {
                 await ref.read(deleteProductProvider(product.id).future);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Produit "${product.name}" supprimé avec succès',
-                      ),
-                      backgroundColor: AdminTheme.success,
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Produit "${product.name}" supprimé avec succès',
                     ),
-                  );
-                  ref.invalidate(productsProvider);
-                }
+                    backgroundColor: AdminTheme.success,
+                  ),
+                );
+                ref.invalidate(productsProvider);
               } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Erreur lors de la suppression: $e'),
-                      backgroundColor: AdminTheme.error,
-                    ),
-                  );
-                }
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text('Erreur lors de la suppression: $e'),
+                    backgroundColor: AdminTheme.error,
+                  ),
+                );
               }
             },
             style: TextButton.styleFrom(foregroundColor: AdminTheme.error),

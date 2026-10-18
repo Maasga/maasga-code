@@ -63,7 +63,9 @@ class _BannerFormState extends ConsumerState<BannerForm> {
     if (_imageUrlController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Veuillez uploader ou renseigner l\'image de la bannière'),
+          content: Text(
+            'Veuillez uploader ou renseigner l\'image de la bannière',
+          ),
           backgroundColor: AdminTheme.error,
         ),
       );
@@ -105,7 +107,9 @@ class _BannerFormState extends ConsumerState<BannerForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              widget.banner != null ? 'Bannière mise à jour avec succès' : 'Bannière créée avec succès',
+              widget.banner != null
+                  ? 'Bannière mise à jour avec succès'
+                  : 'Bannière créée avec succès',
             ),
             backgroundColor: AdminTheme.success,
           ),
@@ -144,7 +148,9 @@ class _BannerFormState extends ConsumerState<BannerForm> {
           ),
           const SizedBox(height: MaasgaTokens.spacingSm),
           ImageUploadField(
-            currentUrl: _imageUrlController.text.isNotEmpty ? _imageUrlController.text : null,
+            currentUrl: _imageUrlController.text.isNotEmpty
+                ? _imageUrlController.text
+                : null,
             previewHeight: 180,
             onUrlChanged: (url) {
               setState(() {
@@ -155,14 +161,18 @@ class _BannerFormState extends ConsumerState<BannerForm> {
           const SizedBox(height: MaasgaTokens.spacingSm),
           TextFormField(
             controller: _imageUrlController,
-            decoration: AdminTheme.inputDecoration('Ou coller l\'URL de l\'image https://...').copyWith(
-              suffixIcon: _imageUrlController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, size: 18),
-                      onPressed: () => setState(() => _imageUrlController.clear()),
-                    )
-                  : null,
-            ),
+            decoration:
+                AdminTheme.inputDecoration(
+                  'Ou coller l\'URL de l\'image https://...',
+                ).copyWith(
+                  suffixIcon: _imageUrlController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () =>
+                              setState(() => _imageUrlController.clear()),
+                        )
+                      : null,
+                ),
             onChanged: (_) => setState(() {}),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
@@ -176,9 +186,9 @@ class _BannerFormState extends ConsumerState<BannerForm> {
           // ── 2. Informations textuelles ────────────────────────────
           TextFormField(
             controller: _titleController,
-            decoration: AdminTheme.inputDecoration('Titre principal de la bannière *').copyWith(
-              hintText: 'Ex: Soldes d\'été ou Climatiseurs Inverter',
-            ),
+            decoration: AdminTheme.inputDecoration(
+              'Titre principal de la bannière *',
+            ).copyWith(hintText: 'Ex: Soldes d\'été ou Climatiseurs Inverter'),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'Le titre est requis';
@@ -190,9 +200,9 @@ class _BannerFormState extends ConsumerState<BannerForm> {
           const SizedBox(height: MaasgaTokens.spacingMd),
           TextFormField(
             controller: _subtitleController,
-            decoration: AdminTheme.inputDecoration('Sous-titre / Message promotionnel').copyWith(
-              hintText: 'Ex: Jusqu\'à 30% de réduction immédiate',
-            ),
+            decoration: AdminTheme.inputDecoration(
+              'Sous-titre / Message promotionnel',
+            ).copyWith(hintText: 'Ex: Jusqu\'à 30% de réduction immédiate'),
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: MaasgaTokens.spacingLg),
@@ -213,7 +223,9 @@ class _BannerFormState extends ConsumerState<BannerForm> {
                 selected: isSelected,
                 selectedColor: AdminTheme.primary.withValues(alpha: 0.15),
                 labelStyle: TextStyle(
-                  color: isSelected ? AdminTheme.primary : AdminTheme.textSecondary,
+                  color: isSelected
+                      ? AdminTheme.primary
+                      : AdminTheme.textSecondary,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   fontSize: 12,
                 ),
@@ -228,7 +240,9 @@ class _BannerFormState extends ConsumerState<BannerForm> {
           const SizedBox(height: MaasgaTokens.spacingSm),
           TextFormField(
             controller: _targetPageController,
-            decoration: AdminTheme.inputDecoration('Lien personnalisé (ex: /catalog ou /maintenance)'),
+            decoration: AdminTheme.inputDecoration(
+              'Lien personnalisé (ex: /catalog ou /maintenance)',
+            ),
           ),
           const SizedBox(height: MaasgaTokens.spacingLg),
 
@@ -245,7 +259,10 @@ class _BannerFormState extends ConsumerState<BannerForm> {
               const SizedBox(width: 16),
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: AdminTheme.background,
                     borderRadius: BorderRadius.circular(MaasgaTokens.radiusMd),
@@ -253,16 +270,24 @@ class _BannerFormState extends ConsumerState<BannerForm> {
                   ),
                   child: SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Active', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    title: const Text(
+                      'Active',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
                     subtitle: Text(
                       _isActive ? 'Visible' : 'Masquée',
                       style: TextStyle(
                         fontSize: 11,
-                        color: _isActive ? AdminTheme.success : AdminTheme.textSecondary,
+                        color: _isActive
+                            ? AdminTheme.success
+                            : AdminTheme.textSecondary,
                       ),
                     ),
                     value: _isActive,
-                    activeColor: AdminTheme.primary,
+                    activeThumbColor: AdminTheme.primary,
                     onChanged: (val) => setState(() => _isActive = val),
                   ),
                 ),
@@ -275,22 +300,36 @@ class _BannerFormState extends ConsumerState<BannerForm> {
           ElevatedButton(
             onPressed: _isSaving ? null : _submit,
             style: AdminTheme.primaryButtonStyle.copyWith(
-              padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 14)),
+              padding: WidgetStateProperty.all(
+                const EdgeInsets.symmetric(vertical: 14),
+              ),
             ),
             child: _isSaving
                 ? const SizedBox(
                     height: 22,
                     width: 22,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
                   )
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.cloud_upload_outlined, color: Colors.white, size: 20),
+                      const Icon(
+                        Icons.cloud_upload_outlined,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Text(
-                        widget.banner != null ? 'Mettre à jour la bannière' : 'Publier la bannière',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        widget.banner != null
+                            ? 'Mettre à jour la bannière'
+                            : 'Publier la bannière',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
                       ),
                     ],
                   ),
