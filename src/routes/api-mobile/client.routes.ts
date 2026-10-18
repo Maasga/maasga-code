@@ -524,3 +524,61 @@ mobileClientRouter.post('/maintenance', mobileAuth, async (c) => {
     return c.json({ error: e.message || 'Erreur lors de la demande de maintenance' }, 500)
   }
 })
+
+// ── POST /api/client/push-token ─────────────────────────────────────
+mobileClientRouter.post('/push-token', mobileAuth, async (c) => {
+  const user = c.get('mobileUser')
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const token = (body?.token || '').trim()
+  const platform = (body?.platform || 'android').trim()
+  const appVersion = (body?.appVersion || '').trim()
+
+  if (!token) return c.json({ error: 'Token FCM manquant' }, 400)
+
+  let clientId = 0
+  try {
+    const row = (await db.prepare('SELECT id FROM clients WHERE firebase_uid = ?').bind(user.uid).first()) as any
+    if (row?.id) clientId = Number(row.id)
+  } catch (_) {}
+
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS push_tokens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      client_id INTEGER NOT NULL,
+      token TEXT NOT NULL UNIQUE,
+      platform TEXT DEFAULT 'android',
+      app_version TEXT DEFAULT '',
+      updated_at TEXT NOT NULL
+    )`).run()
+  } catch (_) {}
+
+  await db.prepare(`
+    INSERT INTO push_tokens (client_id, token, platform, app_version, updated_at)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(token) DO UPDATE SET
+      client_id   = excluded.client_id,
+      platform    = excluded.platform,
+      app_version = excluded.app_version,
+      updated_at  = excluded.updated_at
+  `).bind(clientId, token, platform, appVersion, new Date().toISOString()).run()
+
+  return c.json({ success: true })
+})
+
+// ── DELETE /api/client/push-token ───────────────────────────────────
+mobileClientRouter.delete('/push-token', mobileAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  const body = (await c.req.json().catch(() => ({}))) as any
+  const token = (body?.token || '').trim()
+
+  if (!token) return c.json({ error: 'Token FCM manquant' }, 400)
+
+  await db.prepare('DELETE FROM push_tokens WHERE token = ?').bind(token).run()
+  return c.json({ success: true })
+})
+
