@@ -4,9 +4,6 @@ import { cors } from 'hono/cors'
 import { serveStatic } from 'hono/cloudflare-workers'
 import { setCookie, getCookie, deleteCookie } from 'hono/cookie'
 import type { D1Database } from '@cloudflare/workers-types'
-import { EspaceClientPage } from './pages/espace-client'
-import { AdminPage, AdminProduitsPage, AdminRDVPage, AdminClientsPage, AdminCommandesPage, AdminPaiementsPage, AdminAvisPage, AdminParametresPage, AdminDevisListPage, AdminDevisNewPage, AdminDevisDetailPage, AdminMaintenancePage, AdminMessagesPage, AdminRealisationsPage, AdminSAVPage, AdminSAVDetailPage, AdminAuditLogPage, AdminNotificationsPage } from './pages/admin'
-import { AdminBannersPage } from './pages/banners'
 import { appointments, reviews, orders, clients, notifications, setMaintenanceDueCount, setPendingMaintenanceContractsCount, setPendingMaintenanceRequestsCount, pendingMaintenanceContracts } from './data/store'
 import type { Order } from './data/store'
 import { products } from './data/products'
@@ -16,12 +13,11 @@ import type { HonoEnv } from './types'
 import { SITE_URL } from './types'
 import { escapeHtml, sanitizeText, isValidEmail, isValidPhone, normalizePhone, validateImageMagicBytes } from './utils/helpers'
 import { sendSmsWithLog, notifyAdmin, logActivity, logSecurityEvent, sendTelegramMessage, ensureActivityLog, ensureNotificationsTable } from './utils/notifications'
-import { analyserClasseur, cleProduit, MAX_LIGNES_PAR_LOT } from './utils/importProduits'
-import type { ChampCible, ChampsProduit, ProduitDerive } from './utils/importProduits'
 import { webRouter } from './routes/web'
 import { mobileRouter } from './routes/api-mobile'
 import { clientRouter } from './routes/client'
 import { adminRouter } from './routes/admin'
+import { rateLimit } from './utils/security'
 
 // App Hono — types et utilitaires importés depuis ./types et ./utils/
 
@@ -117,231 +113,6 @@ app.use(async (c, next) => {
 })
 
 // ============================================================
-// RATE LIMITING (in-memory per isolate, sliding window)
-// ============================================================
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>()
-const RATE_LIMIT_MAX_ENTRIES = 10000 // Cap in-memory rate limit store to prevent OOM
-
-function rateLimit(key: string, maxRequests: number, windowMs: number): { allowed: boolean; remaining: number } {
-  rateLimitCleanup()
-  const now = Date.now()
-  const entry = rateLimitStore.get(key)
-  if (!entry || now > entry.resetAt) {
-    // Enforce size cap — evict expired entries first, then oldest if still over limit
-    if (rateLimitStore.size >= RATE_LIMIT_MAX_ENTRIES) {
-      for (const [k, v] of rateLimitStore) {
-        if (now > v.resetAt) rateLimitStore.delete(k)
-      }
-      // If still over limit after purge, evict oldest entries
-      if (rateLimitStore.size >= RATE_LIMIT_MAX_ENTRIES) {
-        const iter = rateLimitStore.keys()
-        rateLimitStore.delete(iter.next().value!)
-      }
-    }
-    rateLimitStore.set(key, { count: 1, resetAt: now + windowMs })
-    return { allowed: true, remaining: maxRequests - 1 }
-  }
-  if (entry.count >= maxRequests) {
-    return { allowed: false, remaining: 0 }
-  }
-  entry.count++
-  return { allowed: true, remaining: maxRequests - entry.count }
-}
-
-// Lazy cleanup of expired rate limit entries (runs during rateLimit checks)
-let _lastRateLimitCleanup = 0
-function rateLimitCleanup() {
-  const now = Date.now()
-  if (now - _lastRateLimitCleanup < 300000) return // max every 5 min
-  _lastRateLimitCleanup = now
-  for (const [key, entry] of rateLimitStore) {
-    if (now > entry.resetAt) rateLimitStore.delete(key)
-  }
-}
-
-// Rate limit persistant, partagé par tous les isolates (table rate_limits,
-// migration 0038). Le compteur mémoire ci-dessus vit dans un seul isolate
-// Cloudflare : un attaquant qui retente sa chance tombe sur un autre isolate et
-// repart d'un compteur Ã  zéro, donc les 5 tentatives de login admin ne
-// plafonnaient rien. À réserver aux endpoints sensibles (une écriture D1 par
-// tentative) ; le reste du site garde le compteur mémoire.
-// En cas d'échec D1, on retombe sur le compteur mémoire plutôt que d'ouvrir grand.
-async function rateLimitD1(db: any, key: string, maxRequests: number, windowMs: number): Promise<{ allowed: boolean; remaining: number }> {
-  if (!db) return rateLimit(key, maxRequests, windowMs)
-  const now = Date.now()
-  const nowIso = new Date(now).toISOString()
-  try {
-    await db.prepare(`CREATE TABLE IF NOT EXISTS rate_limits (
-      key TEXT PRIMARY KEY,
-      count INTEGER NOT NULL DEFAULT 0,
-      window_start INTEGER NOT NULL,
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    )`).run()
-    const row = await db.prepare('SELECT count, window_start FROM rate_limits WHERE key = ?').bind(key).first() as any
-    const windowStart = Number(row?.window_start ?? 0)
-    const count = Number(row?.count ?? 0)
-    if (!row || !isFinite(windowStart) || now - windowStart > windowMs) {
-      await db.prepare('INSERT OR REPLACE INTO rate_limits (key, count, window_start, updated_at) VALUES (?, 1, ?, ?)').bind(key, now, nowIso).run()
-      // Purge des fenêtres d'il y a plus de 24 h, tant qu'on écrit déjÃ 
-      try { await db.prepare('DELETE FROM rate_limits WHERE window_start < ?').bind(now - 86400000).run() } catch(_) {}
-      return { allowed: true, remaining: maxRequests - 1 }
-    }
-    if (count >= maxRequests) return { allowed: false, remaining: 0 }
-    await db.prepare('UPDATE rate_limits SET count = count + 1, updated_at = ? WHERE key = ?').bind(nowIso, key).run()
-    return { allowed: true, remaining: Math.max(0, maxRequests - count - 1) }
-  } catch (e) {
-    console.error('[SECURITY] rateLimitD1 indisponible, repli mémoire:', e)
-    return rateLimit(key, maxRequests, windowMs)
-  }
-}
-
-// Remet Ã  zéro un compteur persistant (appelé après une authentification réussie
-// pour ne pas pénaliser un admin qui s'est trompé une fois).
-async function rateLimitD1Reset(db: any, key: string): Promise<void> {
-  if (!db) return
-  try { await db.prepare('DELETE FROM rate_limits WHERE key = ?').bind(key).run() } catch(_) {}
-}
-
-// Journal des actions admin sensibles (export de sauvegarde, réinitialisation de
-// la base, changement d'identifiants). security_log ne conserve pas le
-// user-agent, utile pour reconstituer une compromission.
-async function logAdminAudit(db: any, data: { action: string; detail?: string; ip?: string; userAgent?: string }): Promise<void> {
-  if (!db) return
-  try {
-    await db.prepare(`CREATE TABLE IF NOT EXISTS admin_audit_log (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      action TEXT NOT NULL,
-      detail TEXT,
-      ip TEXT,
-      user_agent TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    )`).run()
-    await db.prepare('INSERT INTO admin_audit_log (action, detail, ip, user_agent) VALUES (?, ?, ?, ?)')
-      .bind(data.action, data.detail || null, data.ip || null, (data.userAgent || '').slice(0, 300) || null).run()
-  } catch(_) {}
-}
-
-// Vérifie le mot de passe admin courant (D1, sinon amorçage ADMIN_INITIAL_PASSWORD).
-// Sert Ã  redemander le mot de passe pour les actions destructrices : le cookie de
-// session seul ne doit pas suffire.
-async function verifyAdminPassword(env: any, password: string): Promise<boolean> {
-  if (!password || typeof password !== 'string') return false
-  let hash = ''
-  const db = env?.DB
-  if (db) {
-    try {
-      const row = await db.prepare('SELECT value FROM admin_settings WHERE key = ?').bind('admin_password_hash').first() as any
-      if (row?.value) hash = row.value
-    } catch(_) { /* table absente */ }
-  }
-  if (!hash && env?.ADMIN_INITIAL_PASSWORD) hash = await hashPassword(env.ADMIN_INITIAL_PASSWORD)
-  if (!hash) return false
-  return await verifyPassword(password, hash)
-}
-
-// ADMIN AUTH HELPERS (must be defined before routes that use them)
-// ============================================================
-
-// Middleware auth admin — HMAC signed cookie
-// Secret HMAC : OBLIGATOIRE via variable d'environnement ADMIN_SECRET
-// Aucun fallback hardcodé — fail closed si non configuré
-const TOKEN_MAX_AGE_MS = 24 * 60 * 60 * 1000 // 24h d'expiration
-
-function getAdminSecret(env: any): string {
-  const secret = env?.ADMIN_SECRET
-  if (!secret || typeof secret !== 'string' || secret.length < 16) {
-    throw new Error('ADMIN_SECRET env var manquante ou trop courte (min 16 chars). Configurez-la via: wrangler secret put ADMIN_SECRET')
-  }
-  return secret
-}
-
-async function signToken(payload: string, secret: string): Promise<string> {
-  if (!secret) throw new Error('Secret HMAC requis pour signer le token')
-  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
-  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload))
-  return payload + '.' + Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('')
-}
-
-async function verifyToken(token: string, secret: string): Promise<boolean> {
-  if (!secret) return false
-  const parts = token.split('.')
-  if (parts.length < 2) return false
-  const payload = parts.slice(0, -1).join('.')
-  // Vérifier l'expiration du token (payload = admin_<timestamp>)
-  const tsMatch = payload.match(/_(\d+)$/)
-  if (tsMatch) {
-    const tokenTime = parseInt(tsMatch[1], 10)
-    if (Date.now() - tokenTime > TOKEN_MAX_AGE_MS) return false // Token expiré
-  }
-  const expected = await signToken(payload, secret)
-  // Constant-time comparison to prevent timing attacks
-  const enc = new TextEncoder()
-  const a = enc.encode(token)
-  const b = enc.encode(expected)
-  if (a.byteLength !== b.byteLength) return false
-  const keyData = crypto.getRandomValues(new Uint8Array(32))
-  const hmacKey = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
-  const [sigA, sigB] = await Promise.all([
-    crypto.subtle.sign('HMAC', hmacKey, a),
-    crypto.subtle.sign('HMAC', hmacKey, b),
-  ])
-  const arrA = new Uint8Array(sigA)
-  const arrB = new Uint8Array(sigB)
-  let diff = 0
-  for (let i = 0; i < arrA.length; i++) diff |= arrA[i] ^ arrB[i]
-  return diff === 0
-}
-
-// Comparaison de chaînes Ã  durée constante (contre les timing attacks sur un secret).
-// La longueur reste observable, mais le contenu ne fuit pas octet par octet.
-function timingSafeEqualStr(a: string, b: string): boolean {
-  if (typeof a !== 'string' || typeof b !== 'string') return false
-  if (a.length !== b.length) return false
-  let diff = 0
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
-  return diff === 0
-}
-
-// â”€â”€â”€ Révocation des sessions admin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Le cookie admin est stateless (HMAC seul), donc ni la déconnexion ni un
-// changement de mot de passe n'invalidaient les cookies déjÃ  émis : un cookie
-// volé restait valable 24 h. On versionne les sessions avec une Â« epoch Â»
-// stockée en D1 (admin_settings.admin_token_epoch, créée par la migration 0038).
-// Le payload du cookie devient admin_<epoch>_<timestamp> et adminAuth rejette
-// tout cookie dont l'epoch ne correspond plus. Incrémenter l'epoch déconnecte
-// donc toutes les sessions d'un coup.
-const ADMIN_EPOCH_KEY = 'admin_token_epoch'
-
-async function getAdminTokenEpoch(db: any): Promise<string> {
-  if (!db) return '1'
-  try {
-    const row = await db.prepare('SELECT value FROM admin_settings WHERE key = ?').bind(ADMIN_EPOCH_KEY).first() as any
-    const v = parseInt(row?.value ?? '', 10)
-    return isNaN(v) ? '1' : String(v)
-  } catch { return '1' }
-}
-
-async function bumpAdminTokenEpoch(db: any): Promise<void> {
-  if (!db) return
-  try {
-    await db.prepare('CREATE TABLE IF NOT EXISTS admin_settings (key TEXT PRIMARY KEY, value TEXT, updated_at TEXT)').run()
-    const current = parseInt(await getAdminTokenEpoch(db), 10)
-    await db.prepare('INSERT OR REPLACE INTO admin_settings (key, value, updated_at) VALUES (?, ?, ?)')
-      .bind(ADMIN_EPOCH_KEY, String(current + 1), new Date().toISOString()).run()
-  } catch (e) { console.error('[SECURITY] bumpAdminTokenEpoch a échoué:', e) }
-}
-
-// Extrait l'epoch d'un token dont le payload vaut admin_<epoch>_<timestamp>.
-// Retourne null pour l'ancien format admin_<timestamp> : ces sessions sont
-// rejetées, l'admin se reconnecte une fois.
-function adminPayloadEpoch(token: string): string | null {
-  const parts = token.split('.')
-  if (parts.length < 2) return null
-  const payload = parts.slice(0, -1).join('.')
-  const m = payload.match(/^admin_(\d+)_(\d+)$/)
-  return m ? m[1] : null
-}
-
 // CSRF protection: verify Origin/Referer header on all state-changing requests
 const ALLOWED_ORIGINS = [SITE_URL]
 // Hôtes de développement. Ils ne sont acceptés que si la requête arrive
