@@ -166,3 +166,11 @@ export async function bumpAdminTokenEpoch(db: any): Promise<void> {
     console.error('[SECURITY] bumpAdminTokenEpoch échec:', e)
   }
 }
+
+export function adminPayloadEpoch(token: string): string | null {
+  const parts = token.split('.')
+  if (parts.length < 2) return null
+  const payload = parts.slice(0, -1).join('.')
+  const m = payload.match(/^admin_(\d+)_(\d+)$/)
+  return m ? m[1] : null
+}
