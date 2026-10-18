@@ -1,5 +1,15 @@
 // Admin Layout & Security Attributes Escapers
-import { maintenanceDueCount, pendingMaintenanceContractsCount, pendingMaintenanceRequestsCount, pendingMaintenanceContracts, notifications } from '../../data/store'
+import {
+  appointments,
+  reviews,
+  orders,
+  clients,
+  maintenanceDueCount,
+  pendingMaintenanceContractsCount,
+  pendingMaintenanceRequestsCount,
+  pendingMaintenanceContracts,
+  notifications
+} from '../../data/store'
 import { SITE_URL } from '../../types'
 
 // HELPERS SÉCURITÉ
