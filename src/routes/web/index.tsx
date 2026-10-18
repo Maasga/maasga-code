@@ -17,8 +17,11 @@ import { reviews, clients } from '../../data/store'
 import { products } from '../../data/products'
 import { getReviews } from '../../db'
 import { StorageService } from '../../services/storage.service'
+import { webFormsRouter } from './forms.routes'
 
 export const webRouter = new Hono<HonoEnv>()
+
+webRouter.route('', webFormsRouter)
 
 // ── GET /media/:key{.*} ─────────────────────────────────────────────
 // Diffusion publique des images Cloudflare R2 avec en-têtes de mise en cache CDN
