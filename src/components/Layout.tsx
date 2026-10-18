@@ -38,7 +38,7 @@ export const NavIcon = ({ icon, color = '#94a3b8', size = 16, class: className =
   return <i class={`fas ${icon} ${className}`} style={{ color, fontSize: `${size}px`, width: `${size + 4}px`, textAlign: 'center' }} aria-hidden="true"></i>
 }
 
-export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisation Burkina Faso", activePage = "", description = "MAASGA - Spécialiste vente, installation et maintenance de climatiseurs Ã  Ouagadougou, Burkina Faso. Devis gratuit, techniciens certifiés.", canonicalPath = "", jsonLd }: {
+export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisation Burkina Faso", activePage = "", description = "MAASGA - Spécialiste vente, installation et maintenance de climatiseurs à Ouagadougou, Burkina Faso. Devis gratuit, techniciens certifiés.", canonicalPath = "", jsonLd }: {
   children: any
   title?: string
   activePage?: string
@@ -155,7 +155,6 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             <div style="width:72px;height:72px;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,119,182,0.2);animation:loader-pulse 1.5s ease-in-out infinite;">
               <img src="/logo-site.png" alt="MAASGA" style="width:100%;height:100%;object-fit:cover;" />
             </div>
-            <div style="position:absolute;top:-8px;right:-8px;font-size:1.4rem;animation:loader-spin 2s linear infinite;color:#0077b6;">â„</div>
           </div>
           <div style="color:#03045e;font-size:1.6rem;font-weight:800;letter-spacing:0.1em;margin-bottom:0.4rem;">MAASGA</div>
           <div style="color:#0077b6;font-size:0.75rem;letter-spacing:0.2em;margin-bottom:2rem;font-weight:600;">FROID &amp; CLIMATISATION</div>
@@ -360,7 +359,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                   </div>
                 </div>
                 <p class="text-sm leading-relaxed max-w-sm" style="color:#1e3a5f;">
-                  Spécialiste en vente, installation et maintenance de systèmes de climatisation Ã  Ouagadougou et dans tout le Burkina Faso.
+                  Spécialiste en vente, installation et maintenance de systèmes de climatisation à Ouagadougou et dans tout le Burkina Faso.
                 </p>
                 <div class="mt-5 space-y-3">
                   <div class="text-sm" style="color:#1e3a5f;">
