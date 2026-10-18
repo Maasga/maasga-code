@@ -161,3 +161,22 @@ export async function sendTelegramMessage(token: string, chatId: string, text: s
     body: JSON.stringify(payload)
   })
 }
+
+export async function logAdminAudit(
+  db: any,
+  data: { action: string; detail?: string; ip?: string; userAgent?: string }
+): Promise<void> {
+  if (!db) return
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS admin_audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      action TEXT NOT NULL,
+      detail TEXT,
+      ip TEXT,
+      user_agent TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`).run()
+    await db.prepare('INSERT INTO admin_audit_log (action, detail, ip, user_agent) VALUES (?, ?, ?, ?)')
+      .bind(data.action, data.detail || null, data.ip || null, (data.userAgent || '').slice(0, 300) || null).run()
+  } catch(_) {}
+}
