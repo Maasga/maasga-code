@@ -1,0 +1,7 @@
+export * from './product.repository'
+export * from './order.repository'
+export * from './appointment.repository'
+export * from './client.repository'
+export * from './maintenance.repository'
+export * from './sav.repository'
+export * from './banner.repository'
