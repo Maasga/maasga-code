@@ -57,17 +57,86 @@ Depuis la liste des produits, colonne **Image** → bouton **Galerie** pour ajou
 
 ## Architecture technique
 
-| Couche | Technologie |
-|---|---|
-| Runtime | Cloudflare Pages + Workers (edge) |
-| Framework | Hono (SSR JSX) |
-| Base de données | Cloudflare D1 (SQLite) |
-| Hébergement images | ImgBB API |
-| CSS | Tailwind CSS |
-| Build | Vite |
+L'application a été entièrement refactorisée selon une architecture modulaire et découplée :
 
-### Source de vérité des produits
-Le catalogue est **entièrement géré par D1**. Le fichier `src/data/products.ts` exporte un tableau vide — les produits sont chargés depuis D1 au premier démarrage de l'isolate Cloudflare Worker. Un produit supprimé via l'admin est supprimé de D1 et ne réapparaît jamais après un redéploiement.
+```
+src/
+├── repositories/          # Accès aux données Cloudflare D1 (requêtes SQL isolées)
+│   ├── product.repository.ts
+│   ├── order.repository.ts
+│   ├── appointment.repository.ts
+│   ├── client.repository.ts
+│   ├── maintenance.repository.ts
+│   ├── sav.repository.ts
+│   └── banner.repository.ts
+├── services/              # Logique métier pure (indépendante du framework HTTP)
+│   ├── pricing.service.ts # Calcul des devis et forfaits maintenance climatisation
+│   ├── storage.service.ts # Upload ImgBB et validation magic bytes
+│   ├── auth.service.ts    # Sessions admin, hachage PBKDF2 et jetons
+│   └── session.service.ts # Cookies et sessions espace client
+├── routes/                # Sous-routeurs Hono modulaires
+│   ├── web/               # Pages publiques SSR & formulaires (accueil, catalogue, contact)
+│   ├── client/            # Espace client authentifié (commandes, devis, SAV, factures)
+│   ├── admin/             # Back-office web & endpoints API admin internes
+│   ├── api-mobile/        # Contrats REST versionnés pour les applications Flutter
+│   │   ├── client.routes.ts # /api/mobile/v1/* (catalogue, RDV, devis, push-tokens)
+│   │   └── admin.routes.ts  # /api/mobile/admin/* (CRUD admin, KPIs, modération)
+│   ├── cron/              # Tâches planifiées (rappels de visites de maintenance)
+│   └── telegram/          # Webhook & commandes du bot Telegram interne
+├── components/admin/      # Interface d'administration découpée
+│   ├── AdminLayout.tsx    # Shell HTML, navigation sidebar et sécurité
+│   └── tabs/              # 14 onglets indépendants (Dashboard, Produits, RDV, Clients, etc.)
+└── __tests__/             # Tests unitaires automatisés Vitest
+    ├── pricing.service.test.ts
+    ├── security.test.ts
+    └── helpers.test.ts
+```
+
+| Couche | Technologie | Rôle |
+|---|---|---|
+| **Runtime** | Cloudflare Pages + Workers (Edge) | Exécution ultra-rapide sans serveur |
+| **Framework Web** | Hono v4 (JSX SSR) | Routage léger, typé et modulaire |
+| **Base de données** | Cloudflare D1 (SQLite distribué) | Persistance transactionnelle |
+| **Stockage Fichiers** | Cloudflare R2 & ImgBB API | Bannières, visuels produits et pièces jointes |
+| **Styles** | Tailwind CSS v3 | Design system et mise en page responsive |
+| **Tests** | Vitest v5 | Tests unitaires & validation de sécurité |
+| **CI/CD** | GitHub Actions | Build Tailwind+Vite, Vitest, et déploiement Cloudflare Pages |
+
+---
+
+## Tests automatisés & Qualité
+
+La suite de tests unitaires valide la logique métier, la sécurité et le calcul tarifaire :
+
+```bash
+# Lancer les tests unitaires
+npm test
+
+# Lancer Vitest en mode interactif / watch
+npx vitest
+```
+
+Les tests couvrent notamment :
+- **Moteur de tarification (`pricing.service.ts`)** : Formule résidentielle par paliers d'unités de clim, forfaits Confort (2 visites) et Pro (3 visites), devis sur-mesure.
+- **Sécurité & Authentification (`security.test.ts`)** : Vérification des signatures d'images (magic bytes anti-spoofing JPEG/PNG/WebP), échappement XSS HTML, validation des mots de passe admin.
+- **Utilitaires (`helpers.test.ts`)** : Formatage monétaire en FCFA, normalisation des numéros de téléphone et détection de collision de planning.
+
+---
+
+## Pipeline CI/CD
+
+Un workflow GitHub Actions automatisé est configuré dans `.github/workflows/deploy.yml` :
+1. **Compilation** : `npm run build:css` (Tailwind) + `vite build` (bundle SSR `dist/_worker.js`).
+2. **Tests** : Exécution de `vitest run`. En cas d'échec d'un test, le déploiement est immédiatement bloqué.
+3. **Déploiement Cloudflare** : Publication automatique vers Cloudflare Pages via `cloudflare/wrangler-action`.
+
+---
+
+## Modèle de Paiement & Transactions
+
+Les commandes et contrats de maintenance enregistrent l'intention d'achat en base de données D1 :
+- **Modèle actuel** : Règlement hors application (à la livraison / sur facture / virement d'acompte) avec suivi du statut dans l'espace client et l'admin mobile/web (`pending`, `completed`, `cancelled`).
+- **Évolution paiement en ligne** : Les repositories (`order.repository.ts`, `appointment.repository.ts`) et les tables D1 intègrent déjà les champs de référence transactionnelle pour brancher un agrégateur tel que CinetPay, FedaPay ou Orange Money via une route webhook dédiée avec idempotence.
 
 ---
 
