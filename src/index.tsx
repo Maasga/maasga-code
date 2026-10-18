@@ -201,7 +201,7 @@ app.use(async (c, next) => {
               description: p.description,
               inverter: p.inverter === 1,
               available: p.available === 1,
-              image: p.image || 'â„ï¸',
+              image: p.image || '❄️',
               imageUrl: p.imageUrl || p.image_url,
               features: (() => { try { return JSON.parse(p.features || '[]') } catch { return [] } })(),
               warranty: p.warranty || '1 an constructeur',
@@ -299,6 +299,15 @@ ${pages.map(p => `  <url><loc>${SITE_URL}${p.path}</loc><lastmod>${now}</lastmod
 })
 
 // ============================================================
+// SOUS-APPLICATIONS MODULAIRES
+// ============================================================
+app.route('', mobileRouter)
+app.route('', clientRouter)
+app.route('', adminRouter)
+app.route('', cronRouter)
+app.route('', telegramRouter)
+
+// ============================================================
 // ERROR HANDLERS (500 & 404)
 // ============================================================
 
@@ -315,12 +324,13 @@ app.onError((err, c) => {
         <link rel="stylesheet" href="/static/tailwind.css" />
       </head>
       <body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
-        <div class="text-center max-w-md">
-          <div class="text-6xl mb-6">âš ï¸</div>
+        <div class="text-center max-w-xl">
+          <div class="text-6xl mb-6">⚠️</div>
           <h1 class="text-2xl font-bold text-gray-900 mb-3">Erreur serveur</h1>
-          <p class="text-gray-500 mb-8">Une erreur inattendue s'est produite. Veuillez réessayer.</p>
+          <p class="text-gray-500 mb-4">Une erreur inattendue s'est produite. Veuillez réessayer.</p>
+          <pre class="bg-red-50 border border-red-200 text-red-700 text-xs text-left p-4 rounded-xl mb-6 overflow-x-auto font-mono max-h-48 whitespace-pre-wrap">{err?.message || String(err)}</pre>
           <a href="/" class="bg-blue-600 text-white font-semibold px-8 py-3 rounded-xl hover:bg-blue-700 transition-colors inline-flex items-center space-x-2">
-            <span>Retour Ã  l'accueil</span>
+            <span>Retour à l'accueil</span>
           </a>
         </div>
       </body>
@@ -342,11 +352,11 @@ app.notFound((c) => {
       <body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
         <div class="text-center max-w-md">
           <div class="text-8xl font-black text-blue-100 mb-4">404</div>
-          <div class="text-6xl mb-6">â„ï¸</div>
+          <div class="text-6xl mb-6">❄️</div>
           <h1 class="text-2xl font-bold text-gray-900 mb-3">Page introuvable</h1>
           <p class="text-gray-500 mb-8">Cette page n'existe pas ou a été déplacée.</p>
           <a href="/" class="bg-blue-600 text-white font-semibold px-8 py-3 rounded-xl hover:bg-blue-700 transition-colors inline-flex items-center space-x-2">
-            <span>Retour Ã  l'accueil</span>
+            <span>Retour à l'accueil</span>
           </a>
         </div>
       </body>
@@ -355,13 +365,6 @@ app.notFound((c) => {
   )
 })
 
-// API MOBILE & CLIENT — Sous-application modulaire (src/routes/api-mobile)
-// ============================================================
-app.route('', mobileRouter)
-app.route('', clientRouter)
-app.route('', adminRouter)
-app.route('', cronRouter)
-app.route('', telegramRouter)
 
 // ============================================================
 // EXPORT : Hono app (Pages-compatible)

@@ -273,7 +273,7 @@ export const AdminPage = () => {
                     <div class="text-2xl">{p.image}</div>
                     <div>
                       <div class="text-sm font-semibold leading-tight" style="color:var(--admin-text-primary)">{p.name}</div>
-                      <div class="text-xs text-gray-400">{p.brand} · {p.btu.toLocaleString()} BTU</div>
+                      <div class="text-xs text-gray-400">{p.brand} · {p.btu ? p.btu.toLocaleString() : '-'} BTU</div>
                     </div>
                   </div>
                   <span class={`text-xs font-bold px-3 py-1.5 rounded-full ${p.stock === 0 ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>
@@ -327,7 +327,7 @@ export const AdminPage = () => {
           const label = d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' })
           const monthOrders = orders.filter(o => {
             if (!o.created_at) return false
-            return o.created_at.startsWith(yearMonth) && ['confirme', 'en_livraison', 'livre'].includes(o.status)
+            return String(o.created_at || '').startsWith(yearMonth) && ['confirme', 'en_livraison', 'livre'].includes(o.status)
           })
           monthlyData.push({ month: yearMonth, label, revenue: monthOrders.reduce((s, o) => s + (o.total_price || 0), 0), count: monthOrders.length })
         }
@@ -365,14 +365,14 @@ export const AdminPage = () => {
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div class="rounded-xl p-4" style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2);">
               <div class="text-xs font-semibold mb-1" style="color:var(--admin-text-muted)">CA ce mois</div>
-              <div class="text-xl font-bold text-green-400">{currentMonth.revenue.toLocaleString()} F</div>
+              <div class="text-xl font-bold text-green-400">{(currentMonth?.revenue || 0).toLocaleString()} F</div>
               <div class="text-xs mt-1" style={growth >= 0 ? 'color:#34d399;' : 'color:#f87171;'}>
                 <i class={`fas fa-arrow-${growth >= 0 ? 'up' : 'down'} mr-1`}></i>{growth > 0 ? '+' : ''}{growth}% vs mois precedent
               </div>
             </div>
             <div class="rounded-xl p-4" style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2);">
               <div class="text-xs font-semibold mb-1" style="color:var(--admin-text-muted)">CA mois precedent</div>
-              <div class="text-xl font-bold text-blue-400">{prevMonth.revenue.toLocaleString()} F</div>
+              <div class="text-xl font-bold text-blue-400">{(prevMonth?.revenue || 0).toLocaleString()} F</div>
               <div class="text-xs mt-1" style="color:var(--admin-text-muted)">{prevMonth.count} commandes</div>
             </div>
             <div class="rounded-xl p-4" style="background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.2);">
@@ -382,7 +382,7 @@ export const AdminPage = () => {
             </div>
             <div class="rounded-xl p-4" style="background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.2);">
               <div class="text-xs font-semibold mb-1" style="color:var(--admin-text-muted)">Moyenne mensuelle</div>
-              <div class="text-xl font-bold text-yellow-400">{Math.round(avgMonthly).toLocaleString()} F</div>
+              <div class="text-xl font-bold text-yellow-400">{Math.round(avgMonthly || 0).toLocaleString()} F</div>
               <div class="text-xs mt-1" style="color:var(--admin-text-muted)">sur les mois actifs</div>
             </div>
           </div>
@@ -485,8 +485,8 @@ export const AdminPage = () => {
                     </div>
                   </td>
                   <td class="py-3 px-3 text-xs font-medium" style="color:var(--admin-text-muted)">{p.brand}</td>
-                  <td class="py-3 px-3 text-xs" style="color:var(--admin-text-muted)">{p.btu.toLocaleString()}</td>
-                  <td class="py-3 px-3 text-xs font-semibold" style="color:var(--admin-text-primary)">{p.price.toLocaleString()} F</td>
+                  <td class="py-3 px-3 text-xs" style="color:var(--admin-text-muted)">{p.btu ? p.btu.toLocaleString() : '-'}</td>
+                  <td class="py-3 px-3 text-xs font-semibold" style="color:var(--admin-text-primary)">{(p.price || 0).toLocaleString()} F</td>
                   <td class="py-3 px-3">
                     <span class={`text-xs font-bold ${p.stock === 0 ? 'text-red-600' : p.stock <= 3 ? 'text-orange-500' : 'text-green-600'}`}>{p.stock}</span>
                   </td>
