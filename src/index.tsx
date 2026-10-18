@@ -299,27 +299,7 @@ ${pages.map(p => `  <url><loc>${SITE_URL}${p.path}</loc><lastmod>${now}</lastmod
 })
 
 // ============================================================
-
-app.get('/api/cron/maintenance-reminders', async (c) => {
-  const env = c.env as HonoEnv['Bindings']
-  // Auth: require ADMIN_SECRET or custom cron key
-  const key = c.req.query('key') || ''
-  if (!env.ADMIN_SECRET) return c.json({ error: 'Cron endpoint non configuré (ADMIN_SECRET manquant)' }, 500)
-  if (key !== env.ADMIN_SECRET) {
-    return c.json({ error: 'Unauthorized' }, 401)
-  }
-
-  try {
-    await handleScheduled(env)
-    return c.json({ ok: true, message: 'Maintenance reminders processed' })
-  } catch (e: any) {
-    console.error('[CRON API] Error:', e)
-    return c.json({ error: 'Internal error', details: e.message }, 500)
-  }
-})
-
-// ============================================================
-// 404
+// ERROR HANDLERS (500 & 404)
 // ============================================================
 
 // Global error handler — catch unhandled exceptions and display nice error page
