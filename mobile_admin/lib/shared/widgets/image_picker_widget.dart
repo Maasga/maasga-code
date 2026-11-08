@@ -213,6 +213,13 @@ class _ImagePickerWidgetState extends ConsumerState<ImagePickerWidget> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
+      // BUG 4 error-recovery : remonte l'URL déjà connue au parent même quand
+      // une nouvelle tentative d'upload échoue. Sans cet appel, un second
+      // upload qui échoue laisserait ProductForm._imageUrl désynchronisé
+      // (l'URL du premier upload réussi ne serait jamais re-propagée).
+      if (_uploadedUrl != null) {
+        widget.onImageSelected(_uploadedUrl!);
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Échec de l\'envoi de l\'image: $e'),

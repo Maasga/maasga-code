@@ -459,6 +459,14 @@ const IMAGE_UPLOAD_MAX = 10
 const IMAGE_UPLOAD_WINDOW = 60000
 const IMAGE_SIZE_LIMIT = 5 * 1024 * 1024 // 5MB
 
+// NOTE (per-isolate scope) : ce rate limiter en mémoire (Map module-level) est
+// PER-ISOLATE. Dans Cloudflare Workers, chaque isolate possède son propre tas,
+// donc `imageUploadRateLimit` n'est PAS partagé entre les requêtes concurrentes
+// traitées par des isolates différents — un abus soutenu depuis une même IP peut
+// contourner la limite. La Map stoppe tout de même l'abuseur séquentiel au sein
+// d'un même isolate. La vraie protection DoS doit venir des règles de rate
+// limiting natives de Cloudflare (config wrangler / dashboard) ; ne pas se fier
+// à cette Map comme contrôle de sécurité.
 function checkImageUploadRateLimit(identifier: string): { allowed: boolean; remaining: number } {
   const now = Date.now()
   const entry = imageUploadRateLimit.get(identifier)

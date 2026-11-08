@@ -269,100 +269,102 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 const SizedBox(height: 8),
-                RadioGroup<String>(
-                  groupValue: scope,
-                  onChanged: (v) => setModalState(() => scope = v ?? scope),
-                  child: Column(
-                    children: [
-                      // Radio Option 1: Tous les climatiseurs de la marque
-                      InkWell(
-                        onTap: () => setModalState(() => scope = 'brand'),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
+                Column(
+                  children: [
+                    // Radio Option 1: Tous les climatiseurs de la marque
+                    InkWell(
+                      onTap: () => setModalState(() => scope = 'brand'),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: scope == 'brand'
+                              ? Colors.purple.shade50
+                              : Colors.white,
+                          border: Border.all(
                             color: scope == 'brand'
-                                ? Colors.purple.shade50
-                                : Colors.white,
-                            border: Border.all(
-                              color: scope == 'brand'
-                                  ? Colors.purple
-                                  : Colors.grey.shade300,
-                              width: scope == 'brand' ? 1.5 : 1,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
+                                ? Colors.purple
+                                : Colors.grey.shade300,
+                            width: scope == 'brand' ? 1.5 : 1,
                           ),
-                          child: Row(
-                            children: [
-                              Radio<String>(
-                                value: 'brand',
-                                activeColor: Colors.purple,
-                              ),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Tous les climatiseurs ${media.brand} (Groupé)',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${matchingProducts.length} climatiseur(s) ${media.brand} détecté(s)',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                      // Radio Option 2: Un seul produit
-                      InkWell(
-                        onTap: () => setModalState(() => scope = 'single'),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: scope == 'single'
-                                ? Colors.purple.shade50
-                                : Colors.white,
-                            border: Border.all(
-                              color: scope == 'single'
-                                  ? Colors.purple
-                                  : Colors.grey.shade300,
-                              width: scope == 'single' ? 1.5 : 1,
+                        child: Row(
+                          children: [
+                            Radio<String>(
+                              value: 'brand',
+                              groupValue: scope,
+                              onChanged: (v) =>
+                                  setModalState(() => scope = v ?? scope),
+                              activeColor: Colors.purple,
                             ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              Radio<String>(
-                                value: 'single',
-                                activeColor: Colors.purple,
-                              ),
-                              Expanded(
-                                child: Text(
-                                  'Un seul climatiseur spécifique',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Tous les climatiseurs ${media.brand} (Groupé)',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
                                   ),
-                                ),
+                                  Text(
+                                    '${matchingProducts.length} climatiseur(s) ${media.brand} détecté(s)',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 10),
+                    // Radio Option 2: Un seul produit
+                    InkWell(
+                      onTap: () => setModalState(() => scope = 'single'),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: scope == 'single'
+                              ? Colors.purple.shade50
+                              : Colors.white,
+                          border: Border.all(
+                            color: scope == 'single'
+                                ? Colors.purple
+                                : Colors.grey.shade300,
+                            width: scope == 'single' ? 1.5 : 1,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Radio<String>(
+                              value: 'single',
+                              groupValue: scope,
+                              onChanged: (v) =>
+                                  setModalState(() => scope = v ?? scope),
+                              activeColor: Colors.purple,
+                            ),
+                            Expanded(
+                              child: Text(
+                                'Un seul climatiseur spécifique',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 if (scope == 'single') ...[
                   const SizedBox(height: 12),
