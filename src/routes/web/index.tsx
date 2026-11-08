@@ -40,6 +40,19 @@ webRouter.get('/media/:key{.*}', async (c) => {
   object.writeHttpMetadata(headers)
   headers.set('etag', object.httpEtag)
   headers.set('Cache-Control', 'public, max-age=31536000, immutable')
+
+  // Fallback: deduce Content-Type from key extension if R2 metadata is absent
+  const ct = headers.get('content-type') || ''
+  if (!ct || ct === 'application/octet-stream') {
+    const keyLower = key.toLowerCase()
+    const mimeFromExt = keyLower.endsWith('.png') ? 'image/png'
+      : keyLower.endsWith('.webp') ? 'image/webp'
+      : keyLower.endsWith('.gif') ? 'image/gif'
+      : keyLower.endsWith('.svg') ? 'image/svg+xml'
+      : 'image/jpeg'
+    headers.set('content-type', mimeFromExt)
+  }
+
   return new Response(object.body, { headers })
 })
 

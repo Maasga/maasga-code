@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import type { HonoEnv } from '../../types'
+import { SITE_URL } from '../../types'
 import { mobileAdminAuth } from '../../services/auth.service'
 import {
   ProductRepository,
@@ -10,6 +11,8 @@ import {
   BannerRepository,
 } from '../../repositories'
 import { logAdminAudit } from '../../utils/notifications'
+import { validateImageMagicBytes } from '../../utils/helpers'
+import { StorageService } from '../../services/storage.service'
 
 export const mobileAdminRouter = new Hono<HonoEnv>()
 
@@ -284,6 +287,20 @@ mobileAdminRouter.patch('/admin/orders/:id/status', async (c) => {
   }
 })
 
+mobileAdminRouter.get('/admin/orders/:id/notes', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const id = parseInt(c.req.param('id'), 10)
+  if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    const notes = await db.prepare('SELECT * FROM order_notes WHERE order_id = ? ORDER BY created_at DESC').bind(id).all()
+    return c.json(notes.results || [])
+  } catch (e: any) {
+    return c.json({ error: 'Erreur: ' + e.message }, 500)
+  }
+})
+
 mobileAdminRouter.get('/admin/orders/stats', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({})
@@ -435,6 +452,585 @@ mobileAdminRouter.get('/admin/brands', async (c) => {
   }
 })
 
+// ─── IMAGE UPLOAD (R2) ───────────────────────────────────────────────────────────
+
+const imageUploadRateLimit = new Map<string, { count: number; resetAt: number }>()
+const IMAGE_UPLOAD_MAX = 10
+const IMAGE_UPLOAD_WINDOW = 60000
+const IMAGE_SIZE_LIMIT = 5 * 1024 * 1024 // 5MB
+
+function checkImageUploadRateLimit(identifier: string): { allowed: boolean; remaining: number } {
+  const now = Date.now()
+  const entry = imageUploadRateLimit.get(identifier)
+
+  if (!entry || now > entry.resetAt) {
+    imageUploadRateLimit.set(identifier, { count: 1, resetAt: now + IMAGE_UPLOAD_WINDOW })
+    return { allowed: true, remaining: IMAGE_UPLOAD_MAX - 1 }
+  }
+
+  if (entry.count >= IMAGE_UPLOAD_MAX) {
+    return { allowed: false, remaining: 0 }
+  }
+
+  entry.count++
+  return { allowed: true, remaining: IMAGE_UPLOAD_MAX - entry.count }
+}
+
+mobileAdminRouter.post('/admin/upload/image', async (c) => {
+  const clientIp = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
+  const rl = checkImageUploadRateLimit(clientIp)
+  if (!rl.allowed) {
+    return c.json({ error: 'Trop d\'uploads récents. Attendez 1 minute.' }, 429)
+  }
+
+  let file: any = null
+  try {
+    const form = await c.req.formData()
+    file = form.get('image')
+  } catch (_) {
+    const body = await c.req.parseBody()
+    file = body['image']
+  }
+
+  if (!file || typeof file !== 'object' || typeof file.arrayBuffer !== 'function' || !file.size) {
+    return c.json({ error: 'Fichier image manquant' }, 400)
+  }
+
+  if (file.size > IMAGE_SIZE_LIMIT) {
+    return c.json({ error: 'Image trop volumineuse (max 5 MB)' }, 400)
+  }
+
+  const rawType = (file.type || '').toLowerCase()
+  const fileType = rawType.startsWith('image/') ? rawType : 'image/jpeg'
+  const buffer = await file.arrayBuffer()
+  const bytes = new Uint8Array(buffer)
+
+  if (!validateImageMagicBytes(bytes)) {
+    return c.json({ error: 'Format d\'image non valide' }, 400)
+  }
+
+  try {
+    const r2 = c.env.IMAGES_BUCKET
+    if (!r2) {
+      return c.json({ error: 'Stockage R2 non configuré' }, 500)
+    }
+
+    const storage = new StorageService(r2)
+    const uploadRes = await storage.uploadImage(buffer, fileType, 'mobile-uploads', SITE_URL)
+
+    return c.json({ url: uploadRes.url })
+  } catch (e: any) {
+    console.error('Upload error:', e)
+    return c.json({ error: 'Upload échoué : ' + (e?.message || 'Erreur') }, 500)
+  }
+})
+
+// ─── BRAND MEDIA LIBRARY HELPER & ROUTES ───────────────────────────────────────
+
+async function ensureBrandMediaTable(db: any) {
+  if (!db) return
+  try {
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS brand_media_library (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        brand TEXT NOT NULL,
+        url TEXT NOT NULL,
+        delete_url TEXT,
+        label TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `).run()
+    await db.prepare(`CREATE INDEX IF NOT EXISTS idx_brand_media_brand ON brand_media_library(brand)`).run()
+  } catch (e) {
+    console.error('ensureBrandMediaTable error:', e)
+  }
+}
+
+mobileAdminRouter.post('/admin/media/brand/upload', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  await ensureBrandMediaTable(db)
+
+  try {
+    let brand = ''
+    let label = ''
+    let file: any = null
+
+    try {
+      const form = await c.req.formData()
+      brand = (form.get('brand') as string || '').trim().toUpperCase()
+      label = (form.get('label') as string || '').trim()
+      file = form.get('image')
+    } catch (_) {
+      const body = await c.req.parseBody().catch(() => ({} as Record<string, any>))
+      brand = (body['brand'] as string || '').trim().toUpperCase()
+      label = (body['label'] as string || '').trim()
+      file = body['image'] as any
+    }
+
+    if (!brand) {
+      return c.json({ error: 'Marque requise' }, 400)
+    }
+
+    if (!file || typeof file !== 'object' || typeof file.arrayBuffer !== 'function' || !file.size) {
+      return c.json({ error: 'Fichier image manquant' }, 400)
+    }
+
+    if (file.size > IMAGE_SIZE_LIMIT) {
+      return c.json({ error: 'Image trop volumineuse (max 5 MB)' }, 400)
+    }
+
+    const rawType = (file.type || '').toLowerCase()
+    const fileType = rawType.startsWith('image/') ? rawType : 'image/jpeg'
+    const buffer = await file.arrayBuffer()
+    const bytes = new Uint8Array(buffer)
+
+    if (!validateImageMagicBytes(bytes)) {
+      return c.json({ error: 'Format d\'image non valide' }, 400)
+    }
+
+    // Upload vers R2 via StorageService
+    const storage = new StorageService(c.env.IMAGES_BUCKET)
+    const uploadRes = await storage.uploadImage(buffer, fileType, `brand-media/${brand.toLowerCase()}`, SITE_URL)
+    const url = uploadRes.url
+
+    // Sauvegarder dans D1
+    const result = await db.prepare(`
+      INSERT INTO brand_media_library (brand, url, label, created_at)
+      VALUES (?, ?, ?, datetime('now'))
+    `).bind(brand, url, label || null).run()
+
+    const id = result.meta?.last_row_id
+
+    await logAdminAudit(db, {
+      action: 'upload_brand_media',
+      detail: `Upload image médiathèque pour ${brand} (${label || 'sans libellé'})`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown',
+    })
+
+    return c.json({
+      success: true,
+      image: {
+        id,
+        brand,
+        url,
+        label: label || null,
+        created_at: new Date().toISOString(),
+      },
+    })
+  } catch (e: any) {
+    console.error('Brand media upload error:', e)
+    return c.json({ error: 'Upload échoué : ' + (e?.message || 'Erreur') }, 500)
+  }
+})
+
+mobileAdminRouter.post('/admin/media/brand/delete', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  await ensureBrandMediaTable(db)
+
+  try {
+    let id: number | null = null
+    try {
+      const body = await c.req.json()
+      id = Number(body['id'])
+    } catch (_) {
+      const body = await c.req.parseBody().catch(() => ({} as Record<string, any>))
+      id = Number(body['id'])
+    }
+
+    if (!id) {
+      return c.json({ error: 'ID requis' }, 400)
+    }
+
+    // Récupérer l'image pour supprimer de R2
+    const media = await db.prepare('SELECT url FROM brand_media_library WHERE id = ?').bind(id).first() as any
+    if (media && media.url) {
+      const storage = new StorageService(c.env.IMAGES_BUCKET)
+      await storage.deleteImage(media.url)
+    }
+
+    // Supprimer de D1
+    await db.prepare('DELETE FROM brand_media_library WHERE id = ?').bind(id).run()
+
+    return c.json({ success: true })
+  } catch (e: any) {
+    console.error('Brand media delete error:', e)
+    return c.json({ error: 'Erreur suppression : ' + (e?.message || 'Erreur') }, 500)
+  }
+})
+
+mobileAdminRouter.post('/admin/media/brand/assign', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  await ensureBrandMediaTable(db)
+
+  try {
+    let body: any = {}
+    try {
+      body = await c.req.json()
+    } catch (_) {
+      try {
+        const form = await c.req.formData()
+        body = Object.fromEntries(form.entries())
+      } catch (_) {
+        body = await c.req.parseBody().catch(() => ({} as Record<string, any>))
+      }
+    }
+
+    const mediaId = Number(body['media_id'] ?? body['mediaId'])
+    const scope = String(body['scope'] || '').trim().toLowerCase() // 'brand' or 'single'
+    const rawProductId = body['product_id'] ?? body['productId']
+    const productId = rawProductId ? Number(rawProductId) : null
+    const target = (String(body['target'] || 'main').trim().toLowerCase() === 'gallery') ? 'gallery' : 'main'
+
+    if (!mediaId || !scope) {
+      return c.json({ error: 'media_id et scope requis' }, 400)
+    }
+
+    const mediaRow = await db.prepare('SELECT * FROM brand_media_library WHERE id = ?').bind(mediaId).first() as any
+    if (!mediaRow || !mediaRow.url) {
+      return c.json({ error: 'Image introuvable dans la médiathèque' }, 404)
+    }
+
+    if (scope === 'brand') {
+      const brandName = (mediaRow.brand || '').trim()
+      if (!brandName) {
+        return c.json({ error: 'Aucune marque associée à cette image' }, 400)
+      }
+
+      if (target === 'main') {
+        // Appliquer à l'image principale de tous les produits de la marque (mise à jour simultanée imageUrl et image_url)
+        const updateRes = await db.prepare(`
+          UPDATE products
+          SET imageUrl = ?, image_url = ?, updated_at = datetime('now')
+          WHERE LOWER(brand) = LOWER(?)
+        `).bind(mediaRow.url, mediaRow.url, brandName).run()
+
+        const count = updateRes.meta?.changes ?? 0
+
+        await logAdminAudit(db, {
+          action: 'assign_brand_media_main',
+          detail: `Image principale appliquée à ${count} produits de la marque ${brandName}`,
+          ip: c.req.header('cf-connecting-ip') || 'unknown',
+          userAgent: c.req.header('user-agent') || 'unknown',
+        })
+
+        return c.json({
+          success: true,
+          count,
+          message: `Image principale appliquée à tous les ${count} produits ${brandName}.`,
+        })
+      } else {
+        // Ajouter à la galerie de tous les produits de la marque
+        const matchingProds = await db.prepare(`
+          SELECT id, media_urls, gallery FROM products WHERE LOWER(brand) = LOWER(?)
+        `).bind(brandName).all() as any
+
+        const rows = matchingProds?.results || []
+        let count = 0
+        for (const prodRow of rows) {
+          let galleryList: any[] = []
+          try {
+            galleryList = JSON.parse(prodRow.media_urls || prodRow.gallery || '[]')
+          } catch (_) {}
+          if (!Array.isArray(galleryList)) galleryList = []
+
+          if (!galleryList.some((g: any) => (typeof g === 'string' ? g : g?.url) === mediaRow.url)) {
+            galleryList.push({
+              url: mediaRow.url,
+              deleteUrl: mediaRow.delete_url || '',
+              type: 'image',
+              caption: mediaRow.label || '',
+            })
+            const galleryJson = JSON.stringify(galleryList)
+            await db.prepare(`
+              UPDATE products
+              SET media_urls = ?, gallery = ?, updated_at = datetime('now')
+              WHERE id = ?
+            `).bind(galleryJson, galleryJson, prodRow.id).run()
+            count++
+          }
+        }
+
+        await logAdminAudit(db, {
+          action: 'assign_brand_media_gallery',
+          detail: `Image ajoutée à la galerie de ${count} produits de la marque ${brandName}`,
+          ip: c.req.header('cf-connecting-ip') || 'unknown',
+          userAgent: c.req.header('user-agent') || 'unknown',
+        })
+
+        return c.json({
+          success: true,
+          count,
+          message: `Image ajoutée à la galerie de ${count} produits ${brandName}.`,
+        })
+      }
+    } else {
+      // Scope single
+      if (!productId) {
+        return c.json({ error: 'product_id requis pour l\'affectation individuelle' }, 400)
+      }
+
+      if (target === 'main') {
+        const updateRes = await db.prepare(`
+          UPDATE products
+          SET imageUrl = ?, image_url = ?, updated_at = datetime('now')
+          WHERE id = ?
+        `).bind(mediaRow.url, mediaRow.url, productId).run()
+
+        if ((updateRes.meta?.changes ?? 0) === 0) {
+          return c.json({ error: 'Produit introuvable' }, 404)
+        }
+
+        await logAdminAudit(db, {
+          action: 'assign_product_media_main',
+          detail: `Image principale affectée au produit #${productId}`,
+          ip: c.req.header('cf-connecting-ip') || 'unknown',
+          userAgent: c.req.header('user-agent') || 'unknown',
+        })
+
+        return c.json({
+          success: true,
+          message: `Image affectée au produit #${productId}.`,
+        })
+      } else {
+        const prodRow = await db.prepare(`
+          SELECT id, media_urls, gallery FROM products WHERE id = ?
+        `).bind(productId).first() as any
+
+        if (!prodRow) {
+          return c.json({ error: 'Produit introuvable' }, 404)
+        }
+
+        let galleryList: any[] = []
+        try {
+          galleryList = JSON.parse(prodRow.media_urls || prodRow.gallery || '[]')
+        } catch (_) {}
+        if (!Array.isArray(galleryList)) galleryList = []
+
+        if (!galleryList.some((g: any) => (typeof g === 'string' ? g : g?.url) === mediaRow.url)) {
+          galleryList.push({
+            url: mediaRow.url,
+            deleteUrl: mediaRow.delete_url || '',
+            type: 'image',
+            caption: mediaRow.label || '',
+          })
+          const galleryJson = JSON.stringify(galleryList)
+          await db.prepare(`
+            UPDATE products
+            SET media_urls = ?, gallery = ?, updated_at = datetime('now')
+            WHERE id = ?
+          `).bind(galleryJson, galleryJson, productId).run()
+        }
+
+        await logAdminAudit(db, {
+          action: 'assign_product_media_gallery',
+          detail: `Image ajoutée à la galerie du produit #${productId}`,
+          ip: c.req.header('cf-connecting-ip') || 'unknown',
+          userAgent: c.req.header('user-agent') || 'unknown',
+        })
+
+        return c.json({
+          success: true,
+          message: `Image ajoutée à la galerie du produit #${productId}.`,
+        })
+      }
+    }
+  } catch (e: any) {
+    console.error('Brand media assign error:', e)
+    return c.json({ error: 'Erreur affectation : ' + (e?.message || 'Erreur') }, 500)
+  }
+})
+
+// ─── BANNERS (CRUD) ───────────────────────────────────────────────────────────────
+
+mobileAdminRouter.get('/admin/banners', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    const bannerRepo = new BannerRepository(db)
+    const banners = await bannerRepo.findBanners()
+    return c.json(banners)
+  } catch (e) {
+    return c.json([])
+  }
+})
+
+mobileAdminRouter.get('/admin/banners/:id', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const id = parseInt(c.req.param('id'), 10)
+  if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    const bannerRepo = new BannerRepository(db)
+    const banner = await bannerRepo.findBannerById(id)
+    if (!banner) return c.json({ error: 'Bannière non trouvée' }, 404)
+    return c.json(banner)
+  } catch (e: any) {
+    return c.json({ error: 'Erreur: ' + e.message }, 500)
+  }
+})
+
+mobileAdminRouter.post('/admin/banners', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const body = await c.req.json()
+    const bannerRepo = new BannerRepository(db)
+    const created = await bannerRepo.createBanner(body)
+
+    await logAdminAudit(db, {
+      action: 'create_banner',
+      detail: `Bannière: ${body.title}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown',
+    })
+
+    return c.json({ success: true, banner: created })
+  } catch (e: any) {
+    return c.json({ error: 'Erreur: ' + e.message }, 500)
+  }
+})
+
+mobileAdminRouter.patch('/admin/banners/:id/toggle', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const id = parseInt(c.req.param('id'), 10)
+  if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    const body = await c.req.json()
+    const bannerRepo = new BannerRepository(db)
+    await bannerRepo.updateBanner(id, { is_active: body.is_active ? 1 : 0 })
+
+    await logAdminAudit(db, {
+      action: 'toggle_banner',
+      detail: `Bannière ID: ${id} → ${body.is_active}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown',
+    })
+
+    return c.json({ success: true })
+  } catch (e: any) {
+    return c.json({ error: 'Erreur: ' + e.message }, 500)
+  }
+})
+
+// ─── BRANDS (CRUD) ───────────────────────────────────────────────────────────────
+
+mobileAdminRouter.get('/admin/brands/:id', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const id = parseInt(c.req.param('id'), 10)
+  if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    const bannerRepo = new BannerRepository(db)
+    const brand = await bannerRepo.findBrandById(id)
+    if (!brand) return c.json({ error: 'Marque non trouvée' }, 404)
+    return c.json(brand)
+  } catch (e: any) {
+    return c.json({ error: 'Erreur: ' + e.message }, 500)
+  }
+})
+
+mobileAdminRouter.post('/admin/brands', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+
+  try {
+    const body = await c.req.json()
+    const bannerRepo = new BannerRepository(db)
+    const created = await bannerRepo.createBrand(body)
+
+    await logAdminAudit(db, {
+      action: 'create_brand',
+      detail: `Marque: ${body.name}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown',
+    })
+
+    return c.json({ success: true, brand: created })
+  } catch (e: any) {
+    return c.json({ error: 'Erreur: ' + e.message }, 500)
+  }
+})
+
+mobileAdminRouter.put('/admin/brands/:id', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const id = parseInt(c.req.param('id'), 10)
+  if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    const body = await c.req.json()
+    const bannerRepo = new BannerRepository(db)
+    await bannerRepo.updateBrand(id, body)
+
+    await logAdminAudit(db, {
+      action: 'update_brand',
+      detail: `Marque ID: ${id}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown',
+    })
+
+    return c.json({ success: true })
+  } catch (e: any) {
+    return c.json({ error: 'Erreur: ' + e.message }, 500)
+  }
+})
+
+mobileAdminRouter.delete('/admin/brands/:id', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const id = parseInt(c.req.param('id'), 10)
+  if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    const bannerRepo = new BannerRepository(db)
+    await bannerRepo.deleteBrand(id)
+
+    await logAdminAudit(db, {
+      action: 'delete_brand',
+      detail: `Marque ID: ${id}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown',
+    })
+
+    return c.json({ success: true })
+  } catch (e: any) {
+    return c.json({ error: 'Erreur: ' + e.message }, 500)
+  }
+})
+
+mobileAdminRouter.patch('/admin/brands/:id/toggle', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const id = parseInt(c.req.param('id'), 10)
+  if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    const body = await c.req.json()
+    const bannerRepo = new BannerRepository(db)
+    await bannerRepo.updateBrand(id, { is_active: body.is_active ? 1 : 0 })
+
+    await logAdminAudit(db, {
+      action: 'toggle_brand',
+      detail: `Marque ID: ${id} → ${body.is_active}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown',
+    })
+
+    return c.json({ success: true })
+  } catch (e: any) {
+    return c.json({ error: 'Erreur: ' + e.message }, 500)
+  }
+})
+
 // ─── AUDIT & SETTINGS ────────────────────────────────────────────────────────
 
 mobileAdminRouter.get('/admin/audit', async (c) => {
@@ -482,14 +1078,28 @@ mobileAdminRouter.post('/admin/settings', async (c) => {
 
 mobileAdminRouter.get('/admin/media/brand', async (c) => {
   const db = c.env.DB
-  if (!db) return c.json([])
+  if (!db) return c.json({ images: [] })
+  await ensureBrandMediaTable(db)
+
+  const brand = (c.req.query('brand') || '').trim()
+  const brandId = Number(c.req.query('brand_id')) || 0
+
   try {
-    const brandId = Number(c.req.query('brand_id')) || 0
-    const bannerRepo = new BannerRepository(db)
-    const list = await bannerRepo.findBrandMedia(brandId)
-    return c.json(list)
-  } catch (e) {
-    return c.json([])
+    if (brandId > 0 && !brand) {
+      const bannerRepo = new BannerRepository(db)
+      const list = await bannerRepo.findBrandMedia(brandId)
+      if (list && list.length > 0) return c.json({ images: list })
+    }
+
+    const sql = brand
+      ? 'SELECT * FROM brand_media_library WHERE LOWER(brand) = LOWER(?) ORDER BY created_at DESC'
+      : 'SELECT * FROM brand_media_library ORDER BY brand ASC, created_at DESC'
+    const res = brand ? await db.prepare(sql).bind(brand).all() : await db.prepare(sql).all()
+    const results = (res as any)?.results || []
+    return c.json({ images: results })
+  } catch (e: any) {
+    console.error('GET /admin/media/brand error:', e)
+    return c.json({ images: [] })
   }
 })
 
@@ -509,10 +1119,17 @@ mobileAdminRouter.post('/admin/media/brand', async (c) => {
 mobileAdminRouter.delete('/admin/media/brand/:id', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  await ensureBrandMediaTable(db)
   const id = Number(c.req.param('id'))
+  if (!id) return c.json({ error: 'ID invalide' }, 400)
+
   try {
-    const bannerRepo = new BannerRepository(db)
-    await bannerRepo.deleteBrandMedia(id)
+    const media = await db.prepare('SELECT url FROM brand_media_library WHERE id = ?').bind(id).first() as any
+    if (media && media.url) {
+      const storage = new StorageService(c.env.IMAGES_BUCKET)
+      await storage.deleteImage(media.url)
+    }
+    await db.prepare('DELETE FROM brand_media_library WHERE id = ?').bind(id).run()
     return c.json({ success: true })
   } catch (e: any) {
     return c.json({ error: e.message }, 500)
@@ -571,6 +1188,124 @@ mobileAdminRouter.get('/admin/maintenance/visits', async (c) => {
     return c.json(list)
   } catch (e) {
     return c.json([])
+  }
+})
+
+mobileAdminRouter.post('/admin/maintenance/contracts/:id/activate', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const id = parseInt(c.req.param('id'), 10)
+  if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    await db.prepare("UPDATE maintenance_contracts SET status = 'active', updated_at = datetime('now') WHERE id = ?").bind(id).run()
+    return c.json({ success: true })
+  } catch (e: any) {
+    return c.json({ error: 'Erreur: ' + e.message }, 500)
+  }
+})
+
+mobileAdminRouter.patch('/admin/maintenance/requests/:id/status', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const id = parseInt(c.req.param('id'), 10)
+  if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    const body = await c.req.json()
+    const status = body['status']
+    if (!status) return c.json({ error: 'Statut requis' }, 400)
+
+    await db.prepare("UPDATE maintenance_requests SET status = ?, updated_at = datetime('now') WHERE id = ?").bind(status, id).run()
+    return c.json({ success: true })
+  } catch (e: any) {
+    return c.json({ error: 'Erreur: ' + e.message }, 500)
+  }
+})
+
+mobileAdminRouter.patch('/admin/maintenance/visits/:id/validate', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const id = parseInt(c.req.param('id'), 10)
+  if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    await db.prepare("UPDATE maintenance_visits SET status = 'completed', updated_at = datetime('now') WHERE id = ?").bind(id).run()
+    return c.json({ success: true })
+  } catch (e: any) {
+    return c.json({ error: 'Erreur: ' + e.message }, 500)
+  }
+})
+
+// ─── REVIEWS ───────────────────────────────────────────────────────────────────
+
+mobileAdminRouter.get('/admin/reviews', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    const { limit = 50, offset = 0 } = c.req.query()
+    const rows = await db.prepare('SELECT * FROM reviews ORDER BY created_at DESC LIMIT ? OFFSET ?')
+      .bind(parseInt(String(limit), 10), parseInt(String(offset), 10))
+      .all()
+    return c.json(rows.results || [])
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.get('/admin/reviews/:id', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const id = parseInt(c.req.param('id'), 10)
+  if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    const review = await db.prepare('SELECT * FROM reviews WHERE id = ?').bind(id).first()
+    if (!review) return c.json({ error: 'Avis non trouvé' }, 404)
+    return c.json(review)
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+// ─── PRODUCT IMAGE UPDATE ───────────────────────────────────────────────────────
+
+mobileAdminRouter.post('/admin/products/:id/image', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const id = parseInt(c.req.param('id'), 10)
+  if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    let imageUrl = ''
+    try {
+      const body = await c.req.json()
+      imageUrl = (body['image_url'] || body['imageUrl'] || '').trim()
+    } catch (_) {
+      const body = await c.req.parseBody().catch(() => ({} as Record<string, any>))
+      imageUrl = (body['image_url'] as string || body['imageUrl'] as string || '').trim()
+    }
+
+    if (!imageUrl) {
+      return c.json({ error: 'URL image requise' }, 400)
+    }
+
+    await db.prepare(`
+      UPDATE products
+      SET imageUrl = ?, image_url = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `).bind(imageUrl, imageUrl, id).run()
+
+    await logAdminAudit(db, {
+      action: 'update_product_image',
+      detail: `Image mise à jour pour le produit #${id}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown',
+    })
+
+    return c.json({ success: true, url: imageUrl })
+  } catch (e: any) {
+    return c.json({ error: 'Erreur: ' + e.message }, 500)
   }
 })
 
@@ -754,6 +1489,32 @@ mobileAdminRouter.patch('/admin/devis/:id/status', async (c) => {
     await db.prepare("UPDATE devis SET status = ?, updated_at = datetime('now') WHERE id = ?")
       .bind(status, id).run()
     return c.json({ success: true, message: 'Statut mis à jour' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.post('/admin/devis/:id/convert', async (c) => {
+  const id = Number(c.req.param('id'))
+  const db = c.env.DB
+  if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    // Update devis status to accepted
+    await db.prepare("UPDATE devis SET status = 'accepted', updated_at = datetime('now') WHERE id = ?").bind(id).run()
+
+    // Optionally create an order from the devis
+    const devis = await db.prepare('SELECT * FROM devis WHERE id = ?').bind(id).first() as any
+    if (devis) {
+      const result = await db.prepare(`
+        INSERT INTO orders (client_id, total_amount, status, notes, created_at)
+        VALUES (?, ?, 'pending', ?, datetime('now'))
+      `).bind(devis.client_id, devis.total_amount, `Converti depuis devis #${id}`).run()
+
+      return c.json({ success: true, order_id: result.meta?.last_row_id })
+    }
+
+    return c.json({ success: true })
   } catch (e: any) {
     return c.json({ error: e.message }, 500)
   }
@@ -960,11 +1721,25 @@ mobileAdminRouter.patch('/admin/sav/:id/assign', async (c) => {
   if (!technician) return c.json({ error: 'Technicien requis' }, 400)
   try {
     await db.prepare(`
-      UPDATE sav_tickets 
+      UPDATE sav_tickets
       SET assigned_technician = ?, status = 'in_progress', updated_at = datetime('now')
       WHERE id = ?
     `).bind(technician, id).run()
     return c.json({ success: true, message: 'Technicien assigné' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.patch('/admin/sav/:id/resolve', async (c) => {
+  const id = Number(c.req.param('id'))
+  const db = c.env.DB
+  if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
+  const { resolution_notes } = await c.req.json().catch(() => ({}))
+  try {
+    await db.prepare("UPDATE sav_tickets SET status = 'resolved', resolution_notes = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(resolution_notes || null, id).run()
+    return c.json({ success: true, message: 'Ticket résolu' })
   } catch (e: any) {
     return c.json({ error: e.message }, 500)
   }
@@ -1131,6 +1906,20 @@ mobileAdminRouter.delete('/admin/realisations/:id', async (c) => {
   try {
     await db.prepare('DELETE FROM realisations WHERE id = ?').bind(id).run()
     return c.json({ success: true, message: 'Réalisation supprimée' })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+mobileAdminRouter.patch('/admin/realisations/:id/featured', async (c) => {
+  const id = Number(c.req.param('id'))
+  const db = c.env.DB
+  if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
+  const { featured } = await c.req.json().catch(() => ({}))
+  try {
+    await db.prepare("UPDATE realisations SET featured = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(featured ? 1 : 0, id).run()
+    return c.json({ success: true, message: 'Statut featured mis à jour' })
   } catch (e: any) {
     return c.json({ error: e.message }, 500)
   }
