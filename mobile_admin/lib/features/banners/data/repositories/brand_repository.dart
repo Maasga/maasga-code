@@ -18,7 +18,10 @@ class BrandRepository {
           return err.toString();
         }
       }
-      if (data is String && data.isNotEmpty && !data.contains('<html') && !data.contains('<!DOCTYPE')) {
+      if (data is String &&
+          data.isNotEmpty &&
+          !data.contains('<html') &&
+          !data.contains('<!DOCTYPE')) {
         return data;
       }
       if (e.response?.statusCode != null) {
@@ -29,7 +32,7 @@ class BrandRepository {
     return e.toString();
   }
 
-  // ── Upload image vers ImgBB via le backend mobile admin ───────────────
+  // ── Upload image vers R2 via le backend mobile admin ───────────────
   Future<String> uploadImage(File file) async {
     try {
       AppLogger.info('Upload image via mobile admin endpoint');
@@ -49,7 +52,6 @@ class BrandRepository {
       final response = await _dio.post(
         ApiEndpoints.adminUploadImage,
         data: formData,
-        options: Options(contentType: 'multipart/form-data'),
       );
 
       final dynamic data = response.data;
@@ -75,19 +77,27 @@ class BrandRepository {
       final List<dynamic> list = raw is List
           ? raw
           : (raw is Map && raw['brands'] is List
-              ? (raw['brands'] as List)
-              : (raw is Map && raw['results'] is List ? (raw['results'] as List) : []));
+                ? (raw['brands'] as List)
+                : (raw is Map && raw['results'] is List
+                      ? (raw['results'] as List)
+                      : []));
 
       final brands = list
           .whereType<Map<String, dynamic>>()
           .map((json) => Brand.fromJson(json))
           .toList();
 
-      AppLogger.response(ApiEndpoints.adminBrands, response.statusCode, brands.length);
+      AppLogger.response(
+        ApiEndpoints.adminBrands,
+        response.statusCode,
+        brands.length,
+      );
       return brands;
     } catch (e) {
       AppLogger.error(e, null, 'BrandRepository.getBrands');
-      throw Exception('Erreur lors du chargement des marques: ${_formatError(e)}');
+      throw Exception(
+        'Erreur lors du chargement des marques: ${_formatError(e)}',
+      );
     }
   }
 
@@ -100,14 +110,18 @@ class BrandRepository {
       final dynamic resData = response.data;
       final String id = (resData is Map && resData['id'] != null)
           ? resData['id'].toString()
-          : (resData is Map && resData['brand'] is Map && resData['brand']['id'] != null
-              ? resData['brand']['id'].toString()
-              : DateTime.now().millisecondsSinceEpoch.toString());
+          : (resData is Map &&
+                    resData['brand'] is Map &&
+                    resData['brand']['id'] != null
+                ? resData['brand']['id'].toString()
+                : DateTime.now().millisecondsSinceEpoch.toString());
 
       return Brand.fromJson({...data, 'id': id});
     } catch (e) {
       AppLogger.error(e, null, 'BrandRepository.createBrand');
-      throw Exception('Erreur lors de la création de la marque: ${_formatError(e)}');
+      throw Exception(
+        'Erreur lors de la création de la marque: ${_formatError(e)}',
+      );
     }
   }
 
@@ -124,7 +138,9 @@ class BrandRepository {
       }
     } catch (e) {
       AppLogger.error(e, null, 'BrandRepository.updateBrand');
-      throw Exception('Erreur lors de la mise à jour de la marque: ${_formatError(e)}');
+      throw Exception(
+        'Erreur lors de la mise à jour de la marque: ${_formatError(e)}',
+      );
     }
   }
 
@@ -140,7 +156,9 @@ class BrandRepository {
       }
     } catch (e) {
       AppLogger.error(e, null, 'BrandRepository.deleteBrand');
-      throw Exception('Erreur lors de la suppression de la marque: ${_formatError(e)}');
+      throw Exception(
+        'Erreur lors de la suppression de la marque: ${_formatError(e)}',
+      );
     }
   }
 
@@ -157,7 +175,9 @@ class BrandRepository {
       }
     } catch (e) {
       AppLogger.error(e, null, 'BrandRepository.toggleBrand');
-      throw Exception("Erreur lors de l'activation de la marque: ${_formatError(e)}");
+      throw Exception(
+        "Erreur lors de l'activation de la marque: ${_formatError(e)}",
+      );
     }
   }
 }

@@ -7,13 +7,13 @@ import '../../../../core/theme/admin_theme.dart';
 import '../../../../shared/design_tokens/maasga_tokens.dart';
 
 /// Widget réutilisable : sélectionne une image depuis la galerie,
-/// la téléverse sur ImgBB via [/api/mobile/admin/upload/image] et
+/// la téléverse sur R2 via [/api/mobile/admin/upload/image] et
 /// expose l'URL finale via [onUrlChanged].
 class ImageUploadField extends ConsumerStatefulWidget {
   /// URL de l'image actuelle (null si aucune image)
   final String? currentUrl;
 
-  /// Appelé avec la nouvelle URL ImgBB après upload réussi
+  /// Appelé avec la nouvelle URL R2 après upload réussi
   final ValueChanged<String> onUrlChanged;
 
   /// Hauteur de la zone de prévisualisation
@@ -43,6 +43,14 @@ class _ImageUploadFieldState extends ConsumerState<ImageUploadField> {
   void initState() {
     super.initState();
     _uploadedUrl = widget.currentUrl;
+  }
+
+  @override
+  void didUpdateWidget(covariant ImageUploadField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_isUploading && widget.currentUrl != oldWidget.currentUrl) {
+      _uploadedUrl = widget.currentUrl;
+    }
   }
 
   Future<void> _pickAndUpload() async {

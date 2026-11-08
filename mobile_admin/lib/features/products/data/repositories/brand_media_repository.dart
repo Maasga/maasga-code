@@ -68,10 +68,20 @@ class BrandMediaRepository {
   }) async {
     try {
       final fileName = file.path.split(Platform.pathSeparator).last;
+      final ext = fileName.contains('.') ? fileName.split('.').last.toLowerCase() : 'jpg';
+      final mime = ext == 'png' ? 'image/png'
+          : ext == 'webp' ? 'image/webp'
+          : ext == 'gif' ? 'image/gif'
+          : 'image/jpeg'; // jpeg, jpg, heic, heif → jpeg
+
       final formData = FormData.fromMap({
         'brand': brand,
         'label': label ?? '',
-        'image': await MultipartFile.fromFile(file.path, filename: fileName),
+        'image': await MultipartFile.fromFile(
+          file.path,
+          filename: 'upload.$ext',
+          contentType: DioMediaType.parse(mime),
+        ),
       });
 
       final response = await _dio.post(
@@ -133,13 +143,18 @@ class BrandMediaRepository {
         data: {
           'media_id': mediaId,
           'scope': scope,
-          'product_id': ?productId,
+          if (productId != null) 'product_id': productId,
           'target': target,
         },
       );
       final dynamic data = response.data;
-      if (data is Map && data['message'] != null) {
-        return data['message'].toString();
+      if (data is Map) {
+        if (data['success'] != true) {
+          throw Exception(data['error']?.toString() ?? 'Affectation échouée');
+        }
+        if (data['message'] != null) {
+          return data['message'].toString();
+        }
       }
       return 'Image affectée avec succès';
     } catch (e) {
