@@ -270,9 +270,9 @@ class _MediathequeScreenState extends ConsumerState<MediathequeScreen> {
                 ),
                 const SizedBox(height: 8),
                 RadioGroup<String>(
-                    groupValue: scope,
-                    onChanged: (v) => setModalState(() => scope = v ?? scope),
-                    child: Column(
+                  groupValue: scope,
+                  onChanged: (v) => setModalState(() => scope = v ?? scope),
+                  child: Column(
                     children: [
                       // Radio Option 1: Tous les climatiseurs de la marque
                       InkWell(
