@@ -45,13 +45,13 @@ Permet d'uploader des visuels une seule fois (logos, photos produit par fabrican
 
 **Accès :** `Admin → Produits & Stock → panneau "Médiathèque par marque"` (collapsible en haut de la page).
 
-1. **Uploader** — Saisir la marque (LG, Samsung…), un libellé optionnel, puis choisir un ou plusieurs fichiers JPG/PNG/WebP (max 5 Mo chacun). Les images sont hébergées sur ImgBB.
+1. **Uploader** — Saisir la marque (LG, Samsung…), un libellé optionnel, puis choisir un ou plusieurs fichiers JPG/PNG/WebP (max 5 Mo chacun). Les images sont hébergées sur Cloudflare R2.
 2. **Filtrer** — Cliquer sur une marque pour n'afficher que ses images.
 3. **Affecter** — Survoler une miniature → bouton **Affecter** → choisir le produit cible et le type d'utilisation (image principale ou galerie) → confirmer.
-4. **Supprimer** — Survoler une miniature → bouton **Supprimer** → l'image est retirée d'ImgBB et de la médiathèque.
+4. **Supprimer** — Survoler une miniature → bouton **Supprimer** → l'image est retirée de R2 et de la médiathèque.
 
 ### Galerie multi-images par produit
-Depuis la liste des produits, colonne **Image** → bouton **Galerie** pour ajouter/supprimer des photos supplémentaires sur un produit existant. Les images sont uploadées vers ImgBB à la volée.
+Depuis la liste des produits, colonne **Image** → bouton **Galerie** pour ajouter/supprimer des photos supplémentaires sur un produit existant. Les images sont uploadées vers Cloudflare R2 à la volée.
 
 ---
 
@@ -71,7 +71,7 @@ src/
 │   └── banner.repository.ts
 ├── services/              # Logique métier pure (indépendante du framework HTTP)
 │   ├── pricing.service.ts # Calcul des devis et forfaits maintenance climatisation
-│   ├── storage.service.ts # Upload ImgBB et validation magic bytes
+│   ├── storage.service.ts # Upload R2 et validation magic bytes
 │   ├── auth.service.ts    # Sessions admin, hachage PBKDF2 et jetons
 │   └── session.service.ts # Cookies et sessions espace client
 ├── routes/                # Sous-routeurs Hono modulaires
@@ -97,7 +97,7 @@ src/
 | **Runtime** | Cloudflare Pages + Workers (Edge) | Exécution ultra-rapide sans serveur |
 | **Framework Web** | Hono v4 (JSX SSR) | Routage léger, typé et modulaire |
 | **Base de données** | Cloudflare D1 (SQLite distribué) | Persistance transactionnelle |
-| **Stockage Fichiers** | Cloudflare R2 & ImgBB API | Bannières, visuels produits et pièces jointes |
+| **Stockage Fichiers** | Cloudflare R2 | Bannières, visuels produits et pièces jointes |
 | **Styles** | Tailwind CSS v3 | Design system et mise en page responsive |
 | **Tests** | Vitest v5 | Tests unitaires & validation de sécurité |
 | **CI/CD** | GitHub Actions | Build Tailwind+Vite, Vitest, et déploiement Cloudflare Pages |
@@ -146,7 +146,7 @@ Les commandes et contrats de maintenance enregistrent l'intention d'achat en bas
 |---|---|---|
 | `ADMIN_SECRET` | Secret de réinitialisation mot de passe admin | ✅ |
 | `ADMIN_INITIAL_PASSWORD` | Mot de passe admin initial | ✅ |
-| `IMGBB_API_KEY` | Upload images produit et médiathèque | ✅ |
+
 | `TELEGRAM_BOT_TOKEN` | Notifications Telegram | Optionnel |
 | `TELEGRAM_CHAT_ID` | Chat ID pour les notifs | Optionnel |
 | `GOOGLE_CLIENT_ID` | Connexion Google OAuth | Optionnel |

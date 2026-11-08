@@ -96,6 +96,7 @@ import {
   DEFAULT_ADMIN_USERNAME
 } from '../../utils/security'
 import { StorageService } from '../../services/storage.service'
+import { BannerRepository } from '../../repositories/banner.repository'
 
 export const adminRouter = new Hono<HonoEnv>()
 
@@ -2171,6 +2172,162 @@ adminRouter.get('/admin/notifications', adminAuth, refreshAdminCache, async (c) 
   return c.html(<AdminNotificationsPage notifications={notifications} />)
 })
 
+// ============================================================
+// BANNIÈRES & MARQUES — Admin page + CRUD
+// ============================================================
+adminRouter.get('/admin/banners', adminAuth, refreshAdminCache, async (c) => {
+  const db = c.env.DB
+  let banners: any[] = []
+  let brands: any[] = []
+  if (db) {
+    try {
+      const bannerRepo = new BannerRepository(db)
+      banners = await bannerRepo.findBanners()
+      brands = await bannerRepo.findBrands()
+    } catch (_) {}
+  }
+  const success = c.req.query('success') || undefined
+  const error = c.req.query('error') || undefined
+  return c.html(<AdminBannersPage banners={banners} brands={brands} success={success} error={error} />)
+})
+
+// Upload image générique (utilisé par la page Bannières)
+adminRouter.post('/api/admin/upload/image', adminAuth, async (c) => {
+  const clientIp = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
+  const rl = checkImageUploadRateLimit(clientIp)
+  if (!rl.allowed) return c.json({ error: 'Trop d\'uploads récents. Attendez 1 minute.' }, 429)
+  let file: any = null
+  try {
+    const form = await c.req.formData()
+    file = form.get('image')
+  } catch (_) {
+    const body = await c.req.parseBody()
+    file = body['image']
+  }
+  if (!file || typeof file !== 'object' || typeof file.arrayBuffer !== 'function' || !file.size) {
+    return c.json({ error: 'Fichier image manquant' }, 400)
+  }
+  if (file.size > IMAGE_SIZE_LIMITS.BRAND_MEDIA) return c.json({ error: 'Image trop volumineuse (max 10 MB)' }, 400)
+  const rawType = (file.type || '').toLowerCase()
+  const fileType = rawType.startsWith('image/') ? rawType : 'image/jpeg'
+  const buffer = await file.arrayBuffer()
+  const bytes = new Uint8Array(buffer)
+  if (!validateImageMagicBytes(bytes)) return c.json({ error: 'Format d\'image non valide' }, 400)
+  try {
+    const r = await uploadToStorage(c, buffer, fileType, 'banners')
+    return c.json({ url: r.url, delete_url: r.deleteUrl })
+  } catch (e: any) {
+    return c.json({ error: 'Upload échoué : ' + (e?.message || 'Erreur') }, 500)
+  }
+})
+
+// CRUD bannières
+adminRouter.post('/api/admin/banners/create', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.redirect('/admin/banners?error=Base+de+données+indisponible')
+  const body = await c.req.parseBody()
+  const title = sanitizeText(body['title'] as string, 200)
+  const subtitle = sanitizeText(body['subtitle'] as string, 300) || undefined
+  const image_url = (body['image_url'] as string || '').trim()
+  const target_page = (body['target_page'] as string || '').trim() || undefined
+  const display_order = parseInt(body['display_order'] as string) || 0
+  const is_active = body['is_active'] ? 1 : 0
+  if (!title) return c.redirect('/admin/banners?error=Titre+requis')
+  if (!image_url) return c.redirect('/admin/banners?error=Image+requise')
+  try {
+    const bannerRepo = new BannerRepository(db)
+    await bannerRepo.createBanner({ title, subtitle, image_url, target_page, display_order, is_active })
+    return c.redirect('/admin/banners?success=Bannière+créée')
+  } catch (e: any) {
+    return c.redirect('/admin/banners?error=' + encodeURIComponent(e?.message || 'Erreur'))
+  }
+})
+
+adminRouter.post('/api/admin/banners/:id/update', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.redirect('/admin/banners?error=Base+de+données+indisponible')
+  const id = parseInt(c.req.param('id'))
+  const body = await c.req.parseBody()
+  const title = sanitizeText(body['title'] as string, 200)
+  const subtitle = sanitizeText(body['subtitle'] as string, 300) || undefined
+  const image_url = (body['image_url'] as string || '').trim()
+  const target_page = (body['target_page'] as string || '').trim() || undefined
+  const display_order = parseInt(body['display_order'] as string) || 0
+  const is_active = body['is_active'] ? 1 : 0
+  try {
+    const bannerRepo = new BannerRepository(db)
+    await bannerRepo.updateBanner(id, { title, subtitle, image_url, target_page, display_order, is_active })
+    return c.redirect('/admin/banners?success=Bannière+mise+à+jour')
+  } catch (e: any) {
+    return c.redirect('/admin/banners?error=' + encodeURIComponent(e?.message || 'Erreur'))
+  }
+})
+
+adminRouter.post('/api/admin/banners/:id/delete', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.redirect('/admin/banners?error=Base+de+données+indisponible')
+  const id = parseInt(c.req.param('id'))
+  try {
+    const bannerRepo = new BannerRepository(db)
+    await bannerRepo.deleteBanner(id)
+    return c.redirect('/admin/banners?success=Bannière+supprimée')
+  } catch (e: any) {
+    return c.redirect('/admin/banners?error=' + encodeURIComponent(e?.message || 'Erreur'))
+  }
+})
+
+// CRUD marques
+adminRouter.post('/api/admin/brands/create', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.redirect('/admin/banners?error=Base+de+données+indisponible')
+  const body = await c.req.parseBody()
+  const name = sanitizeText((body['name'] as string || '').toUpperCase(), 100)
+  const logo_url = (body['logo_url'] as string || '').trim() || undefined
+  const asset_key = sanitizeText(body['asset_key'] as string, 100) || undefined
+  const display_order = parseInt(body['display_order'] as string) || 0
+  const is_active = body['is_active'] ? 1 : 0
+  if (!name) return c.redirect('/admin/banners?error=Nom+requis')
+  try {
+    const bannerRepo = new BannerRepository(db)
+    await bannerRepo.createBrand({ name, logo_url, asset_key, display_order, is_active })
+    return c.redirect('/admin/banners?success=Marque+créée')
+  } catch (e: any) {
+    return c.redirect('/admin/banners?error=' + encodeURIComponent(e?.message || 'Erreur'))
+  }
+})
+
+adminRouter.post('/api/admin/brands/:id/update', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.redirect('/admin/banners?error=Base+de+données+indisponible')
+  const id = parseInt(c.req.param('id'))
+  const body = await c.req.parseBody()
+  const name = sanitizeText((body['name'] as string || '').toUpperCase(), 100)
+  const logo_url = (body['logo_url'] as string || '').trim() || undefined
+  const asset_key = sanitizeText(body['asset_key'] as string, 100) || undefined
+  const display_order = parseInt(body['display_order'] as string) || 0
+  const is_active = body['is_active'] ? 1 : 0
+  try {
+    const bannerRepo = new BannerRepository(db)
+    await bannerRepo.updateBrand(id, { name, logo_url, asset_key, display_order, is_active })
+    return c.redirect('/admin/banners?success=Marque+mise+à+jour')
+  } catch (e: any) {
+    return c.redirect('/admin/banners?error=' + encodeURIComponent(e?.message || 'Erreur'))
+  }
+})
+
+adminRouter.post('/api/admin/brands/:id/delete', adminAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.redirect('/admin/banners?error=Base+de+données+indisponible')
+  const id = parseInt(c.req.param('id'))
+  try {
+    const bannerRepo = new BannerRepository(db)
+    await bannerRepo.deleteBrand(id)
+    return c.redirect('/admin/banners?success=Marque+supprimée')
+  } catch (e: any) {
+    return c.redirect('/admin/banners?error=' + encodeURIComponent(e?.message || 'Erreur'))
+  }
+})
+
 adminRouter.get('/admin/parametres', adminAuth, refreshAdminCache, async (c) => {
   const success = c.req.query('success')
   const error = c.req.query('error')
@@ -3360,7 +3517,6 @@ adminRouter.post('/api/admin/avis/approve', adminAuth, async (c) => {
     }
   }
   
-  _cachedReviews = null // Invalider le cache homepage
   return c.redirect('/admin/avis?success=1')
 })
 
@@ -3381,7 +3537,6 @@ adminRouter.post('/api/admin/avis/reject', adminAuth, async (c) => {
     }
   }
   
-  _cachedReviews = null // Invalider le cache homepage
   return c.redirect('/admin/avis?deleted=1')
 })
 
@@ -3521,7 +3676,6 @@ adminRouter.post('/api/admin/produit/add', adminAuth, async (c) => {
   })
   const techSpecsJson = Object.keys(techSpecs).length > 0 ? JSON.stringify(techSpecs) : null
   let imageUrl = ''
-  let imgbbDeleteUrlCreate = ''
   const file = body['image'] as File | null
   if (file && file instanceof File && file.size > 0) {
     // Limit image size to 500KB to prevent bloating D1
@@ -3538,11 +3692,10 @@ adminRouter.post('/api/admin/produit/add', adminAuth, async (c) => {
     if (!validateImageMagicBytes(bytes)) {
       return c.redirect('/admin/produits?error=' + encodeURIComponent('Le fichier ne semble pas être une image valide.'))
     }
-    // Upload vers Cloudflare R2 avec fallback ImgBB
+    // Upload vers Cloudflare R2
     try {
       const r2 = await uploadToStorage(c, buffer, file.type, 'produits')
       imageUrl = r2.url
-      imgbbDeleteUrlCreate = r2.deleteUrl
     } catch(uploadErr2) {
       console.error('Upload error (create):', uploadErr2)
       return c.redirect('/admin/produits?error=' + encodeURIComponent('Upload image échoué.'))
@@ -3938,7 +4091,7 @@ adminRouter.post('/api/admin/produit/update', adminAuth, async (c) => {
   })
   const techSpecsJson2 = Object.keys(techSpecs2).length > 0 ? JSON.stringify(techSpecs2) : null
   
-  // Parse media JSON et uploader les nouvelles images (data: URLs) vers ImgBB.
+  // Parse media JSON et uploader les nouvelles images (data: URLs) vers Cloudflare R2.
   // Les items dont l'URL est déjà HTTPS sont conservés tels quels — aucun
   // blob base64 n'est jamais écrit en D1, ce qui évite de dépasser la limite
   // de taille de ligne SQLite et de dégrader les performances de lecture.
@@ -3961,7 +4114,7 @@ adminRouter.post('/api/admin/produit/update', adminAuth, async (c) => {
             console.error('Upload for media item failed:', uploadErr)
           }
         } else {
-          // URL HTTPS déjà hébergée (ImgBB ou autre) : conserver l'item intact
+          // URL HTTPS déjà hébergée (Cloudflare R2 ou autre) : conserver l'item intact
           media.push(item)
         }
       }
@@ -4023,21 +4176,26 @@ adminRouter.post('/api/admin/produit/delete', adminAuth, async (c) => {
   const idx = products.findIndex(p => p.id === id)
   if (idx !== -1) products.splice(idx, 1)
   
-  // Supprimer l'image ImgBB si elle existe
-  const imgbbApiKey = (c.env as any).IMGBB_API_KEY as string
-  if (imgbbApiKey) {
-    try {
-      // Récupérer le delete_url depuis D1
-      const dbForDel = c.env.DB
-      if (dbForDel) {
-        const prod = await dbForDel.prepare('SELECT imgbb_delete_url FROM products WHERE id = ?').bind(id).first() as any
-        if (prod?.imgbb_delete_url) {
-          // ImgBB delete_url est une URL GET directe
-          await fetch(prod.imgbb_delete_url).catch(() => {})
-        }
+  // Supprimer les images Cloudflare R2 du produit si elles existent
+  try {
+    const dbForDel = c.env.DB
+    if (dbForDel) {
+      const prod = await dbForDel.prepare('SELECT imageUrl, media_urls FROM products WHERE id = ?').bind(id).first() as any
+      if (prod?.imageUrl) {
+        await deleteFromStorage(c, prod.imageUrl)
       }
-    } catch(e) { console.warn('ImgBB delete warning:', e) }
-  }
+      if (prod?.media_urls) {
+        try {
+          const mediaList = JSON.parse(prod.media_urls)
+          if (Array.isArray(mediaList)) {
+            for (const m of mediaList) {
+              if (m?.url) await deleteFromStorage(c, m.url)
+            }
+          }
+        } catch (_) {}
+      }
+    }
+  } catch(e) { console.warn('R2 delete warning:', e) }
 
   // Supprimer en D1 aussi
   const db = c.env.DB
@@ -4092,37 +4250,31 @@ function checkImageUploadRateLimit(identifier: string): { allowed: boolean; rema
 }
 
 // ============================================================
-// IMGBB IMAGE UPLOAD HELPER WITH RETRY
+// STORAGE DELETE HELPER (CLOUDFLARE R2)
 // ============================================================
-async function uploadToImgBB(apiKey: string, fileBuffer: ArrayBuffer, mimeType: string): Promise<{url: string, deleteUrl: string}> {
-  const bytes = new Uint8Array(fileBuffer)
-  // Use more efficient base64 conversion
-  const base64 = btoa(String.fromCharCode(...bytes))
-  const form = new FormData()
-  form.append('key', apiKey)
-  form.append('image', base64)
-  const res = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: form })
-  if (!res.ok) throw new Error('ImgBB upload failed: ' + res.status)
-  const json = await res.json() as any
-  if (!json?.data?.url) throw new Error('ImgBB: no URL in response')
-  return { url: json.data.url as string, deleteUrl: (json.data.delete_url || '') as string }
-}
-
-async function uploadToImgBBWithRetry(apiKey: string, fileBuffer: ArrayBuffer, mimeType: string, maxRetries = 3): Promise<{url: string, deleteUrl: string}> {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await uploadToImgBB(apiKey, fileBuffer, mimeType)
-    } catch (err) {
-      if (attempt === maxRetries) throw err
-      // Exponential backoff: 1s, 2s, 4s
-      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)))
-    }
+async function deleteFromStorage(
+  c: { env: any },
+  imageUrlOrKey?: string
+): Promise<boolean> {
+  if (!imageUrlOrKey || typeof imageUrlOrKey !== 'string') return false
+  const r2 = c.env?.IMAGES_BUCKET
+  if (!r2) return false
+  let key = imageUrlOrKey
+  if (key.includes('/media/')) {
+    key = key.split('/media/')[1]
   }
-  throw new Error('Upload failed after retries')
+  if (!key || key.includes('..')) return false
+  try {
+    await r2.delete(key)
+    return true
+  } catch (err) {
+    console.warn('R2 delete warning:', err)
+    return false
+  }
 }
 
 // ============================================================
-// STORAGE UPLOAD HELPER (CLOUDFLARE R2 + FALLBACK IMGBB)
+// STORAGE UPLOAD HELPER (CLOUDFLARE R2 STRICT)
 // ============================================================
 async function uploadToStorage(
   c: { env: any; req: { url: string; header: (name: string) => string | undefined } },
@@ -4131,39 +4283,33 @@ async function uploadToStorage(
   folder: string = 'uploads'
 ): Promise<{ url: string; deleteUrl: string }> {
   const r2 = c.env.IMAGES_BUCKET
-  if (r2) {
-    const ext = mimeType === 'image/png' ? 'png'
-      : mimeType === 'image/webp' ? 'webp'
-      : mimeType === 'image/gif' ? 'gif'
-      : mimeType === 'image/svg+xml' ? 'svg'
-      : 'jpg'
-    const randomSuffix = Math.random().toString(36).substring(2, 10)
-    const key = `${folder}/${Date.now()}-${randomSuffix}.${ext}`
-    
-    await r2.put(key, fileBuffer, {
-      httpMetadata: {
-        contentType: mimeType,
-        cacheControl: 'public, max-age=31536000, immutable',
-      },
-    })
-    
-    let baseUrl = SITE_URL
-    try {
-      const parsedUrl = new URL(c.req.url)
-      baseUrl = parsedUrl.origin
-    } catch (_) {}
-    
-    const url = `${baseUrl}/media/${key}`
-    return { url, deleteUrl: '' }
+  if (!r2) {
+    throw new Error('Stockage Cloudflare R2 non configuré')
   }
 
-  // Fallback ImgBB si R2 n'est pas encore lié/disponible
-  const imgbbKey = c.env.IMGBB_API_KEY
-  if (imgbbKey) {
-    return await uploadToImgBBWithRetry(imgbbKey, fileBuffer, mimeType)
-  }
+  const ext = mimeType === 'image/png' ? 'png'
+    : mimeType === 'image/webp' ? 'webp'
+    : mimeType === 'image/gif' ? 'gif'
+    : mimeType === 'image/svg+xml' ? 'svg'
+    : 'jpg'
+  const randomSuffix = Math.random().toString(36).substring(2, 10)
+  const key = `${folder}/${Date.now()}-${randomSuffix}.${ext}`
   
-  throw new Error('Aucun service de stockage disponible (Cloudflare R2 ou IMGBB non configuré)')
+  await r2.put(key, fileBuffer, {
+    httpMetadata: {
+      contentType: mimeType,
+      cacheControl: 'public, max-age=31536000, immutable',
+    },
+  })
+  
+  let baseUrl = SITE_URL
+  try {
+    const parsedUrl = new URL(c.req.url)
+    baseUrl = parsedUrl.origin
+  } catch (_) {}
+  
+  const url = `${baseUrl}/media/${key}`
+  return { url, deleteUrl: '' }
 }
 
 // API Admin - Uploader/changer l'image d'un produit
@@ -4192,13 +4338,11 @@ adminRouter.post('/api/admin/produit/image', adminAuth, async (c) => {
     if (!validateImageMagicBytes(bytes)) {
       return c.redirect('/admin/produits?error=' + encodeURIComponent('Le fichier ne semble pas être une image valide.'))
     }
-    // Upload vers Cloudflare R2 avec fallback ImgBB
+    // Upload vers Cloudflare R2
     let uploadedUrl = ''
-    let imgbbDelUrl = ''
     try {
       const r1 = await uploadToStorage(c, buffer, file.type, 'produits')
       uploadedUrl = r1.url
-      imgbbDelUrl = r1.deleteUrl
     } catch(uploadErr) {
       console.error('Image upload error:', uploadErr)
       return c.redirect('/admin/produits?error=' + encodeURIComponent('Upload image échoué.'))
@@ -4206,9 +4350,13 @@ adminRouter.post('/api/admin/produit/image', adminAuth, async (c) => {
     const db = c.env.DB
     if (db) {
       try {
-        const res = await db.prepare('UPDATE products SET imageUrl = ?, imgbb_delete_url = ? WHERE id = ?').bind(uploadedUrl, imgbbDelUrl, id).run()
+        const oldProd = await db.prepare('SELECT imageUrl FROM products WHERE id = ?').bind(id).first() as any
+        const res = await db.prepare('UPDATE products SET imageUrl = ? WHERE id = ?').bind(uploadedUrl, id).run()
         if (!res?.meta?.changes) {
           return c.redirect('/admin/produits?error=' + encodeURIComponent('Produit introuvable.'))
+        }
+        if (oldProd?.imageUrl && oldProd.imageUrl !== uploadedUrl) {
+          await deleteFromStorage(c, oldProd.imageUrl)
         }
       } catch(e) {
         console.error('Erreur D1 produit image:', e)
@@ -4216,7 +4364,7 @@ adminRouter.post('/api/admin/produit/image', adminAuth, async (c) => {
       }
     }
     const product = products.find(p => p.id === id)
-    if (product) { (product as any).imageUrl = uploadedUrl; (product as any).imgbbDeleteUrl = imgbbDelUrl }
+    if (product) { (product as any).imageUrl = uploadedUrl }
     else if (!db) return c.redirect('/admin/produits?error=' + encodeURIComponent('Produit introuvable.'))
   }
   
@@ -4224,7 +4372,7 @@ adminRouter.post('/api/admin/produit/image', adminAuth, async (c) => {
 })
 
 // ============================================================
-// API GALERIE PRODUIT — ajouter/supprimer une image ImgBB
+// API GALERIE PRODUIT — ajouter/supprimer une image Cloudflare R2
 // ============================================================
 
 // Ajouter une image a la galerie d'un produit
@@ -4282,8 +4430,10 @@ adminRouter.post('/api/admin/produit/gallery/remove', adminAuth, async (c) => {
     try { gallery = JSON.parse(row?.media_urls || '[]') } catch(_) {}
     gallery = gallery.filter((item: any) => item.url !== urlToRemove)
     await db.prepare('UPDATE products SET media_urls = ? WHERE id = ?').bind(JSON.stringify(gallery), id).run()
-    // Supprimer sur ImgBB
-    if (deleteUrl) { await fetch(deleteUrl).catch(() => {}) }
+    // Supprimer de Cloudflare R2
+    if (urlToRemove) {
+      await deleteFromStorage(c, urlToRemove)
+    }
     return c.json({ success: true, gallery })
   } catch(e) {
     console.error('Gallery remove error:', e)
@@ -4413,9 +4563,11 @@ adminRouter.post('/api/admin/media/brand/delete', adminAuth, async (c) => {
   if (!db) return c.json({ error: 'DB indisponible' }, 500)
   await ensureBrandMediaTable(db)
   try {
-    const row = await db.prepare('SELECT delete_url FROM brand_media_library WHERE id = ?').bind(id).first() as any
+    const row = await db.prepare('SELECT url, delete_url FROM brand_media_library WHERE id = ?').bind(id).first() as any
     await db.prepare('DELETE FROM brand_media_library WHERE id = ?').bind(id).run()
-    if (row?.delete_url) { await fetch(row.delete_url).catch(() => {}) }
+    if (row?.url) {
+      await deleteFromStorage(c, row.url)
+    }
     return c.json({ success: true })
   } catch (e) {
     return c.json({ error: 'Erreur DB' }, 500)

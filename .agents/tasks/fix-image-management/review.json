@@ -1,0 +1,10 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "findings": [
+    "BUG 4 error-recovery gap — When _pickAndUpload() throws after a prior successful upload, widget.onImageSelected is not called in the catch block, leaving ProductForm._imageUrl potentially out of sync. Add widget.onImageSelected(_uploadedUrl!) (or widget.currentImageUrl) in the catch block when a URL is available.",
+    "BUG 9 partial fix — RadioGroup validity is SDK-gated — The RadioGroup<String> wrapper is retained rather than replaced with a plain Column as the plan specified. This only compiles on Flutter ≥ 3.32. No explicit Flutter SDK lower-bound is set in pubspec.yaml. Either pin Flutter ≥ 3.32 in CI or apply the plan's original Column-based fix.",
+    "In-memory rate limiter provides no real protection — checkImageUploadRateLimit uses a per-isolate Map. In Cloudflare Workers, concurrent requests hitting different isolates bypass it entirely. Replace with Cloudflare's native rate limiting rules or at minimum document the per-isolate scope with a comment.",
+    "BUG 3 unverified by tests — ProductRepository.update() correctly handles image_url/imageUrl (pre-existing code, unmodified), but no test was added for PUT /admin/products/:id with an image_url body field and the commit messages do not acknowledge the verification. Add a targeted test."
+  ],
+  "reviewDoc": "c:\\Users\\sayta\\Downloads\\MAASGA\\maasga-code\\.agents\\tasks\\fix-image-management\\review.md"
+}

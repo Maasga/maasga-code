@@ -204,7 +204,7 @@ Page **Produits & Stock** → panneau collapsible **"Médiathèque par marque"**
 #### 1. Uploader des images
 1. Dans le champ **Marque**, saisir le nom du fabricant (LG, Samsung, Daikin…). La saisie est assistée avec une liste de suggestions.
 2. (Optionnel) Saisir un **Libellé** pour décrire l'image (ex : "Photo produit climatiseur 18000 BTU", "Logo officiel haute résolution").
-3. Cliquer sur **Choisir les fichiers** → sélectionner une ou plusieurs images (JPG, PNG, WebP — max 5 Mo chacune). L'upload part immédiatement vers ImgBB.
+3. Cliquer sur **Choisir les fichiers** → sélectionner une ou plusieurs images (JPG, PNG, WebP — max 5 Mo chacune). L'upload part immédiatement vers Cloudflare R2.
 4. Un message de confirmation apparaît une fois l'upload terminé.
 
 #### 2. Retrouver une image
@@ -222,7 +222,7 @@ Utiliser les **boutons filtres par marque** (LG, Samsung, Daikin…) pour n'affi
 L'image peut être affectée à plusieurs produits différents (même marque, puissances différentes par exemple) sans la réuploader.
 
 #### 4. Supprimer une image de la médiathèque
-Survoler la miniature → bouton rouge **Supprimer** → confirmation → l'image est supprimée d'ImgBB et de la médiathèque. Les produits qui l'utilisaient déjà conservent leur URL ImgBB (l'image reste visible sur leurs fiches).
+Survoler la miniature → bouton rouge **Supprimer** → confirmation → l'image est supprimée de R2 et de la médiathèque. Les produits qui l'utilisaient déjà conservent leur URL R2 (l'image reste visible sur leurs fiches).
 
 ---
 
@@ -232,7 +232,7 @@ En complément de la médiathèque, chaque produit dispose d'une galerie dédié
 
 Colonne **Image** dans le tableau des produits → bouton **Galerie** (icône photos) → modale de galerie.
 
-- **Ajouter** : cliquer sur la zone pointillée → sélectionner une ou plusieurs photos → upload automatique vers ImgBB.
+- **Ajouter** : cliquer sur la zone pointillée → sélectionner une ou plusieurs photos → upload automatique vers Cloudflare R2.
 - **Supprimer** : survoler une miniature → icône corbeille.
 
 ---

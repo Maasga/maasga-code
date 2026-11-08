@@ -132,7 +132,54 @@ export class BannerRepository {
     return result || null
   }
 
-  // ─── BRAND MEDIA ──────────────────────────────────────────────────────────
+  async createBrand(input: Partial<BrandRecord>): Promise<BrandRecord | null> {
+    const now = new Date().toISOString()
+    const result = await this.db
+      .prepare(`
+        INSERT INTO brands (name, logo_url, asset_key, display_order, is_active, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `)
+      .bind(
+        input.name ?? '',
+        input.logo_url ?? null,
+        input.asset_key ?? null,
+        input.display_order ?? 0,
+        input.is_active ?? 1,
+        now,
+        now
+      )
+      .run()
+    if (result.meta?.last_row_id) {
+      return this.findBrandById(Number(result.meta.last_row_id))
+    }
+    return null
+  }
+
+  async updateBrand(id: number, input: Partial<BrandRecord>): Promise<boolean> {
+    const fields: string[] = []
+    const params: any[] = []
+    const allowedKeys: (keyof BrandRecord)[] = ['name', 'logo_url', 'asset_key', 'display_order', 'is_active']
+    for (const key of allowedKeys) {
+      if (input[key] !== undefined) {
+        fields.push(`${key} = ?`)
+        params.push(input[key])
+      }
+    }
+    if (fields.length === 0) return false
+    fields.push('updated_at = ?')
+    params.push(new Date().toISOString())
+    params.push(id)
+    const query = `UPDATE brands SET ${fields.join(', ')} WHERE id = ?`
+    const result = await this.db.prepare(query).bind(...params).run()
+    return (result.meta?.changes ?? 0) > 0
+  }
+
+  async deleteBrand(id: number): Promise<boolean> {
+    const result = await this.db.prepare('DELETE FROM brands WHERE id = ?').bind(id).run()
+    return (result.meta?.changes ?? 0) > 0
+  }
+
+
 
   async findBrandMedia(brandId: number): Promise<BrandMediaRecord[]> {
     const result = await this.db

@@ -13,7 +13,9 @@ export interface ProductRecord {
   btu?: number | null
   stock: number
   image_url?: string | null
+  imageUrl?: string | null
   gallery?: string | null // JSON string or comma-separated
+  media_urls?: string | null
   is_active: number // 1 or 0
   created_at: string
   updated_at: string
@@ -31,7 +33,9 @@ export interface CreateProductInput {
   btu?: number | null
   stock?: number
   image_url?: string | null
+  imageUrl?: string | null
   gallery?: string | null
+  media_urls?: string | null
   is_active?: number
 }
 
@@ -47,12 +51,30 @@ export interface UpdateProductInput {
   btu?: number | null
   stock?: number
   image_url?: string | null
+  imageUrl?: string | null
   gallery?: string | null
+  media_urls?: string | null
   is_active?: number
 }
 
 export class ProductRepository {
   constructor(private readonly db: D1Database) {}
+
+  private normalizeProduct(p: any): ProductRecord {
+    if (!p) return p
+    const img1 = p.image_url ? String(p.image_url).trim() : ''
+    const img2 = p.imageUrl ? String(p.imageUrl).trim() : ''
+    const finalImg = img1.length > 0 ? img1 : (img2.length > 0 ? img2 : null)
+    p.image_url = finalImg
+    p.imageUrl = finalImg
+
+    const gal1 = p.gallery ? String(p.gallery).trim() : ''
+    const gal2 = p.media_urls ? String(p.media_urls).trim() : ''
+    const finalGal = gal1.length > 0 ? gal1 : (gal2.length > 0 ? gal2 : null)
+    p.gallery = finalGal
+    p.media_urls = finalGal
+    return p as ProductRecord
+  }
 
   async findAll(options?: {
     activeOnly?: boolean
@@ -89,7 +111,8 @@ export class ProductRepository {
 
     const stmt = this.db.prepare(query)
     const result = await (params.length > 0 ? stmt.bind(...params) : stmt).all<ProductRecord>()
-    return result.results || []
+    const rows = result.results || []
+    return rows.map((r: any) => this.normalizeProduct(r))
   }
 
   async findById(id: number): Promise<ProductRecord | null> {
@@ -97,18 +120,20 @@ export class ProductRepository {
       .prepare('SELECT * FROM products WHERE id = ?')
       .bind(id)
       .first<ProductRecord>()
-    return result || null
+    return result ? this.normalizeProduct(result) : null
   }
 
   async create(input: CreateProductInput): Promise<ProductRecord | null> {
     const now = new Date().toISOString()
+    const img = input.image_url ?? input.imageUrl ?? null
+    const gal = input.gallery ?? input.media_urls ?? null
     const result = await this.db
       .prepare(`
         INSERT INTO products (
           name, brand, model, description, price, price_wholesale,
-          category, power_cv, btu, stock, image_url, gallery, is_active,
+          category, power_cv, btu, stock, image_url, imageUrl, gallery, media_urls, is_active,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .bind(
         input.name,
@@ -121,8 +146,10 @@ export class ProductRepository {
         input.power_cv ?? null,
         input.btu ?? null,
         input.stock ?? 0,
-        input.image_url ?? null,
-        input.gallery ?? null,
+        img,
+        img,
+        gal,
+        gal,
         input.is_active ?? 1,
         now,
         now
@@ -141,7 +168,7 @@ export class ProductRepository {
 
     const allowedKeys: (keyof UpdateProductInput)[] = [
       'name', 'brand', 'model', 'description', 'price', 'price_wholesale',
-      'category', 'power_cv', 'btu', 'stock', 'image_url', 'gallery', 'is_active'
+      'category', 'power_cv', 'btu', 'stock', 'is_active'
     ]
 
     for (const key of allowedKeys) {
@@ -149,6 +176,18 @@ export class ProductRepository {
         fields.push(`${key} = ?`)
         params.push(input[key])
       }
+    }
+
+    const img = input.image_url !== undefined ? input.image_url : input.imageUrl
+    if (img !== undefined) {
+      fields.push('image_url = ?', 'imageUrl = ?')
+      params.push(img, img)
+    }
+
+    const gal = input.gallery !== undefined ? input.gallery : input.media_urls
+    if (gal !== undefined) {
+      fields.push('gallery = ?', 'media_urls = ?')
+      params.push(gal, gal)
     }
 
     if (fields.length === 0) return false

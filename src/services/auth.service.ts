@@ -110,7 +110,19 @@ export const mobileAdminAuth = async (c: Context<HonoEnv>, next: Next) => {
     const projectId = c.env.FIREBASE_PROJECT_ID || DEFAULT_FIREBASE_PROJECT_ID
     const payload = await verifyFirebaseToken(token, projectId)
     const isAdmin = payload['role'] === 'admin' || payload['https://maasga.app/role'] === 'admin'
-    if (!isAdmin) return c.json({ error: 'Accès admin requis' }, 403)
+
+    // Fallback: accepter les emails admin connus
+    const email = (payload.email || '').toLowerCase().trim()
+    const isAllowedEmail = email === 'maasgabf@gmail.com' ||
+                           email === 'sawadogosherifhamed@gmail.com' ||
+                           email.endsWith('@maasga.bf') ||
+                           email.endsWith('@maasga.com')
+
+    if (!isAdmin && !isAllowedEmail) {
+      console.warn('[mobileAdminAuth] Accès refusé pour:', email)
+      return c.json({ error: 'Accès admin requis' }, 403)
+    }
+
     c.set('mobileUser', {
       uid: payload.sub,
       email: payload.email || '',

@@ -22,6 +22,17 @@ import { OrderDetailModal } from '../OrderDetailModal'
 import { BulkActionsToolbar } from '../BulkActionsToolbar'
 import { AdminLayout, jsonForScript, jsAttr, CLIENT_ESC_HELPER } from '../AdminLayout'
 
+const logCategoryColors: Record<string, { color: string; bg: string; icon: string }> = {
+  auth: { color: '#60a5fa', bg: 'rgba(96,165,250,0.12)', icon: 'fa-sign-in-alt' },
+  order: { color: '#34d399', bg: 'rgba(52,211,153,0.12)', icon: 'fa-shopping-cart' },
+  appointment: { color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', icon: 'fa-calendar' },
+  review: { color: '#f87171', bg: 'rgba(248,113,113,0.12)', icon: 'fa-star' },
+  maintenance: { color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', icon: 'fa-tools' },
+  payment: { color: '#34d399', bg: 'rgba(52,211,153,0.12)', icon: 'fa-credit-card' },
+  contact: { color: '#fb923c', bg: 'rgba(249,115,22,0.12)', icon: 'fa-envelope' },
+  profile: { color: '#38bdf8', bg: 'rgba(56,189,248,0.12)', icon: 'fa-user' },
+}
+
 export const AdminAuditLogPage = ({ logs = [] }: { logs: any[] }) => {
   const categories = [...new Set(logs.map((l: any) => l.category).filter(Boolean))]
 
