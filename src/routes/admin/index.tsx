@@ -4568,6 +4568,31 @@ adminRouter.post('/api/admin/media/brand/delete', adminAuth, async (c) => {
     if (row?.url) {
       await deleteFromStorage(c, row.url)
     }
+    // Hard delete + nettoyage automatique des références produits (image principale et galerie) pour éviter les références cassées.
+    if (row?.url) {
+      const url = row.url
+      // (a) Image principale : vider imageUrl et image_url (alias) pour tous les produits qui référencent l'URL
+      await db.prepare(`UPDATE products SET imageUrl = '', image_url = '', updated_at = ? WHERE imageUrl = ? OR image_url = ?`).bind(new Date().toISOString(), url, url).run()
+      // (b) Galerie : retirer l'URL de media_urls et gallery (alias) pour chaque produit concerné
+      const rows = await db.prepare('SELECT id, media_urls, gallery FROM products').all() as any
+      for (const p of (rows?.results || [])) {
+        let galleryList: any[] = []
+        try { galleryList = JSON.parse(p.media_urls || p.gallery || '[]') } catch (_) { galleryList = [] }
+        if (!Array.isArray(galleryList)) galleryList = []
+        const filtered = galleryList.filter((g: any) => (typeof g === 'string' ? g : g?.url) !== url)
+        if (filtered.length !== galleryList.length) {
+          const galleryJson = JSON.stringify(filtered)
+          await db.prepare('UPDATE products SET media_urls = ?, gallery = ?, updated_at = ? WHERE id = ?').bind(galleryJson, galleryJson, new Date().toISOString(), p.id).run()
+        }
+      }
+      // Synchroniser le cache mémoire `products` : imageUrl et media nettoyés pour l'URL supprimée
+      for (const p of products) {
+        if (p.imageUrl === url) p.imageUrl = undefined
+        if (Array.isArray(p.media)) {
+          p.media = p.media.filter((g: any) => (typeof g === 'string' ? g : g?.url) !== url)
+        }
+      }
+    }
     return c.json({ success: true })
   } catch (e) {
     return c.json({ error: 'Erreur DB' }, 500)
