@@ -4599,73 +4599,119 @@ adminRouter.post('/api/admin/media/brand/delete', adminAuth, async (c) => {
   }
 })
 
-// Affecter une image de la médiathèque à un seul produit ou à TOUS les produits de la marque
+// Affecter une ou plusieurs images de la médiathèque à un/plusieurs produits ou à toute une marque
 adminRouter.post('/api/admin/media/brand/assign', adminAuth, async (c) => {
   let body: any = {}
   try { body = await c.req.formData() } catch (_) { body = await c.req.parseBody() }
 
   const getVal = (k: string) => typeof body.get === 'function' ? body.get(k) : body[k]
+  const getAll = (k: string): string[] => {
+    if (typeof body.getAll === 'function') {
+      const vals = body.getAll(k) as string[]
+      if (vals && vals.length > 0) return vals
+    }
+    const v = getVal(k)
+    if (!v) return []
+    return String(v).split(',').map((s: string) => s.trim()).filter(Boolean)
+  }
+
   const scope = (getVal('scope') as string) === 'brand' ? 'brand' : 'single'
-  const productId = parseInt(getVal('product_id') as string)
-  const mediaId = parseInt(getVal('media_id') as string)
   const target = (getVal('target') as string) === 'gallery' ? 'gallery' : 'main'
   const db = c.env.DB
   if (!db) return c.json({ error: 'Base de données D1 indisponible' }, 500)
   await ensureBrandMediaTable(db)
 
+  // Normaliser les IDs médias : media_ids (CSV/répété) OU media_id (rétrocompat)
+  let rawMediaIds = getAll('media_ids')
+  if (!rawMediaIds.length) {
+    const single = getVal('media_id')
+    if (single) rawMediaIds = [String(single)]
+  }
+  const mediaIds = [...new Set(rawMediaIds.map(v => parseInt(v)).filter(n => Number.isFinite(n) && n > 0))]
+  if (!mediaIds.length) return c.json({ error: 'Aucun ID image valide' }, 400)
+
+  // Normaliser les IDs produits pour scope=single : product_ids (CSV/répété) OU product_id (rétrocompat)
+  let rawProductIds = getAll('product_ids')
+  if (!rawProductIds.length) {
+    const single = getVal('product_id')
+    if (single) rawProductIds = [String(single)]
+  }
+  const productIds = [...new Set(rawProductIds.map(v => parseInt(v)).filter(n => Number.isFinite(n) && n > 0))]
+
+  // target=main n'est autorisé que pour une seule image
+  if (target === 'main' && mediaIds.length > 1) {
+    return c.json({ error: 'Une seule image peut être l\'image principale. Sélectionnez une seule image pour ce mode.' }, 400)
+  }
+
   try {
-    const mediaRow = await db.prepare('SELECT * FROM brand_media_library WHERE id = ?').bind(mediaId).first() as any
-    if (!mediaRow) return c.json({ error: 'Image introuvable dans la médiathèque' }, 404)
+    // Charger toutes les lignes média demandées (ignorer les manquantes)
+    const mediaRows: any[] = []
+    for (const mid of mediaIds) {
+      const row = await db.prepare('SELECT * FROM brand_media_library WHERE id = ?').bind(mid).first() as any
+      if (row) mediaRows.push(row)
+    }
+    if (!mediaRows.length) return c.json({ error: 'Aucune image trouvée dans la médiathèque pour les IDs fournis' }, 404)
 
     if (scope === 'brand') {
-      const brandName = mediaRow.brand
-      if (!brandName) return c.json({ error: 'Aucune marque associée à cette image' }, 400)
+      // Pour chaque média, affecter à tous les produits de sa marque
+      let totalCount = 0
+      for (const mediaRow of mediaRows) {
+        const brandName = mediaRow.brand
+        if (!brandName) continue
 
-      if (target === 'main') {
-        // Appliquer à l'image principale de tous les produits de la marque (case-insensitive)
-        await db.prepare('UPDATE products SET imageUrl = ? WHERE LOWER(brand) = LOWER(?)').bind(mediaRow.url, brandName).run()
-        let count = 0
-        products.forEach(p => {
-          if ((p.brand || '').toLowerCase() === brandName.toLowerCase()) {
-            (p as any).imageUrl = mediaRow.url
-            count++
-          }
-        })
-        return c.json({ success: true, count, message: `Image principale appliquée à tous les ${count} produits ${brandName}.` })
-      } else {
-        // Ajouter à la galerie de tous les produits de la marque
-        const matchingProds = await db.prepare('SELECT id, media_urls FROM products WHERE LOWER(brand) = LOWER(?)').bind(brandName).all() as any
-        const rows = matchingProds?.results || []
-        let count = 0
-        for (const prodRow of rows) {
-          let gallery: any[] = []
-          try { gallery = JSON.parse(prodRow.media_urls || '[]') } catch (_) {}
-          if (!gallery.some((g: any) => g.url === mediaRow.url)) {
-            gallery.push({ url: mediaRow.url, deleteUrl: mediaRow.delete_url || '', type: 'image', caption: mediaRow.label || '' })
-            await db.prepare('UPDATE products SET media_urls = ? WHERE id = ?').bind(JSON.stringify(gallery), prodRow.id).run()
-            const p = products.find(item => item.id === prodRow.id)
-            if (p) p.media = gallery
-            count++
+        if (target === 'main') {
+          await db.prepare('UPDATE products SET imageUrl = ?, image_url = ?, updated_at = ? WHERE LOWER(brand) = LOWER(?)').bind(mediaRow.url, mediaRow.url, new Date().toISOString(), brandName).run()
+          products.forEach(p => {
+            if ((p.brand || '').toLowerCase() === brandName.toLowerCase()) {
+              (p as any).imageUrl = mediaRow.url
+              totalCount++
+            }
+          })
+        } else {
+          const matchingProds = await db.prepare('SELECT id, media_urls FROM products WHERE LOWER(brand) = LOWER(?)').bind(brandName).all() as any
+          const rows = matchingProds?.results || []
+          for (const prodRow of rows) {
+            let gallery: any[] = []
+            try { gallery = JSON.parse(prodRow.media_urls || '[]') } catch (_) {}
+            if (!gallery.some((g: any) => (typeof g === 'string' ? g : g?.url) === mediaRow.url)) {
+              gallery.push({ url: mediaRow.url, deleteUrl: mediaRow.delete_url || '', type: 'image', caption: mediaRow.label || '' })
+              await db.prepare('UPDATE products SET media_urls = ?, gallery = ? WHERE id = ?').bind(JSON.stringify(gallery), JSON.stringify(gallery), prodRow.id).run()
+              const p = products.find(item => item.id === prodRow.id)
+              if (p) p.media = gallery
+              totalCount++
+            }
           }
         }
-        return c.json({ success: true, count, message: `Image ajoutée à la galerie de ${count} produits ${brandName}.` })
       }
+      const noun = target === 'main' ? 'image principale appliquée' : 'affectation(s) galerie effectuée(s)'
+      return c.json({ success: true, count: totalCount, images: mediaRows.length, message: `${mediaRows.length} image(s) — ${totalCount} ${noun}.` })
     } else {
-      if (!productId) return c.json({ error: 'ID produit manquant' }, 400)
-      if (target === 'main') {
-        await db.prepare('UPDATE products SET imageUrl = ? WHERE id = ?').bind(mediaRow.url, productId).run()
-        const p = products.find(p => p.id === productId)
-        if (p) (p as any).imageUrl = mediaRow.url
-      } else {
-        const prodRow = await db.prepare('SELECT media_urls FROM products WHERE id = ?').bind(productId).first() as any
-        let gallery: any[] = []
-        try { gallery = JSON.parse(prodRow?.media_urls || '[]') } catch (_) {}
-        gallery.push({ url: mediaRow.url, deleteUrl: mediaRow.delete_url || '', type: 'image', caption: mediaRow.label || '' })
-        await db.prepare('UPDATE products SET media_urls = ? WHERE id = ?').bind(JSON.stringify(gallery), productId).run()
-        const p = products.find(p => p.id === productId)
-        if (p) p.media = gallery
+      // scope=single : affecter chaque média à chacun des produits ciblés
+      if (!productIds.length) return c.json({ error: 'ID produit manquant' }, 400)
+
+      let totalAssigned = 0
+      for (const pid of productIds) {
+        for (const mediaRow of mediaRows) {
+          if (target === 'main') {
+            await db.prepare('UPDATE products SET imageUrl = ?, image_url = ?, updated_at = ? WHERE id = ?').bind(mediaRow.url, mediaRow.url, new Date().toISOString(), pid).run()
+            const p = products.find(p => p.id === pid)
+            if (p) (p as any).imageUrl = mediaRow.url
+            totalAssigned++
+          } else {
+            const prodRow = await db.prepare('SELECT media_urls FROM products WHERE id = ?').bind(pid).first() as any
+            let gallery: any[] = []
+            try { gallery = JSON.parse(prodRow?.media_urls || '[]') } catch (_) {}
+            if (!gallery.some((g: any) => (typeof g === 'string' ? g : g?.url) === mediaRow.url)) {
+              gallery.push({ url: mediaRow.url, deleteUrl: mediaRow.delete_url || '', type: 'image', caption: mediaRow.label || '' })
+              await db.prepare('UPDATE products SET media_urls = ?, gallery = ? WHERE id = ?').bind(JSON.stringify(gallery), JSON.stringify(gallery), pid).run()
+              const p = products.find(p => p.id === pid)
+              if (p) p.media = gallery
+              totalAssigned++
+            }
+          }
+        }
       }
-      return c.json({ success: true, message: 'Image affectée au produit.' })
+      return c.json({ success: true, count: totalAssigned, images: mediaRows.length, message: `${mediaRows.length} image(s) affectée(s) à ${productIds.length} produit(s).` })
     }
   } catch (e: any) {
     console.error('Brand media assign error:', e)
