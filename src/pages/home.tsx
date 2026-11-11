@@ -53,9 +53,9 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       <section class="gradient-hero min-h-screen flex items-center relative overflow-hidden pt-20">
         {/* Carrousel photo plein écran — 7 photos, balayage clip-path (GSAP, étape 1B) */}
         <div id="hero-carousel" class="absolute inset-0 pointer-events-none">
-          {["/hero/hero-1.jpg","/hero/hero-2.jpg","/hero/hero-3.jpg","/hero/hero-4.jpg","/hero/hero-5.jpg","/hero/hero-6.jpg","/hero/hero-7.jpg"].map((src, i) => (
+          {[1, 2, 3, 4, 5, 6, 7].map((n, i) => (
             <div class={`hero-carousel-slide${i === 0 ? ' active' : ''}`}>
-              <img src={src} alt="MAASGA — installation climatisation" loading="eager" decoding="async" fetchpriority={i === 0 ? 'high' : 'low'} />
+              <img src={`/hero/hero-${n}.webp`} srcset={`/hero/hero-${n}-800.webp 800w, /hero/hero-${n}.webp 1600w`} sizes="100vw" alt={i === 0 ? "MAASGA — installation climatisation" : ""} loading={i === 0 ? 'eager' : 'lazy'} decoding="async" fetchpriority={i === 0 ? 'high' : 'low'} />
             </div>
           ))}
           {/* Overlay sombre : z-index:5 pour rester au-dessus des slides (qui montent à z-index 3 pendant la transition) */}

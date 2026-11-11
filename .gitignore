@@ -80,3 +80,6 @@ mobile/
 # bytecode Python des skills
 __pycache__/
 *.pyc
+
+# médias inutilisés retirés de public/ (conservés localement)
+archive/

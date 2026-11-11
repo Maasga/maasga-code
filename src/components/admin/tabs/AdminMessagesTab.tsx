@@ -153,12 +153,4 @@ export const AdminMessagesPage = ({ messages = [], unreadCount = 0, success, del
 // ADMIN RÉALISATIONS PAGE
 // ============================================================
 
-const categoryLabels: Record<string, string> = {
-  climatisation: 'Climatisation',
-  ventilation: 'Ventilation',
-  chambre_froide: 'Chambre froide',
-  maintenance: 'Maintenance',
-  commercial: 'Commercial',
-  residentiel: 'Résidentiel'
-}
 

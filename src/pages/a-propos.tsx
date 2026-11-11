@@ -108,7 +108,7 @@ export const AProposPage = () => {
             {/* Directeur Technique */}
             <div data-tilt class="glass-card rounded-2xl p-6 text-center">
               <div class="tilt-image w-28 h-28 rounded-full mx-auto mb-4 overflow-hidden" style="border:3px solid rgba(0,119,182,0.25); box-shadow:0 4px 20px rgba(0,119,182,0.15);">
-                <img src="/cherif.jpeg" alt="Sherif SAWADOGO" loading="lazy" width={112} height={112} class="w-full h-full object-cover" />
+                <img src="/team/cherif.webp" alt="Sherif SAWADOGO" loading="lazy" width={112} height={112} class="w-full h-full object-cover" />
               </div>
               <div class="tilt-caption">
                 <h3 class="font-extrabold text-lg mb-1" style="color:var(--ink);">Sherif SAWADOGO</h3>
@@ -125,7 +125,7 @@ export const AProposPage = () => {
             {/* Directeur Commercial */}
             <div data-tilt class="glass-card rounded-2xl p-6 text-center">
               <div class="tilt-image w-28 h-28 rounded-full mx-auto mb-4 overflow-hidden" style="border:3px solid rgba(0,119,182,0.25); box-shadow:0 4px 20px rgba(0,119,182,0.15);">
-                <img src="/malick.jpg" alt="Kompaore Abdoul Malick" loading="lazy" width={112} height={112} class="w-full h-full object-cover" />
+                <img src="/team/malick.webp" alt="Kompaore Abdoul Malick" loading="lazy" width={112} height={112} class="w-full h-full object-cover" />
               </div>
               <div class="tilt-caption">
                 <h3 class="font-extrabold text-lg mb-1" style="color:var(--ink);">Kompaore Abdoul Malick</h3>
@@ -142,7 +142,7 @@ export const AProposPage = () => {
             {/* Directrice Marketing */}
             <div data-tilt class="glass-card rounded-2xl p-6 text-center">
               <div class="tilt-image w-28 h-28 rounded-full mx-auto mb-4 overflow-hidden" style="border:3px solid rgba(0,119,182,0.25); box-shadow:0 4px 20px rgba(0,119,182,0.15);">
-                <img src="/ines.jpeg" alt="Inès" loading="lazy" width={112} height={112} class="w-full h-full object-cover" />
+                <img src="/team/ines.webp" alt="Inès" loading="lazy" width={112} height={112} class="w-full h-full object-cover" />
               </div>
               <div class="tilt-caption">
                 <h3 class="font-extrabold text-lg mb-1" style="color:var(--ink);">Inès</h3>

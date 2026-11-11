@@ -4,7 +4,7 @@ import { getCookie } from 'hono/cookie'
 import type { HonoEnv } from '../../types'
 import { appointments, reviews } from '../../data/store'
 import { createAppointment, createClient } from '../../db'
-import { rateLimit } from '../../utils/security'
+import { rateLimitD1 } from '../../utils/security'
 import { isValidPhone, isValidEmail, sanitizeText } from '../../utils/helpers'
 import { notifyAdmin } from '../../utils/notifications'
 import { calculatePlanPricing } from '../../services/pricing.service'
@@ -17,7 +17,7 @@ export const webFormsRouter = new Hono<HonoEnv>()
 // ============================================================
 webFormsRouter.post('/api/rdv', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`rdv:${ip}`, 10, 60 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `rdv:${ip}`, 10, 60 * 60 * 1000)
   if (!rl.allowed) {
     return c.redirect('/rendez-vous?error=' + encodeURIComponent('Trop de demandes. Réessayez plus tard.'))
   }
@@ -128,7 +128,7 @@ webFormsRouter.post('/api/rdv', async (c) => {
 // ============================================================
 webFormsRouter.post('/api/avis', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`avis:${ip}`, 5, 60 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `avis:${ip}`, 5, 60 * 60 * 1000)
   if (!rl.allowed) {
     return c.redirect('/avis?error=' + encodeURIComponent('Trop de soumissions. Réessayez plus tard.'))
   }
@@ -169,7 +169,7 @@ webFormsRouter.post('/api/avis', async (c) => {
 // ============================================================
 webFormsRouter.post('/api/contact', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`contact:${ip}`, 5, 60 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `contact:${ip}`, 5, 60 * 60 * 1000)
   if (!rl.allowed) {
     return c.redirect('/contact?error=' + encodeURIComponent('Trop de messages envoyés. Réessayez plus tard.'))
   }
@@ -220,7 +220,7 @@ webFormsRouter.post('/api/contact', async (c) => {
 // ============================================================
 webFormsRouter.post('/api/stock-alert', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`stockalert:${ip}`, 10, 60 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `stockalert:${ip}`, 10, 60 * 60 * 1000)
   if (!rl.allowed) {
     return c.json({ ok: false, error: 'Trop de demandes. Réessayez plus tard.' }, 429)
   }
@@ -269,7 +269,7 @@ webFormsRouter.post('/api/stock-alert', async (c) => {
 // ============================================================
 webFormsRouter.post('/api/maintenance/request', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`maintenance:${ip}`, 5, 60 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `maintenance:${ip}`, 5, 60 * 60 * 1000)
 
   const isJsonReq = (c.req.header('content-type') || '').includes('application/json')
   const sendErr = (msg: string, status = 400) => {

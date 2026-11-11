@@ -5,8 +5,8 @@ export interface BannerRecord {
   title?: string | null
   subtitle?: string | null
   image_url: string
-  link_url?: string | null
-  badge_text?: string | null
+  /** Page cible dans l'app/site (colonne réelle de la migration 0042) */
+  target_page?: string | null
   display_order: number
   is_active: number // 1 or 0
   created_at: string
@@ -18,6 +18,8 @@ export interface BrandRecord {
   name: string
   slug: string
   logo_url?: string | null
+  /** Clé d'asset local (logo embarqué dans l'app mobile) */
+  asset_key?: string | null
   description?: string | null
   display_order: number
   is_active: number
@@ -62,16 +64,15 @@ export class BannerRepository {
     const result = await this.db
       .prepare(`
         INSERT INTO banners (
-          title, subtitle, image_url, link_url, badge_text,
+          title, subtitle, image_url, target_page,
           display_order, is_active, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .bind(
-        input.title ?? null,
+        input.title ?? '',
         input.subtitle ?? null,
         input.image_url,
-        input.link_url ?? null,
-        input.badge_text ?? null,
+        input.target_page ?? null,
         input.display_order ?? 0,
         input.is_active ?? 1,
         now,
@@ -90,7 +91,7 @@ export class BannerRepository {
     const params: any[] = []
 
     const allowedKeys: (keyof BannerRecord)[] = [
-      'title', 'subtitle', 'image_url', 'link_url', 'badge_text', 'display_order', 'is_active'
+      'title', 'subtitle', 'image_url', 'target_page', 'display_order', 'is_active'
     ]
 
     for (const key of allowedKeys) {

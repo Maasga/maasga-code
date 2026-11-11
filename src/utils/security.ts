@@ -49,28 +49,43 @@ export function rateLimit(key: string, maxRequests: number, windowMs: number): {
   return { allowed: true, remaining: maxRequests - entry.count }
 }
 
+let _rateLimitTableReady = false
+
+/**
+ * Limiteur de débit partagé entre tous les isolates (table D1 `rate_limits`).
+ * Un seul UPSERT atomique … RETURNING : pas de fenêtre de course entre lecture
+ * et écriture, contrairement à l'ancien SELECT puis UPDATE.
+ * Repli sur le limiteur mémoire si D1 est indisponible.
+ */
 export async function rateLimitD1(db: any, key: string, maxRequests: number, windowMs: number): Promise<{ allowed: boolean; remaining: number }> {
   if (!db) return rateLimit(key, maxRequests, windowMs)
   const now = Date.now()
   const nowIso = new Date(now).toISOString()
   try {
-    await db.prepare(`CREATE TABLE IF NOT EXISTS rate_limits (
-      key TEXT PRIMARY KEY,
-      count INTEGER NOT NULL DEFAULT 0,
-      window_start INTEGER NOT NULL,
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    )`).run()
-    const row = await db.prepare('SELECT count, window_start FROM rate_limits WHERE key = ?').bind(key).first() as any
-    const windowStart = Number(row?.window_start ?? 0)
-    const count = Number(row?.count ?? 0)
-    if (!row || !isFinite(windowStart) || now - windowStart > windowMs) {
-      await db.prepare('INSERT OR REPLACE INTO rate_limits (key, count, window_start, updated_at) VALUES (?, 1, ?, ?)').bind(key, now, nowIso).run()
-      try { await db.prepare('DELETE FROM rate_limits WHERE window_start < ?').bind(now - 86400000).run() } catch (_) {}
-      return { allowed: true, remaining: maxRequests - 1 }
+    if (!_rateLimitTableReady) {
+      await db.prepare(`CREATE TABLE IF NOT EXISTS rate_limits (
+        key TEXT PRIMARY KEY,
+        count INTEGER NOT NULL DEFAULT 0,
+        window_start INTEGER NOT NULL,
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`).run()
+      _rateLimitTableReady = true
     }
-    if (count >= maxRequests) return { allowed: false, remaining: 0 }
-    await db.prepare('UPDATE rate_limits SET count = count + 1, updated_at = ? WHERE key = ?').bind(nowIso, key).run()
-    return { allowed: true, remaining: Math.max(0, maxRequests - count - 1) }
+    const row = await db.prepare(
+      `INSERT INTO rate_limits (key, count, window_start, updated_at) VALUES (?1, 1, ?2, ?3)
+       ON CONFLICT(key) DO UPDATE SET
+         count = CASE WHEN ?2 - rate_limits.window_start > ?4 THEN 1 ELSE rate_limits.count + 1 END,
+         window_start = CASE WHEN ?2 - rate_limits.window_start > ?4 THEN ?2 ELSE rate_limits.window_start END,
+         updated_at = ?3
+       RETURNING count`
+    ).bind(key, now, nowIso, windowMs).first() as { count: number } | null
+    const count = Number(row?.count ?? 1)
+    // Ménage opportuniste (~1 % des appels) des fenêtres de plus de 24 h
+    if (Math.random() < 0.01) {
+      try { await db.prepare('DELETE FROM rate_limits WHERE window_start < ?').bind(now - 86400000).run() } catch (_) {}
+    }
+    if (count > maxRequests) return { allowed: false, remaining: 0 }
+    return { allowed: true, remaining: Math.max(0, maxRequests - count) }
   } catch (e) {
     console.error('[SECURITY] rateLimitD1 indisponible, repli mémoire:', e)
     return rateLimit(key, maxRequests, windowMs)

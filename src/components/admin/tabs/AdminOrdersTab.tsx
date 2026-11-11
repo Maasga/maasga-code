@@ -55,7 +55,7 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
     console.log('Exporting orders to CSV');
   };
 
-  const handleOpenClientDetail = (_clientId: number) => { /* SSR — géré côté client */ };
+  const handleOpenClientDetail = (_clientId: number | null) => { /* SSR — géré côté client */ };
   const handleCloseClientDetail = () => { /* SSR — géré côté client */ };
 
   const handleBulkStatusChange = (status: string) => {
@@ -85,7 +85,7 @@ export const AdminCommandesPage = ({ payments = [] }: { payments?: any[] } = {})
           payment={paymentsByOrder[selectedOrderId ?? -1]}
           isOpen={isOrderDetailOpen}
           onClose={() => {}}
-          onUpdateOrder={handleUpdateStatus}
+          onUpdateOrder={(id, updates) => handleUpdateStatus(id, String(updates.status ?? ''))}
         />
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">

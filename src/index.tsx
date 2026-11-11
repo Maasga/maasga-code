@@ -6,7 +6,7 @@ import { setCookie, getCookie, deleteCookie } from 'hono/cookie'
 import type { D1Database } from '@cloudflare/workers-types'
 import { appointments, reviews, orders, clients, notifications, setMaintenanceDueCount, setPendingMaintenanceContractsCount, setPendingMaintenanceRequestsCount, pendingMaintenanceContracts } from './data/store'
 import type { Order } from './data/store'
-import { products } from './data/products'
+import { getContentVersion, bumpContentVersion, ensureCatalogFresh } from './services/catalog.service'
 import { quartiers } from './data/quartiers'
 import { createAppointment, updateAppointmentStatus, createOrder, createReview, getProducts, getReviews, getQuartiers, createClient, getClients, getAppointments, getAppointmentById, getOrders, deleteProduct, deleteClient, deleteOrder, getClientById, getProductById } from './db'
 import type { HonoEnv } from './types'
@@ -53,8 +53,14 @@ app.use(async (c, next) => {
   if (!CACHEABLE_PATHS.has(url.pathname)) return next()
 
   // @ts-ignore — caches.default is available in CF Workers runtime
-  const cache = (caches as any).default
-  const cacheKey = new Request(url.toString(), { method: 'GET' })
+  const cache = (caches as any)?.default
+  if (!cache) return next() // dev Vite : pas de Cache API
+  // La version de contenu fait partie de la clé : toute mutation admin
+  // (bumpContentVersion) rend les anciennes entrées inatteignables = purge implicite.
+  const version = await getContentVersion(c.env.DB)
+  const keyUrl = new URL(url.toString())
+  keyUrl.searchParams.set('__cv', version)
+  const cacheKey = new Request(keyUrl.toString(), { method: 'GET' })
 
   // Try to serve from edge cache
   const cached = await cache.match(cacheKey)
@@ -89,12 +95,13 @@ app.use(async (c, next) => {
   await next()
   c.res.headers.set('X-Content-Type-Options', 'nosniff')
   c.res.headers.set('X-Frame-Options', 'DENY')
-  c.res.headers.set('X-XSS-Protection', '1; mode=block')
+  // X-XSS-Protection retiré : obsolète, et l'auditeur XSS qu'il activait introduisait lui-même des failles.
+  c.res.headers.set('Cross-Origin-Opener-Policy', 'same-origin')
   c.res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-  c.res.headers.set('Permissions-Policy', 'camera=(), microphone=()')
+  c.res.headers.set('Permissions-Policy', 'camera=(), microphone=(), payment=(), usb=(), interest-cohort=(), geolocation=(self)')
   c.res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
   // CSP: allow inline styles/scripts for SSR JSX, Font Awesome CDN, Google Analytics
-  c.res.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' data: https:; connect-src 'self' https://app.ligdicash.com https://www.google-analytics.com https://analytics.google.com https://www.google.com https://cdn.jsdelivr.net;")
+  c.res.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' data: https:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; connect-src 'self' https://app.ligdicash.com https://www.google-analytics.com https://analytics.google.com https://www.google.com https://cdn.jsdelivr.net;")
   // Cache control per route type
   const path = new URL(c.req.url).pathname
   if (path.startsWith('/api/')) {
@@ -170,46 +177,39 @@ app.use(async (c, next) => {
   return next()
 })
 
-// Charger les produits ET orders depuis D1 en parallèle (une seule fois par isolate)
-let _d1LoadPromise: Promise<void> | null = null
+// ============================================================
+// VERSION DE CONTENU — toute mutation admin réussie incrémente
+// site_settings.content_version (cf. services/catalog.service.ts) :
+// les autres isolates rechargent le catalogue et le cache edge est purgé.
+// ============================================================
+const CONTENT_MUTATION_PREFIXES = ['/api/admin', '/admin', '/api/products', '/api/devis', '/api/mobile/admin', '/api/telegram/webhook']
 
 app.use(async (c, next) => {
-  if (products.length === 0 && c.env.DB) {
-    // Deduplicate: if already loading, wait for the same promise
-    if (!_d1LoadPromise) {
-      _d1LoadPromise = (async () => {
-        const db = c.env.DB!
-        const [prodResult, ordResult] = await Promise.allSettled([
-          db.prepare('SELECT * FROM products').all(),
-          getOrders(db)
-        ])
+  await next()
+  const method = c.req.method
+  if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return
+  if (c.res.status >= 400) return
+  const path = new URL(c.req.url).pathname
+  if (path === '/api/admin/login' || path === '/api/admin/logout') return
+  if (!CONTENT_MUTATION_PREFIXES.some(p => path === p || path.startsWith(p + '/'))) return
+  await bumpContentVersion(c.env.DB)
+})
 
-        if (prodResult.status === 'fulfilled' && prodResult.value.results) {
-          prodResult.value.results.forEach((p: any) => {
-            products.push({
-              id: p.id,
-              name: p.name,
-              brand: p.brand,
-              model: p.model,
-              btu: p.btu,
-              price: p.price,
-              price_install: 0,
-              stock: p.stock,
-              surface_min: p.surface_min,
-              surface_max: p.surface_max,
-              energy_class: p.energy_class,
-              description: p.description,
-              inverter: p.inverter === 1,
-              available: p.available === 1,
-              image: p.image || '❄️',
-              imageUrl: p.imageUrl || p.image_url,
-              features: (() => { try { return JSON.parse(p.features || '[]') } catch { return [] } })(),
-              warranty: p.warranty || '1 an constructeur',
-              techSpecs: (() => { try { return p.tech_specs ? JSON.parse(p.tech_specs) : undefined } catch { return undefined } })(),
-              media: (() => { try { return p.media_urls ? JSON.parse(p.media_urls) : [] } catch { return [] } })()
-            })
-          })
-        }
+// Catalogue : rechargé dès que la version de contenu change (≤ 5 s de décalage entre isolates)
+app.use(async (c, next) => {
+  await ensureCatalogFresh(c.env.DB)
+  await next()
+})
+
+// Commandes : chargées une fois par isolate (les vues admin les rechargent à chaque requête)
+let _ordersLoadPromise: Promise<void> | null = null
+
+app.use(async (c, next) => {
+  if (orders.length === 0 && c.env.DB) {
+    if (!_ordersLoadPromise) {
+      _ordersLoadPromise = (async () => {
+        const db = c.env.DB!
+        const [ordResult] = await Promise.allSettled([getOrders(db)])
 
         if (ordResult.status === 'fulfilled' && Array.isArray(ordResult.value)) {
           (ordResult.value as any[]).forEach((o: any) => {
@@ -234,7 +234,7 @@ app.use(async (c, next) => {
         }
       })()
     }
-    await _d1LoadPromise
+    await _ordersLoadPromise
   }
   await next()
 })
@@ -314,6 +314,13 @@ app.route('', telegramRouter)
 // Global error handler — catch unhandled exceptions and display nice error page
 app.onError((err, c) => {
   console.error('Unhandled error:', err.message, err.stack)
+  // Le détail technique n'est montré qu'en local : en production il pourrait
+  // révéler des noms de tables, chemins ou fragments SQL.
+  let isLocal = false
+  try { isLocal = LOCAL_HOSTNAMES.has(new URL(c.req.url).hostname) } catch {}
+  const errorRef = crypto.randomUUID().slice(0, 8)
+  console.error('[error-ref]', errorRef)
+  if (c.req.path.startsWith('/api/')) return c.json({ error: 'Erreur serveur', ref: errorRef }, 500)
   return c.html(
     <html lang="fr">
       <head>
@@ -328,7 +335,9 @@ app.onError((err, c) => {
           <div class="text-6xl mb-6">⚠️</div>
           <h1 class="text-2xl font-bold text-gray-900 mb-3">Erreur serveur</h1>
           <p class="text-gray-500 mb-4">Une erreur inattendue s'est produite. Veuillez réessayer.</p>
-          <pre class="bg-red-50 border border-red-200 text-red-700 text-xs text-left p-4 rounded-xl mb-6 overflow-x-auto font-mono max-h-48 whitespace-pre-wrap">{err?.message || String(err)}</pre>
+          {isLocal
+            ? <pre class="bg-red-50 border border-red-200 text-red-700 text-xs text-left p-4 rounded-xl mb-6 overflow-x-auto font-mono max-h-48 whitespace-pre-wrap">{err?.message || String(err)}</pre>
+            : <p class="text-xs text-gray-400 mb-6">Référence : {errorRef}</p>}
           <a href="/" class="bg-blue-600 text-white font-semibold px-8 py-3 rounded-xl hover:bg-blue-700 transition-colors inline-flex items-center space-x-2">
             <span>Retour à l'accueil</span>
           </a>

@@ -710,7 +710,7 @@ mobileAdminRouter.post('/admin/media/brand/assign', async (c) => {
     } catch (_) {
       try {
         const form = await c.req.formData()
-        body = Object.fromEntries(form.entries())
+        body = Object.fromEntries((form as any).entries())
       } catch (_) {
         body = await c.req.parseBody().catch(() => ({} as Record<string, any>))
       }

@@ -28,6 +28,7 @@ export interface CreateClientInput {
 }
 
 export interface UpdateClientInput {
+  firebase_uid?: string | null
   name?: string
   phone?: string
   email?: string | null
@@ -138,7 +139,7 @@ export class ClientRepository {
     const params: any[] = []
 
     const allowedKeys: (keyof UpdateClientInput)[] = [
-      'name', 'phone', 'email', 'quartier', 'address', 'push_token', 'is_admin', 'role'
+      'firebase_uid', 'name', 'phone', 'email', 'quartier', 'address', 'push_token', 'is_admin', 'role'
     ]
 
     for (const key of allowedKeys) {

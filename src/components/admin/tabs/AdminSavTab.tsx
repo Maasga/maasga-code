@@ -1,5 +1,6 @@
 // Admin Tab Component
 import { products } from '../../../data/products'
+import { ticketCategoryLabels, ticketStatusLabels, ticketPriorityLabels } from '../labels'
 import {
   reviews,
   appointments,

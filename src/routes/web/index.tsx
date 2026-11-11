@@ -37,7 +37,7 @@ webRouter.get('/media/:key{.*}', async (c) => {
   }
 
   const headers = new Headers()
-  object.writeHttpMetadata(headers)
+  object.writeHttpMetadata(headers as any)
   headers.set('etag', object.httpEtag)
   headers.set('Cache-Control', 'public, max-age=31536000, immutable')
 
@@ -53,7 +53,7 @@ webRouter.get('/media/:key{.*}', async (c) => {
     headers.set('content-type', mimeFromExt)
   }
 
-  return new Response(object.body, { headers })
+  return new Response(object.body as any, { headers })
 })
 
 // ── GET / ───────────────────────────────────────────────────────────

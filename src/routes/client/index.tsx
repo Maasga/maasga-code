@@ -1,5 +1,7 @@
 // Client Space & Web Authentication Routes (/espace-client, /api/login, /api/register, invoices, devis, SAV)
 import { Hono } from 'hono'
+import { SITE_URL } from '../../types'
+import { createOrder, createClient } from '../../db'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import type { HonoEnv } from '../../types'
 import { EspaceClientPage } from '../../pages/espace-client'
@@ -7,7 +9,7 @@ import { products } from '../../data/products'
 import { orders, appointments } from '../../data/store'
 import type { Order } from '../../data/store'
 import { escapeHtml, sanitizeText, isValidEmail, isValidPhone, normalizePhone } from '../../utils/helpers'
-import { notifyAdmin, logActivity, logSecurityEvent, ensureActivityLog } from '../../utils/notifications'
+import { notifyAdmin, logActivity, logSecurityEvent, ensureActivityLog, sendSmsWithLog } from '../../utils/notifications'
 import {
   hashPassword,
   verifyPassword,
@@ -24,15 +26,7 @@ import {
   CLIENT_RESET_CODE_MAX_AGE,
   EMAIL_VERIFY_TTL
 } from '../../services/session.service'
-import {
-  rateLimit,
-  rateLimitD1,
-  timingSafeEqualStr,
-  getAdminSecret,
-  signToken,
-  verifyToken,
-  DEFAULT_ADMIN_USERNAME
-} from '../../utils/security'
+import { rateLimitD1, timingSafeEqualStr, getAdminSecret, signToken, verifyToken, DEFAULT_ADMIN_USERNAME } from '../../utils/security'
 
 export const clientRouter = new Hono<HonoEnv>()
 
@@ -241,7 +235,7 @@ clientRouter.get('/api/verify-email', async (c) => {
 // Route: Resend verification email
 clientRouter.post('/api/resend-verification', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`resend-email:${ip}`, 3, 15 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `resend-email:${ip}`, 3, 15 * 60 * 1000)
   if (!rl.allowed) {
     return c.json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' }, 429)
   }
@@ -275,7 +269,7 @@ clientRouter.post('/api/resend-verification', async (c) => {
 clientRouter.post('/api/login', async (c) => {
   // Rate limiting: 10 attempts per IP per 15 minutes + 20 per identifier
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`login:${ip}`, 10, 15 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `login:${ip}`, 10, 15 * 60 * 1000)
   if (!rl.allowed) {
     logSecurityEvent(c.env?.DB, { event: 'login_rate_limit_ip', severity: 'warn', ip, details: `Login rate limited for IP ${ip}` })
     return c.redirect('/espace-client?error=' + encodeURIComponent('Trop de tentatives. Réessayez dans 15 minutes.'))
@@ -286,7 +280,7 @@ clientRouter.post('/api/login', async (c) => {
 
   // Rate limit per identifier (prevents distributed brute force)
   if (identifier) {
-    const idRl = rateLimit(`login-id:${identifier.toLowerCase()}`, 20, 15 * 60 * 1000)
+    const idRl = await rateLimitD1(c.env?.DB, `login-id:${identifier.toLowerCase()}`, 20, 15 * 60 * 1000)
     if (!idRl.allowed) {
       logSecurityEvent(c.env?.DB, { event: 'login_rate_limit_id', severity: 'warn', ip, details: `Login rate limited for identifier ${identifier}` })
       return c.redirect('/espace-client?error=' + encodeURIComponent('Trop de tentatives sur ce compte. Réessayez dans 15 minutes.'))
@@ -404,17 +398,7 @@ clientRouter.post('/api/login', async (c) => {
 // ============================================================
 // CLIENT PASSWORD RESET — via Email (primary) + WhatsApp/SMS (fallback)
 // ============================================================
-const clientResetCodes = new Map<string, { code: string; phone: string; email: string; createdAt: number; used: boolean }>()
-const CLIENT_RESET_CODE_MAX_AGE = 15 * 60 * 1000 // 15 minutes
 
-// Ensure password_reset_codes table has email column
-async function ensureResetCodesTable(db: any) {
-  try {
-    await db.prepare(`CREATE TABLE IF NOT EXISTS password_reset_codes (token TEXT PRIMARY KEY, code TEXT NOT NULL, phone TEXT NOT NULL DEFAULT '', email TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0)`).run()
-    // Add email column if missing (migration-safe)
-    try { await db.prepare(`ALTER TABLE password_reset_codes ADD COLUMN email TEXT NOT NULL DEFAULT ''`).run() } catch (_) { /* already exists */ }
-  } catch(_) {}
-}
 
 // Valeur de `code` d'un token émis après vérification réussie du code (jamais 8 chiffres)
 const RESET_VERIFIED_MARKER = '__verified__'
@@ -540,7 +524,7 @@ clientRouter.get('/espace-client/reset-password', (c) => {
 // Step 1a backend: EMAIL — Generate 6-digit code and send via Brevo email
 clientRouter.post('/api/client/request-reset-email', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`client-reset-email:${ip}`, 3, 15 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `client-reset-email:${ip}`, 3, 15 * 60 * 1000)
   if (!rl.allowed) {
     return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Trop de tentatives. Réessayez dans 15 min.'))
   }
@@ -604,7 +588,7 @@ clientRouter.post('/api/client/request-reset-email', async (c) => {
 // Step 1b backend: PHONE (WhatsApp) — Generate 6-digit code and send via SMS/WhatsApp
 clientRouter.post('/api/client/request-reset', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`client-reset:${ip}`, 3, 15 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `client-reset:${ip}`, 3, 15 * 60 * 1000)
   if (!rl.allowed) {
     return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Trop de tentatives. Réessayez dans 15 min.'))
   }
@@ -798,7 +782,7 @@ clientRouter.post('/api/client/reset-password', async (c) => {
 clientRouter.post('/api/register', async (c) => {
   // Rate limiting: 5 registrations per IP per 30 minutes
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`register:${ip}`, 5, 30 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `register:${ip}`, 5, 30 * 60 * 1000)
   if (!rl.allowed) {
     return c.redirect('/espace-client?tab=signup&error=' + encodeURIComponent('Trop de tentatives. Réessayez dans 30 minutes.'))
   }
@@ -1729,7 +1713,7 @@ clientRouter.get('/api/maintenance/invoice/:id', async (c) => {
 clientRouter.post('/api/order/create', async (c) => {
   // Rate limiting: 10 orders per IP per hour
   const ipAddr = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`order:${ipAddr}`, 10, 60 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `order:${ipAddr}`, 10, 60 * 60 * 1000)
   if (!rl.allowed) {
     return c.json({ error: 'Trop de commandes. Réessayez plus tard.' }, 429)
   }

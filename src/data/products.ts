@@ -46,8 +46,8 @@ export interface Product {
 }
 
 // Les produits ne sont plus définis ici en dur.
-// Cette liste est alimentée exclusivement depuis D1 au démarrage de l'isolate
-// (voir le middleware _d1LoadPromise dans src/index.tsx).
+// Cette liste est alimentée exclusivement depuis D1 et resynchronisée à chaque
+// changement de `content_version` (voir src/services/catalog.service.ts).
 // Laisser ce tableau vide garantit que D1 est la seule source de vérité :
 // un produit supprimé en base ne réapparaît jamais après un redéploiement.
 export const products: Product[] = []

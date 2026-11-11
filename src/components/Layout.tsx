@@ -70,7 +70,8 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         <meta name="twitter:image" content={`${siteUrl}/og-image.png`} />
         <meta name="theme-color" content="#e8f4ff" />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/favicon.png" />
+        {canonicalPath === "/" && <link rel="preload" as="image" href="/hero/hero-1.webp" imagesrcset="/hero/hero-1-800.webp 800w, /hero/hero-1.webp 1600w" imagesizes="100vw" fetchpriority="high" />}
+        <link rel="apple-touch-icon" href="/logo-512.png" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="icon" type="image/png" href="/favicon.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -88,45 +89,6 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         <noscript><link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" /></noscript>
         <link href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/duotone/style.css" rel="stylesheet" media="print" onload="this.media='all'" />
         <link href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/fill/style.css" rel="stylesheet" media="print" onload="this.media='all'" />
-
-        {/* Global Agentation System — Control via ?agentation=1 */}
-        <script type="importmap" dangerouslySetInnerHTML={{ __html: `{
-          "imports": {
-            "react": "https://esm.sh/react@18.3.1",
-            "react-dom/client": "https://esm.sh/react-dom@18.3.1/client?external=react"
-          }
-        }` }} />
-        <script type="module" dangerouslySetInnerHTML={{ __html: `
-          (async function() {
-            try {
-              var qs = new URLSearchParams(window.location.search);
-              if (qs.get('agentation') === '1') localStorage.setItem('maasga_agentation', '1');
-              if (qs.get('agentation') === '0') localStorage.removeItem('maasga_agentation');
-              if (localStorage.getItem('maasga_agentation') !== '1') return;
-
-              const [reactMod, domMod, agentMod] = await Promise.all([
-                import('react'),
-                import('react-dom/client'),
-                import('https://esm.sh/agentation@3.0.2?external=react,react-dom/client')
-              ]);
-
-              const { Agentation } = agentMod;
-              function mount() {
-                if (document.getElementById('agentation-root')) return;
-                const host = document.createElement('div');
-                host.id = 'agentation-root';
-                document.body.appendChild(host);
-                domMod.createRoot(host).render(reactMod.createElement(Agentation, {}));
-              }
-              if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', mount, { once: true });
-              } else { mount(); }
-              console.info('[Agentation] activé (public)');
-            } catch (e) {
-              console.error('[Agentation] échec:', e);
-            }
-          })();
-        ` }} />
 
         {/* Google Analytics GA4 — consent-aware (load async FIRST, then configure) */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-LCQJE6963G"></script>
@@ -153,7 +115,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         <div id="page-loader" style="position:fixed;inset:0;z-index:999999;background:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.3s ease,visibility 0.3s ease;">
           <div style="position:relative;margin-bottom:1.5rem;">
             <div style="width:72px;height:72px;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,119,182,0.2);animation:loader-pulse 1.5s ease-in-out infinite;">
-              <img src="/logo-site.png" alt="MAASGA" style="width:100%;height:100%;object-fit:cover;" />
+              <img src="/logo-site.webp" width="192" height="192" alt="MAASGA" style="width:100%;height:100%;object-fit:cover;" />
             </div>
           </div>
           <div style="color:#03045e;font-size:1.6rem;font-weight:800;letter-spacing:0.1em;margin-bottom:0.4rem;">MAASGA</div>
@@ -222,7 +184,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
 
             {/* Logo */}
             <a href="/" class="font-extrabold tracking-tight flex items-center shrink-0 gap-2">
-              <img src="/logo-site.png" alt="MAASGA Logo" class="h-9 sm:h-10 w-auto rounded-lg" />
+              <img src="/logo-site.webp" width="192" height="192" alt="MAASGA Logo" class="h-9 sm:h-10 w-auto rounded-lg" />
               <span class="hidden sm:inline text-sm font-bold uppercase tracking-widest" style="color:#03045e;">MAASGA</span>
             </a>
 
@@ -351,7 +313,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               <div class="md:col-span-2">
                 <div class="flex items-center space-x-3 mb-5">
                   <div class="w-14 h-14 rounded-xl overflow-hidden shadow-lg border border-white/20">
-                    <img src="/logo-site.png" alt="MAASGA Logo" class="w-full h-full object-cover" loading="lazy" />
+                    <img src="/logo-site.webp" width="192" height="192" alt="MAASGA Logo" class="w-full h-full object-cover" loading="lazy" />
                   </div>
                   <div>
                     <div class="font-bold text-white text-xl tracking-wide">MAASGA</div>

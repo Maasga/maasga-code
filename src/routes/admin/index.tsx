@@ -80,7 +80,7 @@ import {
   MAX_LIGNES_PAR_LOT
 } from '../../utils/importProduits'
 import type { ChampCible, ChampsProduit, ProduitDerive } from '../../utils/importProduits'
-import { hashPassword, verifyPassword } from '../../services/session.service'
+import { hashPassword, verifyPassword, CLIENT_RESET_CODE_MAX_AGE } from '../../services/session.service'
 import {
   rateLimit,
   rateLimitD1,
@@ -4011,7 +4011,7 @@ adminRouter.post('/api/admin/produits/import', adminAuth, async (c) => {
   // Un upsert ne peut pas être reflété par un products.push (il dupliquerait les
   // fiches mises Ã  jour en mémoire) : on invalide le cache, refreshAdminCache
   // rechargera depuis D1 au prochain GET.
-  _d1LoadPromise = null
+  // Invalidation : gérée par le middleware content_version (src/index.tsx)
 
   const ip = c.req.header('cf-connecting-ip') || 'unknown'
   await logAdminAudit(db, {
@@ -4099,6 +4099,8 @@ adminRouter.post('/api/admin/produit/update', adminAuth, async (c) => {
   try {
     const mediaJson = body['media_json'] as string
     if (mediaJson) {
+      const parsed = JSON.parse(mediaJson)
+      if (!Array.isArray(parsed)) throw new Error('media_json doit être un tableau')
       for (const item of parsed) {
         if (typeof item.url === 'string' && item.url.startsWith('data:image/')) {
           try {
@@ -4210,7 +4212,7 @@ adminRouter.post('/api/admin/produit/delete', adminAuth, async (c) => {
   // Invalider le cache en mémoire pour forcer un rechargement depuis D1
   // au prochain démarrage d'isolate — garantit qu'un produit supprimé ne
   // réapparaît pas après un redéploiement ou une mise en veille du Worker.
-  _d1LoadPromise = null
+  // Invalidation : gérée par le middleware content_version (src/index.tsx)
   
   return c.redirect('/admin/produits?deleted=1')
 })
@@ -4873,7 +4875,7 @@ adminRouter.post('/api/products', async (c) => {
     ).run()
 
     // Invalidate in-memory cache so next GET fetches from D1
-    _d1LoadPromise = null
+    // Invalidation : gérée par le middleware content_version (src/index.tsx)
 
     return c.json({ success: true, id: result.meta?.last_row_id }, 201)
   } catch (e: any) {
