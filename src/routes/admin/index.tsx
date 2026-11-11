@@ -4830,7 +4830,10 @@ adminRouter.post('/api/products', async (c) => {
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
   let secret: string
   try { secret = getAdminSecret(env) } catch { return c.json({ error: 'Server misconfigured' }, 503) }
-  if (!token || token !== secret) {
+  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
+  const rl = await rateLimitD1(env?.DB, `api-products-bearer:${ip}`, 20, 15 * 60 * 1000)
+  if (!rl.allowed) return c.json({ error: 'Trop de tentatives' }, 429)
+  if (!token || !timingSafeEqualStr(token, secret)) {
     return c.json({ error: 'Non autorisé' }, 401)
   }
 
@@ -5290,11 +5293,15 @@ async function createFirebaseJWT(serviceAccount: any): Promise<string> {
 // Endpoint alternatif protégé par ADMIN_SECRET (pour bootstrap initial)
 adminRouter.post('/api/admin/set-role-secret', async (c) => {
   let reqBody: any = {}
-  try { reqBody = await c.req.json() } catch (e) { return c.json({ error: 'JSON invalide', e: String(e) }, 400) }
+  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
+  const rl = await rateLimitD1(c.env?.DB, `set-role-secret:${ip}`, 5, 15 * 60 * 1000)
+  if (!rl.allowed) return c.json({ error: 'Trop de tentatives' }, 429)
+  try { reqBody = await c.req.json() } catch { return c.json({ error: 'JSON invalide' }, 400) }
   const { uid, role, secret } = reqBody
   const envSecret = (c.env as any).ADMIN_SECRET as string | undefined
-  if (!secret || !envSecret || secret !== envSecret) {
-    return c.json({ error: 'Secret invalide', debug: { secretLen: secret?.length, envLen: envSecret?.length, equal: secret === envSecret } }, 403)
+  // SÉCURITÉ : comparaison en temps constant, aucune info de debug renvoyée
+  if (typeof secret !== 'string' || !envSecret || !timingSafeEqualStr(secret, envSecret)) {
+    return c.json({ error: 'Secret invalide' }, 403)
   }
   if (!uid) return c.json({ error: 'UID requis' }, 400)
   if (!role || (role !== 'admin' && role !== 'client')) return c.json({ error: 'Role invalide' }, 400)

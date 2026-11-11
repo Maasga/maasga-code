@@ -5,7 +5,7 @@ import { ProductRepository, OrderRepository, AppointmentRepository, ClientReposi
 import { products } from '../../data/products'
 import { quartiers } from '../../data/quartiers'
 import { reviews } from '../../data/store'
-import { getReviews, getQuartiers } from '../../db'
+import { getReviews, getQuartiers, createReview } from '../../db'
 import { calculatePlanPricing, generateVisitDates } from '../../services/pricing.service'
 
 export const mobileClientRouter = new Hono<HonoEnv>()
@@ -17,7 +17,15 @@ mobileClientRouter.post('/login', mobileAuth, async (c) => {
   if (db) {
     try {
       const clientRepo = new ClientRepository(db)
-      const existing = await clientRepo.findByFirebaseUid(user.uid) || (user.email ? await clientRepo.findByEmail(user.email) : null)
+      const byUid = await clientRepo.findByFirebaseUid(user.uid)
+      const byEmail = !byUid && user.email ? await clientRepo.findByEmail(user.email) : null
+      // SÉCURITÉ : ne rattacher un compte existant par email que si Firebase a vérifié l'email,
+      // sinon n'importe qui pourrait créer un compte Firebase avec l'email d'un client et récupérer ses données.
+      if (byEmail && !user.emailVerified) {
+        console.warn('[mobile/login] Rattachement par email refusé (email non vérifié):', user.uid)
+        return c.json({ success: true, uid: user.uid, role: user.role })
+      }
+      const existing = byUid || byEmail
 
       if (!existing) {
         await clientRepo.create({
@@ -103,7 +111,7 @@ mobileClientRouter.patch('/profile', mobileAuth, async (c) => {
 
   try {
     const clientRepo = new ClientRepository(db)
-    const client = await clientRepo.findByFirebaseUid(user.uid) || (user.email ? await clientRepo.findByEmail(user.email) : null)
+    const client = await clientRepo.findByFirebaseUid(user.uid) || (user.email && user.emailVerified ? await clientRepo.findByEmail(user.email) : null)
     if (!client) return c.json({ error: 'Profil introuvable' }, 404)
 
     await clientRepo.update(client.id, {
@@ -136,7 +144,7 @@ mobileClientRouter.get('/client-dashboard', mobileAuth, async (c) => {
       const orderRepo = new OrderRepository(db)
       const apptRepo = new AppointmentRepository(db)
 
-      const clientRow = await clientRepo.findByFirebaseUid(user.uid) || (user.email ? await clientRepo.findByEmail(user.email) : null)
+      const clientRow = await clientRepo.findByFirebaseUid(user.uid) || (user.email && user.emailVerified ? await clientRepo.findByEmail(user.email) : null)
 
       if (clientRow) {
         client = clientRow
@@ -296,6 +304,48 @@ mobileClientRouter.get('/products/:id', async (c) => {
   const fallback = products.find((p: any) => p.id === id)
   if (!fallback) return c.json({ error: 'Produit non trouvé' }, 404)
   return c.json(fallback)
+})
+
+// ── GET /api/mobile/products/:id/reviews ────────────────────────────
+// The reviews table is not product-specific; returns all approved reviews.
+// Endpoint exists so the client app gets 200+[] instead of a 403.
+mobileClientRouter.get('/products/:id/reviews', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json([])
+  try {
+    const dbReviews = await getReviews(db, true)
+    return c.json(dbReviews)
+  } catch (_) {
+    return c.json([])
+  }
+})
+
+// ── POST /api/mobile/products/:id/reviews ───────────────────────────
+mobileClientRouter.post('/products/:id/reviews', mobileAuth, async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const body = await c.req.json().catch(() => ({})) as any
+  const { name, rating, comment } = body
+  if (!name || !rating || !comment) {
+    return c.json({ error: 'Champs requis manquants (name, rating, comment)' }, 400)
+  }
+  const note = parseInt(String(rating), 10)
+  if (note < 1 || note > 5) {
+    return c.json({ error: 'La note doit être entre 1 et 5' }, 400)
+  }
+  try {
+    await createReview(db, {
+      name: String(name).trim(),
+      note,
+      comment: String(comment).trim(),
+      date: new Date().toISOString().split('T')[0],
+      service: body.service || null,
+    })
+    return c.json({ success: true }, 201)
+  } catch (e: any) {
+    console.error('POST /products/:id/reviews error:', e)
+    return c.json({ error: 'Erreur lors de la soumission de l\'avis' }, 500)
+  }
 })
 
 // ── GET /api/mobile/reviews ─────────────────────────────────────────

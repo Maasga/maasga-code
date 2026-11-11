@@ -34,7 +34,7 @@ mobileAdminRouter.get('/rdv', async (c) => {
   }
 })
 
-mobileAdminRouter.get('/admin/rdv/:id', async (c) => {
+mobileAdminRouter.get('/admin/rdv/:id{[0-9]+}', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
   const id = parseInt(c.req.param('id'), 10)
@@ -50,7 +50,7 @@ mobileAdminRouter.get('/admin/rdv/:id', async (c) => {
   }
 })
 
-mobileAdminRouter.post('/admin/rdv/:id/confirm', async (c) => {
+mobileAdminRouter.post('/admin/rdv/:id{[0-9]+}/confirm', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
   const id = parseInt(c.req.param('id'), 10)
@@ -71,7 +71,7 @@ mobileAdminRouter.post('/admin/rdv/:id/confirm', async (c) => {
   }
 })
 
-mobileAdminRouter.post('/admin/rdv/:id/cancel', async (c) => {
+mobileAdminRouter.post('/admin/rdv/:id{[0-9]+}/cancel', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
   const id = parseInt(c.req.param('id'), 10)
@@ -129,7 +129,7 @@ mobileAdminRouter.get('/admin/clients', async (c) => {
   }
 })
 
-mobileAdminRouter.get('/admin/clients/:id', async (c) => {
+mobileAdminRouter.get('/admin/clients/:id{[0-9]+}', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
   const id = parseInt(c.req.param('id'), 10)
@@ -176,7 +176,7 @@ mobileAdminRouter.post('/admin/clients', async (c) => {
   }
 })
 
-mobileAdminRouter.put('/admin/clients/:id', async (c) => {
+mobileAdminRouter.put('/admin/clients/:id{[0-9]+}', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
   const id = parseInt(c.req.param('id'), 10)
@@ -201,7 +201,7 @@ mobileAdminRouter.put('/admin/clients/:id', async (c) => {
   }
 })
 
-mobileAdminRouter.get('/admin/clients/:id/orders', async (c) => {
+mobileAdminRouter.get('/admin/clients/:id{[0-9]+}/orders', async (c) => {
   const db = c.env.DB
   if (!db) return c.json([])
   const id = parseInt(c.req.param('id'), 10)
@@ -216,7 +216,7 @@ mobileAdminRouter.get('/admin/clients/:id/orders', async (c) => {
   }
 })
 
-mobileAdminRouter.get('/admin/clients/:id/rdv', async (c) => {
+mobileAdminRouter.get('/admin/clients/:id{[0-9]+}/rdv', async (c) => {
   const db = c.env.DB
   if (!db) return c.json([])
   const id = parseInt(c.req.param('id'), 10)
@@ -246,7 +246,7 @@ mobileAdminRouter.get('/orders', async (c) => {
   }
 })
 
-mobileAdminRouter.get('/admin/orders/:id', async (c) => {
+mobileAdminRouter.get('/admin/orders/:id{[0-9]+}', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
   const id = parseInt(c.req.param('id'), 10)
@@ -262,7 +262,7 @@ mobileAdminRouter.get('/admin/orders/:id', async (c) => {
   }
 })
 
-mobileAdminRouter.patch('/admin/orders/:id/status', async (c) => {
+mobileAdminRouter.patch('/admin/orders/:id{[0-9]+}/status', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
   const id = parseInt(c.req.param('id'), 10)
@@ -287,7 +287,7 @@ mobileAdminRouter.patch('/admin/orders/:id/status', async (c) => {
   }
 })
 
-mobileAdminRouter.get('/admin/orders/:id/notes', async (c) => {
+mobileAdminRouter.get('/admin/orders/:id{[0-9]+}/notes', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
   const id = parseInt(c.req.param('id'), 10)
@@ -348,7 +348,7 @@ mobileAdminRouter.post('/admin/products', async (c) => {
   }
 })
 
-mobileAdminRouter.put('/admin/products/:id', async (c) => {
+mobileAdminRouter.put('/admin/products/:id{[0-9]+}', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
   const id = parseInt(c.req.param('id'), 10)
@@ -373,7 +373,7 @@ mobileAdminRouter.put('/admin/products/:id', async (c) => {
   }
 })
 
-mobileAdminRouter.delete('/admin/products/:id', async (c) => {
+mobileAdminRouter.delete('/admin/products/:id{[0-9]+}', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
   const id = parseInt(c.req.param('id'), 10)
@@ -895,7 +895,7 @@ mobileAdminRouter.get('/admin/banners', async (c) => {
   }
 })
 
-mobileAdminRouter.get('/admin/banners/:id', async (c) => {
+mobileAdminRouter.get('/admin/banners/:id{[0-9]+}', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
   const id = parseInt(c.req.param('id'), 10)
@@ -933,7 +933,32 @@ mobileAdminRouter.post('/admin/banners', async (c) => {
   }
 })
 
-mobileAdminRouter.patch('/admin/banners/:id/toggle', async (c) => {
+mobileAdminRouter.put('/admin/banners/:id{[0-9]+}', async (c) => {
+  const db = c.env.DB
+  if (!db) return c.json({ error: 'Service indisponible' }, 503)
+  const id = parseInt(c.req.param('id'), 10)
+  if (isNaN(id)) return c.json({ error: 'ID invalide' }, 400)
+
+  try {
+    const body = await c.req.json()
+    const bannerRepo = new BannerRepository(db)
+    const updated = await bannerRepo.updateBanner(id, body)
+    if (!updated) return c.json({ error: 'Bannière introuvable' }, 404)
+
+    await logAdminAudit(db, {
+      action: 'update_banner',
+      detail: `Bannière ID: ${id}`,
+      ip: c.req.header('cf-connecting-ip') || 'unknown',
+      userAgent: c.req.header('user-agent') || 'unknown',
+    })
+
+    return c.json({ success: true })
+  } catch (e: any) {
+    return c.json({ error: 'Erreur: ' + e.message }, 500)
+  }
+})
+
+mobileAdminRouter.patch('/admin/banners/:id{[0-9]+}/toggle', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
   const id = parseInt(c.req.param('id'), 10)
@@ -959,7 +984,7 @@ mobileAdminRouter.patch('/admin/banners/:id/toggle', async (c) => {
 
 // ─── BRANDS (CRUD) ───────────────────────────────────────────────────────────────
 
-mobileAdminRouter.get('/admin/brands/:id', async (c) => {
+mobileAdminRouter.get('/admin/brands/:id{[0-9]+}', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
   const id = parseInt(c.req.param('id'), 10)
@@ -997,7 +1022,7 @@ mobileAdminRouter.post('/admin/brands', async (c) => {
   }
 })
 
-mobileAdminRouter.put('/admin/brands/:id', async (c) => {
+mobileAdminRouter.put('/admin/brands/:id{[0-9]+}', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
   const id = parseInt(c.req.param('id'), 10)
@@ -1021,7 +1046,7 @@ mobileAdminRouter.put('/admin/brands/:id', async (c) => {
   }
 })
 
-mobileAdminRouter.delete('/admin/brands/:id', async (c) => {
+mobileAdminRouter.delete('/admin/brands/:id{[0-9]+}', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
   const id = parseInt(c.req.param('id'), 10)
@@ -1044,7 +1069,7 @@ mobileAdminRouter.delete('/admin/brands/:id', async (c) => {
   }
 })
 
-mobileAdminRouter.patch('/admin/brands/:id/toggle', async (c) => {
+mobileAdminRouter.patch('/admin/brands/:id{[0-9]+}/toggle', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
   const id = parseInt(c.req.param('id'), 10)
@@ -1294,7 +1319,7 @@ mobileAdminRouter.get('/admin/reviews', async (c) => {
   }
 })
 
-mobileAdminRouter.get('/admin/reviews/:id', async (c) => {
+mobileAdminRouter.get('/admin/reviews/:id{[0-9]+}', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
   const id = parseInt(c.req.param('id'), 10)
@@ -1311,7 +1336,7 @@ mobileAdminRouter.get('/admin/reviews/:id', async (c) => {
 
 // ─── PRODUCT IMAGE UPDATE ───────────────────────────────────────────────────────
 
-mobileAdminRouter.post('/admin/products/:id/image', async (c) => {
+mobileAdminRouter.post('/admin/products/:id{[0-9]+}/image', async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'Service indisponible' }, 503)
   const id = parseInt(c.req.param('id'), 10)
@@ -1377,7 +1402,7 @@ mobileAdminRouter.get('/admin/payments', async (c) => {
   }
 })
 
-mobileAdminRouter.get('/admin/payments/:id', async (c) => {
+mobileAdminRouter.get('/admin/payments/:id{[0-9]+}', async (c) => {
   const id = Number(c.req.param('id'))
   const db = c.env.DB
   if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
@@ -1410,7 +1435,7 @@ mobileAdminRouter.post('/admin/payments', async (c) => {
   }
 })
 
-mobileAdminRouter.patch('/admin/payments/:id/status', async (c) => {
+mobileAdminRouter.patch('/admin/payments/:id{[0-9]+}/status', async (c) => {
   const id = Number(c.req.param('id'))
   const db = c.env.DB
   if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
@@ -1473,7 +1498,7 @@ mobileAdminRouter.get('/admin/devis', async (c) => {
   }
 })
 
-mobileAdminRouter.get('/admin/devis/:id', async (c) => {
+mobileAdminRouter.get('/admin/devis/:id{[0-9]+}', async (c) => {
   const id = Number(c.req.param('id'))
   const db = c.env.DB
   if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
@@ -1518,7 +1543,7 @@ mobileAdminRouter.post('/admin/devis', async (c) => {
   }
 })
 
-mobileAdminRouter.patch('/admin/devis/:id/status', async (c) => {
+mobileAdminRouter.patch('/admin/devis/:id{[0-9]+}/status', async (c) => {
   const id = Number(c.req.param('id'))
   const db = c.env.DB
   if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
@@ -1535,7 +1560,7 @@ mobileAdminRouter.patch('/admin/devis/:id/status', async (c) => {
   }
 })
 
-mobileAdminRouter.post('/admin/devis/:id/convert', async (c) => {
+mobileAdminRouter.post('/admin/devis/:id{[0-9]+}/convert', async (c) => {
   const id = Number(c.req.param('id'))
   const db = c.env.DB
   if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
@@ -1607,7 +1632,7 @@ mobileAdminRouter.get('/admin/messages', async (c) => {
   }
 })
 
-mobileAdminRouter.get('/admin/messages/:id', async (c) => {
+mobileAdminRouter.get('/admin/messages/:id{[0-9]+}', async (c) => {
   const id = Number(c.req.param('id'))
   const db = c.env.DB
   if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
@@ -1620,7 +1645,7 @@ mobileAdminRouter.get('/admin/messages/:id', async (c) => {
   }
 })
 
-mobileAdminRouter.post('/admin/messages/:id/respond', async (c) => {
+mobileAdminRouter.post('/admin/messages/:id{[0-9]+}/respond', async (c) => {
   const id = Number(c.req.param('id'))
   const db = c.env.DB
   if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
@@ -1638,7 +1663,7 @@ mobileAdminRouter.post('/admin/messages/:id/respond', async (c) => {
   }
 })
 
-mobileAdminRouter.patch('/admin/messages/:id/status', async (c) => {
+mobileAdminRouter.patch('/admin/messages/:id{[0-9]+}/status', async (c) => {
   const id = Number(c.req.param('id'))
   const db = c.env.DB
   if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
@@ -1705,7 +1730,7 @@ mobileAdminRouter.get('/admin/sav', async (c) => {
   }
 })
 
-mobileAdminRouter.get('/admin/sav/:id', async (c) => {
+mobileAdminRouter.get('/admin/sav/:id{[0-9]+}', async (c) => {
   const id = Number(c.req.param('id'))
   const db = c.env.DB
   if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
@@ -1737,7 +1762,7 @@ mobileAdminRouter.post('/admin/sav', async (c) => {
   }
 })
 
-mobileAdminRouter.patch('/admin/sav/:id/status', async (c) => {
+mobileAdminRouter.patch('/admin/sav/:id{[0-9]+}/status', async (c) => {
   const id = Number(c.req.param('id'))
   const db = c.env.DB
   if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
@@ -1754,7 +1779,7 @@ mobileAdminRouter.patch('/admin/sav/:id/status', async (c) => {
   }
 })
 
-mobileAdminRouter.patch('/admin/sav/:id/assign', async (c) => {
+mobileAdminRouter.patch('/admin/sav/:id{[0-9]+}/assign', async (c) => {
   const id = Number(c.req.param('id'))
   const db = c.env.DB
   if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
@@ -1772,7 +1797,7 @@ mobileAdminRouter.patch('/admin/sav/:id/assign', async (c) => {
   }
 })
 
-mobileAdminRouter.patch('/admin/sav/:id/resolve', async (c) => {
+mobileAdminRouter.patch('/admin/sav/:id{[0-9]+}/resolve', async (c) => {
   const id = Number(c.req.param('id'))
   const db = c.env.DB
   if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
@@ -1830,7 +1855,7 @@ mobileAdminRouter.get('/admin/notifications', async (c) => {
   }
 })
 
-mobileAdminRouter.get('/admin/notifications/:id', async (c) => {
+mobileAdminRouter.get('/admin/notifications/:id{[0-9]+}', async (c) => {
   const id = Number(c.req.param('id'))
   const db = c.env.DB
   if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
@@ -1908,7 +1933,7 @@ mobileAdminRouter.get('/admin/realisations', async (c) => {
   }
 })
 
-mobileAdminRouter.get('/admin/realisations/:id', async (c) => {
+mobileAdminRouter.get('/admin/realisations/:id{[0-9]+}', async (c) => {
   const id = Number(c.req.param('id'))
   const db = c.env.DB
   if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
@@ -1940,7 +1965,7 @@ mobileAdminRouter.post('/admin/realisations', async (c) => {
   }
 })
 
-mobileAdminRouter.delete('/admin/realisations/:id', async (c) => {
+mobileAdminRouter.delete('/admin/realisations/:id{[0-9]+}', async (c) => {
   const id = Number(c.req.param('id'))
   const db = c.env.DB
   if (!db || !id) return c.json({ error: 'ID invalide' }, 400)
@@ -1952,7 +1977,7 @@ mobileAdminRouter.delete('/admin/realisations/:id', async (c) => {
   }
 })
 
-mobileAdminRouter.patch('/admin/realisations/:id/featured', async (c) => {
+mobileAdminRouter.patch('/admin/realisations/:id{[0-9]+}/featured', async (c) => {
   const id = Number(c.req.param('id'))
   const db = c.env.DB
   if (!db || !id) return c.json({ error: 'ID invalide' }, 400)

@@ -94,12 +94,24 @@ export const mobileAuth = async (c: Context<HonoEnv>, next: Next) => {
       email: payload.email || '',
       name: payload.name || '',
       role: 'client',
+      emailVerified: payload.email_verified === true,
     })
     return next()
   } catch (e: any) {
     console.warn('[mobileAuth] Token invalide:', e.message)
     return c.json({ error: 'Token invalide ou expiré' }, 401)
   }
+}
+
+// Emails admin explicites (fallback tant que le custom claim n'est pas posé).
+// SÉCURITÉ : jamais de règle par suffixe de domaine — n'importe qui peut créer
+// un compte Firebase x@maasga.com. L'email doit en plus être vérifié.
+const MOBILE_ADMIN_EMAILS = new Set(['maasgabf@gmail.com', 'sawadogosherifhamed@gmail.com'])
+
+export function isMobileAdminPayload(payload: Record<string, any>): boolean {
+  if (payload['role'] === 'admin' || payload['https://maasga.app/role'] === 'admin') return true
+  const email = String(payload.email || '').toLowerCase().trim()
+  return payload.email_verified === true && MOBILE_ADMIN_EMAILS.has(email)
 }
 
 export const mobileAdminAuth = async (c: Context<HonoEnv>, next: Next) => {
@@ -109,17 +121,8 @@ export const mobileAdminAuth = async (c: Context<HonoEnv>, next: Next) => {
   try {
     const projectId = c.env.FIREBASE_PROJECT_ID || DEFAULT_FIREBASE_PROJECT_ID
     const payload = await verifyFirebaseToken(token, projectId)
-    const isAdmin = payload['role'] === 'admin' || payload['https://maasga.app/role'] === 'admin'
-
-    // Fallback: accepter les emails admin connus
-    const email = (payload.email || '').toLowerCase().trim()
-    const isAllowedEmail = email === 'maasgabf@gmail.com' ||
-                           email === 'sawadogosherifhamed@gmail.com' ||
-                           email.endsWith('@maasga.bf') ||
-                           email.endsWith('@maasga.com')
-
-    if (!isAdmin && !isAllowedEmail) {
-      console.warn('[mobileAdminAuth] Accès refusé pour:', email)
+    if (!isMobileAdminPayload(payload)) {
+      console.warn('[mobileAdminAuth] Accès refusé pour:', payload.sub)
       return c.json({ error: 'Accès admin requis' }, 403)
     }
 

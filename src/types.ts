@@ -9,6 +9,7 @@ export type MobileUser = {
   email: string
   name: string
   role: string
+  emailVerified?: boolean
   phone?: string
   id?: number
 }
