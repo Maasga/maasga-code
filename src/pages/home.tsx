@@ -15,7 +15,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
   // Split-écran épinglé « Notre Expertise » — 3 expertises révélées au scroll
   const EXPERTISES = [
     {
-      icon: 'ph-duotone ph-shopping-cart-simple',
+      icon: 'fas fa-cart-shopping',
       iconBg: 'linear-gradient(135deg,var(--accent),var(--accent-cyan))',
       iconColor: '#ffffff',
       title: 'Vente Premium',
@@ -25,7 +25,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       href: '/catalogue',
     },
     {
-      icon: 'ph-duotone ph-wrench',
+      icon: 'fas fa-wrench',
       iconBg: 'rgba(202,240,248,0.14)',
       iconColor: 'var(--ice)',
       title: 'Maintenance',
@@ -35,7 +35,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       href: '/rendez-vous',
     },
     {
-      icon: 'ph-duotone ph-chart-line-up',
+      icon: 'fas fa-chart-line',
       iconBg: 'linear-gradient(135deg,var(--accent),var(--accent-cyan))',
       iconColor: '#ffffff',
       title: 'Suivi de Performance',
@@ -75,7 +75,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             <div class="hero-content text-white" data-hero>
               {/* Badge confiance */}
               <div class="eyebrow eyebrow-ice inline-flex items-center gap-2 mb-6">
-                <i class="ph-duotone ph-lock-key text-xs" style="color:var(--ice);"></i>
+                <i class="fas fa-lock text-xs" style="color:var(--ice);"></i>
                 <span>Techniciens certifiés · Burkina Faso</span>
               </div>
 
@@ -89,12 +89,12 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
 
               <div class="flex flex-col sm:flex-row gap-4 mb-8">
                 <a href="/catalogue" class="magnetic btn-light font-bold px-8 py-4 rounded-2xl flex items-center justify-center gap-3 group">
-                  <i class="ph-duotone ph-snowflake" style="color:var(--accent);"></i>
+                  <i class="fas fa-snowflake" style="color:var(--accent);"></i>
                   <span>Commander une climatisation</span>
-                  <i class="ph-duotone ph-arrow-right group-hover:translate-x-1 transition-transform text-sm" style="color:var(--accent);"></i>
+                  <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform text-sm" style="color:var(--accent);"></i>
                 </a>
                 <a href="/rendez-vous" class="font-bold px-8 py-4 rounded-2xl flex items-center justify-center gap-3 transition-all" style="border:1.5px solid rgba(202,240,248,0.35); color:white; background:rgba(255,255,255,0.06);">
-                  <i class="ph-duotone ph-calendar-plus" style="color:var(--ice);"></i>
+                  <i class="fas fa-calendar-plus" style="color:var(--ice);"></i>
                   <span>Demander un devis</span>
                 </a>
               </div>
@@ -108,7 +108,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                 </div>
                 <div>
                   <div class="flex items-center gap-1">
-                    {[1,2,3,4,5].map(_ => <i class="ph-fill ph-star text-yellow-400" style="font-size:0.65rem;"></i>)}
+                    {[1,2,3,4,5].map(_ => <i class="fas fa-star text-yellow-400" style="font-size:0.65rem;"></i>)}
                     <span class="font-bold text-white text-sm ml-1">{displayNote}</span>
                   </div>
                   <div class="text-xs" style="color:#94a3b8;"><strong class="text-white">{displayClients}</strong> clients satisfaits</div>
@@ -159,7 +159,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
         {/* Indice de scroll */}
         <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center animate-bounce" style="opacity:0.5;">
           <span class="text-xs uppercase tracking-widest text-white mb-2">Découvrir</span>
-          <i class="ph-duotone ph-caret-down text-white"></i>
+          <i class="fas fa-chevron-down text-white"></i>
         </div>
 
         {/* Carte flottante — bas droite */}
@@ -173,7 +173,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             </div>
             <div class="text-xs font-bold flex items-center justify-between" style="color:var(--accent);">
               <span>Simulateur BTU Gratuit</span>
-              <i class="ph-duotone ph-arrow-right"></i>
+              <i class="fas fa-arrow-right"></i>
             </div>
           </a>
         </div>
@@ -242,7 +242,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                       ))}
                     </ul>
                     <a href={s.href} class="inline-flex items-center font-semibold group" style="color:var(--accent);">
-                      {s.cta} <i class="ph-duotone ph-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                      {s.cta} <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
                     </a>
                   </div>
                 ))}
@@ -251,7 +251,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
               {/* DROITE — panneau navy épinglé, visuels empilés qui se révèlent */}
               <div class="exp-right order-1 lg:order-2">
                 <div class="exp-panel surface-navy">
-                  <div class="exp-panel-wm" aria-hidden="true"><i class="ph-duotone ph-wrench"></i></div>
+                  <div class="exp-panel-wm" aria-hidden="true"><i class="fas fa-wrench"></i></div>
                   {EXPERTISES.map((s, i) => (
                     <div class={`exp-visual${i === 0 ? ' is-active' : ''}`} data-step={String(i)}>
                       <i class={`${s.icon} icon-pulse`}></i>
@@ -360,7 +360,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             </div>
             <a href="/catalogue" class="inline-flex items-center gap-2 font-semibold group transition-colors" style="color:var(--accent);">
               <span>Voir tout le catalogue</span>
-              <i class="ph-duotone ph-arrow-right group-hover:translate-x-1 transition-transform text-sm"></i>
+              <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform text-sm"></i>
             </a>
           </div>
 
@@ -481,7 +481,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
               <a href="/simulateur" class="btn-primary font-bold px-8 py-4 rounded-2xl inline-flex items-center gap-3">
                 <i class="fas fa-calculator"></i>
                 <span>Lancer le simulateur BTU</span>
-                <i class="ph-duotone ph-arrow-right text-sm"></i>
+                <i class="fas fa-arrow-right text-sm"></i>
               </a>
             </div>
 
@@ -529,13 +529,13 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
           </div>
           <a href="/avis" class="mt-4 sm:mt-0 inline-flex items-center gap-2 font-semibold" style="color:var(--accent);">
             <span>Voir tous les avis</span>
-            <i class="ph-duotone ph-arrow-right text-sm"></i>
+            <i class="fas fa-arrow-right text-sm"></i>
           </a>
         </div>
 
         {topReviews.length === 0 ? (
           <div class="surface text-center py-12">
-            <i class="ph-fill ph-star text-4xl mb-3" style="color:#94a3b8;"></i>
+            <i class="fas fa-star text-4xl mb-3" style="color:#94a3b8;"></i>
             <p style="color:var(--slate-500);">Aucun avis pour le moment. Soyez le premier !</p>
             <a href="/avis" class="btn-primary inline-block mt-4 text-sm font-bold px-6 py-2.5 rounded-xl">Laisser un avis</a>
           </div>
@@ -548,7 +548,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                   <div class="flex items-center justify-between mb-4">
                     <div class="flex space-x-0.5">
                       {[1,2,3,4,5].map(s => (
-                        <i class={`ph-fill ph-star text-sm ${s <= r.note ? 'star-filled' : 'star-empty'}`}></i>
+                        <i class={`fas fa-star text-sm ${s <= r.note ? 'star-filled' : 'star-empty'}`}></i>
                       ))}
                     </div>
                     <span class="text-xs" style="color:#94a3b8;">{r.date}</span>
@@ -556,7 +556,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                   <p class="text-sm leading-relaxed mb-4 italic" style="color:var(--slate-700);">"{r.comment}"</p>
                   <div class="flex items-center gap-3">
                     <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:rgba(3,105,161,0.08); border:1px solid rgba(3,105,161,0.15);">
-                      <i class="ph-duotone ph-user text-sm" style="color:var(--accent);"></i>
+                      <i class="fas fa-user text-sm" style="color:var(--accent);"></i>
                     </div>
                     <div>
                       <div class="text-sm font-bold" style="color:var(--navy-900);">{r.name}</div>
@@ -584,7 +584,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
           <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <div class="flex items-center gap-2">
               <div class="flex space-x-0.5">
-                {[1,2,3,4,5].map(_ => <i class="ph-fill ph-star text-yellow-400 text-sm"></i>)}
+                {[1,2,3,4,5].map(_ => <i class="fas fa-star text-yellow-400 text-sm"></i>)}
               </div>
               <span class="text-xl font-extrabold font-display" style="color:var(--navy-900);">{displayNote}</span>
             </div>
@@ -614,7 +614,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             <details class="group surface overflow-hidden">
               <summary class="flex items-center justify-between p-5 cursor-pointer list-none">
                 <span class="font-bold text-sm pr-4" style="color:var(--navy-900);">{faq.q}</span>
-                <i class="ph-duotone ph-caret-down text-xs transition-transform group-open:rotate-180 flex-shrink-0" style="color:var(--accent);"></i>
+                <i class="fas fa-chevron-down text-xs transition-transform group-open:rotate-180 flex-shrink-0" style="color:var(--accent);"></i>
               </summary>
               <div class="px-5 pb-5 text-sm leading-relaxed" style="color:var(--slate-700);">
                 {faq.a}
@@ -643,7 +643,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       <section class="py-20 relative overflow-hidden bg-navy" data-reveal>
         <div class="glow-dot w-80 h-80 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style="background:rgba(3,105,161,0.15);" data-parallax="-30"></div>
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <i class="ph-duotone ph-rocket-launch text-5xl mb-4" style="color:var(--ice);"></i>
+          <i class="fas fa-rocket text-5xl mb-4" style="color:var(--ice);"></i>
           <h2 data-split class="display-2 mb-4" style="color:#ffffff;">Prêt à profiter du confort climatisé ?</h2>
           <p class="mb-4 text-lg max-w-2xl mx-auto" style="color:#cbd5e1;">
             Contactez-nous dès aujourd'hui. Visite technique gratuite, devis PDF sous 24h, installation par nos experts certifiés.
@@ -656,7 +656,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
 
           <div class="flex flex-col sm:flex-row gap-4 justify-center">
             <a href="/rendez-vous" class="magnetic btn-light font-extrabold px-10 py-4 rounded-2xl text-lg flex items-center justify-center gap-3">
-              <i class="ph-duotone ph-calendar-plus" style="color:var(--accent);"></i>
+              <i class="fas fa-calendar-plus" style="color:var(--accent);"></i>
               <span>Demander un devis gratuit</span>
             </a>
             <a href="/catalogue" class="font-extrabold px-10 py-4 rounded-2xl text-lg flex items-center justify-center gap-3 transition-all" style="border:1.5px solid rgba(202,240,248,0.35); color:white; background:rgba(255,255,255,0.06);">
@@ -665,7 +665,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             </a>
           </div>
           <p class="text-sm mt-6" style="color:#94a3b8;">
-            <i class="ph-duotone ph-shield-check mr-2"></i>
+            <i class="fas fa-shield-halved mr-2"></i>
             Visite technique gratuite obligatoire · Paiement après visite · Satisfaction garantie
           </p>
           <div class="flex items-center justify-center gap-4 mt-4">
@@ -758,6 +758,8 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       <script dangerouslySetInnerHTML={{ __html: `
         (function(){
           if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+          // SplitText n'est utilisé que sur l'accueil : chargé à la demande (y compris après navigation PJAX)
+          if (!window.SplitText && !document.getElementById('gsap-splittext')) { var st = document.createElement('script'); st.id = 'gsap-splittext'; st.src = 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/SplitText.min.js'; st.crossOrigin = 'anonymous'; document.head.appendChild(st); }
           function run(){
             if (!window.gsap || !window.SplitText || !window.ScrollTrigger) return false;
             gsap.registerPlugin(SplitText, ScrollTrigger);
@@ -774,7 +776,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             if (document.fonts && document.fonts.ready) { document.fonts.ready.then(go); } else { go(); }
             return true;
           }
-          if (!run()) { var n = 0, iv = setInterval(function(){ n++; if (run() || n > 60) clearInterval(iv); }, 50); }
+          if (!run()) { var n = 0, iv = setInterval(function(){ n++; if (run() || n > 200) clearInterval(iv); }, 50); }
         })();
       ` }} />
 
@@ -782,6 +784,8 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       <script dangerouslySetInnerHTML={{ __html: `
         (function(){
           if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+          // SplitText n'est utilisé que sur l'accueil : chargé à la demande (y compris après navigation PJAX)
+          if (!window.SplitText && !document.getElementById('gsap-splittext')) { var st = document.createElement('script'); st.id = 'gsap-splittext'; st.src = 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/SplitText.min.js'; st.crossOrigin = 'anonymous'; document.head.appendChild(st); }
           function run(){
             if (!window.gsap || !window.SplitText) return false;
             var target = document.querySelector('[data-split-hero]');
@@ -797,7 +801,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             if (document.fonts && document.fonts.ready) { document.fonts.ready.then(go); } else { go(); }
             return true;
           }
-          if (!run()) { var n = 0, iv = setInterval(function(){ n++; if (run() || n > 60) clearInterval(iv); }, 50); }
+          if (!run()) { var n = 0, iv = setInterval(function(){ n++; if (run() || n > 200) clearInterval(iv); }, 50); }
         })();
       ` }} />
 

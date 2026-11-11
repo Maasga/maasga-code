@@ -1,5 +1,6 @@
 // Client Space & Web Authentication Routes (/espace-client, /api/login, /api/register, invoices, devis, SAV)
 import { Hono } from 'hono'
+import { asset } from '../../generated/asset-manifest'
 import { SITE_URL } from '../../types'
 import { createOrder, createClient } from '../../db'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
@@ -248,7 +249,7 @@ clientRouter.post('/api/resend-verification', async (c) => {
   if (!session) return c.json({ error: 'Non connecté' }, 401)
 
   const client = await db.prepare('SELECT id, name, email FROM clients WHERE id = ?').bind(session.clientId).first() as any
-  if (!client?.email) return c.json({ error: 'Aucun email associé Ã  votre compte' }, 400)
+  if (!client?.email) return c.json({ error: 'Aucun email associé à votre compte' }, 400)
 
   await ensureEmailVerificationTable(db)
   const emailToken = generateEmailToken()
@@ -288,7 +289,7 @@ clientRouter.post('/api/login', async (c) => {
   }
   const password = (body['password'] as string || '').trim()
   const redirectParam = (body['redirect'] as string || '').trim()
-  // Valider le redirect: doit commencer par / et ne contenir que des caractères sÃ»rs
+  // Valider le redirect: doit commencer par / et ne contenir que des caractères sûrs
   const safeRedirect = (redirectParam && /^\/[a-z0-9\-\/]+$/i.test(redirectParam)) ? '/' + redirectParam.replace(/^\/+/, '') : ''
 
   if (!identifier || !password) {
@@ -297,7 +298,7 @@ clientRouter.post('/api/login', async (c) => {
 
   const db = c.env.DB
 
-  // â”€â”€ Vérification admin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Vérification admin ──────────────────────────────────────────
   {
     let validAdminUsername = DEFAULT_ADMIN_USERNAME
     let validAdminHash = ''
@@ -337,7 +338,7 @@ clientRouter.post('/api/login', async (c) => {
       })
     }
   }
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ───────────────────────────────────────────────────────────────
 
   if (db) {
     try {
@@ -428,8 +429,8 @@ clientRouter.get('/espace-client/reset-password', (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="robots" content="noindex,nofollow" />
         <title>Réinitialisation mot de passe — MAASGA</title>
-        <link rel="stylesheet" href="/static/tailwind.css" />
-        <link rel="stylesheet" href="/static/style.css" />
+        <link rel="stylesheet" href={asset("/static/tailwind.css")} />
+        <link rel="stylesheet" href={asset("/static/style.css")} />
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" />
       </head>
       <body style="background:#f8fbff; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1rem;">
@@ -444,7 +445,7 @@ clientRouter.get('/espace-client/reset-password', (c) => {
               </h1>
               <p class="text-xs mt-1" style="color:#64748b;">
                 {step === 'code' && method === 'phone' ? 'Un agent MAASGA vous enverra le code par WhatsApp' :
-                 step === 'code' ? `Un code de vérification a été envoyé Ã  ${decodeURIComponent(sentTo || 'votre email')}` :
+                 step === 'code' ? `Un code de vérification a été envoyé à ${decodeURIComponent(sentTo || 'votre email')}` :
                  step === 'newpwd' ? 'Choisissez votre nouveau mot de passe' :
                  'Recevez un code de réinitialisation'}
               </p>
@@ -463,7 +464,7 @@ clientRouter.get('/espace-client/reset-password', (c) => {
                   <input type="email" name="email" required placeholder="votre@email.com"
                     class="w-full rounded-xl px-4 py-3 text-sm outline-none" style="border:1.5px solid rgba(0,119,182,0.2); background:#f8fbff; color:#03045e;" />
                 </div>
-                <p class="text-xs" style="color:#94a3b8;"><i class="fas fa-info-circle mr-1"></i>Un code Ã  6 chiffres sera envoyé Ã  votre adresse email.</p>
+                <p class="text-xs" style="color:#94a3b8;"><i class="fas fa-info-circle mr-1"></i>Un code à 6 chiffres sera envoyé à votre adresse email.</p>
                 <button type="submit" class="w-full font-bold py-3.5 rounded-2xl transition-all hover:-translate-y-0.5" style="background:linear-gradient(135deg,#03045e,#0077b6); box-shadow:0 8px 24px rgba(0,119,182,0.35); color:#ffffff;">
                   <i class="fas fa-paper-plane mr-2"></i>Recevoir le code par email
                 </button>
@@ -511,7 +512,7 @@ clientRouter.get('/espace-client/reset-password', (c) => {
 
             <div class="text-center mt-5">
               <a href="/espace-client" class="text-xs font-medium hover:underline" style="color:#0077b6;">
-                <i class="fas fa-arrow-left mr-1"></i>Retour Ã  la connexion
+                <i class="fas fa-arrow-left mr-1"></i>Retour à la connexion
               </a>
             </div>
           </div>
@@ -647,7 +648,7 @@ clientRouter.post('/api/client/request-reset', async (c) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: c.env.TELEGRAM_CHAT_ID,
-          text: `ðŸ” *Demande de réinitialisation*\nTéléphone: ${normalizedPhone}\nCode: \`${code}\`\n\n[Envoyer via WhatsApp](${waLink})`,
+          text: `🔐 *Demande de réinitialisation*\nTéléphone: ${normalizedPhone}\nCode: \`${code}\`\n\n[Envoyer via WhatsApp](${waLink})`,
           parse_mode: 'Markdown'
         })
       })
@@ -831,7 +832,7 @@ clientRouter.post('/api/register', async (c) => {
     ).bind(phone, fullPhone).first() as any
 
     if (existing && existing.password_hash && existing.password_hash !== 'pending') {
-      return errRedirect('Un compte existe déjÃ  avec ce numéro. Connectez-vous.')
+      return errRedirect('Un compte existe déjà avec ce numéro. Connectez-vous.')
     }
 
     const password_hash = await hashPassword(password)
@@ -1091,7 +1092,7 @@ clientRouter.post('/api/client/update-profile', async (c) => {
   const quartier = ((body as any)?.quartier || '').toString().trim()
   const name = ((body as any)?.name || '').toString().trim()
 
-  if (!phone && !quartier && !name) return c.json({ error: 'Aucune donnée Ã  mettre Ã  jour' }, 400)
+  if (!phone && !quartier && !name) return c.json({ error: 'Aucune donnée à mettre à jour' }, 400)
 
   // Validate phone if provided
   if (phone) {
@@ -1108,19 +1109,19 @@ clientRouter.post('/api/client/update-profile', async (c) => {
     values.push(session.clientId)
 
     await db.prepare(`UPDATE clients SET ${updates.join(', ')} WHERE id = ?`).bind(...values).run()
-    await logActivity(db, { clientId: session.clientId, clientPhone: phone || '', action: 'Profil mis Ã  jour', category: 'profile', ip: c.req.header('cf-connecting-ip') || '' })
+    await logActivity(db, { clientId: session.clientId, clientPhone: phone || '', action: 'Profil mis à jour', category: 'profile', ip: c.req.header('cf-connecting-ip') || '' })
 
     // Return updated client data
     const client = await db.prepare('SELECT id, name, phone, email, quartier FROM clients WHERE id = ?').bind(session.clientId).first() as any
     return c.json({ success: true, name: client?.name || '', phone: client?.phone || '', email: client?.email || '', quartier: client?.quartier || '' })
   } catch (e) {
-    return c.json({ error: 'Erreur lors de la mise Ã  jour' }, 500)
+    return c.json({ error: 'Erreur lors de la mise à jour' }, 500)
   }
 })
 
 // ============================================================
 // CONFIRMATION COMMANDE — Nouveau flux contact commercial
-// Le client confirme sa commande â†’ MAASGA le contacte par email/WhatsApp
+// Le client confirme sa commande → MAASGA le contacte par email/WhatsApp
 // Pas de paiement en ligne : tout se fait directement avec l'équipe
 // ============================================================
 
@@ -1141,14 +1142,14 @@ clientRouter.post('/api/order/confirm', async (c) => {
     : await db.prepare('SELECT * FROM orders WHERE id = ?').bind(orderId).first() as any
 
   if (!order) return c.json({ error: 'Commande introuvable' }, 404)
-  if (order.status !== 'en_attente') return c.json({ error: 'Cette commande a déjÃ  été traitée' }, 400)
+  if (order.status !== 'en_attente') return c.json({ error: 'Cette commande a déjà été traitée' }, 400)
 
   const now = new Date().toISOString()
   await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').bind('en_attente', now, orderId).run()
 
   // Notifier l'admin immédiatement
   await notifyAdmin(c.env, 'order',
-    `ðŸ›’ Nouvelle commande confirmée #${orderId} — ${order.client_name} (${order.client_phone})${order.total_price ? ` — ${Number(order.total_price).toLocaleString()} FCFA` : ''} — À contacter !`
+    `🛒 Nouvelle commande confirmée #${orderId} — ${order.client_name} (${order.client_phone})${order.total_price ? ` — ${Number(order.total_price).toLocaleString()} FCFA` : ''} — À contacter !`
   )
 
   if (session) {
@@ -1169,11 +1170,11 @@ clientRouter.get('/espace-client', async (c) => {
   const redirect = c.req.query('redirect') || ''
   const db = c.env.DB
 
-  // Session sécurisée côté serveur (HttpOnly cookie â†’ lookup dans D1)
+  // Session sécurisée côté serveur (HttpOnly cookie → lookup dans D1)
   const sessionToken = getCookie(c, 'maasga_session') || ''
   let session = sessionToken ? await getSession(db, sessionToken) : null
 
-  // Rétrocompatibilité : ancien format cookie (clientId_timestamp) â†’ migrer vers nouvelle session
+  // Rétrocompatibilité : ancien format cookie (clientId_timestamp) → migrer vers nouvelle session
   if (!session && sessionToken && /^\d+_\d+$/.test(sessionToken) && db) {
     const legacyClientId = parseInt(sessionToken.split('_')[0])
     if (legacyClientId && !isNaN(legacyClientId)) {
@@ -1191,7 +1192,7 @@ clientRouter.get('/espace-client', async (c) => {
   }
 
   if (db && session) {
-    // Si l'utilisateur est déjÃ  connecté et qu'il y a un redirect, aller directement Ã  la page demandée
+    // Si l'utilisateur est déjà connecté et qu'il y a un redirect, aller directement à la page demandée
     if (redirect && /^\/[a-z0-9\-\/]+$/i.test(redirect)) {
       return c.redirect('/' + redirect.replace(/^\/+/, ''))
     }
@@ -1225,7 +1226,7 @@ clientRouter.get('/api/logout', async (c) => {
 
 // ============================================================
 
-// ORDER INVOICE (printable HTML â†’ PDF via browser)
+// ORDER INVOICE (printable HTML → PDF via browser)
 // ============================================================
 
 clientRouter.get('/api/order/invoice/:id', async (c) => {
@@ -1247,7 +1248,7 @@ clientRouter.get('/api/order/invoice/:id', async (c) => {
     } catch {}
   }
   if (!session && !isAdmin) {
-    return c.redirect('/espace-client?error=' + encodeURIComponent('Veuillez vous connecter pour accéder Ã  la facture.'))
+    return c.redirect('/espace-client?error=' + encodeURIComponent('Veuillez vous connecter pour accéder à la facture.'))
   }
 
   try {
@@ -1310,7 +1311,7 @@ clientRouter.get('/api/order/invoice/:id', async (c) => {
     let devisSection = ''
     if (allDevis.length > 0) {
       devisSection += '<div style="margin-bottom:30px;">'
-      devisSection += '<div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;font-weight:700;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #e2e8f0;">Devis associés Ã  cette commande</div>'
+      devisSection += '<div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;font-weight:700;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #e2e8f0;">Devis associés à cette commande</div>'
       for (let di = 0; di < allDevis.length; di++) {
         const d: any = allDevis[di]
         const dStatus = DEVIS_STATUS[d.status] || d.status || ''
@@ -1378,8 +1379,8 @@ clientRouter.get('/api/order/invoice/:id', async (c) => {
 
     // Modalité de paiement — flux contact commercial (pas de paiement en ligne)
     const paymentSection = '<div class="payment-info" style="background:#f0f9ff;border:1px solid rgba(0,119,182,0.2);">' +
-      '<div class="pay-icon" style="background:rgba(0,119,182,0.1);color:#0077b6;">ðŸ“ž</div>' +
-      '<div><div style="font-size:14px;font-weight:700;color:#0077b6;">Paiement Ã  l\'installation</div>' +
+      '<div class="pay-icon" style="background:rgba(0,119,182,0.1);color:#0077b6;">📞</div>' +
+      '<div><div style="font-size:14px;font-weight:700;color:#0077b6;">Paiement à l\'installation</div>' +
       '<div style="font-size:12px;color:#64748b;">Le paiement et les modalités sont arrangés directement avec l\'équipe MAASGA par email ou WhatsApp.</div></div>' +
       '</div>'
 
@@ -1429,7 +1430,7 @@ clientRouter.get('/api/order/invoice/:id', async (c) => {
       '<div style="display:flex;align-items:center;gap:16px;">\n' +
       '<img src="/logo-site.png" alt="MAASGA" style="height:64px;width:auto;border-radius:10px;object-fit:contain;" onerror="this.style.display=\'none\'" />\n' +
       '<div>\n' +
-      '<div style="font-size:26px;font-weight:800;letter-spacing:-0.5px;color:#fff;">MAASGA<span style="color:#00b4d8;"> â„</span></div>\n' +
+      '<div style="font-size:26px;font-weight:800;letter-spacing:-0.5px;color:#fff;">MAASGA<span style="color:#00b4d8;"> ❄</span></div>\n' +
       '<p style="font-size:13px;margin-top:4px;opacity:0.85;">Solutions Climatisation &amp; Froid</p>\n' +
       '<p style="font-size:12px;margin-top:2px;opacity:0.7;">Ouagadougou, Burkina Faso</p>\n' +
       '</div></div>\n' +
@@ -1475,7 +1476,7 @@ clientRouter.get('/api/order/invoice/:id', async (c) => {
 
 
 // ============================================================
-// MAINTENANCE CONTRACT INVOICE (printable HTML â†’ PDF via browser)
+// MAINTENANCE CONTRACT INVOICE (printable HTML → PDF via browser)
 // ============================================================
 
 clientRouter.get('/api/maintenance/invoice/:id', async (c) => {
@@ -1488,7 +1489,7 @@ clientRouter.get('/api/maintenance/invoice/:id', async (c) => {
   if (!db) return c.text('Service indisponible', 503)
   const session = await getSession(db, sessionToken)
   if (!session) {
-    return c.redirect('/espace-client?error=' + encodeURIComponent('Veuillez vous connecter pour accéder Ã  la facture.'))
+    return c.redirect('/espace-client?error=' + encodeURIComponent('Veuillez vous connecter pour accéder à la facture.'))
   }
 
   // Fetch contract
@@ -1602,7 +1603,7 @@ clientRouter.get('/api/maintenance/invoice/:id', async (c) => {
     <div class="header">
       <div>
         <img src="${SITE_URL}/logo-site.png" alt="MAASGA Logo" style="height:60px;width:auto;border-radius:10px;margin-bottom:8px;display:block;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
-        <div class="logo" style="display:none;">MAASGA<span> â„ï¸</span></div>
+        <div class="logo" style="display:none;">MAASGA<span> ❄️</span></div>
         <p style="font-size:13px;margin-top:6px;opacity:0.85;">Solutions Climatisation & Maintenance</p>
       </div>
       <div class="inv-info">
@@ -1642,7 +1643,7 @@ clientRouter.get('/api/maintenance/invoice/:id', async (c) => {
         </div>
         <div class="detail-card">
           <div class="label">Période de couverture</div>
-          <div class="value" style="font-size:14px;">${fmtDate(contract.start_date)} â†’ ${fmtDate(contract.end_date)}</div>
+          <div class="value" style="font-size:14px;">${fmtDate(contract.start_date)} → ${fmtDate(contract.end_date)}</div>
         </div>
         <div class="detail-card">
           <div class="label">Visites incluses</div>
@@ -1678,7 +1679,7 @@ clientRouter.get('/api/maintenance/invoice/:id', async (c) => {
 
       ${payment ? `
       <div class="payment-info">
-        <div class="pay-icon">âœ“</div>
+        <div class="pay-icon">✓</div>
         <div>
           <div style="font-size:14px;font-weight:700;color:#16a34a;">Paiement ${payment.status === 'completed' ? 'confirmé' : payment.status === 'pending' ? 'en attente' : payment.status}</div>
           <div style="font-size:12px;color:#64748b;">${payMethodLabels[payment.method] || payment.method || 'Non spécifié'} · ${fmtDate(payment.created_at)}${payment.provider_ref ? ' · Réf: ' + payment.provider_ref : ''}</div>
@@ -1686,7 +1687,7 @@ clientRouter.get('/api/maintenance/invoice/:id', async (c) => {
       </div>
       ` : `
       <div class="payment-info" style="background:#fffbeb;border-color:rgba(217,119,6,0.15);">
-        <div class="pay-icon" style="background:rgba(217,119,6,0.1);color:#d97706;">â³</div>
+        <div class="pay-icon" style="background:rgba(217,119,6,0.1);color:#d97706;">⏳</div>
         <div>
           <div style="font-size:14px;font-weight:700;color:#d97706;">Paiement en attente de confirmation</div>
           <div style="font-size:12px;color:#64748b;">Le paiement sera confirmé après vérification par notre équipe.</div>
@@ -1769,7 +1770,7 @@ clientRouter.post('/api/order/create', async (c) => {
     }
 
     // Écrire d'abord en D1 pour obtenir l'identifiant AUTOINCREMENT réel : le
-    // Math.max sur le cache mémoire produisait des id déjÃ  pris en base (cache
+    // Math.max sur le cache mémoire produisait des id déjà pris en base (cache
     // partiel, un par isolate), donc deux commandes pouvaient partager un numéro.
     let orderId = 0
     if (db) {
@@ -1791,7 +1792,7 @@ clientRouter.post('/api/order/create', async (c) => {
     orders.push(newOrder)
 
     if (db) {
-      // Enregistrer/mettre Ã  jour le client dans D1
+      // Enregistrer/mettre à jour le client dans D1
       try {
         await createClient(db, {
           name: orderData.client_name,
@@ -1863,7 +1864,7 @@ clientRouter.post('/api/order/confirm-delivery', async (c) => {
 
   const now = new Date().toISOString()
   // Pas de colonne delivery_confirmed_by : la table orders reconstruite par la
-  // migration 0036 ne la contient plus. L'information Â« confirmé par le client Â»
+  // migration 0036 ne la contient plus. L'information « confirmé par le client »
   // est tracée dans notes + le journal d'activité.
   await db.prepare("UPDATE orders SET status = ?, delivered_at = ?, notes = COALESCE(notes, '') || ?, updated_at = ? WHERE id = ?")
     .bind('livre', now, ' | Réception confirmée par le client le ' + now, now, orderId).run()
@@ -1973,7 +1974,7 @@ clientRouter.post('/api/order/devis/refuse', async (c) => {
   await db.prepare('UPDATE order_devis SET status = ?, refused_at = ?, client_response_notes = ?, updated_at = ? WHERE id = ?')
     .bind('refused', now, reason, now, devisId).run()
   // Refus de devis : le statut de la commande ne bouge pas — il n'existe plus de
-  // valeur Â« devis_refuse Â» depuis la migration 0036, c'est order_devis.status qui
+  // valeur « devis_refuse » depuis la migration 0036, c'est order_devis.status qui
   // porte l'information. L'admin relance le client depuis la fiche commande.
 
   await logActivity(db, {
@@ -2019,8 +2020,8 @@ clientRouter.post('/api/order/devis/refuse', async (c) => {
 // Son garde-fou n'acceptait que validation_terrain / devis_en_attente /
 // devis_valide / devis_refuse, statuts supprimés par la migration 0036 : aucune
 // commande ne pouvait plus le franchir. Le flux simplifié ne distingue plus la
-// livraison de l'installation (statut unique 'livre'), donc Â« annuler seulement
-// l'installation Â» n'a plus de sens ; l'annulation complète passe par
+// livraison de l'installation (statut unique 'livre'), donc « annuler seulement
+// l'installation » n'a plus de sens ; l'annulation complète passe par
 // /api/order/cancel-order.
 
 // Client cancels the entire order (refund request)
@@ -2051,7 +2052,7 @@ clientRouter.post('/api/order/cancel-order', async (c) => {
   const memOrder = orders.find(o => o.id === orderId)
   if (memOrder) memOrder.status = 'annule' as any
 
-  // Pas de paiement en ligne — rien Ã  rembourser automatiquement
+  // Pas de paiement en ligne — rien à rembourser automatiquement
 
   await logActivity(db, {
     clientId: session.clientId,
@@ -2060,7 +2061,7 @@ clientRouter.post('/api/order/cancel-order', async (c) => {
     category: 'order',
     ip: c.req.header('cf-connecting-ip') || ''
   })
-  await notifyAdmin(c.env, 'order', `âš ï¸ Commande #${orderId} annulée par client — ${order.client_name} — Remboursement Ã  traiter${reason ? ' — Raison: ' + reason : ''}`)
+  await notifyAdmin(c.env, 'order', `⚠️ Commande #${orderId} annulée par client — ${order.client_name} — Remboursement à traiter${reason ? ' — Raison: ' + reason : ''}`)
 
   return c.json({ success: true, message: 'Commande annulée. Le remboursement sera traité sous 48h.' })
 })

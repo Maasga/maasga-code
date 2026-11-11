@@ -1,4 +1,5 @@
 // Admin Layout & Security Attributes Escapers
+import { asset } from '../../generated/asset-manifest'
 import {
   appointments,
   reviews,
@@ -63,9 +64,9 @@ export const AdminLayout = ({ children, activePage = "" }: { children: any; acti
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>Admin MAASGA - Back-office</title>
-      <link rel="stylesheet" href="/static/tailwind.css" />
-      <link rel="stylesheet" href="/static/admin-tokens.css" />
-      <link rel="stylesheet" href="/static/style.css" />
+      <link rel="stylesheet" href={asset("/static/tailwind.css")} />
+      <link rel="stylesheet" href={asset("/static/admin-tokens.css")} />
+      <link rel="stylesheet" href={asset("/static/style.css")} />
       <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" />
       <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
       <style dangerouslySetInnerHTML={{ __html: `
@@ -473,7 +474,7 @@ export const AdminLayout = ({ children, activePage = "" }: { children: any; acti
           }, 4000);
         };
       `}} />
-      <script src="/static/js/admin/admin-pagination.js"></script>
+      <script src={asset("/static/js/admin/admin-pagination.js")}></script>
     </body>
   </html>
 )

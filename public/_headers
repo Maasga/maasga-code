@@ -1,0 +1,19 @@
+# En-têtes Cloudflare Pages pour les fichiers servis sans passer par le Worker
+# (voir public/_routes.json). Les CSS/JS sont référencés avec ?v=<hash> (asset-manifest),
+# un cache d'un an immutable est donc sûr : chaque déploiement change l'URL.
+
+/static/*
+  Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
+
+/hero/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+/team/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+/logo-site.webp
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+/manifest.json
+  Cache-Control: public, max-age=86400

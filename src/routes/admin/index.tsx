@@ -1,5 +1,6 @@
 // Web Admin Panel & Back-Office Endpoints (/admin/*, /api/admin/*)
 import { Hono } from 'hono'
+import { asset } from '../../generated/asset-manifest'
 import { setCookie, getCookie, deleteCookie } from 'hono/cookie'
 import type { HonoEnv } from '../../types'
 import { SITE_URL } from '../../types'
@@ -108,7 +109,7 @@ const AdminLoginPage = ({ error }: { error?: string } = {}) => (
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <meta name="robots" content="noindex,nofollow" />
       <title>MAASGA Admin - Connexion</title>
-      <link rel="stylesheet" href="/static/tailwind.css" />
+      <link rel="stylesheet" href={asset("/static/tailwind.css")} />
       <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" />
       <style dangerouslySetInnerHTML={{ __html: `
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -419,7 +420,7 @@ adminRouter.post('/api/admin/order/create-devis', adminAuth, async (c) => {
       now, now
     ).run()
 
-    // Devis envoyé au client : la commande passe Ã  Â« contacte Â» (le suivi fin du
+    // Devis envoyé au client : la commande passe à « contacte » (le suivi fin du
     // devis vit dans order_devis.status — 'devis_en_attente' n'existe plus depuis 0036)
     await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?')
       .bind('contacte', now, orderId).run()
@@ -432,7 +433,7 @@ adminRouter.post('/api/admin/order/create-devis', adminAuth, async (c) => {
         const brevoKey = c.env.BREVO_API_KEY
         if (brevoKey) {
           const climLine = climatiseurNom ? `<tr><td>Climatiseur</td><td>${escapeHtml(climatiseurNom)}</td><td style="text-align:right">${climatiseurPrix.toLocaleString()} FCFA</td></tr>` : ''
-          const mdoLine = mainOeuvrePrix > 0 ? `<tr><td>Main d'Å“uvre / Installation</td><td></td><td style="text-align:right">${mainOeuvrePrix.toLocaleString()} FCFA</td></tr>` : ''
+          const mdoLine = mainOeuvrePrix > 0 ? `<tr><td>Main d'œuvre / Installation</td><td></td><td style="text-align:right">${mainOeuvrePrix.toLocaleString()} FCFA</td></tr>` : ''
           const fLines = fournitures.map(f => `<tr><td>${f.nom}</td><td></td><td style="text-align:right">${f.prix.toLocaleString()} FCFA</td></tr>`).join('')
           await fetch('https://api.brevo.com/v3/smtp/email', {
             method: 'POST',
@@ -442,7 +443,7 @@ adminRouter.post('/api/admin/order/create-devis', adminAuth, async (c) => {
               to: [{ email: order.client_email, name: order.client_name }],
               subject: `Devis d'installation — Commande #${orderId} — MAASGA`,
               htmlContent: `<html><body style="font-family:Arial,sans-serif;padding:20px;max-width:600px;margin:0 auto;">
-                <h2 style="color:#d97706;">â„ Devis d'installation disponible</h2>
+                <h2 style="color:#d97706;">❄ Devis d'installation disponible</h2>
                 <p>Bonjour ${order.client_name},</p>
                 <p>Un devis d'installation a été préparé pour votre commande #${orderId}.</p>
                 ${motif ? `<p><strong>Motif :</strong> ${escapeHtml(motif)}</p>` : ''}
@@ -450,7 +451,7 @@ adminRouter.post('/api/admin/order/create-devis', adminAuth, async (c) => {
                 <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">${climLine}${mdoLine}${fLines}
                   <tr style="border-top:2px solid #e5e7eb;"><td colspan="2" style="padding-top:8px;font-weight:700;">TOTAL</td><td style="text-align:right;font-weight:800;color:#d97706;font-size:18px;">${totalAmount.toLocaleString()} FCFA</td></tr>
                 </table>
-                <p>Connectez-vous Ã  votre espace client pour valider ou refuser ce devis :</p>
+                <p>Connectez-vous à votre espace client pour valider ou refuser ce devis :</p>
                 <p><a href="https://maasga.com/espace-client" style="display:inline-block;background:#d97706;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold;">Voir et valider le devis</a></p>
                 <p style="color:#6b7280;font-size:12px;">MAASGA SARL — Solutions Climatisation & Maintenance — Ouagadougou, Burkina Faso</p>
               </body></html>`
@@ -474,7 +475,7 @@ adminRouter.post('/api/admin/order/create-devis', adminAuth, async (c) => {
 // Il écrivait orders.status = 'validation_terrain', valeur supprimée par la
 // migration 0036 (le CHECK n'accepte plus que en_attente/contacte/confirme/
 // en_livraison/livre/annule), donc chaque appel violait la contrainte. Aucune vue
-// admin ne le référençait : l'étape Â« validation terrain Â» est couverte par le
+// admin ne le référençait : l'étape « validation terrain » est couverte par le
 // statut 'contacte' et par les RDV.
 
 // ============================================================
@@ -547,7 +548,7 @@ async function ensureSiteSettings(db: any) {
         ['phone', '+226 55 99 64 18'], ['email', 'maasgabf@gmail.com'],
         ['address', 'Ouagadougou, Burkina Faso'], ['hours', 'Lundi–Dimanche · 8h00–18h00'],
         ['company_name', 'MAASGA'], ['whatsapp', '+226 55 99 64 18'],
-        ['facebook', ''], ['instagram', ''], ['slogan', 'Spécialiste climatisation & froid Ã  Ouagadougou']
+        ['facebook', ''], ['instagram', ''], ['slogan', 'Spécialiste climatisation & froid à Ouagadougou']
       ]
       for (const [k, v] of defaults) {
         await db.prepare('INSERT OR IGNORE INTO site_settings (key, value) VALUES (?, ?)').bind(k, v).run()
@@ -852,7 +853,7 @@ async function verifyAdminResetToken(token: string, secret: string): Promise<boo
     const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
     const expected = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode('reset:' + ts))
     const expectedHex = Array.from(new Uint8Array(expected)).map(b => b.toString(16).padStart(2, '0')).join('')
-    // Comparaison Ã  durée constante
+    // Comparaison à durée constante
     if (sigHex.length !== expectedHex.length) return false
     let diff = 0
     for (let i = 0; i < sigHex.length; i++) diff |= sigHex.charCodeAt(i) ^ expectedHex.charCodeAt(i)
@@ -863,7 +864,7 @@ async function verifyAdminResetToken(token: string, secret: string): Promise<boo
 adminRouter.post('/api/admin/login', async (c) => {
   // Rate limiting: 5 admin login attempts per IP per 15 minutes.
   // Compteur persistant en D1 : le compteur mémoire est par isolate, donc
-  // contournable en retentant jusqu'Ã  tomber sur un isolate neuf.
+  // contournable en retentant jusqu'à tomber sur un isolate neuf.
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
   const rlKey = `admin-login:${ip}`
   const rl = await rateLimitD1(c.env?.DB, rlKey, 5, 15 * 60 * 1000)
@@ -894,7 +895,7 @@ adminRouter.post('/api/admin/login', async (c) => {
   // Si aucun hash en D1, utiliser ADMIN_INITIAL_PASSWORD comme amorçage.
   // ADMIN_SECRET n'est PLUS accepté ici : c'est la clé de signature HMAC des
   // cookies, la réutiliser comme mot de passe faisait qu'une seule fuite donnait
-  // Ã  la fois la session et le compte (et le même secret sert au reset).
+  // à la fois la session et le compte (et le même secret sert au reset).
   if (!validHash) {
     const initPwd = c.env.ADMIN_INITIAL_PASSWORD
     if (!initPwd) return c.redirect('/admin?error=no_init')
@@ -936,7 +937,7 @@ adminRouter.post('/api/admin/login', async (c) => {
 })
 
 // Déconnexion admin — efface le cookie ET incrémente l'epoch pour invalider
-// côté serveur tous les cookies déjÃ  émis (un cookie HMAC volé restait sinon
+// côté serveur tous les cookies déjà émis (un cookie HMAC volé restait sinon
 // valable 24 h même après déconnexion).
 // En POST : couvert par le middleware CSRF global, donc un site tiers ne peut
 // plus déconnecter l'admin (ni révoquer sa session) via une simple <img>.
@@ -1006,7 +1007,7 @@ adminRouter.get('/api/admin/notifications/count', adminAuth, async (c) => {
   }
 })
 
-// Admin password reset — génère un token de reset Ã  usage unique (15 min)
+// Admin password reset — génère un token de reset à usage unique (15 min)
 // Étape 1 : Demander un token de reset (accessible sans auth — page publique)
 adminRouter.get('/admin/reset-password', (c) => {
   const success = c.req.query('success')
@@ -1018,20 +1019,20 @@ adminRouter.get('/admin/reset-password', (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="robots" content="noindex,nofollow" />
         <title>Réinitialisation admin — MAASGA</title>
-        <link rel="stylesheet" href="/static/tailwind.css" />
+        <link rel="stylesheet" href={asset("/static/tailwind.css")} />
       </head>
       <body class="bg-gray-50 min-h-screen flex items-center justify-center px-4">
         <div class="w-full max-w-md">
           <div class="bg-white rounded-2xl shadow-xl p-8">
             <div class="text-center mb-6">
-              <div class="text-4xl mb-2">ðŸ”</div>
+              <div class="text-4xl mb-2">🔐</div>
               <h1 class="text-xl font-bold text-gray-900">Réinitialisation mot de passe admin</h1>
               <p class="text-gray-500 text-sm mt-1">Entrez le secret de sécurité (ADMIN_SECRET) pour générer un lien de reset.</p>
             </div>
-            {error === 'invalid' && <div class="mb-4 p-3 rounded-lg bg-red-50 text-red-600 text-sm">âŒ Secret invalide. Vérifiez ADMIN_SECRET.</div>}
-            {error === 'expired' && <div class="mb-4 p-3 rounded-lg bg-red-50 text-red-600 text-sm">âŒ Token expiré ou déjÃ  utilisé. Recommencez.</div>}
-            {error === 'toomany' && <div class="mb-4 p-3 rounded-lg bg-red-50 text-red-600 text-sm">âŒ Trop de tentatives. Réessayez dans 15 min.</div>}
-            {success === 'reset' && <div class="mb-4 p-3 rounded-lg bg-green-50 text-green-600 text-sm">âœ… Identifiant et mot de passe réinitialisés. Connectez-vous avec vos nouvelles informations.</div>}
+            {error === 'invalid' && <div class="mb-4 p-3 rounded-lg bg-red-50 text-red-600 text-sm">❌ Secret invalide. Vérifiez ADMIN_SECRET.</div>}
+            {error === 'expired' && <div class="mb-4 p-3 rounded-lg bg-red-50 text-red-600 text-sm">❌ Token expiré ou déjà utilisé. Recommencez.</div>}
+            {error === 'toomany' && <div class="mb-4 p-3 rounded-lg bg-red-50 text-red-600 text-sm">❌ Trop de tentatives. Réessayez dans 15 min.</div>}
+            {success === 'reset' && <div class="mb-4 p-3 rounded-lg bg-green-50 text-green-600 text-sm">✅ Identifiant et mot de passe réinitialisés. Connectez-vous avec vos nouvelles informations.</div>}
             <form method="post" action="/api/admin/generate-reset-token" class="space-y-4">
               <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Secret de sécurité</label>
@@ -1039,7 +1040,7 @@ adminRouter.get('/admin/reset-password', (c) => {
               </div>
               <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700">Générer le lien de reset</button>
             </form>
-            <a href="/admin" class="block text-center text-sm text-blue-600 mt-4 hover:underline">â† Retour Ã  la connexion</a>
+            <a href="/admin" class="block text-center text-sm text-blue-600 mt-4 hover:underline">← Retour à la connexion</a>
           </div>
         </div>
       </body>
@@ -1060,7 +1061,7 @@ adminRouter.post('/api/admin/generate-reset-token', async (c) => {
   const inputSecret = (body['admin_secret'] as string || '').trim()
   try {
     const realSecret = getAdminSecret(c.env)
-    // Comparaison Ã  durée constante : un !== simple sort au premier octet
+    // Comparaison à durée constante : un !== simple sort au premier octet
     // différent et laissait deviner ADMIN_SECRET caractère par caractère.
     if (!timingSafeEqualStr(inputSecret, realSecret)) {
       logSecurityEvent(c.env?.DB, { event: 'admin_reset_secret_invalid', severity: 'critical', ip, details: `ADMIN_SECRET incorrect depuis ${ip}` })
@@ -1080,13 +1081,13 @@ adminRouter.post('/api/admin/generate-reset-token', async (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="robots" content="noindex,nofollow" />
         <title>Nouveau mot de passe — MAASGA</title>
-        <link rel="stylesheet" href="/static/tailwind.css" />
+        <link rel="stylesheet" href={asset("/static/tailwind.css")} />
       </head>
       <body class="bg-gray-50 min-h-screen flex items-center justify-center px-4">
         <div class="w-full max-w-md">
           <div class="bg-white rounded-2xl shadow-xl p-8">
             <div class="text-center mb-6">
-              <div class="text-4xl mb-2">ðŸ”‘</div>
+              <div class="text-4xl mb-2">🔑</div>
               <h1 class="text-xl font-bold text-gray-900">Nouveau mot de passe</h1>
               <p class="text-gray-500 text-sm mt-1">Ce lien expire dans 15 minutes.</p>
             </div>
@@ -1136,7 +1137,7 @@ adminRouter.post('/api/admin/reset-password', async (c) => {
     return c.redirect('/admin/reset-password?error=expired')
   }
 
-  // Usage unique : refuser un token déjÃ  consommé (voir RESET_FLOOR_KEY)
+  // Usage unique : refuser un token déjà consommé (voir RESET_FLOOR_KEY)
   const db = c.env.DB
   const tokenTs = parseInt(resetToken.slice(0, resetToken.indexOf('.')), 10)
   if (isNaN(tokenTs)) return c.redirect('/admin/reset-password?error=expired')
@@ -1146,7 +1147,7 @@ adminRouter.post('/api/admin/reset-password', async (c) => {
       const floorRow = await db.prepare('SELECT value FROM admin_settings WHERE key = ?').bind(RESET_FLOOR_KEY).first() as any
       const floor = parseInt(floorRow?.value ?? '0', 10) || 0
       if (tokenTs <= floor) {
-        logSecurityEvent(db, { event: 'admin_reset_token_replay', severity: 'critical', ip, details: `Token de reset déjÃ  consommé, rejeu depuis ${ip}` })
+        logSecurityEvent(db, { event: 'admin_reset_token_replay', severity: 'critical', ip, details: `Token de reset déjà consommé, rejeu depuis ${ip}` })
         return c.redirect('/admin/reset-password?error=expired')
       }
     } catch (e) { console.error('Reset token floor check error:', e) }
@@ -1165,12 +1166,12 @@ adminRouter.post('/api/admin/reset-password', async (c) => {
     try {
       await db.prepare('CREATE TABLE IF NOT EXISTS admin_settings (key TEXT PRIMARY KEY, value TEXT, updated_at TEXT)').run()
       // Consommer le token AVANT d'écrire le nouveau hash : les validations
-      // ci-dessus sont pures, donc une simple faute de frappe ne brÃ»le pas le lien.
+      // ci-dessus sont pures, donc une simple faute de frappe ne brûle pas le lien.
       await db.prepare('INSERT OR REPLACE INTO admin_settings (key, value, updated_at) VALUES (?, ?, ?)').bind(RESET_FLOOR_KEY, String(tokenTs), new Date().toISOString()).run()
       await db.prepare('INSERT OR REPLACE INTO admin_settings (key, value, updated_at) VALUES (?, ?, ?)').bind('admin_password_hash', newHash, new Date().toISOString()).run()
       await db.prepare('INSERT OR REPLACE INTO admin_settings (key, value, updated_at) VALUES (?, ?, ?)').bind('admin_username', newUsername, new Date().toISOString()).run()
       // Révoquer les sessions admin en cours : après un reset, un cookie encore
-      // valide 24 h aurait laissé l'accès Ã  qui avait provoqué le reset.
+      // valide 24 h aurait laissé l'accès à qui avait provoqué le reset.
       await bumpAdminTokenEpoch(db)
       logSecurityEvent(db, { event: 'admin_password_reset', severity: 'critical', ip, details: `Identifiant et mot de passe admin réinitialisés depuis ${ip}` })
     } catch(e) {
@@ -1597,7 +1598,7 @@ adminRouter.post('/api/admin/maintenance/validate-contract', adminAuth, async (c
 })
 
 
-// â”€â”€ Refuser un contrat de maintenance (pending â†’ cancelled) â”€â”€
+// ── Refuser un contrat de maintenance (pending → cancelled) ──
 adminRouter.post('/api/admin/maintenance/refuse-contract', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB unavailable' }, 503)
@@ -1639,7 +1640,7 @@ adminRouter.post('/api/admin/maintenance/refuse-contract', adminAuth, async (c) 
   }
 })
 
-// â”€â”€ Supprimer définitivement un contrat de maintenance et ses visites â”€â”€
+// ── Supprimer définitivement un contrat de maintenance et ses visites ──
 adminRouter.post('/api/admin/maintenance/delete-contract', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB unavailable' }, 503)
@@ -1867,7 +1868,7 @@ function csvEscape(val: any): string {
   if (val == null) return ''
   let s = String(val)
   // Injection de formule : Excel et LibreOffice évaluent une cellule qui commence
-  // par = + - @ (ou tabulation / retour chariot), ce qui permet Ã  un client
+  // par = + - @ (ou tabulation / retour chariot), ce qui permet à un client
   // d'exécuter du code sur le poste de l'admin qui ouvre l'export (=cmd|...).
   // On préfixe par une apostrophe pour forcer l'interprétation en texte, sauf pour
   // les nombres (les prix négatifs restent lisibles).
@@ -1965,7 +1966,7 @@ adminRouter.post('/api/admin/sav/create', adminAuth, async (c) => {
   return c.redirect('/admin/sav?success=ticket_cree')
 })
 
-// Admin: mettre Ã  jour le statut d'un ticket
+// Admin: mettre à jour le statut d'un ticket
 adminRouter.post('/api/admin/sav/update-status', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB non disponible' }, 503)
@@ -1978,7 +1979,7 @@ adminRouter.post('/api/admin/sav/update-status', adminAuth, async (c) => {
   return c.redirect(`/admin/sav/${id}?success=statut_modifie`)
 })
 
-// Admin: ajouter un message Ã  un ticket
+// Admin: ajouter un message à un ticket
 adminRouter.post('/api/admin/sav/message', adminAuth, async (c) => {
   const db = c.env.DB
   if (!db) return c.json({ error: 'DB non disponible' }, 503)
@@ -2521,10 +2522,10 @@ function buildClientDevisHTML(d: any): string {
     savingsHtml = `
     <div style="background:linear-gradient(135deg,rgba(52,211,153,0.08),rgba(16,185,129,0.05)); border:1px solid rgba(52,211,153,0.2); border-radius:16px; padding:20px; margin:24px 0;">
       <div style="display:flex; align-items:flex-start; gap:14px;">
-        <div style="width:44px; height:44px; background:rgba(52,211,153,0.15); border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:20px;">ðŸ’¡</div>
+        <div style="width:44px; height:44px; background:rgba(52,211,153,0.15); border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:20px;">💡</div>
         <div style="flex:1;">
           <div style="font-weight:700; color:#34d399; margin-bottom:4px;">Économies estimées avec Inverter</div>
-          <div style="font-size:13px; color:#6b7280; line-height:1.6;">Pour un climatiseur ${btu.toLocaleString('fr-FR')} BTU, la technologie Inverter réduit votre consommation d'environ <strong style="color:#34d399;">30%</strong>, soit une économie annuelle estimée Ã  :</div>
+          <div style="font-size:13px; color:#6b7280; line-height:1.6;">Pour un climatiseur ${btu.toLocaleString('fr-FR')} BTU, la technologie Inverter réduit votre consommation d'environ <strong style="color:#34d399;">30%</strong>, soit une économie annuelle estimée à :</div>
           <div style="font-size:28px; font-weight:800; color:#34d399; margin:8px 0;">${savings.toLocaleString('fr-FR')} FCFA <span style="font-size:14px; font-weight:500; color:#6b7280;">/ an</span></div>
           <div style="font-size:11px; color:#9ca3af;">Estimation basée sur 8h/jour, 300 jours/an et un tarif de 100 FCFA/kWh</div>
         </div>
@@ -2534,7 +2535,7 @@ function buildClientDevisHTML(d: any): string {
 
   const acceptFormHtml = !isAccepted && !isExpired ? `
     <div style="text-align:center; padding:32px 20px; background:linear-gradient(135deg,rgba(56,189,248,0.06),rgba(99,102,241,0.06)); border-radius:16px; border:1px solid rgba(56,189,248,0.15); margin:24px 0;">
-      <div style="font-size:18px; font-weight:700; color:#e2e8f0; margin-bottom:8px;">âœ… Accepter ce devis ?</div>
+      <div style="font-size:18px; font-weight:700; color:#e2e8f0; margin-bottom:8px;">✅ Accepter ce devis ?</div>
       <p style="color:#94a3b8; font-size:14px; margin-bottom:20px;">En acceptant, vous confirmez votre accord sur les conditions ci-dessus.<br>Notre équipe vous contactera sous 24h pour planifier l'intervention.</p>
       <form method="post" action="/api/devis/${d.token}/accept" style="display:inline;">
         <button type="submit" style="background:linear-gradient(135deg,#059669,#10b981); color:white; font-weight:700; font-size:15px; padding:14px 32px; border-radius:12px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:10px; box-shadow:0 4px 15px rgba(16,185,129,0.3);">
@@ -2543,17 +2544,17 @@ function buildClientDevisHTML(d: any): string {
       </form>
       <div style="margin-top:16px;">
         <a href="https://wa.me/22655996418?text=${encodeURIComponent('Bonjour, je souhaite discuter du devis ' + d.numero)}" style="display:inline-flex; align-items:center; gap:8px; background:rgba(37,211,102,0.1); color:#25D366; font-weight:600; font-size:13px; padding:10px 20px; border-radius:10px; text-decoration:none; border:1px solid rgba(37,211,102,0.25);">
-          <span style="font-size:18px;">ðŸ’¬</span> Poser une question par WhatsApp
+          <span style="font-size:18px;">💬</span> Poser une question par WhatsApp
         </a>
       </div>
     </div>` : isAccepted ? `
     <div style="text-align:center; padding:24px; background:rgba(52,211,153,0.08); border-radius:16px; border:1px solid rgba(52,211,153,0.2); margin:24px 0;">
-      <div style="font-size:24px; margin-bottom:8px;">ðŸŽ‰</div>
+      <div style="font-size:24px; margin-bottom:8px;">🎉</div>
       <div style="font-size:18px; font-weight:700; color:#34d399;">Devis accepté — Merci !</div>
       <p style="color:#94a3b8; font-size:13px; margin-top:6px;">Notre équipe va vous contacter très prochainement.</p>
     </div>` : `
     <div style="text-align:center; padding:24px; background:rgba(239,68,68,0.08); border-radius:16px; border:1px solid rgba(239,68,68,0.2); margin:24px 0;">
-      <div style="font-size:18px; font-weight:700; color:#f87171;">âš ï¸ Ce devis est expiré</div>
+      <div style="font-size:18px; font-weight:700; color:#f87171;">⚠️ Ce devis est expiré</div>
       <p style="color:#94a3b8; font-size:13px; margin-top:6px;">Contactez-nous pour un nouveau devis actualisé.</p>
     </div>`
 
@@ -2569,7 +2570,7 @@ function buildClientDevisHTML(d: any): string {
   body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; background: #0b1120; color: #e2e8f0; min-height: 100vh; }
   .container { max-width: 680px; margin: 0 auto; padding: 20px 16px 60px; }
   .header { background: linear-gradient(135deg, #1e3a8a 0%, #0c4a6e 50%, #0ea5e9 100%); border-radius: 20px; padding: 28px 24px; margin-bottom: 24px; position: relative; overflow: hidden; }
-  .header::before { content: 'â„ï¸'; position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 64px; opacity: 0.12; }
+  .header::before { content: '❄️'; position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 64px; opacity: 0.12; }
   .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
   .logo-icon { width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
   .logo-text { font-weight: 800; font-size: 20px; color: white; }
@@ -2604,7 +2605,7 @@ function buildClientDevisHTML(d: any): string {
 
   <div class="header">
     <div class="logo">
-      <div class="logo-icon">â„ï¸</div>
+      <div class="logo-icon">❄️</div>
       <div>
         <div class="logo-text">MAASGA</div>
         <div class="logo-sub">Froid & Climatisation · Ouagadougou</div>
@@ -2614,22 +2615,22 @@ function buildClientDevisHTML(d: any): string {
     <div class="devis-date">Émis le ${createdStr}</div>
     <div>
       <span class="status-pill ${isAccepted ? 'status-accepted' : isExpired ? 'status-expired' : 'status-sent'}">
-        ${isAccepted ? 'âœ“ Devis accepté' : isExpired ? 'âš  Expiré' : 'â³ En attente de validation'}
+        ${isAccepted ? '✓ Devis accepté' : isExpired ? '⚠ Expiré' : '⏳ En attente de validation'}
       </span>
     </div>
   </div>
 
   ${!isAccepted && !isExpired && daysLeft <= 7 ? `
   <div class="expiry-banner">
-    <span style="font-size:18px;">â°</span>
+    <span style="font-size:18px;">⏰</span>
     <span>Ce devis expire dans <strong>${daysLeft} jour${daysLeft > 1 ? 's' : ''}</strong> — ${expiryStr}. Acceptez avant cette date.</span>
   </div>` : !isAccepted && !isExpired && expiryStr ? `
   <div style="background:rgba(56,189,248,0.05); border:1px solid rgba(56,189,248,0.12); border-radius:12px; padding:10px 16px; font-size:12px; color:#38bdf8; margin-bottom:16px;">
-    âœ“ Devis valable jusqu'au ${expiryStr} · ${daysLeft} jours restants
+    ✓ Devis valable jusqu'au ${expiryStr} · ${daysLeft} jours restants
   </div>` : ''}
 
   <div class="section">
-    <div class="section-title">ðŸ‘¤ Client</div>
+    <div class="section-title">👤 Client</div>
     <div class="info-row"><span class="info-label">Nom</span><span class="info-val">${escapeHtml(d.client_name || '')}</span></div>
     <div class="info-row"><span class="info-label">Téléphone</span><span class="info-val">${escapeHtml(d.client_phone || '')}</span></div>
     ${d.client_email ? `<div class="info-row"><span class="info-label">Email</span><span class="info-val">${escapeHtml(d.client_email)}</span></div>` : ''}
@@ -2638,13 +2639,13 @@ function buildClientDevisHTML(d: any): string {
 
   ${(d.surface || d.btu_recommande) ? `
   <div class="section">
-    <div class="section-title">ðŸ“ Données techniques</div>
-    ${d.surface ? `<div class="info-row"><span class="info-label">Surface Ã  climatiser</span><span class="info-val">${Number(d.surface).toLocaleString('fr-FR')} mÂ²</span></div>` : ''}
+    <div class="section-title">📐 Données techniques</div>
+    ${d.surface ? `<div class="info-row"><span class="info-label">Surface à climatiser</span><span class="info-val">${Number(d.surface).toLocaleString('fr-FR')} m²</span></div>` : ''}
     ${d.btu_recommande ? `<div class="info-row"><span class="info-label">Puissance recommandée</span><span class="info-val">${Number(d.btu_recommande).toLocaleString('fr-FR')} BTU / ${Number(d.btu_recommande) === 9000 ? '1' : Number(d.btu_recommande) === 12000 ? '1,5' : Number(d.btu_recommande) === 18000 ? '2' : Number(d.btu_recommande) === 24000 ? '3' : '5'} CV</span></div>` : ''}
   </div>` : ''}
 
   <div class="section">
-    <div class="section-title">ðŸ“‹ Détail du devis</div>
+    <div class="section-title">📋 Détail du devis</div>
     <table>
       <thead><tr>
         <th style="width:50%">Désignation</th>
@@ -2660,7 +2661,7 @@ function buildClientDevisHTML(d: any): string {
           <td class="td-right">${prodTotal.toLocaleString('fr-FR')}</td>
         </tr>` : ''}
         <tr>
-          <td>Main d'Å“uvre &amp; installation</td>
+          <td>Main d'œuvre &amp; installation</td>
           <td class="td-right">1</td>
           <td class="td-right">${installTotal.toLocaleString('fr-FR')}</td>
           <td class="td-right">${installTotal.toLocaleString('fr-FR')}</td>
@@ -2681,7 +2682,7 @@ function buildClientDevisHTML(d: any): string {
         </tr>
         ${remisePct > 0 ? `<tr class="discount-row">
           <td colspan="3" style="padding-bottom:8px; font-size:12px;">Remise accordée (${remisePct}%)</td>
-          <td class="td-right" style="padding-bottom:8px;">âˆ’ ${remiseMt.toLocaleString('fr-FR')}</td>
+          <td class="td-right" style="padding-bottom:8px;">− ${remiseMt.toLocaleString('fr-FR')}</td>
         </tr>` : ''}
         <tr class="total-row">
           <td colspan="3"><span class="total-label">TOTAL TTC</span><div style="font-size:10px; color:#6b7280; margin-top:2px;">Toutes taxes comprises</div></td>
@@ -2697,18 +2698,18 @@ function buildClientDevisHTML(d: any): string {
 
   ${d.message_client ? `
   <div class="section" style="border-color:rgba(99,102,241,0.2);">
-    <div class="section-title" style="color:#a78bfa;">ðŸ’¬ Message de l'équipe MAASGA</div>
+    <div class="section-title" style="color:#a78bfa;">💬 Message de l'équipe MAASGA</div>
     <p style="font-size:14px; color:#cbd5e1; line-height:1.7; white-space:pre-wrap;">${escapeHtml(d.message_client)}</p>
   </div>` : ''}
 
   <div class="section" style="background:rgba(56,189,248,0.03);">
-    <div class="section-title">âœ… Nos engagements</div>
+    <div class="section-title">✅ Nos engagements</div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
       ${[
         ['🔧', 'Techniciens certifiés', 'Équipe qualifiée'],
-        ['ðŸ›¡ï¸', 'Garantie installation', "12 mois pièces et main d'Å“uvre"],
-        ['ðŸ“ž', 'SAV rapide', 'Intervention sous 48h'],
-        ['ðŸ’¯', 'Satisfaction garantie', 'Ou intervention gratuite']
+        ['🛡️', 'Garantie installation', "12 mois pièces et main d'œuvre"],
+        ['📞', 'SAV rapide', 'Intervention sous 48h'],
+        ['💯', 'Satisfaction garantie', 'Ou intervention gratuite']
       ].map(([icon, title, sub]) => `
       <div style="background:rgba(56,189,248,0.04); border:1px solid rgba(56,189,248,0.08); border-radius:10px; padding:12px;">
         <div style="font-size:20px; margin-bottom:6px;">${icon}</div>
@@ -2721,11 +2722,11 @@ function buildClientDevisHTML(d: any): string {
   <div class="footer">
     <div style="margin-bottom:16px;">
       <a href="/devis/${escapeHtml(d.token)}/pdf" style="display:inline-flex; align-items:center; gap:8px; background:linear-gradient(135deg,#0077b6,#0ea5e9); color:white; font-weight:700; font-size:14px; padding:12px 28px; border-radius:12px; text-decoration:none; box-shadow:0 4px 15px rgba(0,119,182,0.3);">
-        ðŸ–¨ï¸ Télécharger le devis en PDF
+        🖨️ Télécharger le devis en PDF
       </a>
     </div>
     <strong>MAASGA — Froid &amp; Climatisation</strong><br>
-    ðŸ“ž +226 55 99 64 18 &nbsp;|&nbsp; Ouagadougou, Burkina Faso<br>
+    📞 +226 55 99 64 18 &nbsp;|&nbsp; Ouagadougou, Burkina Faso<br>
     Lundi–Dimanche · 8h00–18h00<br><br>
     <em>Ce devis est valable jusqu'au ${expiryStr || '30 jours'}. Aucun paiement n'est requis avant accord et signature du client. Le montant définitif peut être ajusté après visite technique si les conditions réelles diffèrent.</em>
   </div>
@@ -2775,7 +2776,7 @@ adminRouter.get('/admin/devis/new', adminAuth, refreshAdminCache, async (c) => {
   let surface = c.req.query('surface') || ''
   let btu = c.req.query('btu') || ''
   if (rdv?.notes && (!surface || !btu)) {
-    const surfMatch = rdv.notes.match(/(\d+(?:\.\d+)?)\s*mÂ²/)
+    const surfMatch = rdv.notes.match(/(\d+(?:\.\d+)?)\s*m²/)
     const btuMatch = rdv.notes.match(/(\d{4,5})\s*BTU/)
     if (surfMatch && !surface) surface = surfMatch[1]
     if (btuMatch && !btu) btu = btuMatch[1]
@@ -2823,8 +2824,8 @@ adminRouter.post('/api/admin/devis/create', adminAuth, async (c) => {
     let notesInternes = (body['notes_internes'] as string || '').trim()
     const origine = (body['origine'] as string || '').trim()
     const urgence = (body['urgence'] as string || '').trim()
-    const origineLabels: Record<string, string> = { appel: 'Appel entrant', visite: 'Visite physique', recommandation: 'Recommandation', reseaux: 'Réseaux sociaux', publicite: 'Publicité', bouche_a_oreille: 'Bouche-Ã -oreille' }
-    const urgenceLabels: Record<string, string> = { urgent: 'âš¡ Urgent', tres_urgent: 'ðŸ”´ Très urgent' }
+    const origineLabels: Record<string, string> = { appel: 'Appel entrant', visite: 'Visite physique', recommandation: 'Recommandation', reseaux: 'Réseaux sociaux', publicite: 'Publicité', bouche_a_oreille: 'Bouche-à-oreille' }
+    const urgenceLabels: Record<string, string> = { urgent: '⚡ Urgent', tres_urgent: '🔴 Très urgent' }
     const ctxParts: string[] = []
     if (origine && origineLabels[origine]) ctxParts.push(`Origine: ${origineLabels[origine]}`)
     if (urgence && urgenceLabels[urgence]) ctxParts.push(urgenceLabels[urgence])
@@ -2835,7 +2836,7 @@ adminRouter.post('/api/admin/devis/create', adminAuth, async (c) => {
       .run()
 
     // If linked to an order, always sync to order_devis so client can see it in their portal
-    // Draft â†’ 'pending' status in order_devis (visible but client can act); Sent â†’ 'sent'
+    // Draft → 'pending' status in order_devis (visible but client can act); Sent → 'sent'
     if (orderId) {
       const linkedOrder = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(orderId).first() as any
       if (linkedOrder) {
@@ -2881,7 +2882,7 @@ adminRouter.post('/api/admin/devis/create', adminAuth, async (c) => {
               now, now
             ).run()
         }
-        // Envoi effectif du devis : la commande passe Ã  Â« contacte Â»
+        // Envoi effectif du devis : la commande passe à « contacte »
         // ('devis_en_attente' n'existe plus dans le CHECK depuis la migration 0036)
         if (isSendAction) {
           await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?')
@@ -2900,7 +2901,7 @@ adminRouter.post('/api/admin/devis/create', adminAuth, async (c) => {
                     sender: { name: 'MAASGA', email: 'maasgabf@gmail.com' },
                     to: [{ email: linkedOrder.client_email, name: linkedOrder.client_name }],
                     subject: `Devis d'installation disponible — Commande #${orderId} — MAASGA`,
-                    htmlContent: `<html><body style="font-family:Arial,sans-serif;padding:20px;max-width:600px;margin:0 auto;"><h2 style="color:#d97706;">â„ Devis d'installation disponible</h2><p>Bonjour ${escapeHtml(linkedOrder.client_name)},</p><p>Un devis d'installation a été préparé pour votre commande #${orderId}. Connectez-vous Ã  votre espace client pour le consulter et le valider :</p><p><a href="https://maasga.com/espace-client" style="display:inline-block;background:#d97706;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold;">Voir et valider le devis</a></p><p style="color:#6b7280;font-size:12px;">MAASGA SARL — Solutions Climatisation & Maintenance — Ouagadougou, Burkina Faso</p></body></html>`
+                    htmlContent: `<html><body style="font-family:Arial,sans-serif;padding:20px;max-width:600px;margin:0 auto;"><h2 style="color:#d97706;">❄ Devis d'installation disponible</h2><p>Bonjour ${escapeHtml(linkedOrder.client_name)},</p><p>Un devis d'installation a été préparé pour votre commande #${orderId}. Connectez-vous à votre espace client pour le consulter et le valider :</p><p><a href="https://maasga.com/espace-client" style="display:inline-block;background:#d97706;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold;">Voir et valider le devis</a></p><p style="color:#6b7280;font-size:12px;">MAASGA SARL — Solutions Climatisation & Maintenance — Ouagadougou, Burkina Faso</p></body></html>`
                   })
                 })
               }
@@ -2925,9 +2926,9 @@ adminRouter.post('/api/admin/devis/create', adminAuth, async (c) => {
           try {
             const publicUrl = `https://maasga.com/devis/${token}`
             const prodRow = (body['produit_nom'] as string || '').trim()
-              ? `<tr><td style="padding:8px 12px;">${escapeHtml(body['produit_nom'] as string)} Ã— ${prodQty}</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${(prodPrix * prodQty).toLocaleString('fr-FR')} FCFA</td></tr>` : ''
+              ? `<tr><td style="padding:8px 12px;">${escapeHtml(body['produit_nom'] as string)} × ${prodQty}</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${(prodPrix * prodQty).toLocaleString('fr-FR')} FCFA</td></tr>` : ''
             const installRow = installPrix > 0
-              ? `<tr><td style="padding:8px 12px;">Main d'Å“uvre / Installation</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${installPrix.toLocaleString('fr-FR')} FCFA</td></tr>` : ''
+              ? `<tr><td style="padding:8px 12px;">Main d'œuvre / Installation</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${installPrix.toLocaleString('fr-FR')} FCFA</td></tr>` : ''
             const accRows = accs.map((a: any) => `<tr><td style="padding:8px 12px;">${escapeHtml(a.nom)}</td><td style="padding:8px 12px;text-align:right;">${Number(a.prix || 0).toLocaleString('fr-FR')} FCFA</td></tr>`).join('')
             const msgBlock = (body['message_client'] as string || '').trim()
               ? `<p style="background:#f0f9ff;border-left:4px solid #0077b6;padding:14px;margin:20px 0;border-radius:0 8px 8px 0;">${escapeHtml(body['message_client'] as string)}</p>` : ''
@@ -2974,7 +2975,7 @@ adminRouter.post('/api/admin/devis/create', adminAuth, async (c) => {
       return c.redirect(`/admin/devis/detail/${token}`)
     }
     if (action === 'send_whatsapp') return c.redirect(`/admin/devis/detail/${token}?notify=whatsapp`)
-    // generate, send (legacy), default â†’ show detail page
+    // generate, send (legacy), default → show detail page
     return c.redirect(`/admin/devis/detail/${token}`)
   } catch(e: any) {
     console.error('Devis create error:', e)
@@ -3027,8 +3028,8 @@ adminRouter.post('/api/admin/devis/send-email', adminAuth, async (c) => {
     const publicUrl = `https://${host}/devis/${token}`
     const accs: any[] = JSON.parse(devis.accessoires || '[]')
     const prodTotal = Number(devis.produit_prix || 0) * Number(devis.produit_quantite || 1)
-    const prodRow = devis.produit_nom ? `<tr><td style="padding:8px 12px;">${escapeHtml(devis.produit_nom)} Ã— ${Number(devis.produit_quantite) || 1}</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${prodTotal.toLocaleString('fr-FR')} FCFA</td></tr>` : ''
-    const installRow = Number(devis.installation_prix) > 0 ? `<tr><td style="padding:8px 12px;">Main d'Å“uvre / Installation</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${Number(devis.installation_prix).toLocaleString('fr-FR')} FCFA</td></tr>` : ''
+    const prodRow = devis.produit_nom ? `<tr><td style="padding:8px 12px;">${escapeHtml(devis.produit_nom)} × ${Number(devis.produit_quantite) || 1}</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${prodTotal.toLocaleString('fr-FR')} FCFA</td></tr>` : ''
+    const installRow = Number(devis.installation_prix) > 0 ? `<tr><td style="padding:8px 12px;">Main d'œuvre / Installation</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${Number(devis.installation_prix).toLocaleString('fr-FR')} FCFA</td></tr>` : ''
     const accRows = accs.filter((a: any) => a.nom).map((a: any) => `<tr><td style="padding:8px 12px;">${escapeHtml(a.nom)}</td><td style="padding:8px 12px;text-align:right;">${Number(a.prix || 0).toLocaleString('fr-FR')} FCFA</td></tr>`).join('')
     const msgBlock = devis.message_client ? `<p style="background:#f0f9ff;border-left:4px solid #0077b6;padding:14px;margin:20px 0;border-radius:0 8px 8px 0;">${escapeHtml(devis.message_client)}</p>` : ''
 
@@ -3160,7 +3161,7 @@ adminRouter.get('/devis/:token', async (c) => {
   try {
     await ensureDevisTable(db)
     const devis = await db.prepare('SELECT * FROM devis WHERE token = ?').bind(token).first() as any
-    if (!devis) return c.html('<html><body style="background:#0b1120;color:#fff;font-family:sans-serif;text-align:center;padding:80px 20px;"><h1>Devis introuvable</h1><p style="color:#6b7280;">Ce lien est invalide ou expiré.</p><br><a href="/" style="color:#38bdf8;">â† MAASGA</a></body></html>', 404)
+    if (!devis) return c.html('<html><body style="background:#0b1120;color:#fff;font-family:sans-serif;text-align:center;padding:80px 20px;"><h1>Devis introuvable</h1><p style="color:#6b7280;">Ce lien est invalide ou expiré.</p><br><a href="/" style="color:#38bdf8;">← MAASGA</a></body></html>', 404)
     return c.html(buildClientDevisHTML(devis as any))
   } catch(e) {
     console.error('Devis view error:', e)
@@ -3301,8 +3302,8 @@ function buildDevisPDF(d: any): string {
 </head>
 <body>
 <div class="print-bar">
-  <button class="print-btn print-btn-primary" onclick="window.print()">ðŸ–¨ï¸ Imprimer / Télécharger PDF</button>
-  <a class="print-btn print-btn-secondary" href="/devis/${escapeHtml(d.token)}">â† Retour au devis</a>
+  <button class="print-btn print-btn-primary" onclick="window.print()">🖨️ Imprimer / Télécharger PDF</button>
+  <a class="print-btn print-btn-secondary" href="/devis/${escapeHtml(d.token)}">← Retour au devis</a>
 </div>
 
 <div class="page">
@@ -3314,10 +3315,10 @@ function buildDevisPDF(d: any): string {
         <div class="company-name">MAASGA</div>
         <div class="company-tagline">Froid & Climatisation</div>
         <div class="company-info">
-          ðŸ“ Ouagadougou, Burkina Faso<br>
-          ðŸ“ž +226 55 99 64 18<br>
-          âœ‰ï¸ maasgabf@gmail.com<br>
-          ðŸ• Lun–Dim · 8h00–18h00
+          📍 Ouagadougou, Burkina Faso<br>
+          📞 +226 55 99 64 18<br>
+          ✉️ maasgabf@gmail.com<br>
+          🕐 Lun–Dim · 8h00–18h00
         </div>
       </div>
     </div>
@@ -3329,7 +3330,7 @@ function buildDevisPDF(d: any): string {
         ${expiryStr ? `Valable jusqu'au : ${expiryStr}` : 'Validité : 30 jours'}
       </div>
       <span class="status-badge ${isAccepted ? 'status-accepted' : d.status === 'sent' ? 'status-sent' : 'status-expired'}">
-        ${isAccepted ? 'âœ“ Accepté' + (acceptedStr ? ' le ' + acceptedStr : '') : d.status === 'sent' ? 'â³ En attente' : 'ðŸ“‹ ' + (d.status || 'Brouillon')}
+        ${isAccepted ? '✓ Accepté' + (acceptedStr ? ' le ' + acceptedStr : '') : d.status === 'sent' ? '⏳ En attente' : '📋 ' + (d.status || 'Brouillon')}
       </span>
     </div>
   </div>
@@ -3337,14 +3338,14 @@ function buildDevisPDF(d: any): string {
   <!-- CLIENT + TECHNIQUE -->
   <div class="info-grid">
     <div class="info-card">
-      <div class="info-card-title">ðŸ‘¤ Informations client</div>
+      <div class="info-card-title">👤 Informations client</div>
       <div class="info-row"><span class="info-label">Nom</span><span class="info-val">${escapeHtml(d.client_name || '')}</span></div>
       <div class="info-row"><span class="info-label">Téléphone</span><span class="info-val">${escapeHtml(d.client_phone || '')}</span></div>
       ${d.client_email ? `<div class="info-row"><span class="info-label">Email</span><span class="info-val">${escapeHtml(d.client_email)}</span></div>` : ''}
       ${d.client_quartier ? `<div class="info-row"><span class="info-label">Adresse</span><span class="info-val">${escapeHtml(d.client_quartier)}, Ouagadougou</span></div>` : ''}
     </div>
     <div class="info-card">
-      <div class="info-card-title">ðŸ¢ Émetteur</div>
+      <div class="info-card-title">🏢 Émetteur</div>
       <div class="info-row"><span class="info-label">Entreprise</span><span class="info-val">MAASGA</span></div>
       <div class="info-row"><span class="info-label">Activité</span><span class="info-val">Froid & Climatisation</span></div>
       <div class="info-row"><span class="info-label">Ville</span><span class="info-val">Ouagadougou, BF</span></div>
@@ -3356,7 +3357,7 @@ function buildDevisPDF(d: any): string {
   ${(d.surface || d.btu_recommande) ? `
   <!-- DONNÉES TECHNIQUES -->
   <div class="tech-grid">
-    ${d.surface ? `<div class="tech-card"><div class="tech-val">${Number(d.surface).toLocaleString('fr-FR')} mÂ²</div><div class="tech-label">Surface</div></div>` : ''}
+    ${d.surface ? `<div class="tech-card"><div class="tech-val">${Number(d.surface).toLocaleString('fr-FR')} m²</div><div class="tech-label">Surface</div></div>` : ''}
     ${d.btu_recommande ? `<div class="tech-card"><div class="tech-val">${Number(d.btu_recommande).toLocaleString('fr-FR')} BTU</div><div class="tech-label">Puissance recommandée</div></div>` : ''}
     ${d.btu_recommande ? `<div class="tech-card"><div class="tech-val">${btuCvMap[Number(d.btu_recommande)] || '—'} CV</div><div class="tech-label">Chevaux vapeur</div></div>` : ''}
   </div>` : ''}
@@ -3394,7 +3395,7 @@ function buildDevisPDF(d: any): string {
       </tr>
       ${remisePct > 0 ? `<tr class="discount-row">
         <td colspan="3" style="text-align:right;">Remise (${remisePct}%)</td>
-        <td class="right">âˆ’ ${remiseMt.toLocaleString('fr-FR')} FCFA</td>
+        <td class="right">− ${remiseMt.toLocaleString('fr-FR')} FCFA</td>
       </tr>` : ''}
       <tr class="total-row">
         <td colspan="3"><span class="total-label">TOTAL TTC</span></td>
@@ -3406,33 +3407,33 @@ function buildDevisPDF(d: any): string {
   <!-- ENGAGEMENTS -->
   <div class="engagements">
     <div class="engage-item"><span class="engage-icon">🔧</span><span><strong>Techniciens certifiés</strong> — Équipe qualifiée et expérimentée</span></div>
-    <div class="engage-item"><span class="engage-icon">ðŸ›¡ï¸</span><span><strong>Garantie 12 mois</strong> — Pièces et main d'Å“uvre</span></div>
-    <div class="engage-item"><span class="engage-icon">ðŸ“ž</span><span><strong>SAV rapide</strong> — Intervention sous 48h</span></div>
-    <div class="engage-item"><span class="engage-icon">ðŸ’¯</span><span><strong>Satisfaction garantie</strong> — Ou reprise gratuite</span></div>
+    <div class="engage-item"><span class="engage-icon">🛡️</span><span><strong>Garantie 12 mois</strong> — Pièces et main d'œuvre</span></div>
+    <div class="engage-item"><span class="engage-icon">📞</span><span><strong>SAV rapide</strong> — Intervention sous 48h</span></div>
+    <div class="engage-item"><span class="engage-icon">💯</span><span><strong>Satisfaction garantie</strong> — Ou reprise gratuite</span></div>
   </div>
 
   ${d.message_client ? `
   <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:10px; padding:16px; margin:20px 0;">
-    <div style="font-size:11px; font-weight:700; color:#0077b6; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">ðŸ’¬ Message de l'équipe</div>
+    <div style="font-size:11px; font-weight:700; color:#0077b6; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">💬 Message de l'équipe</div>
     <p style="font-size:13px; color:#334155; line-height:1.7; white-space:pre-wrap;">${escapeHtml(d.message_client)}</p>
   </div>` : ''}
 
   <!-- CONDITIONS -->
   <div class="conditions">
-    <div class="conditions-title">ðŸ“‹ Conditions générales</div>
-    â€¢ Ce devis est valable ${expiryStr ? `jusqu'au ` + expiryStr : `30 jours Ã  compter de la date d'émission`}.<br>
-    â€¢ Aucun paiement n'est requis avant accord du client et visite technique sur site.<br>
-    â€¢ Le montant définitif peut être ajusté si les conditions réelles diffèrent du dimensionnement initial.<br>
-    â€¢ TVA non applicable (régime simplifié).<br>
-    â€¢ L'installation comprend : mise en service, test complet et formation d'utilisation.
+    <div class="conditions-title">📋 Conditions générales</div>
+    • Ce devis est valable ${expiryStr ? `jusqu'au ` + expiryStr : `30 jours à compter de la date d'émission`}.<br>
+    • Aucun paiement n'est requis avant accord du client et visite technique sur site.<br>
+    • Le montant définitif peut être ajusté si les conditions réelles diffèrent du dimensionnement initial.<br>
+    • TVA non applicable (régime simplifié).<br>
+    • L'installation comprend : mise en service, test complet et formation d'utilisation.
   </div>
 
   <!-- FOOTER -->
   <div class="footer">
     <strong>MAASGA — Froid & Climatisation</strong><br>
-    ðŸ“ Ouagadougou, Burkina Faso &nbsp;|&nbsp; ðŸ“ž +226 55 99 64 18 &nbsp;|&nbsp; âœ‰ï¸ maasgabf@gmail.com<br>
-    ðŸ• Lundi – Dimanche · 8h00 – 18h00<br><br>
-    <em>Merci pour votre confiance. L'équipe MAASGA reste Ã  votre disposition.</em>
+    📍 Ouagadougou, Burkina Faso &nbsp;|&nbsp; 📞 +226 55 99 64 18 &nbsp;|&nbsp; ✉️ maasgabf@gmail.com<br>
+    🕐 Lundi – Dimanche · 8h00 – 18h00<br><br>
+    <em>Merci pour votre confiance. L'équipe MAASGA reste à votre disposition.</em>
   </div>
 </div>
 
@@ -3464,7 +3465,7 @@ adminRouter.post('/api/admin/rdv/update', adminAuth, async (c) => {
       if (!res?.meta?.changes) return c.redirect('/admin/rdv?error=' + encodeURIComponent('Rendez-vous introuvable'))
     } catch (error) {
       console.error('Erreur D1 rdv update:', error)
-      return c.redirect('/admin/rdv?error=' + encodeURIComponent('Mise Ã  jour impossible (base de données)'))
+      return c.redirect('/admin/rdv?error=' + encodeURIComponent('Mise à jour impossible (base de données)'))
     }
   } else if (!rdv) {
     return c.redirect('/admin/rdv?error=' + encodeURIComponent('Rendez-vous introuvable'))
@@ -3487,7 +3488,7 @@ adminRouter.post('/api/admin/rdv/validate-visit', adminAuth, async (c) => {
       const res = await db.prepare('UPDATE appointments SET status = ? WHERE id = ?').bind('done', appointment_id).run()
       if (!res?.meta?.changes) return c.json({ success: false, error: 'Rendez-vous introuvable' }, 404)
     } catch (error) {
-      // Ne plus avaler l'erreur : l'admin voyait Â« Visite validée Â» alors que le
+      // Ne plus avaler l'erreur : l'admin voyait « Visite validée » alors que le
       // statut restait inchangé en base.
       console.error('Erreur D1 validate-visit:', error)
       return c.json({ success: false, error: 'Validation impossible (base de données)' }, 500)
@@ -3725,7 +3726,7 @@ adminRouter.post('/api/admin/produit/add', adminAuth, async (c) => {
         name, brand, model, btu, price, stock, surface_min, surface_max, energy_class,
         description, inverter ? 1 : 0, available ? 1 : 0, '1 an constructeur',
         features.length > 0 ? JSON.stringify(features) : null,
-        'â„ï¸', imageUrl || null, techSpecsJson,
+        '❄️', imageUrl || null, techSpecsJson,
         media.length > 0 ? JSON.stringify(media) : null
       ).run()
       newId = Number(res?.meta?.last_row_id || 0)
@@ -3741,7 +3742,7 @@ adminRouter.post('/api/admin/produit/add', adminAuth, async (c) => {
     name, brand, model, btu, price, price_install: 0, stock,
     surface_min, surface_max, energy_class, description,
     inverter, available,
-    image: 'â„ï¸',
+    image: '❄️',
     imageUrl,
     features,
     warranty: '1 an constructeur',
@@ -3910,7 +3911,7 @@ adminRouter.post('/api/admin/produits/import', adminAuth, async (c) => {
         champs: produit.champs,
         origines: produit.origines,
         alertes: doublonFichier
-          ? produit.alertes.concat('Ligne déjÃ  présente plus haut dans le fichier : elle sera ignorée.')
+          ? produit.alertes.concat('Ligne déjà présente plus haut dans le fichier : elle sera ignorée.')
           : produit.alertes,
         erreurs: produit.erreurs,
         doublon: existant ? { id: existant.id, nom: existant.nom } : null
@@ -3954,7 +3955,7 @@ adminRouter.post('/api/admin/produits/import', adminAuth, async (c) => {
     }
 
     if (existant && strategie === 'ignorer') {
-      ignorees.push({ ligne: produit.ligne, raison: `DéjÃ  au catalogue (fiche #${existant.id}), conservée telle quelle.` })
+      ignorees.push({ ligne: produit.ligne, raison: `Déjà au catalogue (fiche #${existant.id}), conservée telle quelle.` })
       continue
     }
 
@@ -3979,9 +3980,9 @@ adminRouter.post('/api/admin/produits/import', adminAuth, async (c) => {
     }
 
     // Création : les valeurs de repli ont ici toute leur place, c'est ce qui
-    // permet Ã  un simple libellé + prix de produire une fiche complète.
+    // permet à un simple libellé + prix de produire une fiche complète.
     const valeurs = COLONNES_IMPORT.map(([champ]) => valeurSqlImport(champ, produit.champs))
-    batch.push(stmtInsert.bind(...valeurs, 'â„ï¸', maintenant, maintenant))
+    batch.push(stmtInsert.bind(...valeurs, '❄️', maintenant, maintenant))
     crees++
   }
 
@@ -3991,7 +3992,7 @@ adminRouter.post('/api/admin/produits/import', adminAuth, async (c) => {
       mode: 'execution',
       message: erreurs.length > 0
         ? 'Aucune ligne exploitable : rien n\'a été enregistré.'
-        : 'Rien Ã  enregistrer : toutes les lignes étaient déjÃ  au catalogue.',
+        : 'Rien à enregistrer : toutes les lignes étaient déjà au catalogue.',
       crees: 0,
       misAJour: 0,
       ignorees,
@@ -4009,7 +4010,7 @@ adminRouter.post('/api/admin/produits/import', adminAuth, async (c) => {
   }
 
   // Un upsert ne peut pas être reflété par un products.push (il dupliquerait les
-  // fiches mises Ã  jour en mémoire) : on invalide le cache, refreshAdminCache
+  // fiches mises à jour en mémoire) : on invalide le cache, refreshAdminCache
   // rechargera depuis D1 au prochain GET.
   // Invalidation : gérée par le middleware content_version (src/index.tsx)
 
@@ -4030,7 +4031,7 @@ adminRouter.post('/api/admin/produits/import', adminAuth, async (c) => {
 
   const parts: string[] = []
   if (crees > 0) parts.push(`${crees} créé(s)`)
-  if (misAJour > 0) parts.push(`${misAJour} mis Ã  jour`)
+  if (misAJour > 0) parts.push(`${misAJour} mis à jour`)
   if (ignorees.length > 0) parts.push(`${ignorees.length} ignoré(s)`)
   if (erreurs.length > 0) parts.push(`${erreurs.length} en erreur`)
 
@@ -4044,7 +4045,7 @@ adminRouter.post('/api/admin/produits/import', adminAuth, async (c) => {
     ignorees,
     erreurs,
     avertissements: analyse.avertissements,
-    message: `Import terminé : ${parts.join(', ')}.` + (crees > 0 ? ' Pense Ã  ajouter les photos depuis chaque fiche produit.' : '')
+    message: `Import terminé : ${parts.join(', ')}.` + (crees > 0 ? ' Pense à ajouter les photos depuis chaque fiche produit.' : '')
   })
 })
 
@@ -4746,10 +4747,10 @@ adminRouter.get('/api/devis/:rdvId', adminAuth, (c) => {
       </style>
     </head><body>
       <div class="header">
-        <div class="title">â„ï¸ MAASGA - Devis Technique</div>
+        <div class="title">❄️ MAASGA - Devis Technique</div>
         <div class="subtitle">Froid & Climatisation · Ouagadougou, Burkina Faso</div>
       </div>
-      <h2>Devis NÂ° DEV-${rdvId.toString().padStart(4,'0')}-${new Date().getFullYear()}</h2>
+      <h2>Devis N° DEV-${rdvId.toString().padStart(4,'0')}-${new Date().getFullYear()}</h2>
       <p><strong>Date :</strong> ${new Date().toLocaleDateString('fr-FR')}</p>
       <p><strong>Client :</strong> ${escapeHtml(rdv.name || '')}</p>
       <p><strong>Téléphone :</strong> ${escapeHtml(rdv.phone || '')}</p>
@@ -4761,12 +4762,12 @@ adminRouter.get('/api/devis/:rdvId', adminAuth, (c) => {
         <tbody>
           <tr><td>Visite technique sur site</td><td>Dimensionnement et conseil</td><td>GRATUIT</td></tr>
           <tr><td>Climatiseur recommandé</td><td>À définir après visite technique</td><td>Sur devis</td></tr>
-          <tr><td>Installation professionnelle</td><td>Main d'Å“uvre + accessoires</td><td>Sur devis</td></tr>
+          <tr><td>Installation professionnelle</td><td>Main d'œuvre + accessoires</td><td>Sur devis</td></tr>
           <tr><td>Mise en service + test</td><td>Vérification complète</td><td>Inclus</td></tr>
         </tbody>
       </table>
       <div class="notice">
-        âš ï¸ Ce devis est indicatif. Le montant définitif sera déterminé après la visite technique sur site. Aucun paiement n'est requis avant Visite technique gratuite et accord du client.
+        ⚠️ Ce devis est indicatif. Le montant définitif sera déterminé après la visite technique sur site. Aucun paiement n'est requis avant Visite technique gratuite et accord du client.
       </div>
       <div class="footer">
         MAASGA - Froid & Climatisation | maasgabf@gmail.com | +226 55 99 64 18<br/>
@@ -4785,7 +4786,7 @@ adminRouter.get('/api/products', async (c) => {
   const available = c.req.query('available')
   const brand = c.req.query('brand')
   
-  // Mode hybride: essayer D1 d'abord, fallback Ã  la mémoire
+  // Mode hybride: essayer D1 d'abord, fallback à la mémoire
   let list = [...products]
   const db = c.env.DB
   
@@ -4960,7 +4961,7 @@ adminRouter.post('/api/admin/create-order', adminAuth, async (c) => {
   }
   if (!newOrderId) newOrderId = orders.length > 0 ? Math.max(...orders.map(o => o.id)) + 1 : 1
 
-  // Mettre Ã  jour le statut du RDV en mémoire (si présent dans cet isolate)
+  // Mettre à jour le statut du RDV en mémoire (si présent dans cet isolate)
   if (cachedAppointment) cachedAppointment.status = 'confirmed'
 
   const newOrder = {
@@ -4980,7 +4981,7 @@ adminRouter.post('/api/admin/create-order', adminAuth, async (c) => {
   return c.json({
     success: true,
     order_id: newOrder.id,
-    message: `âœ… Commande #${newOrder.id} créée avec succès. Statut du RDV mis Ã  jour.`
+    message: `✅ Commande #${newOrder.id} créée avec succès. Statut du RDV mis à jour.`
   })
 })
 
@@ -5033,7 +5034,7 @@ adminRouter.post('/api/admin/reset-db', adminAuth, async (c) => {
   }
 
   // Ré-authentification : action irréversible qui vide produits, clients et
-  // commandes. Un cookie admin volé ne doit pas suffire Ã  détruire la base.
+  // commandes. Un cookie admin volé ne doit pas suffire à détruire la base.
   const resetRl = await rateLimitD1(db, `admin-reset-db:${ip}`, 3, 60 * 60 * 1000)
   if (!resetRl.allowed) {
     logSecurityEvent(db, { event: 'admin_reset_db_rate_limit', severity: 'critical', ip, details: `Réinitialisation limitée pour ${ip}` })
@@ -5075,7 +5076,7 @@ adminRouter.post('/api/admin/reset-db', adminAuth, async (c) => {
 
     return c.json({
       success: true, 
-      message: 'âœ… Base de données complètement réinitialisée (D1 + mémoire + sqlite_sequence)'
+      message: '✅ Base de données complètement réinitialisée (D1 + mémoire + sqlite_sequence)'
     })
   } catch (error) {
     return c.json({ 
@@ -5108,7 +5109,7 @@ adminRouter.post('/api/admin/client/add', adminAuth, async (c) => {
   const quartier = sanitizeText(rawQuartier, 120)
 
   // L'identifiant vient de D1 (AUTOINCREMENT), pas d'un Math.max sur le cache
-  // mémoire : ce cache est partiel et par isolate, donc il produisait des id déjÃ 
+  // mémoire : ce cache est partiel et par isolate, donc il produisait des id déjà
   // pris en base et le client ajouté restait introuvable depuis les autres écrans.
   const db = c.env.DB
   const createdAt = new Date().toISOString().split('T')[0]
@@ -5121,7 +5122,7 @@ adminRouter.post('/api/admin/client/add', adminAuth, async (c) => {
       `).bind(name, email, phone, quartier, 'pending', createdAt).run()
       newId = Number(res?.meta?.last_row_id || 0)
     } catch (error) {
-      // Ne plus avaler l'erreur : l'admin voyait Â« succès Â» et le client
+      // Ne plus avaler l'erreur : l'admin voyait « succès » et le client
       // n'existait qu'en mémoire, jusqu'au recyclage de l'isolate.
       console.error('Erreur D1 client add:', error)
       return c.redirect('/admin/clients?error=' + encodeURIComponent("Enregistrement impossible (base de données)"))
@@ -5164,7 +5165,7 @@ adminRouter.post('/api/admin/client/update', adminAuth, async (c) => {
   const quartier = sanitizeText(rawQuartier, 120)
 
   // D1 fait référence, pas le cache mémoire : celui-ci ne contient qu'une partie
-  // des clients selon l'isolate, donc un findIndex Ã  -1 refusait des modifications
+  // des clients selon l'isolate, donc un findIndex à -1 refusait des modifications
   // de clients qui existent bel et bien en base.
   const db = c.env.DB
   if (db) {
@@ -5253,7 +5254,7 @@ adminRouter.post('/api/admin/client/delete', adminAuth, async (c) => {
           await db.prepare('DELETE FROM maintenance_contracts WHERE client_phone = ?').bind(clientPhone).run()
         }
         await db.prepare('DELETE FROM sav_tickets WHERE client_phone = ?').bind(clientPhone).run()
-        // Pas de table payments Ã  anonymiser
+        // Pas de table payments à anonymiser
       }
 
       // 3. Supprimer le client lui-même
@@ -5544,7 +5545,7 @@ const handleCommandeStatus = async (c: any) => {
       // Ne plus avaler l'erreur : un statut refusé par la contrainte CHECK
       // renvoyait quand même un succès, et le cache mémoire divergeait de la base.
       console.error('Erreur D1 commande update:', error)
-      return c.json({ error: 'Mise Ã  jour impossible (base de données)' }, 500)
+      return c.json({ error: 'Mise à jour impossible (base de données)' }, 500)
     }
     // Le cache mémoire n'est aligné qu'après une écriture D1 réussie
     if (order) order.status = status as any
@@ -5563,7 +5564,7 @@ const handleCommandeStatus = async (c: any) => {
           const endDate = new Date(twelveMonths)
           endDate.setMonth(endDate.getMonth() + 1)
 
-          // Vérifier si un SAV gratuit existe déjÃ  pour cette commande
+          // Vérifier si un SAV gratuit existe déjà pour cette commande
           const existingSav = await db.prepare("SELECT id FROM maintenance_contracts WHERE order_id = ? AND plan_type = 'sav_gratuit'").bind(id).first()
           if (!existingSav) {
             await db.prepare(
@@ -5601,10 +5602,10 @@ const handleCommandeStatus = async (c: any) => {
 
     // Notification WhatsApp client selon le statut
     const STATUS_CLIENT_MSG: Record<string, string> = {
-      contacte:     `Bonjour, c'est l'équipe MAASGA ! Nous avons bien reçu votre commande #${id} et nous vous contactons pour finaliser les détails. Répondez Ã  ce message ou appelez le +226 55 99 64 18.`,
+      contacte:     `Bonjour, c'est l'équipe MAASGA ! Nous avons bien reçu votre commande #${id} et nous vous contactons pour finaliser les détails. Répondez à ce message ou appelez le +226 55 99 64 18.`,
       confirme:     `Votre commande MAASGA #${id} est confirmée ! Nous préparons votre livraison et installation. Nous vous tiendrons informé(e).`,
       en_livraison: `Bonne nouvelle ! Votre commande MAASGA #${id} est en cours de livraison. Notre équipe vous contactera pour convenir de l'heure d'installation.`,
-      livre:        `ðŸŽ‰ Votre climatiseur (commande #${id}) a été livré et installé avec succès. Merci de votre confiance chez MAASGA ! Votre SAV gratuit est activé.`,
+      livre:        `🎉 Votre climatiseur (commande #${id}) a été livré et installé avec succès. Merci de votre confiance chez MAASGA ! Votre SAV gratuit est activé.`,
       annule:       `Votre commande MAASGA #${id} a été annulée. Contactez-nous au +226 55 99 64 18 pour plus d'informations.`,
     }
     const clientMsg = STATUS_CLIENT_MSG[status]
@@ -5617,7 +5618,7 @@ const handleCommandeStatus = async (c: any) => {
       } catch(e) { console.error('Notification client order error:', e) }
     }
   } else if (order) {
-    // Pas de D1 (dev sans binding) : on ne met Ã  jour que le cache mémoire
+    // Pas de D1 (dev sans binding) : on ne met à jour que le cache mémoire
     order.status = status as any
   }
 

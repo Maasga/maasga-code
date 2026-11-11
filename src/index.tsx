@@ -1,5 +1,6 @@
 // Mobile API endpoints updated 2026-09-12
 import { Hono } from 'hono'
+import { asset } from './generated/asset-manifest'
 import { cors } from 'hono/cors'
 import { serveStatic } from 'hono/cloudflare-workers'
 import { setCookie, getCookie, deleteCookie } from 'hono/cookie'
@@ -25,7 +26,7 @@ import { rateLimit } from './utils/security'
 
 const app = new Hono<HonoEnv>()
 
-// SITE_URL importé depuis src/types.ts — modifier lÃ -bas quand le domaine change.
+// SITE_URL importé depuis src/types.ts — modifier là-bas quand le domaine change.
 
 app.use('/api/*', cors({
   origin: (origin) => {
@@ -328,7 +329,7 @@ app.onError((err, c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="robots" content="noindex,nofollow" />
         <title>Erreur - MAASGA</title>
-        <link rel="stylesheet" href="/static/tailwind.css" />
+        <link rel="stylesheet" href={asset("/static/tailwind.css")} />
       </head>
       <body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
         <div class="text-center max-w-xl">
@@ -356,7 +357,7 @@ app.notFound((c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="robots" content="noindex,nofollow" />
         <title>Page non trouvée - MAASGA</title>
-        <link rel="stylesheet" href="/static/tailwind.css" />
+        <link rel="stylesheet" href={asset("/static/tailwind.css")} />
       </head>
       <body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
         <div class="text-center max-w-md">

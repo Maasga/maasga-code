@@ -1,4 +1,5 @@
 // Page admin : Gestion des bannieres du carrousel et des marques de l'accueil
+import { asset } from '../generated/asset-manifest'
 // Accessible via GET /admin/banners (adminAuth)
 // CRUD via POST /api/admin/banners/* et /api/admin/brands/*
 
@@ -31,9 +32,9 @@ export const AdminBannersPage = ({
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>Bannières &amp; Marques — MAASGA Admin</title>
-      <link rel="stylesheet" href="/static/tailwind.css" />
-      <link rel="stylesheet" href="/static/admin-tokens.css" />
-      <link rel="stylesheet" href="/static/style.css" />
+      <link rel="stylesheet" href={asset("/static/tailwind.css")} />
+      <link rel="stylesheet" href={asset("/static/admin-tokens.css")} />
+      <link rel="stylesheet" href={asset("/static/style.css")} />
       <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" />
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
       <style dangerouslySetInnerHTML={{ __html: `
