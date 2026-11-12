@@ -35,6 +35,18 @@ import {
   getProductById
 } from '../../db'
 import { sendTelegramMessage } from '../../utils/notifications'
+import { timingSafeEqualStr } from '../../utils/security'
+
+// Secret du webhook Telegram : TELEGRAM_WEBHOOK_SECRET si défini, sinon dérivé
+// (HMAC-SHA256) du bot token — aucun nouveau secret à configurer.
+// ⚠️ Après déploiement, rappeler la route de setup du webhook une fois.
+export async function telegramWebhookSecret(env: any): Promise<string> {
+  if (env.TELEGRAM_WEBHOOK_SECRET) return String(env.TELEGRAM_WEBHOOK_SECRET)
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(String(env.TELEGRAM_BOT_TOKEN || '')),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode('maasga-telegram-webhook'))
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 64)
+}
 
 export const telegramRouter = new Hono<HonoEnv>()
 
@@ -61,7 +73,8 @@ telegramRouter.get('/api/telegram/setup', adminAuth, async (c) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         url: webhookUrl,
-        allowed_updates: ['message', 'callback_query']
+        allowed_updates: ['message', 'callback_query'],
+        secret_token: await telegramWebhookSecret(env)
       })
     })
     const setData = await setRes.json() as any
@@ -118,6 +131,12 @@ telegramRouter.post('/api/telegram/webhook', async (c) => {
   const env = c.env
   if (!env.TELEGRAM_BOT_TOKEN) {
     return c.json({ ok: false, error: 'TELEGRAM_BOT_TOKEN not configured' }, 500)
+  }
+
+  // SÉCURITÉ : seul Telegram connaît le secret_token enregistré via setWebhook
+  const headerSecret = c.req.header('X-Telegram-Bot-Api-Secret-Token') || ''
+  if (!timingSafeEqualStr(headerSecret, await telegramWebhookSecret(env))) {
+    return c.json({ ok: false }, 401)
   }
 
   let update: any

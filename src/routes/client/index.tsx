@@ -26,6 +26,8 @@ import {
 } from '../../services/session.service'
 import {
   rateLimit,
+  rateLimitD1,
+  timingSafeEqualStr,
   getAdminSecret,
   signToken,
   verifyToken,
@@ -414,6 +416,17 @@ async function ensureResetCodesTable(db: any) {
   } catch(_) {}
 }
 
+// Valeur de `code` d'un token émis après vérification réussie du code (jamais 8 chiffres)
+const RESET_VERIFIED_MARKER = '__verified__'
+
+async function invalidateResetToken(db: any, token: string) {
+  if (db) {
+    try { await db.prepare('UPDATE password_reset_codes SET used = 1 WHERE token = ?').bind(token).run() } catch (_) {}
+  }
+  const mem = clientResetCodes.get(token)
+  if (mem) mem.used = true
+}
+
 // Page: Demander un reset
 clientRouter.get('/espace-client/reset-password', (c) => {
   const error = c.req.query('error') || ''
@@ -684,16 +697,40 @@ clientRouter.post('/api/client/verify-reset-code', async (c) => {
     entry = clientResetCodes.get(token)
   }
   
-  if (!entry || entry.used || Date.now() - entry.createdAt > CLIENT_RESET_CODE_MAX_AGE) {
+  if (!entry || entry.used || entry.code === RESET_VERIFIED_MARKER || Date.now() - entry.createdAt > CLIENT_RESET_CODE_MAX_AGE) {
     return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Code expiré ou invalide. Recommencez.'))
   }
 
-  if (entry.code !== code) {
+  // Anti brute-force : 5 essais par token, 20 par IP (persistés en D1)
+  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
+  const tokRl = await rateLimitD1(db, `reset-verify:${token}`, 5, CLIENT_RESET_CODE_MAX_AGE)
+  const ipRl = await rateLimitD1(db, `reset-verify-ip:${ip}`, 20, CLIENT_RESET_CODE_MAX_AGE)
+  if (!tokRl.allowed || !ipRl.allowed) {
+    await invalidateResetToken(db, token)
+    return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Trop de tentatives. Recommencez.'))
+  }
+
+  if (!timingSafeEqualStr(entry.code, code)) {
     return c.redirect('/espace-client/reset-password?step=code&token=' + token + '&error=' + encodeURIComponent('Code incorrect.'))
   }
 
-  // Code valid — proceed to new password step
-  return c.redirect('/espace-client/reset-password?step=newpwd&token=' + token)
+  // Code valide : on invalide le token initial (qui a fuité dans l'URL) et on émet
+  // un nouveau token marqué « vérifié », seul accepté par /api/client/reset-password.
+  await invalidateResetToken(db, token)
+  const vBytes = new Uint8Array(16)
+  crypto.getRandomValues(vBytes)
+  const verifiedToken = Array.from(vBytes).map(b => b.toString(16).padStart(2, '0')).join('')
+  if (db) {
+    try {
+      await db.prepare('INSERT OR REPLACE INTO password_reset_codes (token, code, phone, email, created_at, used) VALUES (?, ?, ?, ?, ?, 0)')
+        .bind(verifiedToken, RESET_VERIFIED_MARKER, entry.phone, entry.email, entry.createdAt).run()
+    } catch (e) {
+      console.error('D1 verified token storage failed, using memory fallback:', e)
+    }
+  }
+  clientResetCodes.set(verifiedToken, { code: RESET_VERIFIED_MARKER, phone: entry.phone, email: entry.email, createdAt: entry.createdAt, used: false })
+
+  return c.redirect('/espace-client/reset-password?step=newpwd&token=' + verifiedToken)
 })
 
 // Step 3 backend: Set new password (works for both email and phone methods)
@@ -720,7 +757,8 @@ clientRouter.post('/api/client/reset-password', async (c) => {
     entry = clientResetCodes.get(token)
   }
 
-  if (!entry || entry.used || Date.now() - entry.createdAt > CLIENT_RESET_CODE_MAX_AGE) {
+  // SÉCURITÉ : seul un token émis APRÈS vérification du code est accepté
+  if (!entry || entry.used || entry.code !== RESET_VERIFIED_MARKER || Date.now() - entry.createdAt > CLIENT_RESET_CODE_MAX_AGE) {
     return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Session expirée. Recommencez.'))
   }
 

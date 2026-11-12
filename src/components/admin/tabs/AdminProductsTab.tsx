@@ -101,6 +101,18 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
             <button onclick={`filterMediatheque('${b}')`} data-brand-filter={b} class="brand-filter-btn text-xs px-2.5 py-1 rounded-lg font-semibold" style="background:rgba(148,163,184,0.08); color:#94a3b8;">{b}</button>
           ))}
         </div>
+        {/* Barre de sélection multiple */}
+        <div id="mediatheque-selection-bar" class="hidden flex items-center gap-3 mb-3 px-1">
+          <span id="mediatheque-selection-count" class="text-xs font-semibold" style="color:#d8b4fe;"></span>
+          <button type="button" id="btn-affecter-selection"
+            onclick="openAssignMedia(null)"
+            class="text-xs px-3 py-1.5 rounded-lg font-semibold"
+            style="background:rgba(168,85,247,0.25); color:#d8b4fe; border:1px solid rgba(168,85,247,0.4);">
+            <i class="fas fa-link mr-1"></i>Affecter la sélection
+          </button>
+          <button type="button" onclick="clearMediathequeSelection()"
+            class="text-xs text-gray-400 hover:text-gray-200 underline">Effacer</button>
+        </div>
         {/* Grille d'images */}
         <div id="mediatheque-grid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 max-h-64 overflow-y-auto"></div>
         <p id="mediatheque-empty" class="hidden text-center text-xs text-gray-500 py-6">Aucune image dans la médiathèque. Uploadez des images ci-dessus.</p>
@@ -114,10 +126,15 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
           <i class="fas fa-link text-purple-400"></i>
           Affecter l'image médiathèque
         </h3>
+        {/* Aperçu : image unique ou compteur multi */}
         <div class="mb-4 flex justify-center">
           <img id="assign-media-preview" src="" class="w-28 h-28 object-contain rounded-xl" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);" />
         </div>
+        <div id="assign-media-multi-preview" class="hidden mb-4">
+          <div id="assign-media-multi-grid" class="flex flex-wrap gap-1 justify-center max-h-24 overflow-y-auto"></div>
+        </div>
         <input type="hidden" id="assign-media-id" />
+        <input type="hidden" id="assign-media-ids" />
         <input type="hidden" id="assign-media-brand-name" />
 
         {/* Portée d'affectation */}
@@ -139,8 +156,8 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
 
         {/* Choix du produit si scope == single */}
         <div id="assign-product-wrapper" class="hidden mb-4">
-          <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Produit cible</label>
-          <select id="assign-product-select" class="w-full rounded-xl px-3 py-2 text-xs" style="background:var(--admin-card-bg); border:1px solid var(--admin-border); color:var(--admin-text-primary);">
+          <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Produit(s) cible(s) <span class="text-gray-500">(Ctrl+clic pour sélection multiple)</span></label>
+          <select id="assign-product-select" multiple size={5} class="w-full rounded-xl px-3 py-2 text-xs" style="background:var(--admin-card-bg); border:1px solid var(--admin-border); color:var(--admin-text-primary);">
             {products.map(p => <option value={String(p.id)}>{p.name} — {p.brand}</option>)}
           </select>
         </div>
@@ -149,7 +166,7 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
         <div class="mb-5">
           <label class="block text-xs font-semibold mb-2" style="color:var(--admin-text-muted);">Utiliser comme</label>
           <div class="flex gap-4">
-            <label class="flex items-center gap-2 cursor-pointer">
+            <label class="flex items-center gap-2 cursor-pointer" id="assign-target-main-label">
               <input type="radio" name="assign-target" value="main" checked class="accent-purple-500" />
               <span class="text-xs" style="color:var(--admin-text-primary);">Image principale</span>
             </label>
@@ -158,6 +175,7 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
               <span class="text-xs" style="color:var(--admin-text-primary);">Galerie photos</span>
             </label>
           </div>
+          <p id="assign-target-main-note" class="hidden text-xs mt-1" style="color:#f87171;">Image principale non disponible avec plusieurs images — galerie forcée.</p>
         </div>
 
         <div class="flex gap-3">
@@ -175,6 +193,7 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
       ${CLIENT_ESC_HELPER}
       // ===== MÉDIATHÈQUE CENTRALISÉE =====
       var _mediathequeFilter = '';
+      var _mediathequeSelection = {}; // map id (string) -> img object
 
       function toggleMediatheque() {
         var panel = document.getElementById('mediatheque-panel');
@@ -196,42 +215,101 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
         var grid = document.getElementById('mediatheque-grid');
         var empty = document.getElementById('mediatheque-empty');
         grid.innerHTML = '';
-        if (!images.length) { empty.classList.remove('hidden'); return; }
+        if (!images.length) { empty.classList.remove('hidden'); updateSelectionBar(); return; }
         empty.classList.add('hidden');
         images.forEach(function(img) {
+          var isSelected = !!_mediathequeSelection[String(img.id)];
           var div = document.createElement('div');
           div.className = 'relative group rounded-xl overflow-hidden cursor-pointer';
           div.style.cssText = 'aspect-ratio:1/1; background:#0a1628;';
+          if (isSelected) {
+            div.style.outline = '2.5px solid #a855f7';
+            div.style.outlineOffset = '2px';
+          }
+          div.setAttribute('data-media-id', String(img.id));
+
           var image = document.createElement('img');
           image.src = img.url;
           image.className = 'w-full h-full object-cover';
           image.title = (img.label || '') + (img.label && img.brand ? ' — ' : '') + (img.brand || '');
+
+          // Coche de sélection
+          var checkEl = document.createElement('div');
+          checkEl.className = 'absolute top-1 left-1 rounded-full flex items-center justify-center';
+          checkEl.style.cssText = 'width:18px;height:18px;background:' + (isSelected ? '#a855f7' : 'rgba(0,0,0,0.45)') + ';border:2px solid ' + (isSelected ? '#a855f7' : 'rgba(255,255,255,0.4)') + ';transition:background 0.15s;';
+          if (isSelected) {
+            checkEl.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polyline points="2,5 4.5,7.5 8,3" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+          }
+
           var overlay = document.createElement('div');
           overlay.className = 'absolute inset-0 flex flex-col items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity';
           overlay.style.cssText = 'background:rgba(0,0,0,0.65);';
+
           var badge = document.createElement('span');
           badge.className = 'text-xs font-bold px-2 py-0.5 rounded-full';
           badge.style.cssText = 'background:rgba(168,85,247,0.4); color:#d8b4fe;';
           badge.textContent = img.brand;
+
           var btnAssign = document.createElement('button');
           btnAssign.type = 'button';
           btnAssign.className = 'text-xs px-2.5 py-1 rounded-lg font-semibold';
           btnAssign.style.cssText = 'background:rgba(16,185,129,0.35); color:#34d399;';
           btnAssign.textContent = 'Affecter';
-          btnAssign.addEventListener('click', (function(i) { return function(e) { e.stopPropagation(); openAssignModal(i); }; })(img));
+          btnAssign.addEventListener('click', (function(i) { return function(e) { e.stopPropagation(); openAssignMedia([i]); }; })(img));
+
           var btnDel = document.createElement('button');
           btnDel.type = 'button';
           btnDel.className = 'text-xs px-2.5 py-1 rounded-lg font-semibold';
           btnDel.style.cssText = 'background:rgba(239,68,68,0.35); color:#f87171;';
           btnDel.textContent = 'Supprimer';
           btnDel.addEventListener('click', (function(i) { return function(e) { e.stopPropagation(); deleteFromMediatheque(i.id); }; })(img));
+
           overlay.appendChild(badge);
           overlay.appendChild(btnAssign);
           overlay.appendChild(btnDel);
           div.appendChild(image);
+          div.appendChild(checkEl);
           div.appendChild(overlay);
+
+          // Clic sur la vignette (hors boutons) = basculer sélection
+          div.addEventListener('click', (function(i) { return function() { toggleMediathequeSelect(i); }; })(img));
+
           grid.appendChild(div);
         });
+        updateSelectionBar();
+      }
+
+      function toggleMediathequeSelect(img) {
+        var key = String(img.id);
+        if (_mediathequeSelection[key]) {
+          delete _mediathequeSelection[key];
+        } else {
+          _mediathequeSelection[key] = img;
+        }
+        // Re-rendre pour mettre à jour les coches
+        loadMediatheque();
+      }
+
+      function clearMediathequeSelection() {
+        _mediathequeSelection = {};
+        updateSelectionBar();
+        loadMediatheque();
+      }
+
+      function updateSelectionBar() {
+        var bar = document.getElementById('mediatheque-selection-bar');
+        var countEl = document.getElementById('mediatheque-selection-count');
+        var n = Object.keys(_mediathequeSelection).length;
+        if (!bar) return;
+        if (n > 0) {
+          bar.classList.remove('hidden');
+          if (countEl) countEl.textContent = n + ' image' + (n > 1 ? 's' : '') + ' sélectionnée' + (n > 1 ? 's' : '');
+          var btn = document.getElementById('btn-affecter-selection');
+          if (btn) btn.textContent = '';
+          if (btn) btn.innerHTML = '<i class="fas fa-link" style="margin-right:4px"></i>Affecter la sélection (' + n + ')';
+        } else {
+          bar.classList.add('hidden');
+        }
       }
 
       function filterMediatheque(brand) {
@@ -289,7 +367,11 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
         fetch('/api/admin/media/brand/delete', { method: 'POST', body: fd })
           .then(function(r){ return r.json(); })
           .then(function(d) {
-            if (d.success) { showToast('Image supprimée.', 'success'); loadMediatheque(); }
+            if (d.success) {
+              delete _mediathequeSelection[String(id)];
+              showToast('Image supprimée.', 'success');
+              loadMediatheque();
+            }
             else showToast('Erreur : ' + (d.error || ''), 'error');
           }).catch(function() { showToast('Erreur réseau.', 'error'); });
       }
@@ -301,12 +383,71 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
         if (wrapper) wrapper.classList.toggle('hidden', scope !== 'single');
       }
 
-      function openAssignModal(img) {
-        document.getElementById('assign-media-preview').src = img.url;
-        document.getElementById('assign-media-id').value = String(img.id);
-        document.getElementById('assign-media-brand-name').value = img.brand || '';
-        document.getElementById('assign-brand-badge').textContent = img.brand ? (img.brand + ' ') : '';
-        
+      // openAssignMedia(imgs) : imgs = tableau d'images, ou null => utilise la sélection courante
+      // Rétrocompat : openAssignMedia([singleImg]) depuis bouton Affecter par vignette
+      function openAssignMedia(imgs) {
+        var images = imgs;
+        if (!images) {
+          images = Object.values(_mediathequeSelection);
+        }
+        if (!images || !images.length) return;
+
+        var isSingle = images.length === 1;
+
+        // Aperçu
+        var preview = document.getElementById('assign-media-preview');
+        var multiPreview = document.getElementById('assign-media-multi-preview');
+        var multiGrid = document.getElementById('assign-media-multi-grid');
+        if (isSingle) {
+          preview.src = images[0].url;
+          preview.classList.remove('hidden');
+          if (multiPreview) multiPreview.classList.add('hidden');
+        } else {
+          preview.src = '';
+          preview.classList.add('hidden');
+          if (multiPreview) multiPreview.classList.remove('hidden');
+          if (multiGrid) {
+            multiGrid.innerHTML = '';
+            images.forEach(function(img) {
+              var el = document.createElement('img');
+              el.src = img.url;
+              el.className = 'rounded-lg object-cover';
+              el.style.cssText = 'width:40px;height:40px;border:1px solid rgba(168,85,247,0.3);';
+              multiGrid.appendChild(el);
+            });
+            var lbl = document.createElement('span');
+            lbl.className = 'text-xs w-full text-center mt-1';
+            lbl.style.color = '#d8b4fe';
+            lbl.textContent = images.length + ' images sélectionnées';
+            multiGrid.appendChild(lbl);
+          }
+        }
+
+        // Champs cachés
+        document.getElementById('assign-media-id').value = isSingle ? String(images[0].id) : '';
+        document.getElementById('assign-media-ids').value = images.map(function(i){ return i.id; }).join(',');
+
+        // Marque (depuis la première image ; pour scope brand)
+        var brand = images[0].brand || '';
+        document.getElementById('assign-media-brand-name').value = brand;
+        document.getElementById('assign-brand-badge').textContent = brand ? (brand + ' ') : '';
+
+        // Radios target : désactiver "Image principale" si plusieurs images
+        var mainRadio = document.querySelector('input[name="assign-target"][value="main"]');
+        var galleryRadio = document.querySelector('input[name="assign-target"][value="gallery"]');
+        var mainLabel = document.getElementById('assign-target-main-label');
+        var mainNote = document.getElementById('assign-target-main-note');
+        if (!isSingle) {
+          if (mainRadio) mainRadio.disabled = true;
+          if (galleryRadio) galleryRadio.checked = true;
+          if (mainLabel) mainLabel.style.opacity = '0.4';
+          if (mainNote) mainNote.classList.remove('hidden');
+        } else {
+          if (mainRadio) { mainRadio.disabled = false; mainRadio.checked = true; }
+          if (mainLabel) mainLabel.style.opacity = '';
+          if (mainNote) mainNote.classList.add('hidden');
+        }
+
         var radBrand = document.querySelector('input[name="assign-scope"][value="brand"]');
         if (radBrand) radBrand.checked = true;
         toggleAssignScopeUI();
@@ -314,26 +455,47 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
         document.getElementById('assign-media-modal').classList.remove('hidden');
       }
 
+      // Alias rétrocompat : openAssignModal(img) appelle openAssignMedia([img])
+      function openAssignModal(img) {
+        openAssignMedia([img]);
+      }
+
       function confirmAssignMedia() {
+        var mediaIds = document.getElementById('assign-media-ids').value;
         var mediaId = document.getElementById('assign-media-id').value;
         var scopeEl = document.querySelector('input[name="assign-scope"]:checked');
         var scope = scopeEl ? scopeEl.value : 'brand';
-        var productId = document.getElementById('assign-product-select').value;
         var targetEl = document.querySelector('input[name="assign-target"]:checked');
-        var target = targetEl ? targetEl.value : 'main';
+        var target = targetEl ? targetEl.value : 'gallery';
 
         var fd = new FormData();
-        fd.append('media_id', mediaId);
+        // Envoyer media_ids (CSV) et media_id (rétrocompat) si une seule
+        if (mediaIds) fd.append('media_ids', mediaIds);
+        if (mediaId) fd.append('media_id', mediaId);
         fd.append('scope', scope);
-        fd.append('product_id', productId);
         fd.append('target', target);
+
+        if (scope === 'single') {
+          // Récupérer toutes les options sélectionnées du select multiple
+          var sel = document.getElementById('assign-product-select');
+          var selectedIds = [];
+          if (sel) {
+            for (var i = 0; i < sel.options.length; i++) {
+              if (sel.options[i].selected) selectedIds.push(sel.options[i].value);
+            }
+          }
+          if (!selectedIds.length) { showToast("Veuillez sélectionner au moins un produit.", "warning"); return; }
+          fd.append('product_ids', selectedIds.join(','));
+          fd.append('product_id', selectedIds[0]); // rétrocompat
+        }
 
         fetch('/api/admin/media/brand/assign', { method: 'POST', body: fd })
           .then(function(r){ return r.json(); })
           .then(function(d) {
             document.getElementById('assign-media-modal').classList.add('hidden');
             if (d.success) {
-              showToast(d.message || "Image affectée avec succès.", "success");
+              _mediathequeSelection = {};
+              showToast(d.message || "Image(s) affectée(s) avec succès.", "success");
               setTimeout(function(){ location.reload(); }, 1200);
             } else {
               showToast("Erreur : " + (d.error || "Échec de l'affectation"), "error");
@@ -2107,4 +2269,4 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
 // ============================================================
 // PAGE RDV
 // ============================================================
-
+
