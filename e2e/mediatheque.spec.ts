@@ -22,6 +22,7 @@ function d1(sql: string): any[] {
 
 const secret = readDevVar('ADMIN_SECRET')
 const LABEL = 'e2e-mediatheque'
+const TEST_URLS = ['/static/icon-192.png', '/static/icon-512.png', '/static/icon-192.png?b']
 
 test.describe('médiathèque — affectation vignette + annexes', () => {
   test.skip(!secret, 'ADMIN_SECRET absent de .dev.vars')
@@ -34,6 +35,20 @@ test.describe('médiathèque — affectation vignette + annexes', () => {
     test.setTimeout(240_000)
     try { epoch = String(parseInt(d1("SELECT value FROM admin_settings WHERE key='admin_token_epoch'")[0]?.value ?? '1', 10) || 1) } catch {}
     product = d1('SELECT id, name, imageUrl, image_url, media_urls FROM products ORDER BY id LIMIT 1')[0] ?? null
+    // Un run interrompu (afterAll non exécuté) laisse les images de test sur le produit :
+    // on les retire d'abord pour que l'état de départ — et celui restauré à la fin — soit propre.
+    if (product) {
+      const isTestUrl = (u: any) => TEST_URLS.includes(String(u ?? ''))
+      let gallery: any[] = []
+      try { gallery = JSON.parse(product.media_urls || '[]') } catch {}
+      if (!Array.isArray(gallery)) gallery = []
+      const cleaned = gallery.filter((g: any) => !isTestUrl(typeof g === 'string' ? g : g?.url))
+      const dirty = cleaned.length !== gallery.length || isTestUrl(product.imageUrl) || isTestUrl(product.image_url)
+      if (isTestUrl(product.imageUrl)) product.imageUrl = ''
+      if (isTestUrl(product.image_url)) product.image_url = ''
+      if (cleaned.length !== gallery.length) product.media_urls = JSON.stringify(cleaned)
+      if (dirty) restoreProduct()
+    }
     d1(`DELETE FROM brand_media_library WHERE label LIKE '${LABEL}%'`)
     // Une seule ligne : la commande passe par le shell (cmd.exe sous Windows)
     d1(`INSERT INTO brand_media_library (brand, url, delete_url, label) VALUES ('E2E', '/static/icon-192.png', '', '${LABEL}-1'), ('E2E', '/static/icon-512.png', '', '${LABEL}-2'), ('E2E', '/static/icon-192.png?b', '', '${LABEL}-3')`)
@@ -42,11 +57,14 @@ test.describe('médiathèque — affectation vignette + annexes', () => {
   test.afterAll(async () => {
     test.setTimeout(240_000)
     d1(`DELETE FROM brand_media_library WHERE label LIKE '${LABEL}%'`)
-    if (product) {
-      const q = (v: any) => (v === null || v === undefined ? 'NULL' : `'${String(v).replace(/'/g, "''")}'`)
-      d1(`UPDATE products SET imageUrl = ${q(product.imageUrl)}, image_url = ${q(product.image_url)}, media_urls = ${q(product.media_urls)} WHERE id = ${product.id}`)
-    }
+    restoreProduct()
   })
+
+  function restoreProduct() {
+    if (!product) return
+    const q = (v: any) => (v === null || v === undefined ? 'NULL' : `'${String(v).replace(/'/g, "''")}'`)
+    d1(`UPDATE products SET imageUrl = ${q(product.imageUrl)}, image_url = ${q(product.image_url)}, media_urls = ${q(product.media_urls)} WHERE id = ${product.id}`)
+  }
 
   test.beforeEach(async ({ context, baseURL }) => {
     const payload = `admin_${epoch}_${Date.now()}`
