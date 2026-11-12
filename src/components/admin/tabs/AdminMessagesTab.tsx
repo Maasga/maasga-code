@@ -29,7 +29,7 @@ export const AdminMessagesPage = ({ messages = [], unreadCount = 0, success, del
       {/* Header */}
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-bold flex items-center gap-3" style="color:var(--admin-text-primary)">
+          <h1 class="text-2xl font-bold flex items-center gap-3 text-admin-fg">
             <i class="fas fa-envelope text-blue-400"></i>
             Messages de contact
             {unreadCount > 0 && (
@@ -42,19 +42,19 @@ export const AdminMessagesPage = ({ messages = [], unreadCount = 0, success, del
 
       {/* Alerts */}
       {success && (
-        <div class="p-4 rounded-xl text-sm" style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); color:#34d399;">
+        <div class="p-4 rounded-xl text-sm" style="background:rgba(var(--rgb-green),0.1); border:1px solid rgba(var(--rgb-green),0.3); color:var(--fg-on-dark-success);">
           <i class="fas fa-check-circle mr-2"></i>Action effectuée avec succès.
         </div>
       )}
       {deleted && (
-        <div class="p-4 rounded-xl text-sm" style="background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.3); color:#fbbf24;">
+        <div class="p-4 rounded-xl text-sm" style="background:rgba(var(--rgb-amber),0.1); border:1px solid rgba(var(--rgb-amber),0.3); color:var(--fg-on-dark-warning);">
           <i class="fas fa-trash mr-2"></i>Message supprimé.
         </div>
       )}
 
       {/* Messages list */}
       {messages.length === 0 ? (
-        <div class="text-center py-20 rounded-2xl" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
+        <div class="text-center py-20 rounded-2xl bg-admin-card border border-admin-line">
           <i class="fas fa-inbox text-5xl text-gray-600 mb-4"></i>
           <p class="text-gray-400 text-lg">Aucun message reçu</p>
           <p class="text-gray-500 text-sm mt-2">Les messages envoyés via le formulaire de contact apparaîtront ici.</p>
@@ -87,55 +87,55 @@ export const AdminMessagesPage = ({ messages = [], unreadCount = 0, success, del
                   </div>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
-                  <span class="text-xs" style="color:var(--admin-text-muted)">
+                  <span class="text-xs text-admin-muted">
                     <i class="fas fa-clock mr-1"></i>
                     {m.created_at ? new Date(m.created_at + 'Z').toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                   </span>
                   {m.is_read ? (
                     <span class="text-xs px-2 py-0.5 rounded-full" style="background:rgba(100,116,139,0.15); color:#94a3b8;">Lu</span>
                   ) : (
-                    <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:rgba(59,130,246,0.15); color:#60a5fa;">Nouveau</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full font-medium text-fg-on-dark-info" style="background:rgba(var(--rgb-blue),0.15);">Nouveau</span>
                   )}
                 </div>
               </div>
 
               {/* Message body */}
-              <div class="rounded-lg p-4 mb-3" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">
+              <div class="rounded-lg p-4 mb-3 bg-admin-elevated border border-admin-line">
                 <p style="color:var(--admin-text-primary);" class="text-sm whitespace-pre-wrap leading-relaxed">{m.message}</p>
               </div>
 
               {/* Actions */}
               <div class="flex flex-wrap items-center gap-2">
                 {!m.is_read ? (
-                  <form method="post" action={`/api/admin/messages/${m.id}/read`} style="display:inline;">
-                    <button type="submit" class="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors" style="background:rgba(16,185,129,0.1); color:#34d399; border:1px solid rgba(16,185,129,0.2);">
+                  <form method="post" action={`/api/admin/messages/${m.id}/read`} class="inline">
+                    <button type="submit" class="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors text-fg-on-dark-success" style="background:rgba(var(--rgb-green),0.1); border:1px solid rgba(var(--rgb-green),0.2);">
                       <i class="fas fa-check mr-1"></i>Marquer comme lu
                     </button>
                   </form>
                 ) : (
-                  <form method="post" action={`/api/admin/messages/${m.id}/unread`} style="display:inline;">
-                    <button type="submit" class="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors" style="background:rgba(59,130,246,0.1); color:#60a5fa; border:1px solid rgba(59,130,246,0.2);">
+                  <form method="post" action={`/api/admin/messages/${m.id}/unread`} class="inline">
+                    <button type="submit" class="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors text-fg-on-dark-info" style="background:rgba(var(--rgb-blue),0.1); border:1px solid rgba(var(--rgb-blue),0.2);">
                       <i class="fas fa-envelope mr-1"></i>Marquer non lu
                     </button>
                   </form>
                 )}
                 {m.phone && (
-                  <a href={`tel:${m.phone}`} class="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors" style="background:rgba(16,185,129,0.1); color:#34d399; border:1px solid rgba(16,185,129,0.2);">
+                  <a href={`tel:${m.phone}`} class="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors text-fg-on-dark-success" style="background:rgba(var(--rgb-green),0.1); border:1px solid rgba(var(--rgb-green),0.2);">
                     <i class="fas fa-phone mr-1"></i>Appeler
                   </a>
                 )}
                 {m.email && (
-                  <a href={`mailto:${m.email}`} class="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors" style="background:var(--admin-accent-light); color:var(--admin-accent); border:1px solid var(--admin-border);">
+                  <a href={`mailto:${m.email}`} class="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors text-admin-accent border border-admin-line" style="background:var(--admin-accent-light);">
                     <i class="fas fa-envelope mr-1"></i>Email
                   </a>
                 )}
                 {m.phone && (
-                  <a href={`https://wa.me/${m.phone.replace(/[^0-9+]/g, '')}`} target="_blank" rel="noopener noreferrer" class="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors" style="background:rgba(37,211,102,0.1); color:#25d366; border:1px solid rgba(37,211,102,0.2);">
+                  <a href={`https://wa.me/${m.phone.replace(/[^0-9+]/g, '')}`} target="_blank" rel="noopener noreferrer" class="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors text-fg-whatsapp" style="background:rgba(var(--rgb-whatsapp),0.1); border:1px solid rgba(var(--rgb-whatsapp),0.2);">
                     <i class="fab fa-whatsapp mr-1"></i>WhatsApp
                   </a>
                 )}
-                <form method="post" action={`/api/admin/messages/${m.id}/delete`} style="display:inline;" onsubmit="return confirm('Supprimer ce message ?')">
-                  <button type="submit" class="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors" style="background:rgba(239,68,68,0.1); color:#f87171; border:1px solid rgba(239,68,68,0.2);">
+                <form method="post" action={`/api/admin/messages/${m.id}/delete`} class="inline" onsubmit="return confirm('Supprimer ce message ?')">
+                  <button type="submit" class="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors text-fg-on-dark-danger" style="background:rgba(var(--rgb-red),0.1); border:1px solid rgba(var(--rgb-red),0.2);">
                     <i class="fas fa-trash mr-1"></i>Supprimer
                   </button>
                 </form>

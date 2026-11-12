@@ -103,26 +103,26 @@ export const AdminBannersPage = ({
     <body class="admin-ui min-h-screen" style="background:var(--admin-bg);">
       <div class="pw">
 
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.75rem;">
+        <div class="flex items-start justify-between mb-[1.75rem]">
           <div>
-            <h1 style="font-size:1.6rem;font-weight:800;color:var(--admin-text-primary);display:flex;align-items:center;gap:.6rem;margin:0;">
-              <i class="fas fa-images" style="color:var(--admin-accent);"></i>
+            <h1 class="text-[1.6rem] font-extrabold text-admin-fg flex items-center m-0" style="gap:.6rem;">
+              <i class="fas fa-images text-admin-accent"></i>
               Bannières &amp; Marques
             </h1>
-            <p style="font-size:.8rem;color:var(--admin-text-muted);margin-top:.35rem;">Gérez le carrousel de l'accueil et la barre des marques partenaires</p>
+            <p class="text-admin-muted" style="font-size:.8rem; margin-top:.35rem;">Gérez le carrousel de l'accueil et la barre des marques partenaires</p>
           </div>
-          <a href="/admin" style="display:flex;align-items:center;gap:.35rem;font-size:.82rem;color:var(--admin-accent);text-decoration:none;margin-top:.35rem;">
+          <a href="/admin" class="flex items-center text-admin-accent no-underline" style="gap:.35rem; font-size:.82rem; margin-top:.35rem;">
             <i class="fas fa-arrow-left"></i> Admin
           </a>
         </div>
 
         {success && (
-          <div style="margin-bottom:1rem;padding:.75rem 1rem;border-radius:.875rem;font-size:.85rem;font-weight:500;background:var(--admin-success-light);border:1px solid rgba(5,150,105,.25);color:var(--admin-success);display:flex;align-items:center;gap:.5rem;">
+          <div class="mb-[1rem] font-medium flex items-center" style="padding:.75rem 1rem; border-radius:.875rem; font-size:.85rem; background:var(--admin-success-light); border:1px solid rgba(5,150,105,.25); color:var(--admin-success); gap:.5rem;">
             <i class="fas fa-check-circle"></i>{success}
           </div>
         )}
         {error && (
-          <div style="margin-bottom:1rem;padding:.75rem 1rem;border-radius:.875rem;font-size:.85rem;font-weight:500;background:var(--admin-danger-light);border:1px solid rgba(220,38,38,.25);color:var(--admin-danger);display:flex;align-items:center;gap:.5rem;">
+          <div class="mb-[1rem] font-medium flex items-center" style="padding:.75rem 1rem; border-radius:.875rem; font-size:.85rem; background:var(--admin-danger-light); border:1px solid rgba(220,38,38,.25); color:var(--admin-danger); gap:.5rem;">
             <i class="fas fa-exclamation-circle"></i>{error}
           </div>
         )}
@@ -141,10 +141,10 @@ export const AdminBannersPage = ({
           {banners.length === 0 ? (
             <div class="emp">
               <i class="fas fa-film"></i>
-              <p style="font-size:.85rem;margin:0;">Aucune bannière. Cliquez sur <strong>Ajouter</strong> pour créer la première.</p>
+              <p class="m-0" style="font-size:.85rem;">Aucune bannière. Cliquez sur <strong>Ajouter</strong> pour créer la première.</p>
             </div>
           ) : (
-            <div style="display:flex;flex-direction:column;gap:.75rem;">
+            <div class="flex flex-col" style="gap:.75rem;">
               {banners.map((b: any) => (
                 <div class="bc">
                   {b.image_url ? (
@@ -169,7 +169,7 @@ export const AdminBannersPage = ({
                       onclick={`openEditBanner(${b.id},'${jsA(b.title)}','${jsA(b.subtitle||'')}','${jsA(b.image_url)}','${jsA(b.target_page||'')}',${b.display_order},${b.is_active?1:0})`}>
                       <i class="fas fa-pen"></i>
                     </button>
-                    <form method="post" action={`/api/admin/banners/${b.id}/delete`} onsubmit="return confirm('Supprimer cette banniere ?')" style="margin:0;">
+                    <form method="post" action={`/api/admin/banners/${b.id}/delete`} onsubmit="return confirm('Supprimer cette banniere ?')" class="m-0">
                       <button type="submit" class="bico bico-d" title="Supprimer"><i class="fas fa-trash"></i></button>
                     </form>
                   </div>
@@ -190,14 +190,14 @@ export const AdminBannersPage = ({
               <i class="fas fa-plus mr-1"></i> Ajouter
             </button>
           </div>
-          <div style="display:flex;align-items:center;gap:.5rem;padding:.6rem .875rem;border-radius:.75rem;margin-bottom:1rem;font-size:.75rem;color:var(--admin-accent);background:var(--admin-accent-light);border:1px solid rgba(3,105,161,.15);">
+          <div class="flex items-center mb-[1rem] text-admin-accent" style="gap:.5rem; padding:.6rem .875rem; border-radius:.75rem; font-size:.75rem; background:var(--admin-accent-light); border:1px solid rgba(3,105,161,.15);">
             <i class="fas fa-info-circle"></i>
             La cle asset = <code style="background:rgba(3,105,161,.12);padding:.1rem .35rem;border-radius:.3rem;">assets/brands/&lt;cle&gt;.png</code> dans Flutter. L'URL logo est prioritaire.
           </div>
           {brands.length === 0 ? (
-            <div class="emp"><i class="fas fa-tags"></i><p style="font-size:.85rem;margin:0;">Aucune marque configuree.</p></div>
+            <div class="emp"><i class="fas fa-tags"></i><p class="m-0" style="font-size:.85rem;">Aucune marque configuree.</p></div>
           ) : (
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.75rem;">
+            <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:.75rem;">
               {brands.map((br: any) => (
                 <div class="brc">
                   <div class="blw">
@@ -206,20 +206,20 @@ export const AdminBannersPage = ({
                     ) : null}
                     <span class="bi" style={br.logo_url ? 'display:none;' : ''}>{(br.name||'?').substring(0,2)}</span>
                   </div>
-                  <div style="flex:1;min-width:0;">
-                    <div style="font-weight:700;font-size:.85rem;color:var(--admin-text-primary);">{br.name}</div>
-                    <div style="font-size:.7rem;color:var(--admin-text-muted);margin-top:.15rem;">{br.asset_key ? `asset: ${br.asset_key}` : 'Pas de cle asset'}</div>
-                    <div style="margin-top:.3rem;display:flex;gap:.4rem;flex-wrap:wrap;">
+                  <div class="flex-1" style="min-width:0;">
+                    <div class="font-bold text-admin-fg" style="font-size:.85rem;">{br.name}</div>
+                    <div class="text-admin-muted" style="font-size:.7rem; margin-top:.15rem;">{br.asset_key ? `asset: ${br.asset_key}` : 'Pas de cle asset'}</div>
+                    <div class="flex flex-wrap" style="margin-top:.3rem; gap:.4rem;">
                       <span class={br.is_active ? 'bdg bdg-a' : 'bdg bdg-i'}>{br.is_active ? 'Visible' : 'Masquee'}</span>
                       <span class="bdg bdg-o">#{br.display_order}</span>
                     </div>
                   </div>
-                  <div style="display:flex;gap:.4rem;margin-left:auto;flex-shrink:0;">
+                  <div class="flex shrink-0" style="gap:.4rem; margin-left:auto;">
                     <button class="bico bico-e" title="Modifier"
                       onclick={`openEditBrand(${br.id},'${jsA(br.name)}','${jsA(br.logo_url||'')}','${jsA(br.asset_key||'')}',${br.display_order},${br.is_active?1:0})`}>
                       <i class="fas fa-pen"></i>
                     </button>
-                    <form method="post" action={`/api/admin/brands/${br.id}/delete`} onsubmit="return confirm('Supprimer cette marque ?')" style="margin:0;">
+                    <form method="post" action={`/api/admin/brands/${br.id}/delete`} onsubmit="return confirm('Supprimer cette marque ?')" class="m-0">
                       <button type="submit" class="bico bico-d" title="Supprimer"><i class="fas fa-trash"></i></button>
                     </form>
                   </div>
@@ -234,7 +234,7 @@ export const AdminBannersPage = ({
       {/* ═══ MODALE AJOUTER BANNIÈRE ═══ */}
       <div id="modal-add-banner" class="modal" onclick="if(event.target===this)this.classList.remove('open')">
         <div class="mbox">
-          <div class="mt"><i class="fas fa-film" style="color:var(--admin-accent);"></i>Nouvelle bannière</div>
+          <div class="mt"><i class="fas fa-film text-admin-accent"></i>Nouvelle bannière</div>
           <form id="form-add-banner" method="post" action="/api/admin/banners/create">
             <input type="hidden" id="ab-img" name="image_url" value="" />
             <div class="fg"><label class="fl">Titre *</label><input name="title" required class="input-field" placeholder="Ex: Soldes d'ete" /></div>
@@ -242,7 +242,7 @@ export const AdminBannersPage = ({
             <div class="fg">
               <label class="fl">Image de la banniere *</label>
               <div class="uz" id="ab-zone" onclick="document.getElementById('ab-file').click()">
-                <input type="file" id="ab-file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" onchange="hBU('a')" />
+                <input type="file" id="ab-file" accept="image/*" class="absolute cursor-pointer w-full h-[100%]" style="inset:0; opacity:0;" onchange="hBU('a')" />
                 <div class="uzi"><i class="fas fa-cloud-upload-alt"></i></div>
                 <div class="uzt"><strong>Cliquez</strong> ou glissez une image ici</div>
                 <div class="uzt" style="font-size:.7rem;margin-top:.2rem;">JPG, PNG, WebP — max 10 MB</div>
@@ -265,8 +265,8 @@ export const AdminBannersPage = ({
             </div>
             <div class="fr">
               <div><label class="fl">Ordre</label><input name="display_order" type="number" min="0" value="0" class="input-field" /></div>
-              <div style="display:flex;align-items:flex-end;padding-bottom:.1rem;">
-                <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.85rem;color:var(--admin-text-primary);">
+              <div class="flex items-end" style="padding-bottom:.1rem;">
+                <label class="flex items-center cursor-pointer text-admin-fg" style="gap:.5rem; font-size:.85rem;">
                   <input type="checkbox" name="is_active" id="cb-add-active" value="1" checked class="w-4 h-4 accent-cyan-500" />Activer
                 </label>
               </div>
@@ -282,7 +282,7 @@ export const AdminBannersPage = ({
       {/* ═══ MODALE MODIFIER BANNIÈRE ═══ */}
       <div id="modal-edit-banner" class="modal" onclick="if(event.target===this)this.classList.remove('open')">
         <div class="mbox">
-          <div class="mt"><i class="fas fa-pen" style="color:var(--admin-accent);"></i>Modifier la bannière</div>
+          <div class="mt"><i class="fas fa-pen text-admin-accent"></i>Modifier la bannière</div>
           <form id="form-edit-banner" method="post">
             <input type="hidden" id="eb-id" name="id" />
             <input type="hidden" id="eb-img" name="image_url" value="" />
@@ -291,7 +291,7 @@ export const AdminBannersPage = ({
             <div class="fg">
               <label class="fl">Image de la banniere</label>
               <div class="uz" id="eb-zone" onclick="document.getElementById('eb-file').click()">
-                <input type="file" id="eb-file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" onchange="hBU('e')" />
+                <input type="file" id="eb-file" accept="image/*" class="absolute cursor-pointer w-full h-[100%]" style="inset:0; opacity:0;" onchange="hBU('e')" />
                 <div class="uzi"><i class="fas fa-cloud-upload-alt"></i></div>
                 <div class="uzt"><strong>Remplacer</strong> l'image actuelle</div>
               </div>
@@ -313,8 +313,8 @@ export const AdminBannersPage = ({
             </div>
             <div class="fr">
               <div><label class="fl">Ordre</label><input id="eb-order" name="display_order" type="number" min="0" class="input-field" /></div>
-              <div style="display:flex;align-items:flex-end;padding-bottom:.1rem;">
-                <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.85rem;color:var(--admin-text-primary);">
+              <div class="flex items-end" style="padding-bottom:.1rem;">
+                <label class="flex items-center cursor-pointer text-admin-fg" style="gap:.5rem; font-size:.85rem;">
                   <input type="checkbox" id="eb-active" name="is_active" value="1" class="w-4 h-4 accent-cyan-500" />Active
                 </label>
               </div>
@@ -330,15 +330,15 @@ export const AdminBannersPage = ({
       {/* ═══ MODALE AJOUTER MARQUE ═══ */}
       <div id="modal-add-brand" class="modal" onclick="if(event.target===this)this.classList.remove('open')">
         <div class="mbox">
-          <div class="mt"><i class="fas fa-tags" style="color:var(--admin-accent);"></i>Nouvelle marque</div>
+          <div class="mt"><i class="fas fa-tags text-admin-accent"></i>Nouvelle marque</div>
           <form method="post" action="/api/admin/brands/create">
             <input type="hidden" id="abr-logo" name="logo_url" value="" />
-            <div class="fg"><label class="fl">Nom *</label><input name="name" required class="input-field" placeholder="Ex: DAIKIN" style="text-transform:uppercase;" /></div>
+            <div class="fg"><label class="fl">Nom *</label><input name="name" required class="input-field uppercase" placeholder="Ex: DAIKIN" /></div>
             <div class="fg"><label class="fl">Cle asset Flutter</label><input name="asset_key" class="input-field" placeholder="Ex: daikin" /></div>
             <div class="fg">
               <label class="fl">Logo (optionnel)</label>
               <div class="uz" onclick="document.getElementById('abr-file').click()">
-                <input type="file" id="abr-file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" onchange="hBRL('a')" />
+                <input type="file" id="abr-file" accept="image/*" class="absolute cursor-pointer w-full h-[100%]" style="inset:0; opacity:0;" onchange="hBRL('a')" />
                 <div class="uzi"><i class="fas fa-image"></i></div>
                 <div class="uzt"><strong>Cliquez</strong> pour uploader un logo</div>
               </div>
@@ -349,8 +349,8 @@ export const AdminBannersPage = ({
             </div>
             <div class="fr">
               <div><label class="fl">Ordre</label><input name="display_order" type="number" min="0" value="0" class="input-field" /></div>
-              <div style="display:flex;align-items:flex-end;padding-bottom:.1rem;">
-                <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.85rem;color:var(--admin-text-primary);">
+              <div class="flex items-end" style="padding-bottom:.1rem;">
+                <label class="flex items-center cursor-pointer text-admin-fg" style="gap:.5rem; font-size:.85rem;">
                   <input type="checkbox" name="is_active" id="cb-add-brand-active" value="1" checked class="w-4 h-4 accent-cyan-500" />Visible
                 </label>
               </div>
@@ -366,16 +366,16 @@ export const AdminBannersPage = ({
       {/* ═══ MODALE MODIFIER MARQUE ═══ */}
       <div id="modal-edit-brand" class="modal" onclick="if(event.target===this)this.classList.remove('open')">
         <div class="mbox">
-          <div class="mt"><i class="fas fa-pen" style="color:var(--admin-accent);"></i>Modifier la marque</div>
+          <div class="mt"><i class="fas fa-pen text-admin-accent"></i>Modifier la marque</div>
           <form id="form-edit-brand" method="post">
             <input type="hidden" id="ebr-id" name="id" />
             <input type="hidden" id="ebr-logo" name="logo_url" value="" />
-            <div class="fg"><label class="fl">Nom *</label><input id="ebr-name" name="name" required class="input-field" style="text-transform:uppercase;" /></div>
+            <div class="fg"><label class="fl">Nom *</label><input id="ebr-name" name="name" required class="input-field uppercase" /></div>
             <div class="fg"><label class="fl">Cle asset Flutter</label><input id="ebr-ak" name="asset_key" class="input-field" /></div>
             <div class="fg">
               <label class="fl">Logo</label>
               <div class="uz" onclick="document.getElementById('ebr-file').click()">
-                <input type="file" id="ebr-file" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" onchange="hBRL('e')" />
+                <input type="file" id="ebr-file" accept="image/*" class="absolute cursor-pointer w-full h-[100%]" style="inset:0; opacity:0;" onchange="hBRL('e')" />
                 <div class="uzi"><i class="fas fa-image"></i></div>
                 <div class="uzt"><strong>Remplacer</strong> le logo</div>
               </div>
@@ -386,8 +386,8 @@ export const AdminBannersPage = ({
             </div>
             <div class="fr">
               <div><label class="fl">Ordre</label><input id="ebr-order" name="display_order" type="number" min="0" class="input-field" /></div>
-              <div style="display:flex;align-items:flex-end;padding-bottom:.1rem;">
-                <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.85rem;color:var(--admin-text-primary);">
+              <div class="flex items-end" style="padding-bottom:.1rem;">
+                <label class="flex items-center cursor-pointer text-admin-fg" style="gap:.5rem; font-size:.85rem;">
                   <input type="checkbox" id="ebr-active" name="is_active" value="1" class="w-4 h-4 accent-cyan-500" />Visible
                 </label>
               </div>

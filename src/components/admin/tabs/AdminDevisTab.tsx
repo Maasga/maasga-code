@@ -26,7 +26,7 @@ export const AdminDevisListPage = ({ devisData = [], rdvsPending = [] }: { devis
   <AdminLayout activePage="devis">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
       <div>
-        <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">Devis clients</h2>
+        <h2 class="text-xl font-bold text-admin-fg">Devis clients</h2>
         <p class="text-sm text-gray-500 mt-1">
           {devisData.length} devis · {devisData.filter((d:any) => d.status === 'sent').length} en attente · {devisData.filter((d:any) => d.status === 'accepted').length} acceptés
         </p>
@@ -46,15 +46,15 @@ export const AdminDevisListPage = ({ devisData = [], rdvsPending = [] }: { devis
         </div>
         <div class="space-y-2">
           {rdvsPending.map((r: any) => (
-            <div class="rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style="background:rgba(251,191,36,0.06); border:1px solid rgba(251,191,36,0.2);">
+            <div class="rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style="background:rgba(var(--rgb-amber),0.06); border:1px solid rgba(var(--rgb-amber),0.2);">
               <div class="flex items-center space-x-3">
-                <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(251,191,36,0.12);">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(var(--rgb-amber),0.12);">
                   <i class="fas fa-clipboard-check text-yellow-400 text-sm"></i>
                 </div>
                 <div>
                   <div class="flex items-center gap-2">
                     <span class="font-semibold text-sm" style="color:var(--admin-text-primary)">{r.name}</span>
-                    <span class="text-xs px-2 py-0.5 rounded-full" style="background:rgba(251,191,36,0.12); color:#fbbf24; border:1px solid rgba(251,191,36,0.25);">RDV #{r.id}</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full text-fg-on-dark-warning" style="background:rgba(var(--rgb-amber),0.12); border:1px solid rgba(var(--rgb-amber),0.25);">RDV #{r.id}</span>
                   </div>
                   <div class="flex flex-wrap gap-x-3 text-xs text-gray-500 mt-0.5">
                     <span><i class="fas fa-phone mr-1"></i>{r.phone}</span>
@@ -65,7 +65,7 @@ export const AdminDevisListPage = ({ devisData = [], rdvsPending = [] }: { devis
                 </div>
               </div>
               <a href={`/admin/devis/new?rdvId=${r.id}`}
-                class="text-xs px-4 py-2 rounded-xl font-semibold whitespace-nowrap flex-shrink-0" style="background:rgba(251,191,36,0.12); color:#fbbf24; border:1px solid rgba(251,191,36,0.25);">
+                class="text-xs px-4 py-2 rounded-xl font-semibold whitespace-nowrap flex-shrink-0 text-fg-on-dark-warning" style="background:rgba(var(--rgb-amber),0.12); border:1px solid rgba(var(--rgb-amber),0.25);">
                 <i class="fas fa-file-invoice-dollar mr-1.5"></i>Créer le devis
               </a>
             </div>
@@ -79,7 +79,7 @@ export const AdminDevisListPage = ({ devisData = [], rdvsPending = [] }: { devis
         <i class="fas fa-file-invoice-dollar text-5xl text-gray-700 mb-4"></i>
         <p class="text-gray-400 mb-2 font-semibold">Aucun devis créé</p>
         <p class="text-gray-600 text-sm mb-6">Créez un devis depuis les RDV ci-dessus ou avec le bouton "Nouveau devis"</p>
-        <a href="/admin/rdv" class="text-xs px-5 py-2.5 rounded-xl font-semibold" style="background:rgba(56,189,248,0.1); color:#38bdf8; border:1px solid rgba(56,189,248,0.2);">
+        <a href="/admin/rdv" class="text-xs px-5 py-2.5 rounded-xl font-semibold text-fg-on-dark-accent" style="background:rgba(var(--rgb-sky),0.1); border:1px solid rgba(var(--rgb-sky),0.2);">
           <i class="fas fa-calendar-alt mr-2"></i>Voir les rendez-vous
         </a>
       </div>
@@ -101,24 +101,24 @@ export const AdminDevisListPage = ({ devisData = [], rdvsPending = [] }: { devis
             <div class="rounded-2xl p-5 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
               <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex items-start space-x-4">
-                  <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(239,68,68,0.1);">
+                  <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(var(--rgb-red),0.1);">
                     <i class="fas fa-file-invoice-dollar text-red-400 text-lg"></i>
                   </div>
                   <div>
                     <div class="flex items-center flex-wrap gap-2 mb-1">
-                      <span class="font-bold" style="color:var(--admin-text-primary)">{d.numero}</span>
+                      <span class="font-bold text-admin-fg">{d.numero}</span>
                       <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold" style={statusStyle[effectiveStatus] || statusStyle.draft}>{statusLabel[effectiveStatus] || effectiveStatus}</span>
                     </div>
                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
                       <span><i class="fas fa-user mr-1.5 text-gray-400"></i>{d.client_name}</span>
                       <span><i class="fas fa-phone mr-1.5 text-gray-400"></i>{d.client_phone}</span>
                       {d.produit_nom && <span><i class="fas fa-box mr-1.5 text-gray-400"></i>{d.produit_nom}</span>}
-                      {d.total_ht > 0 && <span style="color:#38bdf8;" class="font-semibold"><i class="fas fa-money-bill-wave mr-1.5"></i>{Number(d.total_ht).toLocaleString('fr-FR')} FCFA</span>}
+                      {d.total_ht > 0 && <span class="font-semibold text-fg-on-dark-accent"><i class="fas fa-money-bill-wave mr-1.5"></i>{Number(d.total_ht).toLocaleString('fr-FR')} FCFA</span>}
                     </div>
                     <div class="mt-1 flex flex-wrap gap-x-3 text-xs">
-                      {d.status === 'sent' && !isExpired && <span style="color:#fbbf24;"><i class="fas fa-hourglass-half mr-1"></i>{daysLeft} jour{daysLeft > 1 ? 's' : ''} avant expiration</span>}
-                      {isExpired && <span style="color:#f87171;"><i class="fas fa-exclamation-triangle mr-1"></i>Devis expiré</span>}
-                      {d.accepted_at && <span style="color:#34d399;"><i class="fas fa-check-circle mr-1"></i>Accepté le {new Date(d.accepted_at).toLocaleDateString('fr-FR')}</span>}
+                      {d.status === 'sent' && !isExpired && <span class="text-fg-on-dark-warning"><i class="fas fa-hourglass-half mr-1"></i>{daysLeft} jour{daysLeft > 1 ? 's' : ''} avant expiration</span>}
+                      {isExpired && <span class="text-fg-on-dark-danger"><i class="fas fa-exclamation-triangle mr-1"></i>Devis expiré</span>}
+                      {d.accepted_at && <span class="text-fg-on-dark-success"><i class="fas fa-check-circle mr-1"></i>Accepté le {new Date(d.accepted_at).toLocaleDateString('fr-FR')}</span>}
                     </div>
                   </div>
                 </div>
@@ -128,24 +128,24 @@ export const AdminDevisListPage = ({ devisData = [], rdvsPending = [] }: { devis
                     <i class="fas fa-eye mr-1"></i>Voir
                   </a>
                   <a href={`/devis/${d.token}/pdf`} target="_blank" rel="noopener noreferrer"
-                    class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap" style="background:rgba(99,102,241,0.12); color:#818cf8; border:1px solid rgba(99,102,241,0.2);">
+                    class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap" style="background:rgba(var(--rgb-indigo),0.12); color:#818cf8; border:1px solid rgba(var(--rgb-indigo),0.2);">
                     <i class="fas fa-file-pdf mr-1"></i>PDF
                   </a>
                   <a href={`https://wa.me/${(d.client_phone || '').replace(/\D/g,'')}?text=${encodeURIComponent('Bonjour ' + d.client_name + ', votre devis MAASGA ' + d.numero + ' est disponible : ' + SITE_URL + '/devis/' + d.token)}`} target="_blank" rel="noopener noreferrer"
-                    class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap" style="background:rgba(37,211,102,0.12); color:#25D366; border:1px solid rgba(37,211,102,0.2);">
+                    class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap text-fg-whatsapp" style="background:rgba(var(--rgb-whatsapp),0.12); border:1px solid rgba(var(--rgb-whatsapp),0.2);">
                     <i class="fab fa-whatsapp mr-1"></i>WA
                   </a>
                   {(d.status === 'draft' || d.status === 'sent') && (
-                    <form method="post" action="/api/admin/devis/accept" style="display:inline">
+                    <form method="post" action="/api/admin/devis/accept" class="inline">
                       <input type="hidden" name="id" value={String(d.id)} />
-                      <button type="submit" class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap" style="background:rgba(52,211,153,0.12); color:#34d399; border:1px solid rgba(52,211,153,0.2);">
+                      <button type="submit" class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap text-fg-on-dark-success" style="background:rgba(var(--rgb-emerald),0.12); border:1px solid rgba(var(--rgb-emerald),0.2);">
                         <i class="fas fa-check mr-1"></i>Accepté
                       </button>
                     </form>
                   )}
-                  <form method="post" action="/api/admin/devis/delete" style="display:inline" onsubmit="return confirm('Supprimer ce devis définitivement ?')">
+                  <form method="post" action="/api/admin/devis/delete" class="inline" onsubmit="return confirm('Supprimer ce devis définitivement ?')">
                     <input type="hidden" name="id" value={String(d.id)} />
-                    <button type="submit" class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap" style="background:rgba(239,68,68,0.12); color:#f87171; border:1px solid rgba(239,68,68,0.2);">
+                    <button type="submit" class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap text-fg-on-dark-danger" style="background:rgba(var(--rgb-red),0.12); border:1px solid rgba(var(--rgb-red),0.2);">
                       <i class="fas fa-trash"></i>
                     </button>
                   </form>
@@ -168,25 +168,25 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
   return (
   <AdminLayout activePage="devis">
     <div class="flex items-center space-x-3 mb-6">
-      <a href="/admin/devis" class="transition-colors p-1" style="color:var(--admin-text-muted)">
+      <a href="/admin/devis" class="transition-colors p-1 text-admin-muted">
         <i class="fas fa-arrow-left"></i>
       </a>
       <div>
-        <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">{ctx === 'sav' ? 'Devis réparation SAV' : ctx === 'maintenance' ? 'Devis entretien planifié' : 'Créer un devis'}</h2>
+        <h2 class="text-xl font-bold text-admin-fg">{ctx === 'sav' ? 'Devis réparation SAV' : ctx === 'maintenance' ? 'Devis entretien planifié' : 'Créer un devis'}</h2>
         <p class="text-sm text-gray-500 mt-0.5">{ctx === 'sav' && ticket ? `Ticket ${ticket.ticket_ref||'#'+(ticket.id||'')} — ${ticket.subject||''}` : ctx === 'maintenance' && contract ? `Contrat ${contract.plan_type||''} — ${contract.client_name||''}` : orderId ? `Commande #CMD-${String(orderId).padStart(4,'0')} — ${rdv?.name||''}` : rdv ? `D'après le RDV de ${rdv.name} — ${rdv.quartier}` : 'Nouveau devis manuel'}</p>
       </div>
     </div>
 
     {error && (
-      <div class="mb-6 rounded-xl p-4 flex items-center space-x-3" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3);">
+      <div class="mb-6 rounded-xl p-4 flex items-center space-x-3" style="background:rgba(var(--rgb-red),0.1); border:1px solid rgba(var(--rgb-red),0.3);">
         <i class="fas fa-exclamation-circle text-red-400"></i>
         <span class="text-red-300 text-sm">{error}</span>
       </div>
     )}
 
     {ctx === 'rdv' && rdv && (
-      <div class="mb-4 rounded-xl p-4 flex items-start space-x-3" style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);">
-        <i class="fas fa-calendar-check mt-0.5" style="color:#38bdf8;"></i>
+      <div class="mb-4 rounded-xl p-4 flex items-start space-x-3" style="background:rgba(var(--rgb-sky),0.08);border:1px solid rgba(var(--rgb-sky),0.2);">
+        <i class="fas fa-calendar-check mt-0.5 text-fg-on-dark-accent"></i>
         <div class="text-sm"><span class="font-semibold text-cyan-300">RDV associé :</span>
           <span class="text-gray-300 ml-2">{rdv.date} {rdv.heure_debut ? 'à ' + rdv.heure_debut : ''} · {rdv.type || 'Visite'} · {rdv.quartier}</span>
           {rdv.notes && <p class="text-xs text-gray-500 mt-1 line-clamp-2"><i class="fas fa-sticky-note mr-1"></i>{rdv.notes}</p>}
@@ -201,22 +201,22 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
           <span class="text-xs px-2 py-0.5 rounded-full font-bold ml-auto" style="background:rgba(251,146,60,0.15);color:#fb923c;">{ticket.priority}</span>
         </div>
         <p class="text-sm text-gray-300 font-medium">{ticket.subject}</p>
-        {ticket.description && <p class="text-xs mt-1" style="color:var(--admin-text-muted)">{ticket.description}</p>}
+        {ticket.description && <p class="text-xs mt-1 text-admin-muted">{ticket.description}</p>}
       </div>
     )}
     {ctx === 'maintenance' && contract && (
-      <div class="mb-4 rounded-xl p-4" style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);">
+      <div class="mb-4 rounded-xl p-4" style="background:rgba(var(--rgb-emerald),0.08);border:1px solid rgba(var(--rgb-emerald),0.2);">
         <div class="flex items-center space-x-2 mb-1">
-          <i class="fas fa-shield-alt" style="color:#34d399;"></i>
+          <i class="fas fa-shield-alt text-fg-on-dark-success"></i>
           <span class="font-semibold text-emerald-300 text-sm">Contrat de maintenance — {contract.plan_type}</span>
-          <span class="text-xs px-2 py-0.5 rounded-full ml-auto" style="background:rgba(52,211,153,0.12);color:#34d399;">{contract.completed_visits}/{contract.total_visits} visites</span>
+          <span class="text-xs px-2 py-0.5 rounded-full ml-auto text-fg-on-dark-success" style="background:rgba(var(--rgb-emerald),0.12);">{contract.completed_visits}/{contract.total_visits} visites</span>
         </div>
-        <p class="text-xs" style="color:var(--admin-text-muted)">{contract.start_date} → {contract.end_date}</p>
+        <p class="text-xs text-admin-muted">{contract.start_date} → {contract.end_date}</p>
       </div>
     )}
     {ctx === 'commande' && (
       <div class="mb-4 rounded-xl p-4 flex items-center space-x-3" style="background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);">
-        <i class="fas fa-shopping-cart" style="color:#a78bfa;"></i>
+        <i class="fas fa-shopping-cart text-fg-on-dark-violet"></i>
         <span class="font-semibold text-purple-300 text-sm">Commande en ligne #CMD-{String(orderId||0).padStart(4,'0')}</span>
       </div>
     )}
@@ -228,13 +228,13 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
 
       {/* Section client */}
       <div class="rounded-2xl p-6 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
-        <h3 class="font-bold mb-4 flex items-center space-x-2" style="color:var(--admin-text-primary)">
+        <h3 class="font-bold mb-4 flex items-center space-x-2 text-admin-fg">
           <i class="fas fa-user text-cyan-400"></i><span>Informations client</span>
         </h3>
 
         {/* Sélecteur client existant */}
         {clientsList.length > 0 && !rdv && (
-          <div class="mb-4 rounded-xl p-3" style="background:rgba(56,189,248,0.05); border:1px solid rgba(56,189,248,0.15);">
+          <div class="mb-4 rounded-xl p-3" style="background:rgba(var(--rgb-sky),0.05); border:1px solid rgba(var(--rgb-sky),0.15);">
             <label class="block text-xs font-semibold text-cyan-300 mb-2">
               <i class="fas fa-search mr-1.5"></i>Choisir un client existant (pré-remplit les champs)
             </label>
@@ -276,7 +276,7 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
       {/* Section technique — only for installation/RDV/commande contexts */}
       {(ctx === 'rdv' || ctx === 'commande' || ctx === 'manuel') && (
         <div class="rounded-2xl p-6 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
-          <h3 class="font-bold mb-4 flex items-center space-x-2" style="color:var(--admin-text-primary)">
+          <h3 class="font-bold mb-4 flex items-center space-x-2 text-admin-fg">
             <i class="fas fa-ruler-combined text-cyan-400"></i><span>Données techniques</span>
           </h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -301,12 +301,12 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
 
       {/* Section produit & prix */}
       <div class="rounded-2xl p-6 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
-        <h3 class="font-bold mb-4 flex items-center space-x-2" style="color:var(--admin-text-primary)">
+        <h3 class="font-bold mb-4 flex items-center space-x-2 text-admin-fg">
           <i class="fas fa-box text-cyan-400"></i><span>{ctx === 'sav' ? "Pièces & Main d'œuvre" : ctx === 'maintenance' ? "Interventions & Main d'œuvre" : 'Produit & Prestations'}</span>
         </h3>
 
         {productsList.length > 0 && (
-          <div class="mb-5 rounded-xl p-4" style="background:rgba(56,189,248,0.05); border:1px solid rgba(56,189,248,0.15);">
+          <div class="mb-5 rounded-xl p-4" style="background:rgba(var(--rgb-sky),0.05); border:1px solid rgba(var(--rgb-sky),0.15);">
             <label class="block text-xs font-semibold text-cyan-300 mb-2">
               <i class="fas fa-magic mr-1.5"></i>Sélectionner depuis le catalogue (pré-remplit les champs)
             </label>
@@ -359,12 +359,12 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
               <div class="col-span-1 flex items-center justify-center"><button type="button" class="text-red-400 hover:text-red-300 text-sm" onclick="removeAcc(this)" title="Supprimer"><i class="fas fa-times"></i></button></div>
             </div>
           </div>
-          <button type="button" onclick="addAcc()" class="mt-2 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors flex items-center space-x-1" style="background:rgba(56,189,248,0.08); color:#38bdf8; border:1px solid rgba(56,189,248,0.15);">
+          <button type="button" onclick="addAcc()" class="mt-2 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors flex items-center space-x-1 text-fg-on-dark-accent" style="background:rgba(var(--rgb-sky),0.08); border:1px solid rgba(var(--rgb-sky),0.15);">
             <i class="fas fa-plus"></i><span>Ajouter une ligne</span>
           </button>
         </div>
 
-        <div class="grid grid-cols-2 gap-4 pt-4" style="border-top:1px solid rgba(148,180,220,0.1);">
+        <div class="grid grid-cols-2 gap-4 pt-4" style="border-top:1px solid rgba(var(--rgb-steel),0.1);">
           <div>
             <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Remise (%)</label>
             <input type="number" name="remise" id="remise_input"
@@ -372,8 +372,8 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
           </div>
           <div>
             <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Total estimé</label>
-            <div id="total-display" class="rounded-xl px-4 py-3 text-right font-bold text-xl"
-              style="background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.2); color:#38bdf8;">
+            <div id="total-display" class="rounded-xl px-4 py-3 text-right font-bold text-xl text-fg-on-dark-accent"
+              style="background:rgba(var(--rgb-sky),0.08); border:1px solid rgba(var(--rgb-sky),0.2);">
               0 FCFA
             </div>
           </div>
@@ -382,13 +382,13 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
 
       {/* Section message & validité */}
       <div class="rounded-2xl p-6 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
-        <h3 class="font-bold mb-4 flex items-center space-x-2" style="color:var(--admin-text-primary)">
+        <h3 class="font-bold mb-4 flex items-center space-x-2 text-admin-fg">
           <i class="fas fa-comment-alt text-cyan-400"></i><span>Message & Validité</span>
         </h3>
         {ctx === 'manuel' && (
           <div class="mb-4 grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);"><i class="fas fa-map-signs mr-1.5" style="color:#fbbf24;"></i>Origine de la demande</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);"><i class="fas fa-map-signs mr-1.5 text-fg-on-dark-warning"></i>Origine de la demande</label>
               <select name="origine" class="input-field text-sm">
                 <option value="">Non précisé</option>
                 <option value="appel">Appel entrant</option>
@@ -400,7 +400,7 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
               </select>
             </div>
             <div>
-              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);"><i class="fas fa-exclamation-triangle mr-1.5" style="color:#f87171;"></i>Niveau d'urgence</label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);"><i class="fas fa-exclamation-triangle mr-1.5 text-fg-on-dark-danger"></i>Niveau d'urgence</label>
               <select name="urgence" class="input-field text-sm">
                 <option value="normal">Normal</option>
                 <option value="urgent">Urgent</option>
@@ -429,13 +429,13 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
       <div class="flex flex-col sm:flex-row gap-3">
         <button type="button" onclick="previewDevisPDF()" 
           class="flex-1 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center space-x-2 transition-all"
-          style="background:rgba(139,92,246,0.1); color:#a78bfa; border:1.5px solid rgba(139,92,246,0.3);">
+          style="background:rgba(139,92,246,0.1); color:var(--fg-on-dark-violet); border:1.5px solid rgba(139,92,246,0.3);">
           <i class="fas fa-eye"></i>
           <span>Prévisualiser PDF</span>
         </button>
         <button type="submit" name="action" value="draft"
           class="flex-1 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center space-x-2 transition-all"
-          style="background:rgba(56,189,248,0.1); color:#38bdf8; border:1.5px solid rgba(56,189,248,0.3);">
+          style="background:rgba(var(--rgb-sky),0.1); color:var(--fg-on-dark-accent); border:1.5px solid rgba(var(--rgb-sky),0.3);">
           <i class="fas fa-save"></i>
           <span>Brouillon</span>
         </button>
@@ -448,13 +448,13 @@ export const AdminDevisNewPage = ({ rdv, productsList = [], clientsList = [], su
     </form>
 
     {/* Preview modal */}
-    <div id="preview-modal" class="fixed inset-0 z-50 hidden" style="background:rgba(0,0,0,0.8); backdrop-filter:blur(4px);">
+    <div id="preview-modal" class="fixed inset-0 z-50 hidden" style="background:rgba(var(--rgb-black),0.8); backdrop-filter:blur(4px);">
       <div class="flex flex-col h-full">
-        <div class="flex items-center justify-between px-5 py-3" style="background:var(--admin-card-bg); border-bottom:1px solid var(--admin-border);">
-          <h3 class="text-sm font-bold flex items-center space-x-2" style="color:var(--admin-text-primary)"><i class="fas fa-file-pdf" style="color:#a78bfa;"></i><span>Prévisualisation du devis</span></h3>
+        <div class="flex items-center justify-between px-5 py-3 bg-admin-card border-b border-admin-line">
+          <h3 class="text-sm font-bold flex items-center space-x-2" style="color:var(--admin-text-primary)"><i class="fas fa-file-pdf text-fg-on-dark-violet"></i><span>Prévisualisation du devis</span></h3>
           <button type="button" onclick="closePreview()" class="p-2 rounded-lg hover:bg-white/10 transition-colors"><i class="fas fa-times text-gray-400"></i></button>
         </div>
-        <div class="flex-1 overflow-auto p-4"><iframe id="preview-iframe" style="width:100%;height:100%;min-height:80vh;border:none;border-radius:12px;background:white;"></iframe></div>
+        <div class="flex-1 overflow-auto p-4"><iframe id="preview-iframe" class="w-full h-[100%] rounded-[12px] bg-surface-card" style="min-height:80vh; border:none;"></iframe></div>
       </div>
     </div>
 
@@ -562,23 +562,23 @@ export const AdminDevisDetailPage = ({ devis, publicUrl, notify, emailOk, emailE
   return (
     <AdminLayout activePage="devis">
       <div class="max-w-3xl mx-auto space-y-6">
-        {notify && <div class="rounded-xl p-4 text-sm" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#34d399;">{notify}</div>}
-        {emailOk && <div class="rounded-xl p-4 text-sm" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#34d399;">Email envoyé avec succès.</div>}
-        {emailErr && <div class="rounded-xl p-4 text-sm" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#f87171;">Erreur email : {emailErr}</div>}
-        <div class="rounded-2xl p-6" style="background:var(--admin-card-bg);border:1px solid var(--admin-border);">
+        {notify && <div class="rounded-xl p-4 text-sm" style="background:rgba(var(--rgb-green),0.1);border:1px solid rgba(var(--rgb-green),0.3);color:var(--fg-on-dark-success);">{notify}</div>}
+        {emailOk && <div class="rounded-xl p-4 text-sm" style="background:rgba(var(--rgb-green),0.1);border:1px solid rgba(var(--rgb-green),0.3);color:var(--fg-on-dark-success);">Email envoyé avec succès.</div>}
+        {emailErr && <div class="rounded-xl p-4 text-sm" style="background:rgba(var(--rgb-red),0.1);border:1px solid rgba(var(--rgb-red),0.3);color:var(--fg-on-dark-danger);">Erreur email : {emailErr}</div>}
+        <div class="rounded-2xl p-6 bg-admin-card border border-admin-line">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-bold" style="color:var(--admin-text-primary)">Devis {devis?.numero}</h2>
+            <h2 class="text-lg font-bold text-admin-fg">Devis {devis?.numero}</h2>
             <span class="text-xs px-3 py-1 rounded-full font-semibold" style={`background:rgba(148,163,184,0.1);color:${statusColors[devis?.status]||'#94a3b8'}`}>{statusLabels[devis?.status]||devis?.status}</span>
           </div>
           <div class="grid grid-cols-2 gap-4 text-sm mb-4">
-            <div><span class="text-gray-500">Client :</span> <span style="color:var(--admin-text-primary)">{devis?.client_name}</span></div>
-            <div><span class="text-gray-500">Téléphone :</span> <span style="color:var(--admin-text-primary)">{devis?.client_phone}</span></div>
+            <div><span class="text-gray-500">Client :</span> <span class="text-admin-fg">{devis?.client_name}</span></div>
+            <div><span class="text-gray-500">Téléphone :</span> <span class="text-admin-fg">{devis?.client_phone}</span></div>
             <div><span class="text-gray-500">Total :</span> <span class="text-cyan-400 font-bold">{devis?.total?.toLocaleString()} FCFA</span></div>
-            <div><span class="text-gray-500">Date :</span> <span style="color:var(--admin-text-primary)">{devis?.created_at ? new Date(devis.created_at).toLocaleDateString('fr-FR') : '-'}</span></div>
+            <div><span class="text-gray-500">Date :</span> <span class="text-admin-fg">{devis?.created_at ? new Date(devis.created_at).toLocaleDateString('fr-FR') : '-'}</span></div>
           </div>
           <div class="flex flex-wrap gap-3 mt-4">
             <a href={publicUrl} target="_blank" class="btn-secondary text-sm px-4 py-2 rounded-xl"><i class="fas fa-eye mr-2"></i>Voir le devis</a>
-            <form method="post" action="/api/admin/devis/send-email" style="display:inline;">
+            <form method="post" action="/api/admin/devis/send-email" class="inline">
               <input type="hidden" name="token" value={devis?.token} />
               <button type="submit" class="btn-primary text-sm px-4 py-2 rounded-xl"><i class="fas fa-envelope mr-2"></i>Envoyer par email</button>
             </form>

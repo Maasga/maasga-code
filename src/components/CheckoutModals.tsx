@@ -21,46 +21,46 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
   return (
     <>
       {/* Bouton panier flottant */}
-      <button onclick="openCartModal()" class="cart-float fixed bottom-6 right-6 z-40 flex items-center space-x-2 px-5 py-3 rounded-2xl shadow-2xl font-bold text-sm text-white transition-all hover:scale-105" style="background:linear-gradient(135deg,#0ea5e9,#3b82f6); border:2px solid rgba(255,255,255,0.15);">
+      <button onclick="openCartModal()" class="cart-float fixed bottom-6 right-6 z-40 flex items-center space-x-2 px-5 py-3 rounded-2xl shadow-2xl font-bold text-sm text-white transition-all hover:scale-105" style="background:linear-gradient(135deg,var(--surface-sky),var(--surface-blue)); border:2px solid rgba(var(--rgb-white),0.15);">
         <i class="fas fa-shopping-cart text-lg"></i>
         <span>Mon panier</span>
         <span id="cart-count-badge" class="hidden ml-1 bg-pink-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-black">0</span>
       </button>
 
       {/* ===== MODAL PANIER ===== */}
-      <div id="cart-modal" data-lenis-prevent class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style="background:rgba(0,0,0,0.8); backdrop-filter:blur(6px);" role="dialog" aria-modal="true" aria-label="Panier">
-        <div class="w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden" style="background:#ffffff; border:1px solid rgba(59,130,246,0.2); max-height:90vh; display:flex; flex-direction:column;">
-          <div class="flex items-center justify-between px-6 py-4 flex-shrink-0" style="background:rgba(59,130,246,0.05); border-bottom:1px solid rgba(59,130,246,0.1);">
+      <div id="cart-modal" data-lenis-prevent class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style="background:rgba(var(--rgb-black),0.8); backdrop-filter:blur(6px);" role="dialog" aria-modal="true" aria-label="Panier">
+        <div class="w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden bg-surface-card flex flex-col" style="border:1px solid rgba(var(--rgb-blue),0.2); max-height:90vh;">
+          <div class="flex items-center justify-between px-6 py-4 flex-shrink-0" style="background:rgba(var(--rgb-blue),0.05); border-bottom:1px solid rgba(var(--rgb-blue),0.1);">
             <h3 class="font-bold text-slate-800 text-lg flex items-center space-x-2">
-              <i class="fas fa-shopping-cart" style="color:#0369a1;"></i>
+              <i class="fas fa-shopping-cart text-fg-link"></i>
               <span>Mon panier</span>
               <span id="cart-modal-count" class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:rgba(236,72,153,0.2); color:#f472b6;">0 article</span>
             </h3>
-            <button onclick="closeCartModal()" class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/10 transition-colors" style="color:#0369a1;" aria-label="Fermer le panier">
+            <button onclick="closeCartModal()" class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/10 transition-colors text-fg-link" aria-label="Fermer le panier">
               <i class="fas fa-times"></i>
             </button>
           </div>
           <div class="flex-1 overflow-y-auto px-6 py-4">
             <div id="cart-empty-msg" class="text-center py-12">
               <i class="fas fa-shopping-cart text-4xl mb-4" style="color:#94a3b8;"></i>
-              <p class="font-medium" style="color:#111827;">Votre panier est vide</p>
-              <p class="text-sm mt-1" style="color:#64748b;">Ajoutez des climatiseurs depuis le catalogue</p>
+              <p class="font-medium text-fg-ink">Votre panier est vide</p>
+              <p class="text-sm mt-1" style="color:var(--fg-subtle);">Ajoutez des climatiseurs depuis le catalogue</p>
             </div>
             <div id="cart-items-list" class="hidden space-y-3"></div>
           </div>
           <div id="cart-footer" class="hidden px-6 py-4 flex-shrink-0" style="border-top:1px solid rgba(56,189,248,0.12);">
             <div class="flex items-center justify-between mb-3">
-              <span class="text-sm font-semibold" style="color:#475569;">Total estimé</span>
-              <span id="cart-total" class="text-xl font-bold" style="color:#111827;">0 FCFA</span>
+              <span class="text-sm font-semibold" style="color:var(--fg-muted);">Total estimé</span>
+              <span id="cart-total" class="text-xl font-bold text-fg-ink">0 FCFA</span>
             </div>
-            <div class="text-xs mb-4 px-3 py-2 rounded-xl" style="background:rgba(52,211,153,0.08); color:#047857; border:1px solid rgba(52,211,153,0.2);">
+            <div class="text-xs mb-4 px-3 py-2 rounded-xl text-fg-success" style="background:rgba(var(--rgb-emerald),0.08); border:1px solid rgba(var(--rgb-emerald),0.2);">
               <i class="fas fa-shield-alt mr-1"></i> Livraison et installation comprises. Paiement sécurisé.
             </div>
             <div class="flex gap-3">
-              <button onclick="clearCart()" class="flex-none px-4 py-3 rounded-xl text-sm font-semibold" style="background:rgba(239,68,68,0.1); color:#b91c1c; border:1px solid rgba(239,68,68,0.2);">
+              <button onclick="clearCart()" class="flex-none px-4 py-3 rounded-xl text-sm font-semibold" style="background:rgba(var(--rgb-red),0.1); color:var(--fg-danger); border:1px solid rgba(var(--rgb-red),0.2);">
                 <i class="fas fa-trash mr-1"></i>Vider
               </button>
-              <button onclick="validateCart()" class="flex-1 py-3 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#0ea5e9,#3b82f6);">
+              <button onclick="validateCart()" class="flex-1 py-3 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,var(--surface-sky),var(--surface-blue));">
                 <i class="fas fa-check mr-2"></i>Valider ma commande
               </button>
             </div>
@@ -69,49 +69,49 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
       </div>
 
       {/* Modal Commande / Checkout */}
-      <div id="order-modal" data-lenis-prevent class="hidden fixed inset-0 z-50 flex items-end sm:items-start justify-center sm:pt-6 p-0 sm:p-4" style="background:rgba(0,0,0,0.6); backdrop-filter:blur(4px);" role="dialog" aria-modal="true" aria-label="Passer commande">
-        <div class="w-full max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden" style="background:#ffffff; max-height:95vh; display:flex; flex-direction:column;">
+      <div id="order-modal" data-lenis-prevent class="hidden fixed inset-0 z-50 flex items-end sm:items-start justify-center sm:pt-6 p-0 sm:p-4" style="background:rgba(var(--rgb-black),0.6); backdrop-filter:blur(4px);" role="dialog" aria-modal="true" aria-label="Passer commande">
+        <div class="w-full max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden bg-surface-card flex flex-col" style="max-height:95vh;">
           {/* Header blanc */}
-          <div class="flex items-center justify-between px-6 py-4 flex-shrink-0" style="background:#f8fafc; border-bottom:2px solid #e2e8f0;">
-            <h3 class="font-extrabold text-lg flex items-center space-x-2" style="color:#03045e;">
-              <i class="fas fa-shopping-bag" style="color:#0077b6;"></i>
+          <div class="flex items-center justify-between px-6 py-4 flex-shrink-0 bg-surface-subtle" style="border-bottom:2px solid var(--line);">
+            <h3 class="font-extrabold text-lg flex items-center space-x-2 text-fg-heading">
+              <i class="fas fa-shopping-bag text-fg-brand"></i>
               <span>Passer commande</span>
             </h3>
-            <button onclick="closeOrderModal()" class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-slate-100 transition-colors" style="color:#64748b;" aria-label="Fermer la commande">
+            <button onclick="closeOrderModal()" class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-slate-100 transition-colors text-fg-subtle" aria-label="Fermer la commande">
               <i class="fas fa-times"></i>
             </button>
           </div>
 
-          <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5" style="background:#ffffff;">
+          <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5 bg-surface-card">
             {/* Statut connexion — masqué/visible dynamiquement via JS */}
             <div id="order-login-banner" class="rounded-xl px-4 py-3 text-sm flex items-center justify-between" style="background:#eff6ff; border:1px solid #bfdbfe;">
-              <span style="color:#1e40af; font-weight:500;">Déjà client MAASGA ?</span>
-              <a href={`/espace-client?redirect=${redirectTarget}`} style="color:#0077b6; font-weight:700;">Se connecter →</a>
+              <span class="font-medium" style="color:#1e40af;">Déjà client MAASGA ?</span>
+              <a href={`/espace-client?redirect=${redirectTarget}`} class="text-fg-brand font-bold">Se connecter →</a>
             </div>
             <div id="order-logged-banner" class="rounded-xl px-4 py-3 text-sm flex items-center justify-between" style="display:none; background:#f0fdf4; border:1px solid #bbf7d0;">
-              <span style="color:#166534; font-weight:500;"><i class="fas fa-check-circle mr-1"></i>Connecté en tant que <strong id="order-logged-name"></strong></span>
-              <a href="/espace-client" style="color:#166534; font-weight:600; font-size:0.75rem;">Mon espace →</a>
+              <span class="text-fg-success-deep font-medium"><i class="fas fa-check-circle mr-1"></i>Connecté en tant que <strong id="order-logged-name"></strong></span>
+              <a href="/espace-client" class="text-fg-success-deep font-semibold text-[0.75rem]">Mon espace →</a>
             </div>
 
             {/* Récapitulatif */}
-            <div id="order-summary-box" style="display:none; background:#f0f9ff; border:2px solid #bae6fd; border-radius:14px; padding:14px;">
-              <div style="font-size:0.75rem; font-weight:700; color:#0077b6; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">Récapitulatif</div>
-              <div id="order-summary-content" style="font-size:0.875rem; color:#111827; font-weight:500;"></div>
+            <div id="order-summary-box" class="bg-surface-info rounded-[14px] p-[14px]" style="display:none; border:2px solid var(--line-accent);">
+              <div class="text-[0.75rem] font-bold text-fg-brand uppercase mb-[6px]" style="letter-spacing:0.05em;">Récapitulatif</div>
+              <div id="order-summary-content" class="text-[0.875rem] text-fg-ink font-medium"></div>
             </div>
 
             {/* Champs formulaire */}
             <div class="space-y-4">
               <div>
-                <label class="block text-sm font-bold mb-1.5" style="color:#111827;">Nom complet <span style="color:#ef4444;">*</span></label>
-                <input id="order-name" type="text" placeholder="Ex: Amadou Traoré" class="w-full px-4 py-3 rounded-xl text-sm" style="background:#f8fafc; border:1.5px solid #cbd5e1; color:#111827; outline:none;" />
+                <label class="block text-sm font-bold mb-1.5" style="color:var(--fg-ink);">Nom complet <span class="text-fg-danger-bright">*</span></label>
+                <input id="order-name" type="text" placeholder="Ex: Amadou Traoré" class="w-full px-4 py-3 rounded-xl text-sm bg-surface-subtle" style="border:1.5px solid var(--line-strong); color:var(--fg-ink); outline:none;" />
               </div>
               <div>
-                <label class="block text-sm font-bold mb-1.5" style="color:#111827;">Téléphone (Whatsapp) <span style="color:#ef4444;">*</span></label>
-                <input id="order-phone" type="tel" placeholder="Ex: 07 07 07 07 07" class="w-full px-4 py-3 rounded-xl text-sm" style="background:#f8fafc; border:1.5px solid #cbd5e1; color:#111827; outline:none;" />
+                <label class="block text-sm font-bold mb-1.5" style="color:var(--fg-ink);">Téléphone (Whatsapp) <span class="text-fg-danger-bright">*</span></label>
+                <input id="order-phone" type="tel" placeholder="Ex: 07 07 07 07 07" class="w-full px-4 py-3 rounded-xl text-sm bg-surface-subtle" style="border:1.5px solid var(--line-strong); color:var(--fg-ink); outline:none;" />
               </div>
               <div>
-                <label class="block text-sm font-bold mb-1.5" style="color:#111827;">Quartier / Secteur <span style="color:#ef4444;">*</span></label>
-                <select id="order-quartier" class="w-full px-4 py-3 rounded-xl text-sm" style="background:#f8fafc; border:1.5px solid #cbd5e1; color:#111827; outline:none;">
+                <label class="block text-sm font-bold mb-1.5" style="color:var(--fg-ink);">Quartier / Secteur <span class="text-fg-danger-bright">*</span></label>
+                <select id="order-quartier" class="w-full px-4 py-3 rounded-xl text-sm bg-surface-subtle" style="border:1.5px solid var(--line-strong); color:var(--fg-ink); outline:none;">
                   <option value="">Sélectionner votre quartier</option>
                   {(() => {
                     const grouped = quartiersByArrondissement()
@@ -124,42 +124,42 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
                 </select>
               </div>
               <div>
-                <label class="block text-sm font-bold mb-1.5" style="color:#111827;">Position GPS <span style="color:#64748b; font-weight:400;">(optionnel)</span></label>
-                <button type="button" id="order-gps-btn" onclick="requestOrderLocation()" style="width:100%; padding:11px 16px; border-radius:12px; background:#f0f9ff; border:1.5px solid #bae6fd; color:#0077b6; font-weight:700; font-size:0.875rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                <label class="block text-sm font-bold mb-1.5" style="color:var(--fg-ink);">Position GPS <span class="text-fg-subtle font-normal">(optionnel)</span></label>
+                <button type="button" id="order-gps-btn" onclick="requestOrderLocation()" class="w-full py-[11px] px-[16px] rounded-[12px] bg-surface-info text-fg-brand font-bold text-[0.875rem] cursor-pointer flex items-center justify-center gap-[8px]" style="border:1.5px solid var(--line-accent);">
                   <i class="fas fa-crosshairs"></i>
                   <span id="order-gps-label">Partager ma position</span>
                 </button>
-                <div id="order-gps-status" style="display:none; margin-top:8px; font-size:0.75rem; padding:8px 12px; border-radius:8px;"></div>
+                <div id="order-gps-status" class="mt-[8px] text-[0.75rem] py-[8px] px-[12px] rounded-[8px]" style="display:none;"></div>
               </div>
               <div>
-                <label class="block text-sm font-bold mb-1.5" style="color:#111827;">Email <span style="color:#64748b; font-weight:400;">(optionnel)</span></label>
-                <input id="order-email" type="email" placeholder="Ex: amadou@gmail.com" class="w-full px-4 py-3 rounded-xl text-sm" style="background:#f8fafc; border:1.5px solid #cbd5e1; color:#111827; outline:none;" />
+                <label class="block text-sm font-bold mb-1.5" style="color:var(--fg-ink);">Email <span class="text-fg-subtle font-normal">(optionnel)</span></label>
+                <input id="order-email" type="email" placeholder="Ex: amadou@gmail.com" class="w-full px-4 py-3 rounded-xl text-sm bg-surface-subtle" style="border:1.5px solid var(--line-strong); color:var(--fg-ink); outline:none;" />
               </div>
               <div>
-                <label class="block text-sm font-bold mb-1.5" style="color:#111827;">Notes / Instructions</label>
-                <textarea id="order-notes" rows={2} placeholder="Ex: Appartement au 3ème étage, installer dans le salon" class="w-full px-4 py-3 rounded-xl text-sm resize-none" style="background:#f8fafc; border:1.5px solid #cbd5e1; color:#111827; outline:none;"></textarea>
+                <label class="block text-sm font-bold mb-1.5" style="color:var(--fg-ink);">Notes / Instructions</label>
+                <textarea id="order-notes" rows={2} placeholder="Ex: Appartement au 3ème étage, installer dans le salon" class="w-full px-4 py-3 rounded-xl text-sm resize-none bg-surface-subtle" style="border:1.5px solid var(--line-strong); color:var(--fg-ink); outline:none;"></textarea>
               </div>
             </div>
 
             {/* Notice contact WhatsApp & Email */}
-            <div id="order-contact-notice" class="rounded-2xl p-4" style="background:linear-gradient(135deg,rgba(0,119,182,0.06),rgba(37,211,102,0.04)); border:1.5px solid rgba(0,119,182,0.15);">
+            <div id="order-contact-notice" class="rounded-2xl p-4" style="background:linear-gradient(135deg,rgba(var(--rgb-brand),0.06),rgba(var(--rgb-whatsapp),0.04)); border:1.5px solid rgba(var(--rgb-brand),0.15);">
               <div class="flex items-start gap-3">
                 <div class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center mt-0.5" style="background:linear-gradient(135deg,#0077b6,#00b4d8);">
-                  <i class="fas fa-headset" style="color:#fff; font-size:1rem;"></i>
+                  <i class="fas fa-headset text-fg-on-dark text-[1rem]"></i>
                 </div>
                 <div>
-                  <div class="text-sm font-bold mb-1" style="color:#03045e;">Comment ça fonctionne ?</div>
-                  <p class="text-xs leading-relaxed mb-3" style="color:#475569;">
-                    Après validation de votre commande, <strong style="color:#0077b6;">un conseiller MAASGA vous contactera directement</strong> par <span style="color:#25d366; font-weight:700;"><i class="fab fa-whatsapp"></i> WhatsApp</span> et par <span style="color:#0077b6; font-weight:700;"><i class="fas fa-envelope"></i> e-mail</span> afin de finaliser les modalités de paiement et de livraison.
+                  <div class="text-sm font-bold mb-1" style="color:var(--fg-heading);">Comment ça fonctionne ?</div>
+                  <p class="text-xs leading-relaxed mb-3 text-fg-muted">
+                    Après validation de votre commande, <strong class="text-fg-brand">un conseiller MAASGA vous contactera directement</strong> par <span class="text-fg-whatsapp font-bold"><i class="fab fa-whatsapp"></i> WhatsApp</span> et par <span class="text-fg-brand font-bold"><i class="fas fa-envelope"></i> e-mail</span> afin de finaliser les modalités de paiement et de livraison.
                   </p>
                   <div class="flex flex-wrap gap-2">
-                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold" style="background:rgba(37,211,102,0.1); color:#16a34a;">
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold text-fg-success-bright" style="background:rgba(var(--rgb-whatsapp),0.1);">
                       <i class="fab fa-whatsapp"></i> Contact WhatsApp
                     </span>
-                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold" style="background:rgba(0,119,182,0.08); color:#0077b6;">
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold text-fg-brand" style="background:rgba(var(--rgb-brand),0.08);">
                       <i class="fas fa-envelope"></i> Confirmation par e-mail
                     </span>
-                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold" style="background:rgba(234,179,8,0.1); color:#d97706;">
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold text-fg-warning-bright" style="background:rgba(234,179,8,0.1);">
                       <i class="fas fa-clock"></i> Réponse sous 2h
                     </span>
                   </div>
@@ -168,34 +168,34 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
             </div>
           </div>
 
-          <div id="order-form-footer" class="px-6 py-4 flex-shrink-0" style="background:#f8fafc; border-top:2px solid #e2e8f0;">
-            <button id="order-submit-btn" onclick="submitOrder()" class="w-full py-4 rounded-2xl text-white font-bold text-sm" style="background:linear-gradient(135deg,#0077b6,#0ea5e9); box-shadow:0 4px 16px rgba(0,119,182,0.3);">
+          <div id="order-form-footer" class="px-6 py-4 flex-shrink-0 bg-surface-subtle" style="border-top:2px solid var(--line);">
+            <button id="order-submit-btn" onclick="submitOrder()" class="w-full py-4 rounded-2xl text-white font-bold text-sm" style="background:linear-gradient(135deg,var(--surface-brand),var(--surface-sky)); box-shadow:0 4px 16px rgba(var(--rgb-brand),0.3);">
               <i class="fas fa-check mr-2"></i>Confirmer la commande
             </button>
-            <p class="text-xs text-center mt-2" style="color:#64748b;"><i class="fas fa-lock mr-1"></i>Paiement sécurisé · Livraison & installation incluses</p>
+            <p class="text-xs text-center mt-2 text-fg-subtle"><i class="fas fa-lock mr-1"></i>Paiement sécurisé · Livraison & installation incluses</p>
           </div>
 
           <div id="order-success-msg" class="hidden px-6 py-8 text-center">
-            <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background:rgba(52,211,153,0.15); border:2px solid rgba(52,211,153,0.3);">
-              <i class="fas fa-check text-2xl" style="color:#047857;"></i>
+            <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background:rgba(var(--rgb-emerald),0.15); border:2px solid rgba(var(--rgb-emerald),0.3);">
+              <i class="fas fa-check text-2xl text-fg-success"></i>
             </div>
-            <h4 class="font-bold text-lg mb-2" style="color:#03045e;">Commande confirmée !</h4>
-            <p class="text-sm mb-1" style="color:#475569;">Merci pour votre achat.</p>
-            <p class="text-sm mb-3" style="color:#475569;">Votre commande est enregistrée. Un conseiller MAASGA vous contactera sous <strong style="color:#25d366;">2h</strong> par <strong style="color:#25d366;"><i class="fab fa-whatsapp"></i> WhatsApp</strong> et par <strong style="color:#0077b6;"><i class="fas fa-envelope"></i> e-mail</strong> pour finaliser les modalités de paiement et de livraison.</p>
+            <h4 class="font-bold text-lg mb-2 text-fg-heading">Commande confirmée !</h4>
+            <p class="text-sm mb-1" style="color:var(--fg-muted);">Merci pour votre achat.</p>
+            <p class="text-sm mb-3" style="color:var(--fg-muted);">Votre commande est enregistrée. Un conseiller MAASGA vous contactera sous <strong class="text-fg-whatsapp">2h</strong> par <strong class="text-fg-whatsapp"><i class="fab fa-whatsapp"></i> WhatsApp</strong> et par <strong class="text-fg-brand"><i class="fas fa-envelope"></i> e-mail</strong> pour finaliser les modalités de paiement et de livraison.</p>
 
-            <div id="create-account-section" style="margin-top:20px; text-align:left;">
-              <div style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.15); border-radius:14px; padding:16px;">
-                <div style="font-size:0.82rem; font-weight:700; color:#111827; margin-bottom:8px;">
-                  <i class="fas fa-user-circle" style="color:#0369a1; margin-right:6px;"></i>Créer votre compte MAASGA
+            <div id="create-account-section" class="mt-[20px] text-left">
+              <div class="rounded-[14px] p-[16px]" style="background:rgba(var(--rgb-sky),0.06); border:1px solid rgba(var(--rgb-sky),0.15);">
+                <div class="text-[0.82rem] font-bold text-fg-ink mb-[8px]">
+                  <i class="fas fa-user-circle text-fg-link mr-[6px]"></i>Créer votre compte MAASGA
                 </div>
-                <p style="font-size:0.95rem; color:#7ab8d4; margin-bottom:14px; line-height:1.5;">Suivez vos commandes et RDV. Ne re-remplissez plus jamais les formulaires.</p>
-                <a href="/espace-client" style="display:block; width:100%; padding:11px; border-radius:10px; background:rgba(56,189,248,0.15); color:#0369a1; font-weight:700; font-size:0.82rem; border:1px solid rgba(56,189,248,0.25); text-align:center; text-decoration:none;">
-                  <i class="fas fa-user-plus" style="margin-right:6px;"></i>Créer mon compte
+                <p class="text-[0.95rem] mb-[14px]" style="color:#7ab8d4; line-height:1.5;">Suivez vos commandes et RDV. Ne re-remplissez plus jamais les formulaires.</p>
+                <a href="/espace-client" class="block w-full p-[11px] rounded-[10px] text-fg-link font-bold text-[0.82rem] text-center no-underline" style="background:rgba(var(--rgb-sky),0.15); border:1px solid rgba(var(--rgb-sky),0.25);">
+                  <i class="fas fa-user-plus mr-[6px]"></i>Créer mon compte
                 </a>
               </div>
             </div>
 
-            <button onclick="closeOrderModal()" class="mt-4 px-8 py-3 rounded-xl font-semibold text-sm" style="background:rgba(56,189,248,0.1); color:#0369a1; border:1px solid rgba(56,189,248,0.25);">Fermer</button>
+            <button onclick="closeOrderModal()" class="mt-4 px-8 py-3 rounded-xl font-semibold text-sm" style="background:rgba(var(--rgb-sky),0.1); color:var(--fg-link); border:1px solid rgba(var(--rgb-sky),0.25);">Fermer</button>
           </div>
         </div>
       </div>
@@ -350,17 +350,17 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
           let total = 0;
           itemsList.innerHTML = cart.map(item => {
             total += item.price * (item.quantity || 1);
-            return '<div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:rgba(56,189,248,0.05);border:1px solid rgba(56,189,248,0.1);">'
+            return '<div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:rgba(var(--rgb-sky),0.05);border:1px solid rgba(var(--rgb-sky),0.1);">'
               + '<div style="flex:1;">'
-                + '<div style="font-weight:600;color:#111827;font-size:0.85rem;">' + item.name + '</div>'
-                + '<div style="font-size:0.7rem;color:#0369a1;margin-top:2px;">' + item.brand + '</div>'
-                + '<div style="font-size:0.7rem;color:#475569;margin-top:2px;">' + item.price.toLocaleString() + ' FCFA / unité</div>'
+                + '<div style="font-weight:600;color:var(--fg-ink);font-size:0.85rem;">' + item.name + '</div>'
+                + '<div style="font-size:0.7rem;color:var(--fg-link);margin-top:2px;">' + item.brand + '</div>'
+                + '<div style="font-size:0.7rem;color:var(--fg-muted);margin-top:2px;">' + item.price.toLocaleString() + ' FCFA / unité</div>'
               + '</div>'
               + '<div style="display:flex;align-items:center;gap:6px;">'
-                + '<button onclick="cartQty(' + item.id + ',-1)" style="width:28px;height:28px;border-radius:8px;background:rgba(56,189,248,0.1);color:#0369a1;font-weight:bold;border:none;cursor:pointer;">−</button>'
-                + '<span style="font-weight:bold;color:#111827;width:24px;text-align:center;">' + item.quantity + '</span>'
-                + '<button onclick="cartQty(' + item.id + ',1)" style="width:28px;height:28px;border-radius:8px;background:rgba(56,189,248,0.1);color:#0369a1;font-weight:bold;border:none;cursor:pointer;">+</button>'
-                + '<button onclick="cartRemove(' + item.id + ')" style="width:28px;height:28px;border-radius:8px;background:rgba(239,68,68,0.1);color:#b91c1c;border:none;cursor:pointer;margin-left:4px;"><i class="fas fa-trash" style="font-size:0.7rem;"></i></button>'
+                + '<button onclick="cartQty(' + item.id + ',-1)" style="width:28px;height:28px;border-radius:8px;background:rgba(var(--rgb-sky),0.1);color:var(--fg-link);font-weight:bold;border:none;cursor:pointer;">−</button>'
+                + '<span style="font-weight:bold;color:var(--fg-ink);width:24px;text-align:center;">' + item.quantity + '</span>'
+                + '<button onclick="cartQty(' + item.id + ',1)" style="width:28px;height:28px;border-radius:8px;background:rgba(var(--rgb-sky),0.1);color:var(--fg-link);font-weight:bold;border:none;cursor:pointer;">+</button>'
+                + '<button onclick="cartRemove(' + item.id + ')" style="width:28px;height:28px;border-radius:8px;background:rgba(var(--rgb-red),0.1);color:var(--fg-danger);border:none;cursor:pointer;margin-left:4px;"><i class="fas fa-trash" style="font-size:0.7rem;"></i></button>'
               + '</div>'
             + '</div>';
           }).join('');
@@ -455,7 +455,7 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
           if (prod) {
             content.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;">'
               + '<span>' + prod.name + ' — 1 unité</span>'
-              + '<span style="color:#111827;font-weight:700;">' + prod.price.toLocaleString() + ' FCFA</span>'
+              + '<span style="color:var(--fg-ink);font-weight:700;">' + prod.price.toLocaleString() + ' FCFA</span>'
               + '</div>';
             box.style.display = 'block';
           } else {
@@ -487,11 +487,11 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
               total += item.price * (item.quantity || 1);
               return '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
                 + '<span>' + item.name + ' x' + item.quantity + '</span>'
-                + '<span style="color:#111827;font-weight:600;">' + (item.price * item.quantity).toLocaleString() + ' FCFA</span>'
+                + '<span style="color:var(--fg-ink);font-weight:600;">' + (item.price * item.quantity).toLocaleString() + ' FCFA</span>'
                 + '</div>';
-            }).join('') + '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(56,189,248,0.15);display:flex;justify-content:space-between;">'
-              + '<span style="font-weight:700;color:#111827;">Total</span>'
-              + '<span style="font-weight:700;color:#0369a1;">' + total.toLocaleString() + ' FCFA</span>'
+            }).join('') + '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(var(--rgb-sky),0.15);display:flex;justify-content:space-between;">'
+              + '<span style="font-weight:700;color:var(--fg-ink);">Total</span>'
+              + '<span style="font-weight:700;color:var(--fg-link);">' + total.toLocaleString() + ' FCFA</span>'
               + '</div>';
             box.style.display = 'block';
           } else {
@@ -730,9 +730,9 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
             const data = await res.json();
             if (data.success) {
               document.getElementById('create-account-section').innerHTML =
-                '<div style="text-align:center; color:#047857; font-size:0.82rem; padding:14px; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.2); border-radius:12px;">'
+                '<div style="text-align:center; color:var(--fg-success); font-size:0.82rem; padding:14px; background:rgba(var(--rgb-emerald),0.08); border:1px solid rgba(var(--rgb-emerald),0.2); border-radius:12px;">'
                 + '<i class="fas fa-check-circle" style="margin-right:6px;"></i>'
-                + 'Compte créé ! <a href="/espace-client" style="color:#0369a1; font-weight:700; margin-left:6px;">Se connecter →</a>'
+                + 'Compte créé ! <a href="/espace-client" style="color:var(--fg-link); font-weight:700; margin-left:6px;">Se connecter →</a>'
                 + '</div>';
             } else {
               btn.disabled = false;

@@ -29,14 +29,14 @@ export const OrderDetailModal = ({ order, isOpen, payment }: OrderDetailModalPro
     <div
       id="order-detail-modal"
       class="fixed inset-0 z-50 flex items-center justify-center"
-      style="background:rgba(0,0,0,0.5);"
+      style="background:rgba(var(--rgb-black),0.5);"
       onclick="if(event.target===this) document.getElementById('order-detail-modal').style.display='none';"
     >
-      <div class="relative w-full max-w-2xl rounded-2xl overflow-hidden" style="background: var(--admin-card-bg); border: 1px solid var(--admin-border); max-height:90vh; overflow-y:auto;">
+      <div class="relative w-full max-w-2xl rounded-2xl overflow-hidden bg-admin-card border border-admin-line" style="max-height:90vh; overflow-y:auto;">
 
         {/* Header */}
-        <div class="flex items-center justify-between px-6 py-4" style="border-bottom:1px solid var(--admin-border);">
-          <h2 class="text-lg font-bold" style="color: var(--admin-text-primary);">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-admin-line">
+          <h2 class="text-lg font-bold text-admin-fg">
             Commande <span class="font-mono text-blue-300">#CMD-{String(order.id).padStart(4, '0')}</span>
           </h2>
           <button
@@ -54,24 +54,24 @@ export const OrderDetailModal = ({ order, isOpen, payment }: OrderDetailModalPro
           {/* Client + résumé */}
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Client</p>
-              <p class="font-semibold" style="color: var(--admin-text-primary);">{order.client_name}</p>
+              <p class="text-xs mb-1 text-admin-muted">Client</p>
+              <p class="font-semibold text-admin-fg">{order.client_name}</p>
               <p class="text-sm" style="color: var(--admin-text-muted);">{order.client_phone}</p>
-              {order.client_email && <p class="text-xs" style="color: var(--admin-text-muted);">{order.client_email}</p>}
+              {order.client_email && <p class="text-xs text-admin-muted">{order.client_email}</p>}
             </div>
             <div>
-              <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Date</p>
+              <p class="text-xs mb-1 text-admin-muted">Date</p>
               <p class="text-sm" style="color: var(--admin-text-primary);">{createdAt}</p>
-              <p class="text-xs mt-1" style="color: var(--admin-text-muted);">{order.quartier || '—'}</p>
+              <p class="text-xs mt-1 text-admin-muted">{order.quartier || '—'}</p>
             </div>
             <div>
-              <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Montant</p>
-              <p class="text-2xl font-bold" style="color: var(--admin-accent);">
+              <p class="text-xs mb-1 text-admin-muted">Montant</p>
+              <p class="text-2xl font-bold text-admin-accent">
                 {order.total_price ? order.total_price.toLocaleString('fr-FR') + ' F' : '—'}
               </p>
             </div>
             <div>
-              <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Statut</p>
+              <p class="text-xs mb-1 text-admin-muted">Statut</p>
               <span style={`background:${si.bg}; color:${si.color}; border-radius:9999px; padding:0.2rem 0.65rem; font-size:0.7rem; font-weight:600;`}>
                 {si.label}
               </span>
@@ -81,66 +81,66 @@ export const OrderDetailModal = ({ order, isOpen, payment }: OrderDetailModalPro
           {/* Notes */}
           {order.notes && (
             <div>
-              <p class="text-xs mb-2" style="color: var(--admin-text-muted);">Notes / Produit</p>
+              <p class="text-xs mb-2 text-admin-muted">Notes / Produit</p>
               <p class="text-sm whitespace-pre-wrap" style="color: var(--admin-text-primary);">{order.notes}</p>
             </div>
           )}
 
           {/* Détails commande */}
-          <div style="border-top:1px solid var(--admin-border); padding-top:1rem;">
-            <p class="text-xs font-semibold mb-3" style="color: var(--admin-text-muted); text-transform:uppercase; letter-spacing:0.05em;">Détails commande</p>
+          <div class="border-t border-admin-line pt-[1rem]">
+            <p class="text-xs font-semibold mb-3 text-admin-muted uppercase" style="letter-spacing:0.05em;">Détails commande</p>
             <div class="grid grid-cols-2 gap-4">
               {order.type && (
                 <div>
-                  <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Type</p>
+                  <p class="text-xs mb-1 text-admin-muted">Type</p>
                   <p class="text-sm" style="color: var(--admin-text-primary);">{order.type}</p>
                 </div>
               )}
               {order.product_id && (
                 <div>
-                  <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Produit</p>
+                  <p class="text-xs mb-1 text-admin-muted">Produit</p>
                   <p class="text-sm font-mono" style="color: var(--admin-text-primary);">#{order.product_id}{order.quantity ? ` × ${order.quantity}` : ''}</p>
                 </div>
               )}
               {order.installation_price && (
                 <div>
-                  <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Prix installation</p>
+                  <p class="text-xs mb-1 text-admin-muted">Prix installation</p>
                   <p class="text-sm font-bold" style="color: var(--admin-accent);">{order.installation_price.toLocaleString('fr-FR')} F</p>
                 </div>
               )}
               {order.delivered_at && (
                 <div>
-                  <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Livré le</p>
+                  <p class="text-xs mb-1 text-admin-muted">Livré le</p>
                   <p class="text-sm" style="color: var(--admin-text-primary);">{new Date(order.delivered_at).toLocaleDateString('fr-FR')}</p>
                 </div>
               )}
               {order.installed_at && (
                 <div>
-                  <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Installé le</p>
+                  <p class="text-xs mb-1 text-admin-muted">Installé le</p>
                   <p class="text-sm" style="color: var(--admin-text-primary);">{new Date(order.installed_at).toLocaleDateString('fr-FR')}</p>
                 </div>
               )}
               {order.delivery_confirmed_by && (
                 <div>
-                  <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Livraison confirmée par</p>
+                  <p class="text-xs mb-1 text-admin-muted">Livraison confirmée par</p>
                   <p class="text-sm" style="color: var(--admin-text-primary);">{order.delivery_confirmed_by}</p>
                 </div>
               )}
               {order.installation_confirmed_by && (
                 <div>
-                  <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Installation confirmée par</p>
+                  <p class="text-xs mb-1 text-admin-muted">Installation confirmée par</p>
                   <p class="text-sm" style="color: var(--admin-text-primary);">{order.installation_confirmed_by}</p>
                 </div>
               )}
               {order.appointment_id && (
                 <div>
-                  <p class="text-xs mb-1" style="color: var(--admin-text-muted);">RDV lié</p>
+                  <p class="text-xs mb-1 text-admin-muted">RDV lié</p>
                   <p class="text-sm font-mono" style="color: var(--admin-text-primary);">#{order.appointment_id}</p>
                 </div>
               )}
               {order.client_id && (
                 <div>
-                  <p class="text-xs mb-1" style="color: var(--admin-text-muted);">Fiche client</p>
+                  <p class="text-xs mb-1 text-admin-muted">Fiche client</p>
                   <a href={`/admin/clients?id=${order.client_id}`} class="text-xs text-blue-400 hover:underline">Client #{order.client_id}</a>
                 </div>
               )}
@@ -149,28 +149,28 @@ export const OrderDetailModal = ({ order, isOpen, payment }: OrderDetailModalPro
 
           {/* Paiement */}
           {payment && (
-            <div style="border-top:1px solid var(--admin-border); padding-top:1rem;">
-              <p class="text-xs font-semibold mb-3" style="color: var(--admin-text-muted); text-transform:uppercase; letter-spacing:0.05em;">Paiement</p>
+            <div class="border-t border-admin-line pt-[1rem]">
+              <p class="text-xs font-semibold mb-3 text-admin-muted uppercase" style="letter-spacing:0.05em;">Paiement</p>
               <div class="flex items-center gap-3 flex-wrap">
                 <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style={`background:${payment.status === 'completed' ? 'rgba(5,150,105,0.12)' : 'rgba(217,119,6,0.12)'}; color:${payment.status === 'completed' ? '#34d399' : '#fbbf24'};`}>
                   {payment.status === 'completed' ? 'Payé' : 'En attente'}
                 </span>
                 {payment.method && (
-                  <span class="text-xs" style="color: var(--admin-text-muted);">{payment.method}</span>
+                  <span class="text-xs text-admin-muted">{payment.method}</span>
                 )}
                 {payment.reference && (
-                  <span class="text-xs font-mono" style="color: var(--admin-text-primary);">{payment.reference}</span>
+                  <span class="text-xs font-mono text-admin-fg">{payment.reference}</span>
                 )}
               </div>
             </div>
           )}
 
           {/* Changer statut */}
-          <div style="border-top:1px solid var(--admin-border); padding-top:1rem;">
-            <p class="text-xs mb-3" style="color: var(--admin-text-muted);">Changer le statut</p>
+          <div class="border-t border-admin-line pt-[1rem]">
+            <p class="text-xs mb-3 text-admin-muted">Changer le statut</p>
             <form method="post" action="/api/admin/commande/status" class="flex items-center gap-3">
               <input type="hidden" name="id" value={String(order.id)} />
-              <select name="status" class="text-sm px-3 py-2 rounded-lg" style="background: var(--admin-bg-elevated); color: var(--admin-text-primary); border:1px solid var(--admin-border);">
+              <select name="status" class="text-sm px-3 py-2 rounded-lg bg-admin-elevated border border-admin-line" style="color: var(--admin-text-primary);">
                 {Object.entries(STATUS_MAP).map(([val, info]) => (
                   <option value={val} selected={val === order.status}>{info.label}</option>
                 ))}
@@ -187,15 +187,15 @@ export const OrderDetailModal = ({ order, isOpen, payment }: OrderDetailModalPro
               href={`/api/order/invoice/${order.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              class="text-xs px-3 py-2 rounded-lg font-semibold"
-              style="background:rgba(16,185,129,0.12); color:#34d399; border:1px solid rgba(16,185,129,0.2);"
+              class="text-xs px-3 py-2 rounded-lg font-semibold text-fg-on-dark-success"
+              style="background:rgba(var(--rgb-green),0.12); border:1px solid rgba(var(--rgb-green),0.2);"
             >
               <i class="fas fa-file-invoice mr-1"></i>Facture
             </a>
             <a
               href={`/admin/devis/new?order_id=${order.id}`}
-              class="text-xs px-3 py-2 rounded-lg font-semibold"
-              style="background:rgba(245,158,11,0.12); color:#f59e0b; border:1px solid rgba(245,158,11,0.2);"
+              class="text-xs px-3 py-2 rounded-lg font-semibold text-fg-amber"
+              style="background:rgba(var(--rgb-amber-deep),0.12); border:1px solid rgba(var(--rgb-amber-deep),0.2);"
             >
               <i class="fas fa-file-invoice-dollar mr-1"></i>Créer devis
             </a>
@@ -203,8 +203,8 @@ export const OrderDetailModal = ({ order, isOpen, payment }: OrderDetailModalPro
               href={`https://wa.me/${(order.client_phone || '').replace(/\D/g, '')}`}
               target="_blank"
               rel="noopener noreferrer"
-              class="text-xs px-3 py-2 rounded-lg font-semibold"
-              style="background:rgba(37,211,102,0.12); color:#25D366; border:1px solid rgba(37,211,102,0.2);"
+              class="text-xs px-3 py-2 rounded-lg font-semibold text-fg-whatsapp"
+              style="background:rgba(var(--rgb-whatsapp),0.12); border:1px solid rgba(var(--rgb-whatsapp),0.2);"
             >
               <i class="fab fa-whatsapp mr-1"></i>WhatsApp
             </a>

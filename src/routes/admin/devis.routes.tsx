@@ -120,13 +120,13 @@ function buildClientDevisHTML(d: any): string {
     const annualKwh = Math.round(kw * 8 * 300) // 8h/day, 300 days
     const savings = Math.round(annualKwh * 0.30 * 100) // 100 FCFA/kWh, 30% inverter saving
     savingsHtml = `
-    <div style="background:linear-gradient(135deg,rgba(52,211,153,0.08),rgba(16,185,129,0.05)); border:1px solid rgba(52,211,153,0.2); border-radius:16px; padding:20px; margin:24px 0;">
+    <div style="background:linear-gradient(135deg,rgba(var(--rgb-emerald),0.08),rgba(var(--rgb-green),0.05)); border:1px solid rgba(var(--rgb-emerald),0.2); border-radius:16px; padding:20px; margin:24px 0;">
       <div style="display:flex; align-items:flex-start; gap:14px;">
-        <div style="width:44px; height:44px; background:rgba(52,211,153,0.15); border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:20px;">💡</div>
+        <div style="width:44px; height:44px; background:rgba(var(--rgb-emerald),0.15); border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:20px;">💡</div>
         <div style="flex:1;">
-          <div style="font-weight:700; color:#34d399; margin-bottom:4px;">Économies estimées avec Inverter</div>
-          <div style="font-size:13px; color:#6b7280; line-height:1.6;">Pour un climatiseur ${btu.toLocaleString('fr-FR')} BTU, la technologie Inverter réduit votre consommation d'environ <strong style="color:#34d399;">30%</strong>, soit une économie annuelle estimée à :</div>
-          <div style="font-size:28px; font-weight:800; color:#34d399; margin:8px 0;">${savings.toLocaleString('fr-FR')} FCFA <span style="font-size:14px; font-weight:500; color:#6b7280;">/ an</span></div>
+          <div style="font-weight:700; color:var(--fg-on-dark-success); margin-bottom:4px;">Économies estimées avec Inverter</div>
+          <div style="font-size:13px; color:var(--fg-gray); line-height:1.6;">Pour un climatiseur ${btu.toLocaleString('fr-FR')} BTU, la technologie Inverter réduit votre consommation d'environ <strong style="color:var(--fg-on-dark-success);">30%</strong>, soit une économie annuelle estimée à :</div>
+          <div style="font-size:28px; font-weight:800; color:var(--fg-on-dark-success); margin:8px 0;">${savings.toLocaleString('fr-FR')} FCFA <span style="font-size:14px; font-weight:500; color:var(--fg-gray);">/ an</span></div>
           <div style="font-size:11px; color:#9ca3af;">Estimation basée sur 8h/jour, 300 jours/an et un tarif de 100 FCFA/kWh</div>
         </div>
       </div>
@@ -134,27 +134,27 @@ function buildClientDevisHTML(d: any): string {
   }
 
   const acceptFormHtml = !isAccepted && !isExpired ? `
-    <div style="text-align:center; padding:32px 20px; background:linear-gradient(135deg,rgba(56,189,248,0.06),rgba(99,102,241,0.06)); border-radius:16px; border:1px solid rgba(56,189,248,0.15); margin:24px 0;">
-      <div style="font-size:18px; font-weight:700; color:#e2e8f0; margin-bottom:8px;">✅ Accepter ce devis ?</div>
+    <div style="text-align:center; padding:32px 20px; background:linear-gradient(135deg,rgba(var(--rgb-sky),0.06),rgba(var(--rgb-indigo),0.06)); border-radius:16px; border:1px solid rgba(var(--rgb-sky),0.15); margin:24px 0;">
+      <div style="font-size:18px; font-weight:700; color:var(--fg-on-dark-soft); margin-bottom:8px;">✅ Accepter ce devis ?</div>
       <p style="color:#94a3b8; font-size:14px; margin-bottom:20px;">En acceptant, vous confirmez votre accord sur les conditions ci-dessus.<br>Notre équipe vous contactera sous 24h pour planifier l'intervention.</p>
       <form method="post" action="/api/devis/${d.token}/accept" style="display:inline;">
-        <button type="submit" style="background:linear-gradient(135deg,#059669,#10b981); color:white; font-weight:700; font-size:15px; padding:14px 32px; border-radius:12px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:10px; box-shadow:0 4px 15px rgba(16,185,129,0.3);">
+        <button type="submit" style="background:linear-gradient(135deg,var(--surface-success),var(--surface-success-bright)); color:var(--fg-on-dark); font-weight:700; font-size:15px; padding:14px 32px; border-radius:12px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:10px; box-shadow:0 4px 15px rgba(var(--rgb-green),0.3);">
           J'accepte ce devis — ${total.toLocaleString('fr-FR')} FCFA
         </button>
       </form>
       <div style="margin-top:16px;">
-        <a href="https://wa.me/22655996418?text=${encodeURIComponent('Bonjour, je souhaite discuter du devis ' + d.numero)}" style="display:inline-flex; align-items:center; gap:8px; background:rgba(37,211,102,0.1); color:#25D366; font-weight:600; font-size:13px; padding:10px 20px; border-radius:10px; text-decoration:none; border:1px solid rgba(37,211,102,0.25);">
+        <a href="https://wa.me/22655996418?text=${encodeURIComponent('Bonjour, je souhaite discuter du devis ' + d.numero)}" style="display:inline-flex; align-items:center; gap:8px; background:rgba(var(--rgb-whatsapp),0.1); color:var(--fg-whatsapp); font-weight:600; font-size:13px; padding:10px 20px; border-radius:10px; text-decoration:none; border:1px solid rgba(var(--rgb-whatsapp),0.25);">
           <span style="font-size:18px;">💬</span> Poser une question par WhatsApp
         </a>
       </div>
     </div>` : isAccepted ? `
-    <div style="text-align:center; padding:24px; background:rgba(52,211,153,0.08); border-radius:16px; border:1px solid rgba(52,211,153,0.2); margin:24px 0;">
+    <div style="text-align:center; padding:24px; background:rgba(var(--rgb-emerald),0.08); border-radius:16px; border:1px solid rgba(var(--rgb-emerald),0.2); margin:24px 0;">
       <div style="font-size:24px; margin-bottom:8px;">🎉</div>
-      <div style="font-size:18px; font-weight:700; color:#34d399;">Devis accepté — Merci !</div>
+      <div style="font-size:18px; font-weight:700; color:var(--fg-on-dark-success);">Devis accepté — Merci !</div>
       <p style="color:#94a3b8; font-size:13px; margin-top:6px;">Notre équipe va vous contacter très prochainement.</p>
     </div>` : `
-    <div style="text-align:center; padding:24px; background:rgba(239,68,68,0.08); border-radius:16px; border:1px solid rgba(239,68,68,0.2); margin:24px 0;">
-      <div style="font-size:18px; font-weight:700; color:#f87171;">⚠️ Ce devis est expiré</div>
+    <div style="text-align:center; padding:24px; background:rgba(var(--rgb-red),0.08); border-radius:16px; border:1px solid rgba(var(--rgb-red),0.2); margin:24px 0;">
+      <div style="font-size:18px; font-weight:700; color:var(--fg-on-dark-danger);">⚠️ Ce devis est expiré</div>
       <p style="color:#94a3b8; font-size:13px; margin-top:6px;">Contactez-nous pour un nouveau devis actualisé.</p>
     </div>`
 
@@ -891,7 +891,7 @@ adminDevisRouter.post('/api/admin/devis/create', adminAuth, async (c) => {
               ? `<tr><td style="padding:8px 12px;">Main d'œuvre / Installation</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${installPrix.toLocaleString('fr-FR')} FCFA</td></tr>` : ''
             const accRows = accs.map((a: any) => `<tr><td style="padding:8px 12px;">${escapeHtml(a.nom)}</td><td style="padding:8px 12px;text-align:right;">${Number(a.prix || 0).toLocaleString('fr-FR')} FCFA</td></tr>`).join('')
             const msgBlock = (body['message_client'] as string || '').trim()
-              ? `<p style="background:#f0f9ff;border-left:4px solid #0077b6;padding:14px;margin:20px 0;border-radius:0 8px 8px 0;">${escapeHtml(body['message_client'] as string)}</p>` : ''
+              ? `<p style="background:var(--surface-info);border-left:4px solid var(--line-brand);padding:14px;margin:20px 0;border-radius:0 8px 8px 0;">${escapeHtml(body['message_client'] as string)}</p>` : ''
             const emailResp = await fetch('https://api.brevo.com/v3/smtp/email', {
               method: 'POST',
               headers: { 'api-key': brevoKey, 'Content-Type': 'application/json' },
@@ -991,7 +991,7 @@ adminDevisRouter.post('/api/admin/devis/send-email', adminAuth, async (c) => {
     const prodRow = devis.produit_nom ? `<tr><td style="padding:8px 12px;">${escapeHtml(devis.produit_nom)} × ${Number(devis.produit_quantite) || 1}</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${prodTotal.toLocaleString('fr-FR')} FCFA</td></tr>` : ''
     const installRow = Number(devis.installation_prix) > 0 ? `<tr><td style="padding:8px 12px;">Main d'œuvre / Installation</td><td style="padding:8px 12px;text-align:right;font-weight:600;">${Number(devis.installation_prix).toLocaleString('fr-FR')} FCFA</td></tr>` : ''
     const accRows = accs.filter((a: any) => a.nom).map((a: any) => `<tr><td style="padding:8px 12px;">${escapeHtml(a.nom)}</td><td style="padding:8px 12px;text-align:right;">${Number(a.prix || 0).toLocaleString('fr-FR')} FCFA</td></tr>`).join('')
-    const msgBlock = devis.message_client ? `<p style="background:#f0f9ff;border-left:4px solid #0077b6;padding:14px;margin:20px 0;border-radius:0 8px 8px 0;">${escapeHtml(devis.message_client)}</p>` : ''
+    const msgBlock = devis.message_client ? `<p style="background:var(--surface-info);border-left:4px solid var(--line-brand);padding:14px;margin:20px 0;border-radius:0 8px 8px 0;">${escapeHtml(devis.message_client)}</p>` : ''
 
     const emailResp = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
@@ -1121,11 +1121,11 @@ adminDevisRouter.get('/devis/:token', async (c) => {
   try {
     await ensureDevisTable(db)
     const devis = await db.prepare('SELECT * FROM devis WHERE token = ?').bind(token).first() as any
-    if (!devis) return c.html('<html><body style="background:#0b1120;color:#fff;font-family:sans-serif;text-align:center;padding:80px 20px;"><h1>Devis introuvable</h1><p style="color:#6b7280;">Ce lien est invalide ou expiré.</p><br><a href="/" style="color:#38bdf8;">← MAASGA</a></body></html>', 404)
+    if (!devis) return c.html('<html><body class="text-fg-on-dark text-center py-[80px] px-[20px]" style="background:#0b1120; font-family:sans-serif;"><h1>Devis introuvable</h1><p class="text-fg-gray">Ce lien est invalide ou expiré.</p><br><a href="/" class="text-fg-on-dark-accent">← MAASGA</a></body></html>', 404)
     return c.html(buildClientDevisHTML(devis as any))
   } catch(e) {
     console.error('Devis view error:', e)
-    return c.html('<html><body style="background:#0b1120;color:#fff;font-family:sans-serif;text-align:center;padding:80px 20px;"><h1>Erreur</h1><p>Impossible de charger ce devis.</p></body></html>', 500)
+    return c.html('<html><body class="text-fg-on-dark text-center py-[80px] px-[20px]" style="background:#0b1120; font-family:sans-serif;"><h1>Erreur</h1><p>Impossible de charger ce devis.</p></body></html>', 500)
   }
 })
 

@@ -31,11 +31,11 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
     <AdminLayout activePage="rdv">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">Gestion des rendez-vous</h2>
+          <h2 class="text-xl font-bold text-admin-fg">Gestion des rendez-vous</h2>
           <p class="text-sm text-gray-500 mt-1">{filtered.length} rendez-vous · {appointments.filter(a => a.status === 'pending').length} en attente</p>
         </div>
         <div class="flex flex-wrap gap-2 items-center">
-          <a href="/api/admin/export/rdv" class="text-xs px-3 py-2 rounded-xl font-semibold flex items-center space-x-2" style="background:rgba(16,185,129,0.12); color:#34d399; border:1px solid rgba(16,185,129,0.2);">
+          <a href="/api/admin/export/rdv" class="text-xs px-3 py-2 rounded-xl font-semibold flex items-center space-x-2 text-fg-on-dark-success" style="background:rgba(var(--rgb-green),0.12); border:1px solid rgba(var(--rgb-green),0.2);">
             <i class="fas fa-file-csv"></i>
             <span>Export CSV</span>
           </a>
@@ -67,8 +67,8 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
             oninput="filterRDVList(this.value)"
             class="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm input-field" />
         </div>
-        <div class="flex rounded-xl overflow-hidden" style="border:1px solid rgba(148,163,184,0.2);">
-          <button onclick="toggleRDVView('list')" id="btn-view-list" class="px-3 py-2 text-xs font-semibold" style="background:rgba(59,130,246,0.2); color:#60a5fa;">
+        <div class="flex rounded-xl overflow-hidden" style="border:1px solid rgba(var(--rgb-slate),0.2);">
+          <button onclick="toggleRDVView('list')" id="btn-view-list" class="px-3 py-2 text-xs font-semibold text-fg-on-dark-info" style="background:rgba(var(--rgb-blue),0.2);">
             <i class="fas fa-list"></i>
           </button>
           <button onclick="toggleRDVView('calendar')" id="btn-view-calendar" class="px-3 py-2 text-xs font-semibold" style="background:transparent; color:#94a3b8;">
@@ -80,19 +80,19 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
       {/* VUE CALENDRIER */}
       <div id="rdv-calendar-view" class="hidden mb-6">
         <div class="rounded-2xl card-shadow overflow-hidden" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
-          <div class="p-4 flex items-center justify-between" style="border-bottom:1px solid rgba(148,163,184,0.08);">
-            <button onclick="changeCalendarMonth(-1)" class="px-3 py-1.5 rounded-lg text-sm font-medium" style="background:rgba(59,130,246,0.1); color:#60a5fa;">
+          <div class="p-4 flex items-center justify-between" style="border-bottom:1px solid rgba(var(--rgb-slate),0.08);">
+            <button onclick="changeCalendarMonth(-1)" class="px-3 py-1.5 rounded-lg text-sm font-medium" style="background:rgba(var(--rgb-blue),0.1); color:var(--fg-on-dark-info);">
               <i class="fas fa-chevron-left"></i>
             </button>
-            <h3 id="calendar-month-label" class="text-lg font-bold" style="color:var(--admin-text-primary);"></h3>
-            <button onclick="changeCalendarMonth(1)" class="px-3 py-1.5 rounded-lg text-sm font-medium" style="background:rgba(59,130,246,0.1); color:#60a5fa;">
+            <h3 id="calendar-month-label" class="text-lg font-bold text-admin-fg"></h3>
+            <button onclick="changeCalendarMonth(1)" class="px-3 py-1.5 rounded-lg text-sm font-medium" style="background:rgba(var(--rgb-blue),0.1); color:var(--fg-on-dark-info);">
               <i class="fas fa-chevron-right"></i>
             </button>
           </div>
           <div class="p-4">
             <div class="grid grid-cols-7 gap-1 mb-2">
               {['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].map(d => (
-                <div class="text-center text-xs font-bold py-2" style="color:var(--admin-text-muted)">{d}</div>
+                <div class="text-center text-xs font-bold py-2 text-admin-muted">{d}</div>
               ))}
             </div>
             <div id="calendar-grid" class="grid grid-cols-7 gap-1"></div>
@@ -100,7 +100,7 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
         </div>
         {/* Détail du jour sélectionné */}
         <div id="calendar-day-detail" class="hidden mt-4 rounded-2xl card-shadow p-5" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
-          <h4 id="calendar-day-label" class="font-bold mb-3" style="color:var(--admin-text-primary);"></h4>
+          <h4 id="calendar-day-label" class="font-bold mb-3 text-admin-fg"></h4>
           <div id="calendar-day-rdvs" class="space-y-2"></div>
         </div>
       </div>
@@ -149,7 +149,7 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
                     <form method="post" action="/api/admin/rdv/update">
                       <input type="hidden" name="id" value={String(a.id)} />
                       <input type="hidden" name="status" value="confirmed" />
-                      <button type="submit" class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap" style="background:rgba(16,185,129,0.15); color:#34d399;">
+                      <button type="submit" class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap text-fg-on-dark-success" style="background:rgba(var(--rgb-green),0.15);">
                         <i class="fas fa-check mr-1"></i>Confirmer
                       </button>
                     </form>
@@ -158,22 +158,22 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
                     <form method="post" action="/api/admin/rdv/update">
                       <input type="hidden" name="id" value={String(a.id)} />
                       <input type="hidden" name="status" value="done" />
-                      <button type="submit" class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap" style="background:rgba(59,130,246,0.15); color:#60a5fa;">
+                      <button type="submit" class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap text-fg-on-dark-info" style="background:rgba(var(--rgb-blue),0.15);">
                         <i class="fas fa-flag-checkered mr-1"></i>Effectué
                       </button>
                     </form>
                   )}
                   <a href={`https://wa.me/${a.phone.replace(/\D/g, '')}?text=${encodeURIComponent('Bonjour ' + a.name + ', votre RDV MAASGA du ' + a.date + ' à ' + a.quartier + ' est confirmé. Besoin de renseignements ?')}`} target="_blank" rel="noopener noreferrer"
-                    class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap" style="background:rgba(37,211,102,0.15); color:#25D366;" title="Contacter via WhatsApp">
+                    class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap text-fg-whatsapp" style="background:rgba(var(--rgb-whatsapp),0.15);" title="Contacter via WhatsApp">
                     <i class="fab fa-whatsapp mr-1"></i>WA
                   </a>
                   <a href={`/admin/devis/new?rdvId=${a.id}`}
-                    class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap" style="background:rgba(239,68,68,0.12); color:#f87171;">
+                    class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap text-fg-on-dark-danger" style="background:rgba(var(--rgb-red),0.12);">
                     <i class="fas fa-file-invoice-dollar mr-1"></i>Devis
                   </a>
-                  <form method="post" action="/api/admin/rdv/delete" style="display:inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce RDV ?')">
+                  <form method="post" action="/api/admin/rdv/delete" class="inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce RDV ?')">
                     <input type="hidden" name="id" value={String(a.id)} />
-                    <button type="submit" class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap" style="background:rgba(239,68,68,0.15); color:#f87171;">
+                    <button type="submit" class="text-xs px-3 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap text-fg-on-dark-danger" style="background:rgba(var(--rgb-red),0.15);">
                       <i class="fas fa-trash mr-1"></i>Supprimer
                     </button>
                   </form>
@@ -186,10 +186,10 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
 
       {/* Modal ajout RDV */}
       <div id="add-rdv-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-        <div class="rounded-3xl p-4 sm:p-8 w-full max-w-xl shadow-2xl my-8 max-h-[90vh] overflow-y-auto" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
+        <div class="rounded-3xl p-4 sm:p-8 w-full max-w-xl shadow-2xl my-8 max-h-[90vh] overflow-y-auto bg-admin-card border border-admin-line">
           <div class="flex items-center justify-between mb-6">
-            <h3 class="font-bold text-lg" style="color:var(--admin-text-primary);">Ajouter un rendez-vous</h3>
-            <button onclick="document.getElementById('add-rdv-modal').classList.add('hidden')" class="p-1" style="color:var(--admin-text-muted);">
+            <h3 class="font-bold text-lg text-admin-fg">Ajouter un rendez-vous</h3>
+            <button onclick="document.getElementById('add-rdv-modal').classList.add('hidden')" class="p-1 text-admin-muted">
               <i class="fas fa-times text-xl"></i>
             </button>
           </div>
@@ -249,9 +249,9 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
       </div>
       {/* Modal Détail RDV */}
       <div id="rdv-detail-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-        <div class="rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
-          <div class="flex items-center justify-between px-4 sm:px-6 py-4" style="border-bottom:1px solid var(--admin-border);">
-            <h3 class="font-bold text-base sm:text-lg flex items-center space-x-2" style="color:var(--admin-text-primary);">
+        <div class="rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto bg-admin-card border border-admin-line">
+          <div class="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-admin-line">
+            <h3 class="font-bold text-base sm:text-lg flex items-center space-x-2 text-admin-fg">
               <i class="fas fa-calendar-alt text-blue-400"></i>
               <span>Détails du rendez-vous</span>
             </h3>
@@ -261,53 +261,53 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
           </div>
           <div class="p-4 sm:p-6 space-y-4">
             <div class="flex items-center space-x-4">
-              <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold flex-shrink-0" style="background:rgba(59,130,246,0.2); color:#60a5fa;" id="rdv-detail-avatar"></div>
+              <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold flex-shrink-0 text-fg-on-dark-info" style="background:rgba(var(--rgb-blue),0.2);" id="rdv-detail-avatar"></div>
               <div>
-                <div class="text-lg font-bold" style="color:var(--admin-text-primary);" id="rdv-detail-name"></div>
+                <div class="text-lg font-bold text-admin-fg" id="rdv-detail-name"></div>
                 <div class="text-sm" style="color:var(--admin-accent);" id="rdv-detail-type"></div>
               </div>
               <div class="ml-auto" id="rdv-detail-badge"></div>
             </div>
             <div class="grid grid-cols-2 gap-3">
-              <div class="rounded-xl p-3" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
-                <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-phone mr-1"></i>Téléphone (Whatsapp)</div>
+              <div class="rounded-xl p-3 bg-admin-bg border border-admin-line">
+                <div class="text-xs mb-1 text-admin-muted"><i class="fas fa-phone mr-1"></i>Téléphone (Whatsapp)</div>
                 <div class="text-sm font-semibold" style="color:var(--admin-text-primary);" id="rdv-detail-phone"></div>
               </div>
-              <div class="rounded-xl p-3" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
-                <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-map-marker-alt mr-1"></i>Quartier</div>
+              <div class="rounded-xl p-3 bg-admin-bg border border-admin-line">
+                <div class="text-xs mb-1 text-admin-muted"><i class="fas fa-map-marker-alt mr-1"></i>Quartier</div>
                 <div class="text-sm font-semibold" style="color:var(--admin-text-primary);" id="rdv-detail-quartier"></div>
               </div>
-              <div class="rounded-xl p-3" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
-                <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-calendar mr-1"></i>Date</div>
+              <div class="rounded-xl p-3 bg-admin-bg border border-admin-line">
+                <div class="text-xs mb-1 text-admin-muted"><i class="fas fa-calendar mr-1"></i>Date</div>
                 <div class="text-sm font-semibold" style="color:var(--admin-text-primary);" id="rdv-detail-date"></div>
               </div>
-              <div class="rounded-xl p-3" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
-                <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-clock mr-1"></i>Horaire</div>
+              <div class="rounded-xl p-3 bg-admin-bg border border-admin-line">
+                <div class="text-xs mb-1 text-admin-muted"><i class="fas fa-clock mr-1"></i>Horaire</div>
                 <div class="text-sm font-semibold text-gray-200" style="color:var(--admin-text-primary);" id="rdv-detail-heure"></div>
               </div>
-              <div class="rounded-xl p-3" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
-                <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-globe mr-1"></i>Localisation GPS</div>
+              <div class="rounded-xl p-3 bg-admin-bg border border-admin-line">
+                <div class="text-xs mb-1 text-admin-muted"><i class="fas fa-globe mr-1"></i>Localisation GPS</div>
                 <div class="text-sm font-semibold text-gray-200" style="color:var(--admin-text-primary);" id="rdv-detail-gps"></div>
               </div>
-              <div class="rounded-xl p-3" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
-                <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-calendar-plus mr-1"></i>Créé le</div>
+              <div class="rounded-xl p-3 bg-admin-bg border border-admin-line">
+                <div class="text-xs mb-1 text-admin-muted"><i class="fas fa-calendar-plus mr-1"></i>Créé le</div>
                 <div class="text-sm font-semibold" style="color:var(--admin-text-primary);" id="rdv-detail-created"></div>
               </div>
             </div>
-            <div id="rdv-detail-adresse-row" class="rounded-xl p-3 hidden" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
-              <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-home mr-1"></i>Adresse précise</div>
+            <div id="rdv-detail-adresse-row" class="rounded-xl p-3 hidden bg-admin-bg border border-admin-line">
+              <div class="text-xs mb-1 text-admin-muted"><i class="fas fa-home mr-1"></i>Adresse précise</div>
               <div class="text-sm font-semibold" style="color:var(--admin-text-primary);" id="rdv-detail-adresse"></div>
             </div>
-            <div id="rdv-detail-notes-row" class="rounded-xl p-3 hidden" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
-              <div class="text-xs mb-1" style="color:var(--admin-text-muted)"><i class="fas fa-sticky-note mr-1"></i>Notes</div>
+            <div id="rdv-detail-notes-row" class="rounded-xl p-3 hidden bg-admin-bg border border-admin-line">
+              <div class="text-xs mb-1 text-admin-muted"><i class="fas fa-sticky-note mr-1"></i>Notes</div>
               <div class="text-sm text-gray-300 italic" id="rdv-detail-notes"></div>
             </div>
 
             {/* Fiche client section */}
-            <div id="rdv-client-section" class="rounded-2xl overflow-hidden" style="border:1px solid var(--admin-border);">
-              <div class="flex items-center justify-between px-4 py-2.5" style="background:var(--admin-accent-light); border-bottom:1px solid var(--admin-border);">
-                <span class="text-xs font-bold" style="color:var(--admin-accent);"><i class="fas fa-user-circle mr-2"></i>Fiche client</span>
-                <span id="rdv-client-status" class="text-xs" style="color:var(--admin-text-muted)">Chargement...</span>
+            <div id="rdv-client-section" class="rounded-2xl overflow-hidden border border-admin-line">
+              <div class="flex items-center justify-between px-4 py-2.5 border-b border-admin-line" style="background:var(--admin-accent-light);">
+                <span class="text-xs font-bold text-admin-accent"><i class="fas fa-user-circle mr-2"></i>Fiche client</span>
+                <span id="rdv-client-status" class="text-xs text-admin-muted">Chargement...</span>
               </div>
               <div id="rdv-client-body" class="p-4 space-y-3">
                 <div class="flex justify-center py-2"><i class="fas fa-spinner fa-spin text-gray-500 text-lg"></i></div>
@@ -315,7 +315,7 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
             </div>
           </div>
           <div class="px-4 sm:px-6 pb-4 sm:pb-6 flex flex-wrap gap-3">
-            <a id="rdv-detail-wa" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 text-center text-sm font-semibold py-2.5 rounded-xl transition-colors" style="background:rgba(37,211,102,0.15); color:#25D366; border:1px solid rgba(37,211,102,0.25);">
+            <a id="rdv-detail-wa" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 text-center text-sm font-semibold py-2.5 rounded-xl transition-colors" style="background:rgba(var(--rgb-whatsapp),0.15); color:var(--fg-whatsapp); border:1px solid rgba(var(--rgb-whatsapp),0.25);">
               <i class="fab fa-whatsapp mr-2"></i>WhatsApp
             </a>
             <button onclick="document.getElementById('rdv-detail-modal').classList.add('hidden')" class="flex-1 text-sm font-semibold py-2.5 rounded-xl transition-colors" style="background:rgba(148,163,184,0.1); color:#94a3b8;">
@@ -398,8 +398,8 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
             html += '<div class="text-xs font-bold ' + (isToday ? 'text-blue-500' : '') + '" style="' + (isToday ? '' : 'color:var(--admin-text-muted)') + '">' + d + '</div>';
             if (count > 0) {
               html += '<div class="mt-1">';
-              if (pending > 0) html += '<div class="text-[10px] px-1.5 py-0.5 rounded-full font-bold mb-0.5" style="background:rgba(251,191,36,0.15); color:#fbbf24;">' + pending + ' attente</div>';
-              if (count - pending > 0) html += '<div class="text-[10px] px-1.5 py-0.5 rounded-full font-bold" style="background:rgba(16,185,129,0.15); color:#34d399;">' + (count - pending) + ' confirm.</div>';
+              if (pending > 0) html += '<div class="text-[10px] px-1.5 py-0.5 rounded-full font-bold mb-0.5" style="background:rgba(var(--rgb-amber),0.15); color:var(--fg-on-dark-warning);">' + pending + ' attente</div>';
+              if (count - pending > 0) html += '<div class="text-[10px] px-1.5 py-0.5 rounded-full font-bold" style="background:rgba(var(--rgb-green),0.15); color:var(--fg-on-dark-success);">' + (count - pending) + ' confirm.</div>';
               html += '</div>';
             }
             html += '</div>';
@@ -474,11 +474,11 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
                 document.getElementById('rdv-client-status').innerHTML = '<span style="color:#f97316;"><i class="fas fa-exclamation-circle mr-1"></i>Pas de compte</span>';
                 document.getElementById('rdv-client-body').innerHTML =
                   '<p class="text-xs text-gray-500 text-center py-2">Ce numéro n’a pas de compte client enregistré.</p>' +
-                  '<div class="flex justify-center"><a href="/admin/clients" class="text-xs px-3 py-1.5 rounded-xl font-semibold" style="background:rgba(59,130,246,0.15);color:#60a5fa;"><i class="fas fa-user-plus mr-1"></i>Créer un client</a></div>';
+                  '<div class="flex justify-center"><a href="/admin/clients" class="text-xs px-3 py-1.5 rounded-xl font-semibold" style="background:rgba(var(--rgb-blue),0.15);color:var(--fg-on-dark-info);"><i class="fas fa-user-plus mr-1"></i>Créer un client</a></div>';
                 return;
               }
               var cl = d.client;
-              document.getElementById('rdv-client-status').innerHTML = '<span style="color:#34d399;"><i class="fas fa-check-circle mr-1"></i>Client enregistré</span>';
+              document.getElementById('rdv-client-status').innerHTML = '<span style="color:var(--fg-on-dark-success);"><i class="fas fa-check-circle mr-1"></i>Client enregistré</span>';
               var srcLabel = { website: 'Site web', referral: 'Parrainage', direct: 'Direct', social: 'Réseaux sociaux' };
               document.getElementById('rdv-client-body').innerHTML =
                 '<div class="grid grid-cols-2 gap-2 text-xs">' +
@@ -504,11 +504,11 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
                     '<div class="font-bold text-blue-500 text-base">' + (d.rdvCount || 0) + '</div>' +
                     '<div style="color:var(--admin-text-muted)">RDV</div>' +
                   '</div>' +
-                  '<div class="flex-1 rounded-lg p-2 text-center" style="background:rgba(16,185,129,0.1);">' +
+                  '<div class="flex-1 rounded-lg p-2 text-center" style="background:rgba(var(--rgb-green),0.1);">' +
                     '<div class="font-bold text-green-300 text-base">' + (d.orderCount || 0) + '</div>' +
                     '<div class="text-gray-500">Commandes</div>' +
                   '</div>' +
-                  '<div class="flex-1 rounded-lg p-2 text-center" style="background:rgba(245,158,11,0.1);">' +
+                  '<div class="flex-1 rounded-lg p-2 text-center" style="background:rgba(var(--rgb-amber-deep),0.1);">' +
                     '<div class="font-bold text-amber-300 text-base">' + (d.contractCount || 0) + '</div>' +
                     '<div class="text-gray-500">Contrats</div>' +
                   '</div>' +

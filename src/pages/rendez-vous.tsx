@@ -12,7 +12,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
       <section class="gradient-hero py-16 text-white relative overflow-hidden">
         <div class="max-w-4xl mx-auto px-4 relative z-10">
           <div class="inline-flex items-center space-x-2 border rounded-full px-4 py-2 text-sm mb-4"
-     style="background-color:rgba(241,245,249,0.15); border-color:rgba(226,232,240,0.1);">
+     style="background-color:rgba(var(--rgb-slate-100),0.15); border-color:rgba(var(--rgb-slate-200),0.1);">
             <i class="fas fa-calendar-check text-ice-300"></i>
             <span>Visite technique gratuite · Devis sous 24h</span>
           </div>
@@ -26,8 +26,8 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Succès */}
         {success && (
-          <div class="mb-8 rounded-2xl p-6 flex items-start space-x-4" style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25);">
-            <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(16,185,129,0.15);">
+          <div class="mb-8 rounded-2xl p-6 flex items-start space-x-4" style="background:rgba(var(--rgb-green),0.08); border:1px solid rgba(var(--rgb-green),0.25);">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(var(--rgb-green),0.15);">
               <i class="fas fa-check-circle text-green-400 text-2xl"></i>
             </div>
             <div class="flex-1">
@@ -39,7 +39,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
 
               {/* Section compte / Espace client */}
               {loggedIn ? (
-                <div style="margin-top:20px;">
+                <div class="mt-[20px]">
                   <a href="/espace-client" class="inline-flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-bold text-white text-sm" style="background:linear-gradient(135deg,#0077b6,#00b4d8); box-shadow:0 6px 20px rgba(0,119,182,0.25);">
                     <i class="fas fa-user-circle"></i>
                     <span>Voir mon Espace Client</span>
@@ -47,13 +47,13 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                 </div>
               ) : (
                 <div id="rdv-create-account" data-client-name={clientName?.replace(/[<>"'&]/g, '') || ''} data-client-phone={clientPhone?.replace(/[^0-9+\s]/g, '') || ''} style="margin-top:20px;">
-                  <div style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.15); border-radius:14px; padding:16px;">
-                    <div style="font-size:0.85rem; font-weight:700; color:#03045e; margin-bottom:8px;">
-                      <i class="fas fa-user-circle" style="color:#0369a1; margin-right:6px;"></i>Créer votre compte MAASGA
+                  <div class="rounded-[14px] p-[16px]" style="background:rgba(var(--rgb-sky),0.06); border:1px solid rgba(var(--rgb-sky),0.15);">
+                    <div class="text-[0.85rem] font-bold text-fg-heading mb-[8px]">
+                      <i class="fas fa-user-circle text-fg-link mr-[6px]"></i>Créer votre compte MAASGA
                     </div>
-                    <p style="font-size:0.95rem; color:#03045e; font-weight:700; margin-bottom:14px; line-height:1.5;">Suivez vos commandes et RDV. Nous vous contacterons bientôt</p>
-                    <a href="/espace-client" style="display:block; width:100%; padding:11px; border-radius:10px; background:rgba(56,189,248,0.15); color:#0369a1; font-weight:700; font-size:0.85rem; border:1px solid rgba(56,189,248,0.25); text-align:center; text-decoration:none;">
-                      <i class="fas fa-user-plus" style="margin-right:6px;"></i>Créer mon compte
+                    <p class="text-[0.95rem] text-fg-heading font-bold mb-[14px]" style="line-height:1.5;">Suivez vos commandes et RDV. Nous vous contacterons bientôt</p>
+                    <a href="/espace-client" class="block w-full p-[11px] rounded-[10px] text-fg-link font-bold text-[0.85rem] text-center no-underline" style="background:rgba(var(--rgb-sky),0.15); border:1px solid rgba(var(--rgb-sky),0.25);">
+                      <i class="fas fa-user-plus mr-[6px]"></i>Créer mon compte
                     </a>
                   </div>
                 </div>
@@ -113,9 +113,9 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                     const data = await res.json();
                     if (data.success) {
                       document.getElementById('rdv-create-account').innerHTML =
-                        '<div style="text-align:center; color:#047857; font-size:0.85rem; padding:14px; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.2); border-radius:12px;">'
+                        '<div style="text-align:center; color:var(--fg-success); font-size:0.85rem; padding:14px; background:rgba(var(--rgb-emerald),0.08); border:1px solid rgba(var(--rgb-emerald),0.2); border-radius:12px;">'
                         + '<i class="fas fa-check-circle" style="margin-right:6px;"></i>'
-                        + 'Compte créé ! <a href="/espace-client" style="color:#0369a1; font-weight:700; margin-left:6px;">Se connecter →</a>'
+                        + 'Compte créé ! <a href="/espace-client" style="color:var(--fg-link); font-weight:700; margin-left:6px;">Se connecter →</a>'
                         + '</div>';
                     } else {
                       btn.disabled = false;
@@ -135,7 +135,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
 
         {/* Erreur */}
         {error && (
-          <div class="mb-8 rounded-2xl p-4 flex items-center space-x-3" style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.25);">
+          <div class="mb-8 rounded-2xl p-4 flex items-center space-x-3" style="background:rgba(var(--rgb-red),0.08); border:1px solid rgba(var(--rgb-red),0.25);">
             <i class="fas fa-exclamation-circle text-red-400 text-xl"></i>
             <span class="text-red-300 text-sm">{error}</span>
           </div>
@@ -149,15 +149,15 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
 
         {/* ===== CONTACT RAPIDE ===== */}
         {!success && (
-          <div class="mb-8 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 reveal" style="background:linear-gradient(135deg,rgba(37,211,102,0.08),rgba(56,189,248,0.08)); border:1px solid rgba(37,211,102,0.2);">
+          <div class="mb-8 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 reveal" style="background:linear-gradient(135deg,rgba(var(--rgb-whatsapp),0.08),rgba(var(--rgb-sky),0.08)); border:1px solid rgba(var(--rgb-whatsapp),0.2);">
 
             <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(37,211,102,0.15);">
-                <i class="fab fa-whatsapp text-xl" style="color:#25D366;"></i>
+              <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(var(--rgb-whatsapp),0.15);">
+                <i class="fab fa-whatsapp text-xl" style="color:var(--fg-whatsapp);"></i>
               </div>
               <div>
-                <div class="font-bold text-sm" style="color:#03045e;">Besoin d'une réponse rapide ?</div>
-                <div class="text-xs" style="color:#475569;">Contactez-nous directement, on répond en moins de 30 min</div>
+                <div class="font-bold text-sm" style="color:var(--fg-heading);">Besoin d'une réponse rapide ?</div>
+                <div class="text-xs text-fg-muted">Contactez-nous directement, on répond en moins de 30 min</div>
               </div>
             </div>
             <div class="flex items-center gap-3">
@@ -178,7 +178,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
           <div class="lg:col-span-2">
             <div class="glass-card rounded-3xl p-8 reveal">
               <h2 class="text-xl font-bold text-white mb-6 flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.2);">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(var(--rgb-sky),0.1); border:1px solid rgba(var(--rgb-sky),0.2);">
                   <i class="fas fa-clipboard-list text-cyan-400"></i>
                 </div>
                 <span>Votre demande de rendez-vous</span>
@@ -186,7 +186,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
 
               {/* Produit pré-sélectionné */}
               {selectedProduct && (
-                <div class="mb-6 rounded-xl p-4 flex items-center space-x-4" style="background:rgba(56,189,248,0.07); border:1px solid rgba(56,189,248,0.2);">
+                <div class="mb-6 rounded-xl p-4 flex items-center space-x-4" style="background:rgba(var(--rgb-sky),0.07); border:1px solid rgba(var(--rgb-sky),0.2);">
                   <div class="text-3xl">{selectedProduct.image}</div>
                   <div>
                     <div class="text-xs text-blue-500 font-semibold uppercase">{selectedProduct.brand}</div>
@@ -205,14 +205,14 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
 
                 {/* Bandeau simulateur BTU si présent */}
                 {btu && (
-                  <div class="rounded-xl p-4 flex items-center space-x-3" style="background:linear-gradient(135deg,rgba(52,211,153,0.08),rgba(16,185,129,0.05)); border:1px solid rgba(52,211,153,0.2);">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(52,211,153,0.12);">
+                  <div class="rounded-xl p-4 flex items-center space-x-3" style="background:linear-gradient(135deg,rgba(var(--rgb-emerald),0.08),rgba(var(--rgb-green),0.05)); border:1px solid rgba(var(--rgb-emerald),0.2);">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(var(--rgb-emerald),0.12);">
                       <i class="fas fa-calculator text-green-400"></i>
                     </div>
                     <div>
-                      <p class="text-xs font-semibold" style="color:#047857;">Données du simulateur</p>
+                      <p class="text-xs font-semibold text-fg-success">Données du simulateur</p>
                       <p class="text-sm text-white font-bold">{parseInt(btu).toLocaleString()} BTU{surface ? ` — ${surface} m²` : ''}</p>
-                      <p class="text-xs" style="color:#6b7280;">Ces informations seront transmises à notre équipe technique</p>
+                      <p class="text-xs text-fg-gray">Ces informations seront transmises à notre équipe technique</p>
                     </div>
                   </div>
                 )}
@@ -317,8 +317,8 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                 {/* Créneau horaire personnalisé */}
                 <div>
                   <label class="block text-sm font-semibold text-cyan-300 mb-3">Horaire souhaité</label>
-                  <div class="rounded-xl p-4 mb-4" style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.15);">
-                    <p class="text-xs mb-3" style="color:#0369a1;">
+                  <div class="rounded-xl p-4 mb-4" style="background:rgba(var(--rgb-sky),0.06); border:1px solid rgba(var(--rgb-sky),0.15);">
+                    <p class="text-xs mb-3" style="color:var(--fg-link);">
                       <i class="fas fa-info-circle mr-2"></i>Choisissez l'intervalle de temps pendant lequel vous êtes disponible
                     </p>
                     <div class="grid grid-cols-2 gap-4">
@@ -362,7 +362,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                   <span>Confirmer ma demande de RDV</span>
                 </button>
 
-                <p class="text-xs text-center" style="color:#64748b;">
+                <p class="text-xs text-center" style="color:var(--fg-subtle);">
                   <i class="fas fa-lock mr-1"></i>
                   Vos données sont sécurisées et ne sont pas partagées avec des tiers.
                 </p>
@@ -406,7 +406,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
               </h4>
               <div class="space-y-3">
                 <a href="tel:+22655996418" class="flex items-center space-x-3 border rounded-xl px-4 py-3 hover:border-primary-500/50 transition-all"
-     style="background-color:rgba(241,245,249,0.15); border-color:rgba(226,232,240,0.1);">
+     style="background-color:rgba(var(--rgb-slate-100),0.15); border-color:rgba(var(--rgb-slate-200),0.1);">
                   <i class="fas fa-phone text-ice-300"></i>
                   <div>
                     <div class="text-xs opacity-70">Téléphone</div>
@@ -414,7 +414,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                   </div>
                 </a>
                 <a href="https://wa.me/22655996418" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-3 border rounded-xl px-4 py-3 hover:border-primary-500/50 transition-all"
-     style="background-color:rgba(241,245,249,0.15); border-color:rgba(226,232,240,0.1);">
+     style="background-color:rgba(var(--rgb-slate-100),0.15); border-color:rgba(var(--rgb-slate-200),0.1);">
                   <i class="fab fa-whatsapp text-green-300 text-lg"></i>
                   <div>
                     <div class="text-xs opacity-70">WhatsApp</div>
@@ -452,13 +452,13 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
 
         {/* Modale Sélection de Localisation */}
         <div id="location-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div class="rounded-3xl p-6 w-full max-w-2xl shadow-2xl max-h-screen overflow-y-auto" style="background:#141c2e; border:1px solid rgba(148,180,220,0.12);">
+          <div class="rounded-3xl p-6 w-full max-w-2xl shadow-2xl max-h-screen overflow-y-auto" style="background:#141c2e; border:1px solid rgba(var(--rgb-steel),0.12);">
             <div class="flex items-center justify-between mb-4">
               <h3 class="font-bold text-white text-lg flex items-center space-x-2">
                 <i class="fas fa-map-marker-alt text-cyan-400"></i>
                 <span>Sélectionner votre localisation</span>
               </h3>
-              <button onclick="closeLocationModal()" class="hover:text-white p-1" style="color:#64748b;">
+              <button onclick="closeLocationModal()" class="hover:text-white p-1" style="color:var(--fg-subtle);">
                 <i class="fas fa-times text-xl"></i>
               </button>
             </div>
@@ -481,12 +481,12 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                   <span class="hidden sm:inline text-sm">Me localiser</span>
                 </button>
               </div>
-              <div id="address-suggestions" class="rounded-lg max-h-40 overflow-y-auto" style="background:var(--slate-50); border:1px solid rgba(59,130,246,0.15);"></div>
+              <div id="address-suggestions" class="rounded-lg max-h-40 overflow-y-auto" style="background:var(--slate-50); border:1px solid rgba(var(--rgb-blue),0.15);"></div>
               <div id="location-status" class="text-xs mt-2 hidden"></div>
             </div>
 
             {/* Message - Google Maps retiré */}
-            <div class="w-full h-80 rounded-xl overflow-hidden mb-4 flex items-center justify-center" style="background:#e8f2ff; border:1px solid rgba(59,130,246,0.2);">
+            <div class="w-full h-80 rounded-xl overflow-hidden mb-4 flex items-center justify-center" style="background:#e8f2ff; border:1px solid rgba(var(--rgb-blue),0.2);">
               <div class="text-center p-6">
                 <i class="fas fa-map-marker-alt text-4xl text-blue-400 mb-3"></i>
                 <p class="text-sm text-gray-600">Veuillez indiquer votre adresse précise dans le champ ci-dessous.</p>

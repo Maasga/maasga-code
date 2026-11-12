@@ -18,11 +18,11 @@ export const AProposPage = () => {
       {/* Hero */}
       <section class="gradient-hero py-20 text-white relative overflow-hidden">
         <div class="absolute inset-0 pointer-events-none">
-          <div class="absolute -top-20 -right-20 w-80 h-80" style="background-color:rgba(241,245,249,0.05); border-radius:9999px; backdrop-filter:blur(8px);"></div>
+          <div class="absolute -top-20 -right-20 w-80 h-80 rounded-[9999px]" style="background-color:rgba(var(--rgb-slate-100),0.05); backdrop-filter:blur(8px);"></div>
           <div class="absolute -bottom-20 -left-20 w-80 h-80 bg-ice-400/5 rounded-full blur-3xl"></div>
         </div>
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div class="inline-flex items-center space-x-2 rounded-full px-4 py-2 text-sm mb-6" style="background-color:rgba(241,245,249,0.15); border-color:rgba(226,232,240,0.2);">
+          <div class="inline-flex items-center space-x-2 rounded-full px-4 py-2 text-sm mb-6" style="background-color:rgba(var(--rgb-slate-100),0.15); border-color:rgba(var(--rgb-slate-200),0.2);">
             <i class="fas fa-building text-ice-300"></i>
             <span>Notre histoire · Nos valeurs</span>
           </div>
@@ -60,9 +60,9 @@ export const AProposPage = () => {
                 { val: "<2h", label: "Délai de réponse", icon: "fa-bolt", color: "from-purple-500 to-primary-600" }
               ].map(s => (
                 <div data-tilt class={`bg-gradient-to-br ${s.color} text-white rounded-2xl p-5 text-center`}>
-                  <i class={`tilt-image fas ${s.icon} text-2xl mb-2`} style="color:#ffffff;"></i>
-                  <div class="tilt-caption text-2xl font-bold" style="color:#ffffff;">{s.val}</div>
-                  <div class="text-xs mt-1" style="color:#ffffff; opacity:0.9;">{s.label}</div>
+                  <i class={`tilt-image fas ${s.icon} text-2xl mb-2`} style="color:var(--fg-on-dark);"></i>
+                  <div class="tilt-caption text-2xl font-bold" style="color:var(--fg-on-dark);">{s.val}</div>
+                  <div class="text-xs mt-1 text-fg-on-dark" style="opacity:0.9;">{s.label}</div>
                   <div class="tilt-shine" aria-hidden="true"></div>
                 </div>
               ))}
@@ -98,24 +98,24 @@ export const AProposPage = () => {
         </section>
 
         {/* Notre équipe */}
-        <section class="mb-16 rounded-3xl p-10 reveal" style="background:rgba(56,189,248,0.04); border:1px solid rgba(56,189,248,0.1);">
+        <section class="mb-16 rounded-3xl p-10 reveal" style="background:rgba(var(--rgb-sky),0.04); border:1px solid rgba(var(--rgb-sky),0.1);">
           <div class="text-center mb-10">
             <h2 class="text-3xl font-bold mb-3" style="color:var(--ink);">Notre équipe</h2>
-            <p style="color:#475569;">Des professionnels passionnés par leur métier.</p>
+            <p class="text-fg-muted">Des professionnels passionnés par leur métier.</p>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
 
             {/* Directeur Technique */}
             <div data-tilt class="glass-card rounded-2xl p-6 text-center">
-              <div class="tilt-image w-28 h-28 rounded-full mx-auto mb-4 overflow-hidden" style="border:3px solid rgba(0,119,182,0.25); box-shadow:0 4px 20px rgba(0,119,182,0.15);">
+              <div class="tilt-image w-28 h-28 rounded-full mx-auto mb-4 overflow-hidden" style="border:3px solid rgba(var(--rgb-brand),0.25); box-shadow:0 4px 20px rgba(var(--rgb-brand),0.15);">
                 <img src="/team/cherif.webp" alt="Sherif SAWADOGO" loading="lazy" width={112} height={112} class="w-full h-full object-cover" />
               </div>
               <div class="tilt-caption">
                 <h3 class="font-extrabold text-lg mb-1" style="color:var(--ink);">Sherif SAWADOGO</h3>
-                <p class="text-sm font-semibold mb-1" style="color:#0077b6;">Directeur Technique</p>
-                <p class="text-xs mb-3" style="color:#64748b;">Chef d'équipe installation · 8 ans d'expérience</p>
-                <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#035a85; border:1px solid rgba(0,119,182,0.2);">
-                  <i class="fas fa-hard-hat text-xs" style="color:#ffffff; background:#0077b6; padding:3px 4px; border-radius:4px;"></i>
+                <p class="text-sm font-semibold mb-1" style="color:var(--fg-brand);">Directeur Technique</p>
+                <p class="text-xs mb-3" style="color:var(--fg-subtle);">Chef d'équipe installation · 8 ans d'expérience</p>
+                <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(var(--rgb-brand),0.08); color:#035a85; border:1px solid rgba(var(--rgb-brand),0.2);">
+                  <i class="fas fa-hard-hat text-xs text-fg-on-dark bg-surface-brand py-[3px] px-[4px] rounded-[4px]"></i>
                   <span>Directeur technique</span>
                 </div>
               </div>
@@ -124,15 +124,15 @@ export const AProposPage = () => {
 
             {/* Directeur Commercial */}
             <div data-tilt class="glass-card rounded-2xl p-6 text-center">
-              <div class="tilt-image w-28 h-28 rounded-full mx-auto mb-4 overflow-hidden" style="border:3px solid rgba(0,119,182,0.25); box-shadow:0 4px 20px rgba(0,119,182,0.15);">
+              <div class="tilt-image w-28 h-28 rounded-full mx-auto mb-4 overflow-hidden" style="border:3px solid rgba(var(--rgb-brand),0.25); box-shadow:0 4px 20px rgba(var(--rgb-brand),0.15);">
                 <img src="/team/malick.webp" alt="Kompaore Abdoul Malick" loading="lazy" width={112} height={112} class="w-full h-full object-cover" />
               </div>
               <div class="tilt-caption">
                 <h3 class="font-extrabold text-lg mb-1" style="color:var(--ink);">Kompaore Abdoul Malick</h3>
-                <p class="text-sm font-semibold mb-1" style="color:#0077b6;">Directeur Commercial</p>
-                <p class="text-xs mb-3" style="color:#64748b;">Devis & relation client · 4 ans d'expérience</p>
-                <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#035a85; border:1px solid rgba(0,119,182,0.2);">
-                  <i class="fas fa-handshake text-xs" style="color:#ffffff; background:#0077b6; padding:3px 4px; border-radius:4px;"></i>
+                <p class="text-sm font-semibold mb-1" style="color:var(--fg-brand);">Directeur Commercial</p>
+                <p class="text-xs mb-3" style="color:var(--fg-subtle);">Devis & relation client · 4 ans d'expérience</p>
+                <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(var(--rgb-brand),0.08); color:#035a85; border:1px solid rgba(var(--rgb-brand),0.2);">
+                  <i class="fas fa-handshake text-xs text-fg-on-dark bg-surface-brand py-[3px] px-[4px] rounded-[4px]"></i>
                   <span>Expert commercial</span>
                 </div>
               </div>
@@ -141,15 +141,15 @@ export const AProposPage = () => {
 
             {/* Directrice Marketing */}
             <div data-tilt class="glass-card rounded-2xl p-6 text-center">
-              <div class="tilt-image w-28 h-28 rounded-full mx-auto mb-4 overflow-hidden" style="border:3px solid rgba(0,119,182,0.25); box-shadow:0 4px 20px rgba(0,119,182,0.15);">
+              <div class="tilt-image w-28 h-28 rounded-full mx-auto mb-4 overflow-hidden" style="border:3px solid rgba(var(--rgb-brand),0.25); box-shadow:0 4px 20px rgba(var(--rgb-brand),0.15);">
                 <img src="/team/ines.webp" alt="Inès" loading="lazy" width={112} height={112} class="w-full h-full object-cover" />
               </div>
               <div class="tilt-caption">
                 <h3 class="font-extrabold text-lg mb-1" style="color:var(--ink);">Inès</h3>
-                <p class="text-sm font-semibold mb-1" style="color:#0077b6;">Directrice Marketing</p>
-                <p class="text-xs mb-3" style="color:#64748b;">Stratégie & communication</p>
-                <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#035a85; border:1px solid rgba(0,119,182,0.2);">
-                  <i class="fas fa-bullhorn text-xs" style="color:#ffffff; background:#0077b6; padding:3px 4px; border-radius:4px;"></i>
+                <p class="text-sm font-semibold mb-1" style="color:var(--fg-brand);">Directrice Marketing</p>
+                <p class="text-xs mb-3" style="color:var(--fg-subtle);">Stratégie & communication</p>
+                <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(var(--rgb-brand),0.08); color:#035a85; border:1px solid rgba(var(--rgb-brand),0.2);">
+                  <i class="fas fa-bullhorn text-xs text-fg-on-dark bg-surface-brand py-[3px] px-[4px] rounded-[4px]"></i>
                   <span>Directrice marketing</span>
                 </div>
               </div>
@@ -173,13 +173,13 @@ export const AProposPage = () => {
                 "Secteur 25","Secteur 30","Tampouy","Quartier Zone du Bois"
               ].map(q => (
                 <div class="flex items-center space-x-2 py-2 px-3 rounded-xl" style="background:rgba(56,189,248,0.07); border:1px solid rgba(56,189,248,0.12);">
-                  <i class="fas fa-map-marker-alt text-xs" style="color:#0369a1;"></i>
-                  <span class="text-sm font-medium" style="color:#475569;">{q}</span>
+                  <i class="fas fa-map-marker-alt text-xs text-fg-link"></i>
+                  <span class="text-sm font-medium" style="color:var(--fg-muted);">{q}</span>
                 </div>
               ))}
             </div>
-            <div class="mt-4 text-center text-sm" style="color:#64748b;">
-              <i class="fas fa-info-circle mr-2" style="color:#0369a1;"></i>
+            <div class="mt-4 text-center text-sm" style="color:var(--fg-subtle);">
+              <i class="fas fa-info-circle mr-2 text-fg-link"></i>
               Votre quartier n'est pas listé ? Contactez-nous, nous étudions chaque demande.
             </div>
           </div>
@@ -197,7 +197,7 @@ export const AProposPage = () => {
               <i class="fas fa-calendar-plus"></i>
               <span>Prendre rendez-vous</span>
             </a>
-            <a href="/contact" class="font-bold px-8 py-4 rounded-2xl flex items-center justify-center space-x-2" style="background:transparent; border:2px solid #ffffff; color:#ffffff;">
+            <a href="/contact" class="font-bold px-8 py-4 rounded-2xl flex items-center justify-center space-x-2 text-fg-on-dark" style="background:transparent; border:2px solid #ffffff;">
               <i class="fas fa-envelope"></i>
               <span>Nous contacter</span>
             </a>

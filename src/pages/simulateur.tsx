@@ -27,7 +27,7 @@ export const SimulateurPage = ({
           <i class="fas fa-calculator absolute top-8 right-8 text-white/10 text-5xl"></i>
         </div>
         <div class="max-w-4xl mx-auto px-4 relative z-10">
-          <div class="inline-flex items-center space-x-2 rounded-full px-4 py-2 text-sm mb-4" style="background-color:rgba(241,245,249,0.15); border-color:rgba(226,232,240,0.2);">
+          <div class="inline-flex items-center space-x-2 rounded-full px-4 py-2 text-sm mb-4" style="background-color:rgba(var(--rgb-slate-100),0.15); border-color:rgba(var(--rgb-slate-200),0.2);">
             <i class="fas fa-calculator text-ice-300"></i>
             <span>Outil gratuit · Résultat immédiat</span>
           </div>
@@ -41,21 +41,21 @@ export const SimulateurPage = ({
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* MODE COMPARAISON (si produit sélectionné) */}
         {product && productBtu && (
-          <div class="mb-12 rounded-3xl p-8 reveal" style="background:linear-gradient(135deg,rgba(56,189,248,0.06),rgba(99,102,241,0.06)); border:1px solid rgba(148,180,220,0.1);">
+          <div class="mb-12 rounded-3xl p-8 reveal" style="background:linear-gradient(135deg,rgba(var(--rgb-sky),0.06),rgba(var(--rgb-indigo),0.06)); border:1px solid rgba(var(--rgb-steel),0.1);">
             <div class="flex items-start space-x-4 mb-6">
               <div class="w-12 h-12 bg-blue-500 text-white rounded-xl flex items-center justify-center flex-shrink-0">
                 <i class="fas fa-balance-scale"></i>
               </div>
               <div class="flex-1">
                 <h2 class="text-2xl font-bold text-white mb-1">Mode Comparaison</h2>
-                <p class="text-sm" style="color:#475569;">Vérifiez si ce climatiseur est adapté à votre espace</p>
+                <p class="text-sm" style="color:var(--fg-muted);">Vérifiez si ce climatiseur est adapté à votre espace</p>
               </div>
             </div>
             
             {/* Produit sélectionné */}
-            <div data-tilt class="rounded-xl p-5 mb-4" style="background:var(--bg-card); border:1px solid rgba(148,180,220,0.12);">
+            <div data-tilt class="rounded-xl p-5 mb-4" style="background:var(--bg-card); border:1px solid rgba(var(--rgb-steel),0.12);">
               <div class="flex items-center space-x-4">
-                <div class="tilt-image w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(56,189,248,0.1);">
+                <div class="tilt-image w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(var(--rgb-sky),0.1);">
                   <div class="text-3xl">❄️</div>
                 </div>
                 <div class="flex-1">
@@ -64,8 +64,8 @@ export const SimulateurPage = ({
                   <p class="text-sm" style="color:#94a3b8;">{productName}</p>
                 </div>
                 <div class="text-right">
-                  <div class="text-3xl font-bold" style="color:#0369a1;">{productBtu.toLocaleString('fr-FR')} BTU</div>
-                  <div class="text-sm font-semibold" style="color:#0369a1;">{productBtu === 9000 ? '1' : productBtu === 12000 ? '1,5' : productBtu === 18000 ? '2' : productBtu === 24000 ? '3' : '5'} CV</div>
+                  <div class="text-3xl font-bold text-fg-link">{productBtu.toLocaleString('fr-FR')} BTU</div>
+                  <div class="text-sm font-semibold" style="color:var(--fg-link);">{productBtu === 9000 ? '1' : productBtu === 12000 ? '1,5' : productBtu === 18000 ? '2' : productBtu === 24000 ? '3' : '5'} CV</div>
                 </div>
               </div>
               <div class="tilt-shine" aria-hidden="true"></div>
@@ -84,7 +84,7 @@ export const SimulateurPage = ({
           <div>
             <div class="glass-card rounded-3xl p-4 sm:p-8 reveal">
               <h2 class="text-xl font-bold text-white mb-6 flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.2);">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(var(--rgb-sky),0.1); border:1px solid rgba(var(--rgb-sky),0.2);">
                   <i class="fas fa-ruler-combined text-cyan-700"></i>
                 </div>
                 <span>Décrivez votre pièce</span>
@@ -240,13 +240,13 @@ export const SimulateurPage = ({
                 </div>
 
                 <div class="space-y-3 mb-6">
-                  <div class="flex items-center justify-between rounded-xl px-4 py-3" style="background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.15);">
+                  <div class="flex items-center justify-between rounded-xl px-4 py-3" style="background:rgba(var(--rgb-emerald),0.08); border:1px solid rgba(var(--rgb-emerald),0.15);">
                     <span class="text-sm" style="color:#94a3b8;">Surface couverte</span>
                     <span class="font-semibold text-white" id="res-surf">--</span>
                   </div>
-                  <div class="flex items-center justify-between rounded-xl px-4 py-3" style="background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.15);">
+                  <div class="flex items-center justify-between rounded-xl px-4 py-3" style="background:rgba(var(--rgb-sky),0.08); border:1px solid rgba(var(--rgb-sky),0.15);">
                     <span class="text-sm" style="color:#94a3b8;">Indice de confort</span>
-                    <span class="font-semibold" style="color:#047857;" id="res-confort">--</span>
+                    <span class="font-semibold text-fg-success" id="res-confort">--</span>
                   </div>
                   <div class="flex items-center justify-between rounded-xl px-4 py-3" style="background:rgba(167,139,250,0.08); border:1px solid rgba(167,139,250,0.15);">
                     <span class="text-sm" style="color:#94a3b8;">Modèles compatibles</span>
@@ -255,28 +255,28 @@ export const SimulateurPage = ({
                 </div>
 
                 {/* Comparaison produit (si en mode comparaison) */}
-                <div id="comparison-zone" class="hidden mb-6 rounded-xl p-5" style="background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(56,189,248,0.08)); border:1px solid rgba(148,180,220,0.12);">
+                <div id="comparison-zone" class="hidden mb-6 rounded-xl p-5" style="background:linear-gradient(135deg,rgba(var(--rgb-indigo),0.08),rgba(var(--rgb-sky),0.08)); border:1px solid rgba(var(--rgb-steel),0.12);">
                   <h4 class="text-sm font-bold text-white mb-4 flex items-center space-x-2">
-                    <i class="fas fa-exchange-alt" style="color:#0369a1;"></i>
+                    <i class="fas fa-exchange-alt text-fg-link"></i>
                     <span>Comparaison avec le produit sélectionné</span>
                   </h4>
                   <div class="grid grid-cols-2 gap-4">
-                    <div class="rounded-lg p-4 text-center" style="background:var(--bg-card); border:1px solid rgba(148,180,220,0.12);">
+                    <div class="rounded-lg p-4 text-center" style="background:var(--bg-card); border:1px solid rgba(var(--rgb-steel),0.12);">
                       <div class="text-xs uppercase mb-2" style="color:#94a3b8;">Recommandation</div>
-                      <div class="text-2xl font-bold mb-1" style="color:#0369a1;" id="comp-recommended">--</div>
-                      <div class="text-xs" style="color:#475569;" id="comp-recommended-cv">-- CV</div>
+                      <div class="text-2xl font-bold mb-1 text-fg-link" id="comp-recommended">--</div>
+                      <div class="text-xs text-fg-muted" id="comp-recommended-cv">-- CV</div>
                     </div>
-                    <div class="rounded-lg p-4 text-center" style="background:var(--bg-card); border:1px solid rgba(148,180,220,0.12);">
+                    <div class="rounded-lg p-4 text-center" style="background:var(--bg-card); border:1px solid rgba(var(--rgb-steel),0.12);">
                       <div class="text-xs uppercase mb-2" style="color:#94a3b8;">Votre climatiseur</div>
-                      <div class="text-2xl font-bold mb-1" style="color:#6d28d9;" id="comp-product">--</div>
-                      <div class="text-xs" style="color:#475569;" id="comp-product-cv">-- CV</div>
+                      <div class="text-2xl font-bold mb-1 text-fg-violet" id="comp-product">--</div>
+                      <div class="text-xs text-fg-muted" id="comp-product-cv">-- CV</div>
                     </div>
                   </div>
                   <div class="mt-4 p-4 rounded-lg text-center text-sm font-semibold" id="comp-verdict">--</div>
                 </div>
 
                 <div id="sim-matches" class="hidden mb-4" aria-live="polite">
-                  <div class="text-sm font-bold mb-2" style="color:#03045e;">Nos modèles adaptés</div>
+                  <div class="text-sm font-bold mb-2" style="color:var(--fg-heading);">Nos modèles adaptés</div>
                   <div id="sim-matches-list" class="space-y-2"></div>
                 </div>
 
@@ -287,17 +287,17 @@ export const SimulateurPage = ({
                 </a>
 
                 <a id="demander-devis-btn" href="/rendez-vous"
-                  class="w-full flex items-center justify-center space-x-2 font-bold py-3.5 rounded-xl mb-4"
-                  style="background:linear-gradient(135deg,rgba(52,211,153,0.12),rgba(16,185,129,0.08)); color:#047857; border:1.5px solid rgba(52,211,153,0.3);">
+                  class="w-full flex items-center justify-center space-x-2 font-bold py-3.5 rounded-xl mb-4 text-fg-success"
+                  style="background:linear-gradient(135deg,rgba(var(--rgb-emerald),0.12),rgba(var(--rgb-green),0.08)); border:1.5px solid rgba(var(--rgb-emerald),0.3);">
                   <i class="fas fa-file-invoice-dollar text-sm"></i>
                   <span>Demander un devis personnalisé</span>
                   <i class="fas fa-arrow-right text-sm"></i>
                 </a>
 
                 {/* Option multi-unités */}
-                <div id="multi-unit-option" class="hidden rounded-xl p-4" style="background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.2);">
+                <div id="multi-unit-option" class="hidden rounded-xl p-4" style="background:rgba(var(--rgb-indigo),0.08); border:1px solid rgba(var(--rgb-indigo),0.2);">
                   <div class="flex items-start space-x-3">
-                    <i class="fas fa-clone" style="color:#818cf8; margin-top:2px;"></i>
+                    <i class="fas fa-clone mt-[2px]" style="color:#818cf8;"></i>
                     <div class="flex-1">
                       <p class="text-sm font-semibold mb-1" style="color:#818cf8;">Option Multi-unités</p>
                       <p class="text-xs mb-3" style="color:#94a3b8;" id="multi-unit-desc">Installation de plusieurs climatiseurs pour une couverture optimale :</p>
@@ -306,7 +306,7 @@ export const SimulateurPage = ({
                         <a id="see-multi-btn" href="/catalogue" class="text-xs bg-indigo-500 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-600 transition-colors">
                           <i class="fas fa-th-large mr-1"></i>Voir le catalogue
                         </a>
-                        <a id="devis-multi-btn" href="/rendez-vous" class="text-xs px-3 py-1.5 rounded-lg transition-colors" style="color:#111827; border:1px solid #111827;">
+                        <a id="devis-multi-btn" href="/rendez-vous" class="text-xs px-3 py-1.5 rounded-lg transition-colors text-fg-ink" style="border:1px solid #111827;">
                           <i class="fas fa-file-invoice-dollar mr-1"></i>Devis multi-unités
                         </a>
                       </div>
@@ -317,12 +317,12 @@ export const SimulateurPage = ({
             </div>
 
             {/* Avertissement */}
-            <div class="rounded-2xl p-5 reveal" style="background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.15);">
+            <div class="rounded-2xl p-5 reveal" style="background:rgba(var(--rgb-amber),0.08); border:1px solid rgba(var(--rgb-amber),0.15);">
               <div class="flex items-start space-x-3">
                 <i class="fas fa-info-circle text-amber-500 mt-0.5 flex-shrink-0 text-lg"></i>
                 <div>
-                  <p class="text-sm font-semibold mb-1" style="color:#b45309;">Calcul indicatif</p>
-                  <p class="text-xs leading-relaxed font-bold" style="color:#03045e;">
+                  <p class="text-sm font-semibold mb-1" style="color:var(--fg-warning);">Calcul indicatif</p>
+                  <p class="text-xs leading-relaxed font-bold text-fg-heading">
                     Ce simulateur fournit une estimation basée sur des paramètres standards. Une Visite technique gratuite sur site par nos experts est <strong>recommandée avant toute installation</strong> pour garantir un dimensionnement précis et adapté à votre configuration réelle.
                   </p>
                 </div>
@@ -364,7 +364,7 @@ export const SimulateurPage = ({
               <i class="tilt-image fas fa-phone-alt text-3xl mb-3 opacity-90"></i>
               <div class="tilt-caption">
                 <h4 class="font-bold text-lg mb-2">Besoin d'un avis expert ?</h4>
-                <p class="text-sm mb-4" style="color:#111827;">Nos techniciens se déplacent gratuitement pour dimensionner votre projet.</p>
+                <p class="text-sm mb-4" style="color:var(--fg-ink);">Nos techniciens se déplacent gratuitement pour dimensionner votre projet.</p>
                 <a href="/rendez-vous" class="bg-slate-50 text-primary-700 font-bold px-6 py-3 rounded-xl inline-flex items-center space-x-2 hover:bg-blue-50 transition-colors shadow-md">
                   <i class="fas fa-calendar-check"></i>
                   <span>Prendre rendez-vous</span>
@@ -549,7 +549,7 @@ export const SimulateurPage = ({
           if (multiOptions) {
             document.getElementById('multi-unit-desc').textContent = multiOptions.desc;
             multiUnitsEl.innerHTML = multiOptions.units.map(u =>
-              '<div class="flex items-center justify-between rounded-lg px-3 py-2" style="background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.15);">'
+              '<div class="flex items-center justify-between rounded-lg px-3 py-2" style="background:rgba(var(--rgb-indigo),0.06); border:1px solid rgba(var(--rgb-indigo),0.15);">'
               + '<span class="text-xs text-gray-300">' + u.label + '</span>'
               + '<span class="text-xs font-bold" style="color:#818cf8;">BTU: ' + u.btu.toLocaleString('fr-FR') + '</span>'
               + '</div>'

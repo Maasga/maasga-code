@@ -37,7 +37,7 @@ export const AdminAvisPage = ({ success, deleted, allReviews = [] }: { success?:
     )}
 
     <div class="mb-6">
-      <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">Modération des avis</h2>
+      <h2 class="text-xl font-bold text-admin-fg">Modération des avis</h2>
       <p class="text-sm mt-1" style="color:var(--admin-text-muted)">
         {pending.length} en attente · {approved.length} publiés
       </p>
@@ -74,13 +74,13 @@ export const AdminAvisPage = ({ success, deleted, allReviews = [] }: { success?:
                 <div class="flex items-center gap-2 flex-shrink-0">
                   <form method="post" action="/api/admin/avis/approve">
                     <input type="hidden" name="id" value={String(r.id)} />
-                    <button type="submit" class="text-xs px-4 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap" style="background:rgba(16,185,129,0.15); color:#34d399;">
+                    <button type="submit" class="text-xs px-4 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap text-fg-on-dark-success" style="background:rgba(var(--rgb-green),0.15);">
                       <i class="fas fa-check mr-1"></i>Approuver
                     </button>
                   </form>
                   <form method="post" action="/api/admin/avis/reject">
                     <input type="hidden" name="id" value={String(r.id)} />
-                    <button type="submit" class="text-xs px-4 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap" style="background:rgba(239,68,68,0.15); color:#f87171;"
+                    <button type="submit" class="text-xs px-4 py-2 rounded-xl font-semibold transition-colors whitespace-nowrap text-fg-on-dark-danger" style="background:rgba(var(--rgb-red),0.15);"
                       onclick="return confirm('Supprimer définitivement cet avis ?')">
                       <i class="fas fa-trash mr-1"></i>Rejeter
                     </button>
@@ -94,7 +94,7 @@ export const AdminAvisPage = ({ success, deleted, allReviews = [] }: { success?:
     )}
 
     {pending.length === 0 && (
-      <div class="mb-8 rounded-xl p-5 text-center" style="background:rgba(16,185,129,0.05); border:1px solid rgba(16,185,129,0.15);">
+      <div class="mb-8 rounded-xl p-5 text-center" style="background:rgba(var(--rgb-green),0.05); border:1px solid rgba(var(--rgb-green),0.15);">
         <i class="fas fa-check-circle text-green-400 text-2xl mb-2"></i>
         <p class="text-green-300 text-sm font-medium">Aucun avis en attente de modération</p>
       </div>
@@ -115,7 +115,7 @@ export const AdminAvisPage = ({ success, deleted, allReviews = [] }: { success?:
         <div class="rounded-2xl card-shadow overflow-hidden" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
-              <thead class="border-b border-gray-700/50" style="background:#f1f5f9;">
+              <thead class="border-b border-gray-700/50 bg-surface-muted">
                 <tr>
                   <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Client</th>
                   <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Note</th>
@@ -136,9 +136,9 @@ export const AdminAvisPage = ({ success, deleted, allReviews = [] }: { success?:
                         ))}
                       </div>
                     </td>
-                    <td class="py-3 px-4 text-xs italic hidden md:table-cell" title={r.comment} style="color:var(--admin-text-muted)"><span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">"{r.comment}"</span></td>
-                    <td class="py-3 px-4 text-xs hidden sm:table-cell" style="color:var(--admin-text-muted)">{r.service}</td>
-                    <td class="py-3 px-4 text-xs hidden sm:table-cell" style="color:var(--admin-text-muted)">{r.date}</td>
+                    <td class="py-3 px-4 text-xs italic hidden md:table-cell text-admin-muted" title={r.comment}><span class="overflow-hidden" style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">"{r.comment}"</span></td>
+                    <td class="py-3 px-4 text-xs hidden sm:table-cell text-admin-muted">{r.service}</td>
+                    <td class="py-3 px-4 text-xs hidden sm:table-cell text-admin-muted">{r.date}</td>
                     <td class="py-3 px-4">
                       <form method="post" action="/api/admin/avis/reject">
                         <input type="hidden" name="id" value={String(r.id)} />

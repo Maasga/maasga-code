@@ -73,7 +73,7 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
     <div class="space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 fade-in-up">
         <div>
-          <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">Maintenance</h2>
+          <h2 class="text-xl font-bold text-admin-fg">Maintenance</h2>
           <p class="text-sm text-blue-300/60 mt-1">Contrats, demandes et visites de maintenance</p>
         </div>
         {contractRequests.length > 0 && (
@@ -88,50 +88,50 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
 
       {/* ===== FLASH BANNERS ===== */}
       {success && successMessages[success] && (
-        <div class="rounded-2xl p-4 fade-in-up flex items-center gap-3" style="background:linear-gradient(135deg, rgba(52,211,153,0.15), rgba(14,165,233,0.1)); border:1px solid rgba(52,211,153,0.3);">
-          <i class="fas fa-check-circle text-lg" style="color:#34d399;"></i>
-          <span class="text-sm font-semibold" style="color:#34d399;">{successMessages[success]}</span>
+        <div class="rounded-2xl p-4 fade-in-up flex items-center gap-3" style="background:linear-gradient(135deg, rgba(var(--rgb-emerald),0.15), rgba(var(--rgb-sky-deep),0.1)); border:1px solid rgba(var(--rgb-emerald),0.3);">
+          <i class="fas fa-check-circle text-lg text-fg-on-dark-success"></i>
+          <span class="text-sm font-semibold" style="color:var(--fg-on-dark-success);">{successMessages[success]}</span>
         </div>
       )}
       {error && errorMessages[error] && (
-        <div class="rounded-2xl p-4 fade-in-up flex items-center gap-3" style="background:linear-gradient(135deg, rgba(239,68,68,0.15), rgba(245,158,11,0.05)); border:1px solid rgba(239,68,68,0.3);">
-          <i class="fas fa-exclamation-circle text-lg" style="color:#f87171;"></i>
-          <span class="text-sm font-semibold" style="color:#f87171;">{errorMessages[error]}</span>
+        <div class="rounded-2xl p-4 fade-in-up flex items-center gap-3" style="background:linear-gradient(135deg, rgba(var(--rgb-red),0.15), rgba(var(--rgb-amber-deep),0.05)); border:1px solid rgba(var(--rgb-red),0.3);">
+          <i class="fas fa-exclamation-circle text-lg text-fg-on-dark-danger"></i>
+          <span class="text-sm font-semibold" style="color:var(--fg-on-dark-danger);">{errorMessages[error]}</span>
         </div>
       )}
 
       {/* ===== NOTIFICATION BANNER : Visites à effectuer ===== */}
       {dueVisits.length > 0 && (
-        <div class="rounded-2xl p-5 fade-in-up" style="background:linear-gradient(135deg, rgba(245,158,11,0.15), rgba(239,68,68,0.1)); border:1px solid rgba(245,158,11,0.3);">
+        <div class="rounded-2xl p-5 fade-in-up" style="background:linear-gradient(135deg, rgba(var(--rgb-amber-deep),0.15), rgba(var(--rgb-red),0.1)); border:1px solid rgba(var(--rgb-amber-deep),0.3);">
           <div class="flex items-start space-x-3">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(245,158,11,0.2);">
-              <i class="fas fa-bell text-lg" style="color:#f59e0b;"></i>
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(var(--rgb-amber-deep),0.2);">
+              <i class="fas fa-bell text-lg text-fg-amber"></i>
             </div>
             <div class="flex-1 min-w-0">
-              <h3 class="font-bold flex items-center space-x-2" style="color:var(--admin-text-primary)">
+              <h3 class="font-bold flex items-center space-x-2 text-admin-fg">
                 <span>🔔 {dueVisits.length} visite{dueVisits.length > 1 ? 's' : ''} à effectuer !</span>
               </h3>
-              <p class="text-sm mt-1" style="color:#fbbf24;">Les visites suivantes ont atteint leur date prévue et doivent être validées après réalisation.</p>
+              <p class="text-sm mt-1" style="color:var(--fg-on-dark-warning);">Les visites suivantes ont atteint leur date prévue et doivent être validées après réalisation.</p>
               <div class="mt-3 space-y-2">
                 {dueVisits.map(v => {
                   const contract = contracts.find((c: any) => c.id === v.contract_id)
                   const daysOverdue = Math.floor((new Date(today).getTime() - new Date(v.visit_date).getTime()) / 86400000)
                   return (
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-2 px-3 rounded-xl" style="background:rgba(0,0,0,0.2); border:1px solid rgba(245,158,11,0.15);">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-2 px-3 rounded-xl" style="background:rgba(var(--rgb-black),0.2); border:1px solid rgba(var(--rgb-amber-deep),0.15);">
                       <div class="flex items-center space-x-3 min-w-0">
-                        <i class="fas fa-exclamation-triangle text-sm" style="color:#f59e0b;"></i>
+                        <i class="fas fa-exclamation-triangle text-sm" style="color:var(--fg-amber);"></i>
                         <div class="min-w-0">
                           <div class="text-sm font-semibold truncate" style="color:var(--admin-text-primary)">
                             {v.client_name || (contract ? contract.client_name : `Client #${v.client_id}`)}
                             <span class="text-xs font-normal ml-2" style="color:#94a3b8;">{v.client_phone}</span>
                           </div>
-                          <div class="text-xs" style="color:#fbbf24;">
+                          <div class="text-xs text-fg-on-dark-warning">
                             Prévue le {fmtDate(v.visit_date)} {daysOverdue > 0 ? `(${daysOverdue}j de retard)` : "(aujourd'hui)"}
                             {contract && <span> · Contrat {contract.plan_type}</span>}
                           </div>
                         </div>
                       </div>
-                      <button type="button" class="text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex-shrink-0" style="background:rgba(52,211,153,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.3);" onclick={`openValidationModal(${Number(v.id)}, '${jsAttr(v.client_name)}', '${jsAttr(v.visit_date)}', ${Number(v.contract_id) || 0})`}>
+                      <button type="button" class="text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex-shrink-0 text-fg-on-dark-success" style="background:rgba(var(--rgb-emerald),0.15); border:1px solid rgba(var(--rgb-emerald),0.3);" onclick={`openValidationModal(${Number(v.id)}, '${jsAttr(v.client_name)}', '${jsAttr(v.visit_date)}', ${Number(v.contract_id) || 0})`}>
                         <i class="fas fa-check mr-1"></i>Valider
                       </button>
                     </div>
@@ -158,8 +158,8 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                 <i class={`fas ${c.icon}`} style={`color:${c.color};`}></i>
               </div>
               <div>
-                <div class="text-xs font-medium" style="color:#64748b;">{c.label}</div>
-                <div class="text-xl font-bold" style="color:var(--admin-text-primary)">{c.val}</div>
+                <div class="text-xs font-medium text-fg-subtle">{c.label}</div>
+                <div class="text-xl font-bold text-admin-fg">{c.val}</div>
               </div>
             </div>
           </div>
@@ -167,16 +167,16 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
       </div>
 
       {/* ===== Demandes de maintenance ===== */}
-      <div class="rounded-2xl overflow-hidden fade-in-up delay-1" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
-        <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-3" style="border-bottom:1px solid var(--admin-border);">
-          <h3 class="font-bold flex items-center space-x-2" style="color:var(--admin-text-primary)">
-            <i class="fas fa-inbox text-sm" style="color:#fbbf24;"></i>
+      <div class="rounded-2xl overflow-hidden fade-in-up delay-1 bg-admin-card border border-admin-line">
+        <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-3 border-b border-admin-line">
+          <h3 class="font-bold flex items-center space-x-2 text-admin-fg">
+            <i class="fas fa-inbox text-sm" style="color:var(--fg-on-dark-warning);"></i>
             <span>Demandes de maintenance</span>
-            <span class="ml-2 text-xs px-2 py-0.5 rounded-full" style="background:rgba(251,191,36,0.15); color:#fbbf24;">{requests.length}</span>
+            <span class="ml-2 text-xs px-2 py-0.5 rounded-full text-fg-on-dark-warning" style="background:rgba(var(--rgb-amber),0.15);">{requests.length}</span>
           </h3>
           {contractRequests.length > 0 && (
             <form method="post" action="/admin/maintenance/sync-pending-requests" onsubmit={`return confirm('Créer ${contractRequests.length} contrat(s) actif(s) et programmer toutes leurs visites ?')`}>
-              <button type="submit" class="text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-2 transition-colors" style="background:rgba(139,92,246,0.2); color:#a78bfa; border:1px solid rgba(139,92,246,0.3);">
+              <button type="submit" class="text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-2 transition-colors text-fg-on-dark-violet" style="background:rgba(139,92,246,0.2); border:1px solid rgba(139,92,246,0.3);">
                 <i class="fas fa-bolt"></i>
                 <span>Générer {contractRequests.length} contrat{contractRequests.length > 1 ? 's' : ''} automatiquement</span>
               </button>
@@ -185,23 +185,23 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
         </div>
         {requests.length === 0 ? (
           <div class="text-center py-12">
-            <i class="fas fa-inbox text-3xl mb-3" style="color:#1e3a5f;"></i>
-            <p class="text-sm" style="color:#64748b;">Aucune demande de maintenance</p>
+            <i class="fas fa-inbox text-3xl mb-3 text-fg-navy-soft"></i>
+            <p class="text-sm" style="color:var(--fg-subtle);">Aucune demande de maintenance</p>
           </div>
         ) : (
           <div class="overflow-x-auto">
             <table class="admin-table w-full text-sm">
               <thead>
-                <tr style="background:#f1f5f9; border-bottom:1px solid var(--admin-border);">
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">ID</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Client</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Type</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell" style="color:var(--admin-text-muted)">Formule & Détails</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell" style="color:var(--admin-text-muted)">Prix estimé</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden lg:table-cell" style="color:var(--admin-text-muted)">Description</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Statut</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden sm:table-cell" style="color:var(--admin-text-muted)">Date</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Actions</th>
+                <tr class="bg-surface-muted border-b border-admin-line">
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-admin-muted">ID</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-admin-muted">Client</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-admin-muted">Type</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell text-admin-muted">Formule & Détails</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell text-admin-muted">Prix estimé</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden lg:table-cell text-admin-muted">Description</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-admin-muted">Statut</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden sm:table-cell text-admin-muted">Date</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-admin-muted">Actions</th>
                 </tr>
               </thead>
               <tbody data-paginate="15">
@@ -268,15 +268,15 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                   }
 
                   return (
-                    <tr style="border-bottom:1px solid var(--admin-border);" class="hover:bg-[rgba(3,105,161,0.04)]">
-                      <td class="px-5 py-3 font-mono text-xs" style="color:var(--admin-accent)">#{r.id}</td>
+                    <tr class="hover:bg-[rgba(3,105,161,0.04)] border-b border-admin-line">
+                      <td class="px-5 py-3 font-mono text-xs text-admin-accent">#{r.id}</td>
                       <td class="px-5 py-3">
                         <div class="text-sm font-semibold" style="color:var(--admin-text-primary)">{r.client_name || r.name || '—'}</div>
-                        <div class="text-xs" style="color:var(--admin-text-muted);">{r.client_phone || r.phone || ''}</div>
+                        <div class="text-xs text-admin-muted">{r.client_phone || r.phone || ''}</div>
                         {r.quartier && <div class="text-xs" style="color:#94a3b8;">📍 {r.quartier}</div>}
                       </td>
                       <td class="px-5 py-3 text-sm" style="color:var(--admin-text-primary);">{typeLabels[r.request_type] || r.request_type}</td>
-                      <td class="px-5 py-3 text-xs hidden md:table-cell" style="color:var(--admin-text-muted);">
+                      <td class="px-5 py-3 text-xs hidden md:table-cell text-admin-muted">
                         {planLabel ? (
                           <div>
                             <span class="inline-block px-2.5 py-1 rounded-lg font-bold text-xs bg-purple-500/15 text-purple-300 border border-purple-500/30">
@@ -293,55 +293,55 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                       <td class="px-5 py-3 text-sm font-bold hidden md:table-cell" style="color:var(--admin-text-primary);">
                         {priceDisplay}
                       </td>
-                      <td class="px-5 py-3 text-xs hidden lg:table-cell" title={r.description} style="color:var(--admin-text-muted);word-break:break-word;">{r.description || '—'}</td>
+                      <td class="px-5 py-3 text-xs hidden lg:table-cell text-admin-muted" title={r.description} style="word-break:break-word;">{r.description || '—'}</td>
                       <td class="px-5 py-3"><span class={`text-xs font-bold px-2.5 py-1 rounded-full ${sb.c}`}>{sb.l}</span></td>
                       <td class="px-5 py-3 text-xs hidden sm:table-cell" style="color:#94a3b8;">{r.created_at ? new Date(r.created_at).toLocaleDateString('fr-FR') : '—'}</td>
                       <td class="px-5 py-3">
                         <div class="flex items-center gap-1 flex-wrap">
                           {/* Créer contrat — seulement pour les demandes de type contrat en attente */}
                           {isContractType && (r.status === 'pending' || r.status === 'contacted') && (
-                            <form method="post" action="/admin/maintenance/convert-to-contract" style="display:inline;" onsubmit={`return confirm('Créer un contrat actif pour ${jsAttr(r.client_name || r.name || 'ce client')} et programmer ses visites automatiquement ?')`}>
+                            <form method="post" action="/admin/maintenance/convert-to-contract" class="inline" onsubmit={`return confirm('Créer un contrat actif pour ${jsAttr(r.client_name || r.name || 'ce client')} et programmer ses visites automatiquement ?')`}>
                               <input type="hidden" name="request_id" value={String(r.id)} />
-                              <button type="submit" class="text-xs font-bold px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap" style="background:rgba(139,92,246,0.2); color:#a78bfa; border:1px solid rgba(139,92,246,0.3);" title="Créer contrat & programmer visites">
+                              <button type="submit" class="text-xs font-bold px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap text-fg-on-dark-violet" style="background:rgba(139,92,246,0.2); border:1px solid rgba(139,92,246,0.3);" title="Créer contrat & programmer visites">
                                 <i class="fas fa-file-contract mr-1"></i>Activer contrat
                               </button>
                             </form>
                           )}
                           {/* Marquer contacté */}
                           {r.status === 'pending' && (
-                            <form method="post" action="/admin/maintenance/update-request" style="display:inline;">
+                            <form method="post" action="/admin/maintenance/update-request" class="inline">
                               <input type="hidden" name="request_id" value={String(r.id)} />
                               <input type="hidden" name="status" value="contacted" />
                               <button type="submit" class="p-2 rounded-lg hover:bg-blue-500/20 transition-colors" title="Marquer contacté">
-                                <i class="fas fa-phone text-xs" style="color:#38bdf8;"></i>
+                                <i class="fas fa-phone text-xs text-fg-on-dark-accent"></i>
                               </button>
                             </form>
                           )}
                           {/* Planifier */}
                           {(r.status === 'pending' || r.status === 'contacted') && !isContractType && (
-                            <form method="post" action="/admin/maintenance/update-request" style="display:inline;">
+                            <form method="post" action="/admin/maintenance/update-request" class="inline">
                               <input type="hidden" name="request_id" value={String(r.id)} />
                               <input type="hidden" name="status" value="scheduled" />
                               <button type="submit" class="p-2 rounded-lg hover:bg-green-500/20 transition-colors" title="Planifier">
-                                <i class="fas fa-calendar-check text-xs" style="color:#34d399;"></i>
+                                <i class="fas fa-calendar-check text-xs text-fg-on-dark-success"></i>
                               </button>
                             </form>
                           )}
                           {/* Annuler */}
                           {r.status !== 'cancelled' && r.status !== 'done' && (
-                            <form method="post" action="/admin/maintenance/update-request" style="display:inline;" onsubmit="return confirm('Annuler cette demande ?')">
+                            <form method="post" action="/admin/maintenance/update-request" class="inline" onsubmit="return confirm('Annuler cette demande ?')">
                               <input type="hidden" name="request_id" value={String(r.id)} />
                               <input type="hidden" name="status" value="cancelled" />
                               <button type="submit" class="p-2 rounded-lg hover:bg-yellow-500/20 transition-colors" title="Annuler la demande">
-                                <i class="fas fa-ban text-xs" style="color:#f59e0b;"></i>
+                                <i class="fas fa-ban text-xs text-fg-amber"></i>
                               </button>
                             </form>
                           )}
                           {/* Supprimer */}
-                          <form method="post" action="/admin/maintenance/delete-request" style="display:inline;" onsubmit="return confirm('Supprimer définitivement cette demande ? Cette action est irréversible.')">
+                          <form method="post" action="/admin/maintenance/delete-request" class="inline" onsubmit="return confirm('Supprimer définitivement cette demande ? Cette action est irréversible.')">
                             <input type="hidden" name="request_id" value={String(r.id)} />
                             <button type="submit" class="p-2 rounded-lg hover:bg-red-500/20 transition-colors" title="Supprimer définitivement">
-                              <i class="fas fa-trash text-xs" style="color:#f87171;"></i>
+                              <i class="fas fa-trash text-xs text-fg-on-dark-danger"></i>
                             </button>
                           </form>
                         </div>
@@ -356,35 +356,35 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
       </div>
 
       {/* ===== Contrats ===== */}
-      <div class="rounded-2xl overflow-hidden fade-in-up delay-2" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
-        <div class="px-5 py-4" style="border-bottom:1px solid var(--admin-border);">
-          <h3 class="font-bold flex items-center space-x-2" style="color:var(--admin-text-primary)">
-            <i class="fas fa-file-contract text-sm" style="color:#0ea5e9;"></i>
+      <div class="rounded-2xl overflow-hidden fade-in-up delay-2 bg-admin-card border border-admin-line">
+        <div class="px-5 py-4 border-b border-admin-line">
+          <h3 class="font-bold flex items-center space-x-2 text-admin-fg">
+            <i class="fas fa-file-contract text-sm" style="color:var(--fg-sky);"></i>
             <span>Contrats de maintenance</span>
-            <span class="ml-2 text-xs px-2 py-0.5 rounded-full" style="background:rgba(14,165,233,0.15); color:#38bdf8;">{contracts.length}</span>
+            <span class="ml-2 text-xs px-2 py-0.5 rounded-full text-fg-on-dark-accent" style="background:rgba(var(--rgb-sky-deep),0.15);">{contracts.length}</span>
           </h3>
         </div>
         {contracts.length === 0 ? (
           <div class="text-center py-12">
-            <i class="fas fa-file-contract text-3xl mb-3" style="color:#1e3a5f;"></i>
-            <p class="text-sm" style="color:#64748b;">Aucun contrat enregistré</p>
+            <i class="fas fa-file-contract text-3xl mb-3 text-fg-navy-soft"></i>
+            <p class="text-sm" style="color:var(--fg-subtle);">Aucun contrat enregistré</p>
             {contractRequests.length > 0 && (
-              <p class="text-xs mt-2" style="color:#a78bfa;">⚡ {contractRequests.length} souscription(s) en attente — utilisez le bouton en haut pour générer les contrats</p>
+              <p class="text-xs mt-2 text-fg-on-dark-violet">⚡ {contractRequests.length} souscription(s) en attente — utilisez le bouton en haut pour générer les contrats</p>
             )}
           </div>
         ) : (
           <div class="overflow-x-auto">
             <table class="admin-table w-full text-sm">
               <thead>
-                <tr style="background:#f1f5f9; border-bottom:1px solid var(--admin-border);">
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden lg:table-cell" style="color:var(--admin-text-muted)">ID</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Client</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell" style="color:var(--admin-text-muted)">Formule</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell" style="color:var(--admin-text-muted)">Prix</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden lg:table-cell" style="color:var(--admin-text-muted)">Période</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Visites</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Statut</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden sm:table-cell" style="color:var(--admin-text-muted)">Actions</th>
+                <tr class="bg-surface-muted border-b border-admin-line">
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden lg:table-cell text-admin-muted">ID</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-admin-muted">Client</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell text-admin-muted">Formule</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell text-admin-muted">Prix</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden lg:table-cell text-admin-muted">Période</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-admin-muted">Visites</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-admin-muted">Statut</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden sm:table-cell text-admin-muted">Actions</th>
                 </tr>
               </thead>
               <tbody data-paginate="10">
@@ -415,18 +415,18 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                   const progress = (c.total_visits || 0) > 0 ? Math.round((completedCount / c.total_visits) * 100) : 0
                   return (
                     <>
-                    <tr style="border-bottom:1px solid var(--admin-border);" class="hover:bg-[rgba(3,105,161,0.04)] cursor-pointer" onclick={`var el=document.getElementById('cv-${c.id}');el.classList.toggle('hidden');this.querySelector('.expand-icon').classList.toggle('fa-chevron-right');this.querySelector('.expand-icon').classList.toggle('fa-chevron-down');`}>
-                      <td class="px-5 py-3 font-mono text-xs hidden lg:table-cell" style="color:var(--admin-accent)">
-                        <i class="fas fa-chevron-right expand-icon text-xs mr-1" style="color:var(--admin-text-muted);"></i>#{c.id}
+                    <tr class="hover:bg-[rgba(3,105,161,0.04)] cursor-pointer border-b border-admin-line" onclick={`var el=document.getElementById('cv-${c.id}');el.classList.toggle('hidden');this.querySelector('.expand-icon').classList.toggle('fa-chevron-right');this.querySelector('.expand-icon').classList.toggle('fa-chevron-down');`}>
+                      <td class="px-5 py-3 font-mono text-xs hidden lg:table-cell text-admin-accent">
+                        <i class="fas fa-chevron-right expand-icon text-xs mr-1 text-admin-muted"></i>#{c.id}
                       </td>
                       <td class="px-5 py-3 cursor-pointer hover:text-blue-400">
                         <div class="text-sm font-semibold" style="color:var(--admin-text-primary)">{c.client_name || c.client_phone || `Client #${c.client_id}`}</div>
-                        {c.client_phone && <div class="text-xs" style="color:var(--admin-text-muted)">{c.client_phone}</div>}
+                        {c.client_phone && <div class="text-xs text-admin-muted">{c.client_phone}</div>}
                         {c.notes && <div class="text-[11px] text-slate-400 mt-0.5" title={c.notes}>{c.notes}</div>}
                       </td>
                       <td class="px-5 py-3 text-sm hidden md:table-cell" style="color:var(--admin-text-primary)">{planLabels[c.plan_type] || c.plan_type}</td>
-                      <td class="px-5 py-3 font-bold hidden md:table-cell" style="color:var(--admin-text-primary)">{(c.plan_price || 0) > 0 ? (c.plan_price || 0).toLocaleString() + ' F' : 'Sur devis'}</td>
-                      <td class="px-5 py-3 text-xs hidden lg:table-cell" style="color:var(--admin-text-muted)">
+                      <td class="px-5 py-3 font-bold hidden md:table-cell text-admin-fg">{(c.plan_price || 0) > 0 ? (c.plan_price || 0).toLocaleString() + ' F' : 'Sur devis'}</td>
+                      <td class="px-5 py-3 text-xs hidden lg:table-cell text-admin-muted">
                         {c.start_date ? new Date(c.start_date).toLocaleDateString('fr-FR') : '—'} → {c.end_date ? new Date(c.end_date).toLocaleDateString('fr-FR') : '—'}
                       </td>
                       <td class="px-5 py-3">
@@ -436,38 +436,38 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                           </div>
                           <span class="text-sm font-bold" style="color:var(--admin-text-primary)">{completedCount}/{c.total_visits || 0}</span>
                         </div>
-                        {upcomingCount > 0 && <div class="text-xs mt-0.5" style="color:#f59e0b;"><i class="fas fa-clock mr-1"></i>{upcomingCount} à venir</div>}
+                        {upcomingCount > 0 && <div class="text-xs mt-0.5 text-fg-amber"><i class="fas fa-clock mr-1"></i>{upcomingCount} à venir</div>}
                       </td>
                       <td class="px-5 py-3"><span class={`text-xs font-bold px-2.5 py-1 rounded-full ${sb.c}`}>{sb.l}</span></td>
                       <td class="px-5 py-3 hidden sm:table-cell" onclick="event.stopPropagation()">
                         <div class="flex items-center gap-1.5 flex-wrap">
                           {c.status === 'en_attente' && (
-                            <form method="post" action="/api/admin/maintenance/validate-contract" style="display:inline;">
+                            <form method="post" action="/api/admin/maintenance/validate-contract" class="inline">
                               <input type="hidden" name="contract_id" value={String(c.id)} />
-                              <button type="submit" class="text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors text-green-400" style="background:rgba(52,211,153,0.15); border:1px solid rgba(52,211,153,0.3);">
+                              <button type="submit" class="text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors text-green-400" style="background:rgba(var(--rgb-emerald),0.15); border:1px solid rgba(var(--rgb-emerald),0.3);">
                                 <i class="fas fa-check mr-1"></i>Activer
                               </button>
                             </form>
                           )}
                           {/* + Visite manuelle */}
-                          <button type="button" class="text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors" style="background:rgba(14,165,233,0.15); color:#38bdf8; border:1px solid rgba(14,165,233,0.3);" onclick={`event.stopPropagation(); openAddVisitModal(${Number(c.id)}, '${jsAttr(c.client_name || '')}', '${jsAttr(c.client_phone || '')}')`} title="Programmer une visite manuelle">
+                          <button type="button" class="text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors text-fg-on-dark-accent" style="background:rgba(var(--rgb-sky-deep),0.15); border:1px solid rgba(var(--rgb-sky-deep),0.3);" onclick={`event.stopPropagation(); openAddVisitModal(${Number(c.id)}, '${jsAttr(c.client_name || '')}', '${jsAttr(c.client_phone || '')}')`} title="Programmer une visite manuelle">
                             <i class="fas fa-plus mr-1"></i>Visite
                           </button>
                           {c.status !== 'annule' && (
-                            <form method="post" action="/api/admin/maintenance/refuse-contract" style="display:inline;" onsubmit="return confirm('Annuler ce contrat ?')">
+                            <form method="post" action="/api/admin/maintenance/refuse-contract" class="inline" onsubmit="return confirm('Annuler ce contrat ?')">
                               <input type="hidden" name="contract_id" value={String(c.id)} />
-                              <button type="submit" class="text-xs px-2 py-1.5 rounded-lg font-medium transition-colors text-red-400" style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3);">
+                              <button type="submit" class="text-xs px-2 py-1.5 rounded-lg font-medium transition-colors text-red-400" style="background:rgba(var(--rgb-red),0.15); border:1px solid rgba(var(--rgb-red),0.3);">
                                 <i class="fas fa-ban mr-1"></i>Annuler
                               </button>
                             </form>
                           )}
-                          <form method="post" action="/api/admin/maintenance/delete-contract" style="display:inline;" onsubmit="return confirm('Supprimer définitivement ce contrat et toutes ses visites ?')">
+                          <form method="post" action="/api/admin/maintenance/delete-contract" class="inline" onsubmit="return confirm('Supprimer définitivement ce contrat et toutes ses visites ?')">
                             <input type="hidden" name="contract_id" value={String(c.id)} />
-                            <button type="submit" class="text-xs px-2 py-1.5 rounded-lg font-medium transition-colors" style="background:rgba(239,68,68,0.2); color:#f87171;">
+                            <button type="submit" class="text-xs px-2 py-1.5 rounded-lg font-medium transition-colors text-fg-on-dark-danger" style="background:rgba(var(--rgb-red),0.2);">
                               <i class="fas fa-trash"></i>
                             </button>
                           </form>
-                          <a href={`/admin/devis/new?contract_id=${c.id}`} class="text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors whitespace-nowrap" style="background:rgba(14,165,233,0.1);color:#0ea5e9;border:1px solid rgba(14,165,233,0.2);">
+                          <a href={`/admin/devis/new?contract_id=${c.id}`} class="text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors whitespace-nowrap text-fg-sky" style="background:rgba(var(--rgb-sky-deep),0.1); border:1px solid rgba(var(--rgb-sky-deep),0.2);">
                             <i class="fas fa-file-invoice-dollar mr-1"></i>Devis
                           </a>
                         </div>
@@ -475,22 +475,22 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                     </tr>
                     {/* Expandable visits detail row */}
                     <tr id={`cv-${c.id}`} class="hidden">
-                      <td colspan={8} class="px-5 py-4" style="background:rgba(14,165,233,0.03); border-bottom:2px solid rgba(14,165,233,0.1);">
+                      <td colspan={8} class="px-5 py-4" style="background:rgba(var(--rgb-sky-deep),0.03); border-bottom:2px solid rgba(var(--rgb-sky-deep),0.1);">
                         <div class="mb-3 flex items-center justify-between">
-                          <span class="text-xs font-bold uppercase tracking-wide" style="color:#38bdf8;">Visites du contrat #{c.id}</span>
-                          <button type="button" class="text-xs font-bold px-3 py-1.5 rounded-lg transition-colors" style="background:rgba(14,165,233,0.15); color:#38bdf8; border:1px solid rgba(14,165,233,0.3);" onclick={`openAddVisitModal(${Number(c.id)}, '${jsAttr(c.client_name || '')}', '${jsAttr(c.client_phone || '')}')`}>
+                          <span class="text-xs font-bold uppercase tracking-wide text-fg-on-dark-accent">Visites du contrat #{c.id}</span>
+                          <button type="button" class="text-xs font-bold px-3 py-1.5 rounded-lg transition-colors text-fg-on-dark-accent" style="background:rgba(var(--rgb-sky-deep),0.15); border:1px solid rgba(var(--rgb-sky-deep),0.3);" onclick={`openAddVisitModal(${Number(c.id)}, '${jsAttr(c.client_name || '')}', '${jsAttr(c.client_phone || '')}')`}>
                             <i class="fas fa-plus mr-1"></i>Programmer une visite
                           </button>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {/* Upcoming visits */}
                           <div>
-                            <div class="text-xs font-bold uppercase tracking-wide mb-2 flex items-center space-x-1" style="color:#f59e0b;">
+                            <div class="text-xs font-bold uppercase tracking-wide mb-2 flex items-center space-x-1 text-fg-amber">
                               <i class="fas fa-calendar-alt"></i>
                               <span>À venir ({cvUpcoming.length})</span>
                             </div>
                             {cvUpcoming.length === 0 ? (
-                              <div class="text-xs py-2" style="color:#64748b;">Aucune visite planifiée</div>
+                              <div class="text-xs py-2 text-fg-subtle">Aucune visite planifiée</div>
                             ) : (
                               <div class="space-y-1.5">
                                 {cvUpcoming.map((v: any, idx: number) => {
@@ -506,19 +506,19 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                                         <span class="text-xs px-2 py-0.5 rounded-full font-bold" style={isDue ? 'background:rgba(245,158,11,0.15); color:#f59e0b;' : 'background:rgba(14,165,233,0.1); color:#0ea5e9;'}>
                                           {isDue ? (dLeft === 0 ? "Aujourd'hui" : `${Math.abs(dLeft)}j retard`) : `J-${dLeft}`}
                                         </span>
-                                        <button type="button" class="text-xs font-bold p-1.5 rounded-lg" style="background:rgba(52,211,153,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.3);" onclick={`openValidationModal(${Number(v.id)}, '${jsAttr(v.client_name || c.client_name)}', '${jsAttr(v.visit_date)}', ${Number(c.id)})`} title="Valider l'entretien">
+                                        <button type="button" class="text-xs font-bold p-1.5 rounded-lg text-fg-on-dark-success" style="background:rgba(var(--rgb-emerald),0.15); border:1px solid rgba(var(--rgb-emerald),0.3);" onclick={`openValidationModal(${Number(v.id)}, '${jsAttr(v.client_name || c.client_name)}', '${jsAttr(v.visit_date)}', ${Number(c.id)})`} title="Valider l'entretien">
                                           <i class="fas fa-check"></i>
                                         </button>
-                                        <form method="post" action="/admin/maintenance/update-visit" style="display:inline;">
+                                        <form method="post" action="/admin/maintenance/update-visit" class="inline">
                                           <input type="hidden" name="visit_id" value={String(v.id)} />
                                           <input type="hidden" name="status" value="annulee" />
-                                          <button type="submit" class="text-xs font-bold p-1.5 rounded-lg" style="background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);" onclick="return confirm('Annuler cette visite ?')" title="Annuler">
+                                          <button type="submit" class="text-xs font-bold p-1.5 rounded-lg text-fg-amber" style="background:rgba(var(--rgb-amber-deep),0.15); border:1px solid rgba(var(--rgb-amber-deep),0.3);" onclick="return confirm('Annuler cette visite ?')" title="Annuler">
                                             <i class="fas fa-ban"></i>
                                           </button>
                                         </form>
-                                        <form method="post" action="/admin/maintenance/delete-visit" style="display:inline;">
+                                        <form method="post" action="/admin/maintenance/delete-visit" class="inline">
                                           <input type="hidden" name="visit_id" value={String(v.id)} />
-                                          <button type="submit" class="text-xs font-bold p-1.5 rounded-lg" style="background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3);" onclick="return confirm('Supprimer définitivement cette visite ?')" title="Supprimer">
+                                          <button type="submit" class="text-xs font-bold p-1.5 rounded-lg text-fg-on-dark-danger" style="background:rgba(var(--rgb-red),0.15); border:1px solid rgba(var(--rgb-red),0.3);" onclick="return confirm('Supprimer définitivement cette visite ?')" title="Supprimer">
                                             <i class="fas fa-trash"></i>
                                           </button>
                                         </form>
@@ -531,26 +531,26 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                           </div>
                           {/* Completed visits */}
                           <div>
-                            <div class="text-xs font-bold uppercase tracking-wide mb-2 flex items-center space-x-1" style="color:#34d399;">
+                            <div class="text-xs font-bold uppercase tracking-wide mb-2 flex items-center space-x-1 text-fg-on-dark-success">
                               <i class="fas fa-check-double"></i>
                               <span>Effectuées ({cvDone.length})</span>
                             </div>
                             {cvDone.length === 0 ? (
-                              <div class="text-xs py-2" style="color:#64748b;">Aucune visite effectuée</div>
+                              <div class="text-xs py-2 text-fg-subtle">Aucune visite effectuée</div>
                             ) : (
                               <div class="space-y-1.5">
                                 {cvDone.map((v: any) => (
-                                  <div class="flex items-center justify-between py-2 px-3 rounded-lg" style="background:rgba(52,211,153,0.05); border:1px solid rgba(52,211,153,0.1);">
+                                  <div class="flex items-center justify-between py-2 px-3 rounded-lg" style="background:rgba(var(--rgb-emerald),0.05); border:1px solid rgba(var(--rgb-emerald),0.1);">
                                     <div class="flex items-center space-x-2">
-                                      <i class="fas fa-check-circle text-xs" style="color:#34d399;"></i>
+                                      <i class="fas fa-check-circle text-xs text-fg-on-dark-success"></i>
                                       <span class="text-sm" style="color:var(--admin-text-primary)">{fmtDate(v.visit_date)}</span>
-                                      {v.technician && <span class="text-xs" style="color:#64748b;">· {v.technician}</span>}
+                                      {v.technician && <span class="text-xs text-fg-subtle">· {v.technician}</span>}
                                     </div>
                                     <div class="flex items-center gap-1">
                                       {v.actions_performed && <span class="text-xs" title={v.actions_performed} style="color:#94a3b8;">{v.actions_performed}</span>}
-                                      <form method="post" action="/admin/maintenance/delete-visit" style="display:inline;">
+                                      <form method="post" action="/admin/maintenance/delete-visit" class="inline">
                                         <input type="hidden" name="visit_id" value={String(v.id)} />
-                                        <button type="submit" class="text-xs p-1 rounded" style="color:#64748b;" onclick="return confirm('Supprimer cette visite effectuée ?')" title="Supprimer">
+                                        <button type="submit" class="text-xs p-1 rounded text-fg-subtle" onclick="return confirm('Supprimer cette visite effectuée ?')" title="Supprimer">
                                           <i class="fas fa-times"></i>
                                         </button>
                                       </form>
@@ -573,20 +573,20 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
       </div>
 
       {/* ===== Visites techniques ===== */}
-      <div class="rounded-2xl overflow-hidden fade-in-up delay-3" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
-        <div class="px-5 py-4 flex items-center justify-between gap-3" style="border-bottom:1px solid var(--admin-border);">
-          <h3 class="font-bold flex items-center space-x-2" style="color:var(--admin-text-primary)">
-            <i class="fas fa-clipboard-check text-sm" style="color:#34d399;"></i>
+      <div class="rounded-2xl overflow-hidden fade-in-up delay-3 bg-admin-card border border-admin-line">
+        <div class="px-5 py-4 flex items-center justify-between gap-3 border-b border-admin-line">
+          <h3 class="font-bold flex items-center space-x-2 text-admin-fg">
+            <i class="fas fa-clipboard-check text-sm" style="color:var(--fg-on-dark-success);"></i>
             <span>Visites techniques</span>
-            <span class="ml-2 text-xs px-2 py-0.5 rounded-full" style="background:rgba(52,211,153,0.15); color:#34d399;">{visits.length}</span>
+            <span class="ml-2 text-xs px-2 py-0.5 rounded-full text-fg-on-dark-success" style="background:rgba(var(--rgb-emerald),0.15);">{visits.length}</span>
           </h3>
           <div class="flex items-center gap-2">
             {dueVisits.length > 0 && (
-              <span class="text-xs px-3 py-1 rounded-full font-bold animate-pulse" style="background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);">
+              <span class="text-xs px-3 py-1 rounded-full font-bold animate-pulse text-fg-amber" style="background:rgba(var(--rgb-amber-deep),0.15); border:1px solid rgba(var(--rgb-amber-deep),0.3);">
                 <i class="fas fa-bell mr-1"></i>{dueVisits.length} à valider
               </span>
             )}
-            <button type="button" class="text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-2 transition-colors" style="background:rgba(52,211,153,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.3);" onclick="openAddVisitModal(0, '', '')">
+            <button type="button" class="text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-2 transition-colors text-fg-on-dark-success" style="background:rgba(var(--rgb-emerald),0.15); border:1px solid rgba(var(--rgb-emerald),0.3);" onclick="openAddVisitModal(0, '', '')">
               <i class="fas fa-plus"></i>
               <span>Programmer une visite</span>
             </button>
@@ -594,22 +594,22 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
         </div>
         {visits.length === 0 ? (
           <div class="text-center py-12">
-            <i class="fas fa-clipboard-check text-3xl mb-3" style="color:#1e3a5f;"></i>
-            <p class="text-sm" style="color:#64748b;">Aucune visite enregistrée</p>
+            <i class="fas fa-clipboard-check text-3xl mb-3 text-fg-navy-soft"></i>
+            <p class="text-sm" style="color:var(--fg-subtle);">Aucune visite enregistrée</p>
           </div>
         ) : (
           <div class="overflow-x-auto">
             <table class="admin-table w-full text-sm">
               <thead>
-                <tr style="background:#f1f5f9; border-bottom:1px solid var(--admin-border);">
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">ID</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Client</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Contrat</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Type</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Date prévue</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Technicien</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Statut</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Actions</th>
+                <tr class="bg-surface-muted border-b border-admin-line">
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-admin-muted">ID</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-admin-muted">Client</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-admin-muted">Contrat</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-admin-muted">Type</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-admin-muted">Date prévue</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-admin-muted">Technicien</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-admin-muted">Statut</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-admin-muted">Actions</th>
                 </tr>
               </thead>
               <tbody data-paginate="10">
@@ -626,21 +626,21 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                   const contract = contracts.find((c: any) => c.id === v.contract_id)
                   return (
                     <tr style={`border-bottom:1px solid var(--admin-border);${isDue ? ' background:rgba(245,158,11,0.05);' : ''}`} class="hover:bg-[rgba(3,105,161,0.04)]">
-                      <td class="px-5 py-3 font-mono text-xs" style="color:var(--admin-accent)">#{v.id}</td>
+                      <td class="px-5 py-3 font-mono text-xs text-admin-accent">#{v.id}</td>
                       <td class="px-5 py-3">
                         <div class="text-sm font-semibold" style="color:var(--admin-text-primary)">{v.client_name || (contract ? contract.client_name : '—')}</div>
-                        <div class="text-xs" style="color:var(--admin-text-muted);">{v.client_phone || (contract ? contract.client_phone : '')}</div>
+                        <div class="text-xs text-admin-muted">{v.client_phone || (contract ? contract.client_phone : '')}</div>
                       </td>
-                      <td class="px-5 py-3 text-xs" style="color:var(--admin-text-primary);">
+                      <td class="px-5 py-3 text-xs text-admin-fg">
                         {v.contract_id ? `#${v.contract_id}` : '—'}
-                        {contract && <div class="text-xs" style="color:var(--admin-text-muted);">{contract.plan_type}</div>}
+                        {contract && <div class="text-xs text-admin-muted">{contract.plan_type}</div>}
                       </td>
                       <td class="px-5 py-3 text-sm" style="color:var(--admin-text-primary);">{visitTypeLabels[v.visit_type] || v.visit_type || '—'}</td>
                       <td class="px-5 py-3">
                         <span class={`text-sm ${isDue ? 'font-bold' : ''}`} style={isDue ? 'color:#f59e0b;' : 'color:var(--admin-text-primary);'}>
                           {v.visit_date ? new Date(v.visit_date).toLocaleDateString('fr-FR') : '—'}
                         </span>
-                        {isDue && <div class="text-xs font-bold" style="color:#ef4444;">⚠️ Échue</div>}
+                        {isDue && <div class="text-xs font-bold text-fg-danger-bright">⚠️ Échue</div>}
                       </td>
                       <td class="px-5 py-3 text-sm" style="color:#94a3b8;">
                         {v.technician || '—'}
@@ -651,25 +651,25 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
                           {(v.status === 'planifiee' || v.status === 'confirmee') && (
                             <>
                               <button type="button" class="p-2 rounded-lg hover:bg-green-500/20 transition-colors" title="Valider l'entretien" onclick={`openValidationModal(${Number(v.id)}, '${jsAttr(v.client_name)}', '${jsAttr(v.visit_date)}', ${Number(v.contract_id) || 0})`}>
-                                <i class="fas fa-check-circle text-sm" style="color:#34d399;"></i>
+                                <i class="fas fa-check-circle text-sm" style="color:var(--fg-on-dark-success);"></i>
                               </button>
-                              <form method="post" action="/admin/maintenance/update-visit" style="display:inline;">
+                              <form method="post" action="/admin/maintenance/update-visit" class="inline">
                                 <input type="hidden" name="visit_id" value={String(v.id)} />
                                 <input type="hidden" name="status" value="annulee" />
                                 <button type="submit" class="p-2 rounded-lg hover:bg-yellow-500/20 transition-colors" title="Annuler" onclick="return confirm('Annuler cette visite ?')">
-                                  <i class="fas fa-ban text-sm" style="color:#f59e0b;"></i>
+                                  <i class="fas fa-ban text-sm" style="color:var(--fg-amber);"></i>
                                 </button>
                               </form>
                             </>
                           )}
                           {v.status === 'effectuee' && (
-                            <span class="text-xs" style="color:#34d399;"><i class="fas fa-check-double mr-1"></i>Validée</span>
+                            <span class="text-xs text-fg-on-dark-success"><i class="fas fa-check-double mr-1"></i>Validée</span>
                           )}
                           {/* Supprimer — toujours disponible */}
-                          <form method="post" action="/admin/maintenance/delete-visit" style="display:inline;">
+                          <form method="post" action="/admin/maintenance/delete-visit" class="inline">
                             <input type="hidden" name="visit_id" value={String(v.id)} />
                             <button type="submit" class="p-2 rounded-lg hover:bg-red-500/20 transition-colors" title="Supprimer définitivement" onclick="return confirm('Supprimer définitivement cette visite ?')">
-                              <i class="fas fa-trash text-xs" style="color:#f87171;"></i>
+                              <i class="fas fa-trash text-xs text-fg-on-dark-danger"></i>
                             </button>
                           </form>
                         </div>
@@ -685,19 +685,19 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
     </div>
 
     {/* ===== MODAL VALIDATION VISITE ===== */}
-    <div id="validation-modal" class="fixed inset-0 z-50 hidden" style="background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);">
+    <div id="validation-modal" class="fixed inset-0 z-50 hidden" style="background:rgba(var(--rgb-black),0.7); backdrop-filter:blur(4px);">
       <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="w-full max-w-lg rounded-2xl p-6" style="background:var(--admin-card-bg); border:1px solid var(--admin-border); box-shadow:0 25px 50px rgba(0,0,0,0.3);">
+        <div class="w-full max-w-lg rounded-2xl p-6 bg-admin-card border border-admin-line" style="box-shadow:0 25px 50px rgba(var(--rgb-black),0.3);">
           <div class="flex items-center justify-between mb-5">
-            <h3 class="text-lg font-bold flex items-center space-x-2" style="color:var(--admin-text-primary)">
-              <i class="fas fa-check-circle" style="color:#34d399;"></i>
+            <h3 class="text-lg font-bold flex items-center space-x-2 text-admin-fg">
+              <i class="fas fa-check-circle text-fg-on-dark-success"></i>
               <span>Valider l'entretien</span>
             </h3>
             <button type="button" onclick="closeValidationModal()" class="p-2 rounded-lg hover:bg-white/10 transition-colors">
               <i class="fas fa-times text-gray-400"></i>
             </button>
           </div>
-          <div id="modal-visit-info" class="mb-4 p-3 rounded-xl" style="background:rgba(14,165,233,0.08); border:1px solid rgba(14,165,233,0.15);">
+          <div id="modal-visit-info" class="mb-4 p-3 rounded-xl" style="background:rgba(var(--rgb-sky-deep),0.08); border:1px solid rgba(var(--rgb-sky-deep),0.15);">
           </div>
           <form method="post" action="/admin/maintenance/validate-visit" class="space-y-4">
             <input type="hidden" name="visit_id" id="modal-visit-id" />
@@ -738,12 +738,12 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
     </div>
 
     {/* ===== MODAL PROGRAMMER UNE VISITE ===== */}
-    <div id="add-visit-modal" class="fixed inset-0 z-50 hidden" style="background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);">
+    <div id="add-visit-modal" class="fixed inset-0 z-50 hidden" style="background:rgba(var(--rgb-black),0.7); backdrop-filter:blur(4px);">
       <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="w-full max-w-lg rounded-2xl p-6" style="background:var(--admin-card-bg); border:1px solid var(--admin-border); box-shadow:0 25px 50px rgba(0,0,0,0.3);">
+        <div class="w-full max-w-lg rounded-2xl p-6 bg-admin-card border border-admin-line" style="box-shadow:0 25px 50px rgba(var(--rgb-black),0.3);">
           <div class="flex items-center justify-between mb-5">
-            <h3 class="text-lg font-bold flex items-center space-x-2" style="color:var(--admin-text-primary)">
-              <i class="fas fa-calendar-plus" style="color:#38bdf8;"></i>
+            <h3 class="text-lg font-bold flex items-center space-x-2 text-admin-fg">
+              <i class="fas fa-calendar-plus text-fg-on-dark-accent"></i>
               <span>Programmer une visite</span>
             </h3>
             <button type="button" onclick="document.getElementById('add-visit-modal').classList.add('hidden')" class="p-2 rounded-lg hover:bg-white/10 transition-colors">
@@ -763,7 +763,7 @@ export const AdminMaintenancePage = ({ contracts = [], requests = [], visits = [
               </div>
             </div>
             <div>
-              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Date de visite <span style="color:#f87171;">*</span></label>
+              <label class="block text-xs font-semibold mb-1.5" style="color:var(--admin-text-muted);">Date de visite <span class="text-fg-on-dark-danger">*</span></label>
               <input type="date" name="visit_date" class="input-field" required />
             </div>
             <div>

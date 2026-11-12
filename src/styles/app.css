@@ -5,6 +5,93 @@
 /* ─── Google Fonts ─── */
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
+/* ─── TOKENS SÉMANTIQUES (styles inline → var(--…) / classes Tailwind) ───
+   Rôle d'abord, valeur ensuite : un futur mode sombre ne redéfinit que ce bloc.
+   --fg-*      couleur de texte        (classes text-fg-*)
+   --surface-* fond                    (classes bg-surface-*)
+   --line-*    bordure                 (classes border-line-*)
+   --rgb-*     canaux R,G,B pour les teintes translucides : rgba(var(--rgb-sky),0.1)
+   Les --fg-on-dark-* (néons) ne s'emploient que sur sections sombres (contraste AA). */
+:root {
+  --fg-heading: #03045e;
+  --fg-ink: #111827;
+  --fg-ink-slate: #0f172a;
+  --fg-body: #334155;
+  --fg-muted: #475569;
+  --fg-subtle: #64748b;
+  --fg-gray: #6b7280;
+  --fg-faint: #94a3b8;
+  --fg-disabled: #cbd5e1;
+  --fg-link: #0369a1;
+  --fg-brand: #0077b6;
+  --fg-success: #047857;
+  --fg-success-bright: #16a34a;
+  --fg-success-deep: #166534;
+  --fg-success-alt: #059669;
+  --fg-danger: #b91c1c;
+  --fg-danger-bright: #ef4444;
+  --fg-warning: #b45309;
+  --fg-warning-bright: #d97706;
+  --fg-amber: #f59e0b;
+  --fg-violet: #6d28d9;
+  --fg-violet-bright: #7c3aed;
+  --fg-whatsapp: #25d366;
+  --fg-navy-soft: #1e3a5f;
+  --fg-sky: #0ea5e9;
+  --fg-on-dark: #ffffff;
+  --fg-on-dark-soft: #e2e8f0;
+  --fg-on-dark-success: #34d399;
+  --fg-on-dark-accent: #38bdf8;
+  --fg-on-dark-danger: #f87171;
+  --fg-on-dark-info: #60a5fa;
+  --fg-on-dark-warning: #fbbf24;
+  --fg-on-dark-violet: #a78bfa;
+
+  --surface-card: #ffffff;
+  --surface-subtle: #f8fafc;
+  --surface-muted: #f1f5f9;
+  --surface-base: #f8fbff;
+  --surface-info: #f0f9ff;
+  --surface-info-alt: #f0f7ff;
+  --surface-accent: #e0f2fe;
+  --surface-brand: #0077b6;
+  --surface-brand-cyan: #00b4d8;
+  --surface-sky: #0ea5e9;
+  --surface-sky-deep: #0284c7;
+  --surface-navy: #03045e;
+  --surface-blue: #3b82f6;
+  --surface-success: #059669;
+  --surface-success-bright: #10b981;
+
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --line-accent: #bae6fd;
+  --line-brand: #0077b6;
+  --line-soft: #f1f5f9;
+
+  --rgb-sky: 56,189,248;
+  --rgb-red: 239,68,68;
+  --rgb-emerald: 52,211,153;
+  --rgb-green: 16,185,129;
+  --rgb-blue: 59,130,246;
+  --rgb-brand: 0,119,182;
+  --rgb-amber: 251,191,36;
+  --rgb-whatsapp: 37,211,102;
+  --rgb-slate: 148,163,184;
+  --rgb-white: 255,255,255;
+  --rgb-sky-deep: 14,165,233;
+  --rgb-slate-100: 241,245,249;
+  --rgb-slate-200: 226,232,240;
+  --rgb-purple: 168,85,247;
+  --rgb-amber-deep: 245,158,11;
+  --rgb-steel: 148,180,220;
+  --rgb-navy: 3,4,94;
+  --rgb-ink: 2,6,23;
+  --rgb-black: 0,0,0;
+  --rgb-violet: 109,40,217;
+  --rgb-indigo: 99,102,241;
+}
+
 /* ─── COLOR SYSTEM ─── */
 :root {
   --primary: #0077b6;

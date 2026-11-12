@@ -108,25 +108,25 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         {/* JSON-LD Structured Data injection point */}
         {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />}
       </head>
-      <body class="min-h-screen pb-16 md:pb-0" style="background-color:#f8fbff; color:var(--ink);" onload="window.initCGUModal?.()">
+      <body class="min-h-screen pb-16 md:pb-0 bg-surface-base" style="color:var(--ink);" onload="window.initCGUModal?.()">
 
         {/* js-ready : pose immédiatement la classe pour activer l'état initial caché
             des reveals. Si JS est désactivé, la classe n'est jamais posée → contenu visible. */}
         <script dangerouslySetInnerHTML={{ __html: `document.documentElement.classList.add('js-ready');` }} />
 
         {/* PAGE LOADER — affiché uniquement au premier chargement de la session */}
-        <div id="page-loader" style="position:fixed;inset:0;z-index:999999;background:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.3s ease,visibility 0.3s ease;">
-          <div style="position:relative;margin-bottom:1.5rem;">
-            <div style="width:72px;height:72px;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,119,182,0.2);animation:loader-pulse 1.5s ease-in-out infinite;">
-              <img src="/logo-site.webp" width="192" height="192" alt="MAASGA" style="width:100%;height:100%;object-fit:cover;" />
+        <div id="page-loader" class="bg-surface-card flex flex-col items-center justify-center" style="position:fixed; inset:0; z-index:999999; transition:opacity 0.3s ease,visibility 0.3s ease;">
+          <div class="relative mb-[1.5rem]">
+            <div class="w-[72px] h-[72px] rounded-[20px] overflow-hidden" style="box-shadow:0 4px 24px rgba(var(--rgb-brand),0.2); animation:loader-pulse 1.5s ease-in-out infinite;">
+              <img src="/logo-site.webp" width="192" height="192" alt="MAASGA" class="w-full h-[100%]" style="object-fit:cover;" />
             </div>
           </div>
-          <div style="color:#03045e;font-size:1.6rem;font-weight:800;letter-spacing:0.1em;margin-bottom:0.4rem;">MAASGA</div>
-          <div style="color:#0077b6;font-size:0.75rem;letter-spacing:0.2em;margin-bottom:2rem;font-weight:600;">FROID &amp; CLIMATISATION</div>
-          <div style="display:flex;gap:6px;">
-            <span style="width:8px;height:8px;border-radius:50%;background:#0077b6;animation:loader-bounce 0.8s ease-in-out infinite;"></span>
-            <span style="width:8px;height:8px;border-radius:50%;background:#0077b6;animation:loader-bounce 0.8s ease-in-out 0.15s infinite;"></span>
-            <span style="width:8px;height:8px;border-radius:50%;background:#0077b6;animation:loader-bounce 0.8s ease-in-out 0.3s infinite;"></span>
+          <div class="text-fg-heading text-[1.6rem] font-extrabold mb-[0.4rem]" style="letter-spacing:0.1em;">MAASGA</div>
+          <div class="text-fg-brand text-[0.75rem] mb-[2rem] font-semibold" style="letter-spacing:0.2em;">FROID &amp; CLIMATISATION</div>
+          <div class="flex gap-[6px]">
+            <span class="w-[8px] h-[8px] rounded-[50%] bg-surface-brand" style="animation:loader-bounce 0.8s ease-in-out infinite;"></span>
+            <span class="w-[8px] h-[8px] rounded-[50%] bg-surface-brand" style="animation:loader-bounce 0.8s ease-in-out 0.15s infinite;"></span>
+            <span class="w-[8px] h-[8px] rounded-[50%] bg-surface-brand" style="animation:loader-bounce 0.8s ease-in-out 0.3s infinite;"></span>
           </div>
         </div>
         <script dangerouslySetInnerHTML={{ __html: `
@@ -169,15 +169,15 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         `}</style>
 
         {/* Skip to content — accessibility */}
-        <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[99999] focus:px-4 focus:py-2 focus:rounded-lg focus:text-white" style="background:#0ea5e9;">Aller au contenu principal</a>
+        <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[99999] focus:px-4 focus:py-2 focus:rounded-lg focus:text-white bg-surface-sky">Aller au contenu principal</a>
 
         {/* PAGE TRANSITION OVERLAY — grand texte qui traverse pendant le fetch async */}
-        <div id="page-transition" style="position:fixed; inset:0; z-index:99999; background:#03045e; display:flex; align-items:center; justify-content:center; overflow:hidden; transition:opacity 0.3s ease; pointer-events:none; opacity:0;">
+        <div id="page-transition" class="bg-surface-navy flex items-center justify-center overflow-hidden" style="position:fixed; inset:0; z-index:99999; transition:opacity 0.3s ease; pointer-events:none; opacity:0;">
           <span id="page-transition-text" class="pt-text"></span>
         </div>
 
         {/* BACK TO TOP */}
-        <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Retour en haut" style="position:fixed; bottom:6rem; right:1.5rem; z-index:9998; width:44px; height:44px; border-radius:50%; background:rgba(14,165,233,0.9); color:white; border:none; cursor:pointer; display:none; align-items:center; justify-content:center; font-size:1rem; box-shadow:0 4px 20px rgba(14,165,233,0.35); transition:all 0.3s ease; backdrop-filter:blur(10px);">
+        <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Retour en haut" class="w-[44px] h-[44px] rounded-[50%] text-fg-on-dark cursor-pointer items-center justify-center text-[1rem]" style="position:fixed; bottom:6rem; right:1.5rem; z-index:9998; background:rgba(var(--rgb-sky-deep),0.9); border:none; display:none; box-shadow:0 4px 20px rgba(var(--rgb-sky-deep),0.35); transition:all 0.3s ease; backdrop-filter:blur(10px);">
           <i class="fas fa-chevron-up"></i>
         </button>
 
@@ -188,7 +188,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
             {/* Logo */}
             <a href="/" class="font-extrabold tracking-tight flex items-center shrink-0 gap-2">
               <img src="/logo-site.webp" width="192" height="192" alt="MAASGA Logo" class="h-9 sm:h-10 w-auto rounded-lg" />
-              <span class="hidden sm:inline text-sm font-bold uppercase tracking-widest" style="color:#03045e;">MAASGA</span>
+              <span class="hidden sm:inline text-sm font-bold uppercase tracking-widest" style="color:var(--fg-heading);">MAASGA</span>
             </a>
 
             {/* Nav Desktop — visible xl+ */}
@@ -231,7 +231,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                   <i class="fas fa-ellipsis-h text-[10px]" style="color:#94a3b8;"></i>
                   Plus
                 </button>
-                <div id="nav-more-dropdown" class="hidden absolute right-0 top-full mt-2 w-48 rounded-xl shadow-xl py-2" style="background:rgba(255,255,255,0.98); backdrop-filter:blur(20px); border:1px solid rgba(0,119,182,0.12); z-index:60;">
+                <div id="nav-more-dropdown" class="hidden absolute right-0 top-full mt-2 w-48 rounded-xl shadow-xl py-2" style="background:rgba(var(--rgb-white),0.98); backdrop-filter:blur(20px); border:1px solid rgba(var(--rgb-brand),0.12); z-index:60;">
                   {[
                     { href: "/a-propos", icon: "fa-circle-info", label: "À propos", key: "apropos" },
                     { href: "/espace-client", icon: "fa-user", label: "Espace client", key: "client" },
@@ -252,20 +252,20 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
 
             {/* Actions */}
             <div class="flex items-center gap-1.5 sm:gap-2">
-              <a href="/espace-client" id="user-nav-btn" class="hidden lg:flex items-center justify-center w-9 h-9 rounded-full transition-all hover:bg-blue-50" style="color:#0077b6;" title="Espace client" aria-label="Espace client">
+              <a href="/espace-client" id="user-nav-btn" class="hidden lg:flex items-center justify-center w-9 h-9 rounded-full transition-all hover:bg-blue-50 text-fg-brand" title="Espace client" aria-label="Espace client">
                 <i class="fas fa-user text-sm"></i>
               </a>
-              <button onclick="var m=document.getElementById('mobile-menu');var b=this.querySelector('i');if(m.classList.contains('open')){m.classList.remove('open');b.className='fas fa-bars text-lg';}else{m.classList.add('open');b.className='fas fa-times text-lg';}this.setAttribute('aria-expanded',m.classList.contains('open'))" class="lg:hidden flex items-center justify-center w-10 h-10 rounded-full hover:bg-blue-50 transition-colors" style="color:#475569;" aria-label="Menu de navigation" aria-expanded="false" aria-controls="mobile-menu">
+              <button onclick="var m=document.getElementById('mobile-menu');var b=this.querySelector('i');if(m.classList.contains('open')){m.classList.remove('open');b.className='fas fa-bars text-lg';}else{m.classList.add('open');b.className='fas fa-times text-lg';}this.setAttribute('aria-expanded',m.classList.contains('open'))" class="lg:hidden flex items-center justify-center w-10 h-10 rounded-full hover:bg-blue-50 transition-colors text-fg-muted" aria-label="Menu de navigation" aria-expanded="false" aria-controls="mobile-menu">
                 <i class="fas fa-bars text-lg"></i>
               </button>
             </div>
           </div>
 
           {/* Mobile menu dropdown */}
-          <div id="mobile-menu" class="mobile-menu lg:hidden max-w-7xl mx-auto mt-2 rounded-2xl shadow-xl overflow-hidden" style="background:rgba(248,251,255,0.98); backdrop-filter:blur(20px); border:1px solid rgba(0,119,182,0.12);">
+          <div id="mobile-menu" class="mobile-menu lg:hidden max-w-7xl mx-auto mt-2 rounded-2xl shadow-xl overflow-hidden" style="background:rgba(248,251,255,0.98); backdrop-filter:blur(20px); border:1px solid rgba(var(--rgb-brand),0.12);">
             {/* Quick contact bar */}
-            <div class="flex items-center justify-end px-5 py-3" style="background:rgba(0,119,182,0.04); border-bottom:1px solid rgba(0,119,182,0.08);">
-              <a href="/espace-client" class="flex items-center gap-2 text-xs font-semibold" style="color:#0077b6;">
+            <div class="flex items-center justify-end px-5 py-3" style="background:rgba(var(--rgb-brand),0.04); border-bottom:1px solid rgba(var(--rgb-brand),0.08);">
+              <a href="/espace-client" class="flex items-center gap-2 text-xs font-semibold text-fg-brand">
                 <i class="fas fa-user"></i>
                 <span>Espace client</span>
               </a>
@@ -307,8 +307,8 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
 
         {/* FOOTER */}
         <footer style="background:linear-gradient(135deg,#ffffff 0%,#e0f2fe 50%,#bae6fd 100%); margin-top:5rem; position:relative; overflow:hidden;">
-          <div style="position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.08);pointer-events:none;"></div>
-          <div style="position:absolute;bottom:-40px;left:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.06);pointer-events:none;"></div>
+          <div class="absolute w-[200px] h-[200px] rounded-[50%]" style="top:-60px; right:-60px; background:rgba(var(--rgb-white),0.08); pointer-events:none;"></div>
+          <div class="absolute w-[160px] h-[160px] rounded-[50%]" style="bottom:-40px; left:-40px; background:rgba(var(--rgb-white),0.06); pointer-events:none;"></div>
           <div class="cyan-line"></div>
           <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
@@ -320,47 +320,47 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                   </div>
                   <div>
                     <div class="font-bold text-white text-xl tracking-wide">MAASGA</div>
-                    <div class="text-xs font-medium" style="color:#1e3a5f;">Froid &amp; Climatisation</div>
+                    <div class="text-xs font-medium text-fg-navy-soft">Froid &amp; Climatisation</div>
                   </div>
                 </div>
-                <p class="text-sm leading-relaxed max-w-sm" style="color:#1e3a5f;">
+                <p class="text-sm leading-relaxed max-w-sm" style="color:var(--fg-navy-soft);">
                   Spécialiste en vente, installation et maintenance de systèmes de climatisation à Ouagadougou et dans tout le Burkina Faso.
                 </p>
                 <div class="mt-5 space-y-3">
-                  <div class="text-sm" style="color:#1e3a5f;">
-                    <div class="font-semibold mb-3" style="color:#03045e;">Directeurs</div>
+                  <div class="text-sm" style="color:var(--fg-navy-soft);">
+                    <div class="font-semibold mb-3 text-fg-heading">Directeurs</div>
                     <div class="flex items-center space-x-2 mb-2">
-                      <div style="width:22px;height:22px;border-radius:50%;background:rgba(0,119,182,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                      <div class="w-[22px] h-[22px] rounded-[50%] flex items-center justify-center shrink-0" style="background:rgba(var(--rgb-brand),0.18);">
                         <NavIcon icon="fa-user" size={11} color="#0077b6" />
                       </div>
                       <span>Malick KOMPAORE - Directeur Commercial</span>
                     </div>
                     <div class="flex items-center space-x-2 mb-3">
-                      <div style="width:22px;height:22px;border-radius:50%;background:rgba(0,119,182,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                      <div class="w-[22px] h-[22px] rounded-[50%] flex items-center justify-center shrink-0" style="background:rgba(var(--rgb-brand),0.18);">
                         <NavIcon icon="fa-phone" size={11} color="#0077b6" />
                       </div>
                       <a href="tel:+22607494444" class="hover:text-white transition">+226 07 49 44 44</a>
                     </div>
                     <div class="flex items-center space-x-2 mb-2">
-                      <div style="width:22px;height:22px;border-radius:50%;background:rgba(124,58,237,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                      <div class="w-[22px] h-[22px] rounded-[50%] flex items-center justify-center shrink-0" style="background:rgba(124,58,237,0.18);">
                         <NavIcon icon="fa-user" size={11} color="#7c3aed" />
                       </div>
                       <span>Sherif SAWADOGO - Directeur Technique</span>
                     </div>
                     <div class="flex items-center space-x-2">
-                      <div style="width:22px;height:22px;border-radius:50%;background:rgba(124,58,237,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                      <div class="w-[22px] h-[22px] rounded-[50%] flex items-center justify-center shrink-0" style="background:rgba(124,58,237,0.18);">
                         <NavIcon icon="fa-phone" size={11} color="#7c3aed" />
                       </div>
                       <a href="tel:+22655996418" class="hover:text-white transition">+226 55 99 64 18</a>
                     </div>
                   </div>
-                  <div class="pt-3 border-t flex items-center gap-4" style="border-color:rgba(0,0,0,0.1);">
-                    <a href="https://wa.me/22655996418" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-2 text-sm font-semibold transition-all hover:scale-105" style="color:#16a34a;">
-                      <i class="fab fa-whatsapp text-xl" style="color:#25d366;"></i><span>WhatsApp</span>
+                  <div class="pt-3 border-t flex items-center gap-4" style="border-color:rgba(var(--rgb-black),0.1);">
+                    <a href="https://wa.me/22655996418" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-2 text-sm font-semibold transition-all hover:scale-105" style="color:var(--fg-success-bright);">
+                      <i class="fab fa-whatsapp text-xl" style="color:var(--fg-whatsapp);"></i><span>WhatsApp</span>
                     </a>
-                    <a href="mailto:maasgabf@gmail.com" class="flex items-center space-x-2 text-sm font-semibold transition-all hover:scale-105" style="color:#0077b6;">
-                      <div style="width:22px;height:22px;border-radius:50%;background:rgba(0,119,182,0.15);display:flex;align-items:center;justify-content:center;">
-                        <i class="fas fa-envelope text-xs" style="color:#0077b6;"></i>
+                    <a href="mailto:maasgabf@gmail.com" class="flex items-center space-x-2 text-sm font-semibold transition-all hover:scale-105" style="color:var(--fg-brand);">
+                      <div class="w-[22px] h-[22px] rounded-[50%] flex items-center justify-center" style="background:rgba(var(--rgb-brand),0.15);">
+                        <i class="fas fa-envelope text-xs text-fg-brand"></i>
                       </div><span>maasgabf@gmail.com</span>
                     </a>
                   </div>
@@ -368,8 +368,8 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               </div>
 
               <div>
-                <h4 class="font-semibold text-white mb-5 text-sm uppercase tracking-widest" style="color:#38bdf8;">Navigation</h4>
-                <ul class="space-y-3 text-sm" style="color:#64748b;">
+                <h4 class="font-semibold text-white mb-5 text-sm uppercase tracking-widest" style="color:var(--fg-on-dark-accent);">Navigation</h4>
+                <ul class="space-y-3 text-sm" style="color:var(--fg-subtle);">
                   {["/", "/catalogue", "/contrat-maintenance", "/simulateur", "/rendez-vous", "/avis", "/a-propos", "/contact"].map((href, i) => (
                     <li><a href={href} class="hover:text-white hover:pl-1 transition-all block">
                       {["Accueil","Catalogue","Maintenance","Simulateur BTU","Prendre RDV","Avis clients","À propos","Contact"][i]}
@@ -379,8 +379,8 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               </div>
 
               <div>
-                <h4 class="font-semibold mb-5 text-sm uppercase tracking-widest" style="color:#38bdf8;">Services</h4>
-                <ul class="space-y-3 text-sm" style="color:#64748b;">
+                <h4 class="font-semibold mb-5 text-sm uppercase tracking-widest" style="color:var(--fg-on-dark-accent);">Services</h4>
+                <ul class="space-y-3 text-sm" style="color:var(--fg-subtle);">
                   {["Vente climatiseurs","Installation pro","Maintenance tri.","Devis gratuit","SAV réactif","Techniciens certifiés"].map(s => (
                     <li class="flex items-center space-x-2">
                       <NavIcon icon="fa-circle-check" size={13} color="#0ea5e9" />
@@ -391,13 +391,13 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 <div class="mt-5 p-3 rounded-xl text-xs" style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.12); color:#64748b;">
                   <NavIcon icon="fa-location-dot" size={13} color="#0ea5e9" class="mr-2" />
                   Ouagadougou, Secteurs 35
-                  <div class="mt-1 ml-5" style="color:#475569;">Burkina Faso</div>
+                  <div class="mt-1 ml-5 text-fg-muted">Burkina Faso</div>
                 </div>
               </div>
             </div>
 
             <div class="cyan-line mt-10 mb-6"></div>
-            <div class="flex flex-col md:flex-row justify-between items-center text-xs gap-4" style="color:#475569;">
+            <div class="flex flex-col md:flex-row justify-between items-center text-xs gap-4 text-fg-muted">
               <span>© 2026 MAASGA - Tous droits réservés</span>
               <div class="flex items-center space-x-3 text-xs">
                 <button onclick="document.getElementById('cgu-modal').classList.remove('hidden')" class="hover:text-white transition">
@@ -451,33 +451,33 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         <div id="wa-widget" style="position:fixed; bottom:1.5rem; left:1.5rem; z-index:9999;">
 
           {/* Panel */}
-          <div id="wa-panel" style="display:none; position:absolute; bottom:72px; left:0; width:300px; border-radius:18px; overflow:hidden; box-shadow:0 24px 64px rgba(0,0,0,0.45); transform-origin:bottom left; animation:waPop 0.22s cubic-bezier(.34,1.56,.64,1) both;">
+          <div id="wa-panel" class="absolute w-[300px] rounded-[18px] overflow-hidden" style="display:none; bottom:72px; left:0; box-shadow:0 24px 64px rgba(var(--rgb-black),0.45); transform-origin:bottom left; animation:waPop 0.22s cubic-bezier(.34,1.56,.64,1) both;">
             {/* Header WhatsApp */}
             <div style="background:#075E54; padding:14px 14px 20px;">
-              <div style="display:flex; align-items:center; gap:10px;">
+              <div class="flex items-center gap-[10px]">
                 <div style="width:44px; height:44px; border-radius:50%; background:#128C7E; display:flex; align-items:center; justify-content:center; flex-shrink:0; border:2px solid rgba(255,255,255,0.2);">
-                  <i class="fab fa-whatsapp" style="color:white; font-size:1.5rem;"></i>
+                  <i class="fab fa-whatsapp" style="color:var(--fg-on-dark); font-size:1.5rem;"></i>
                 </div>
-                <div style="flex:1;">
-                  <div style="color:white; font-weight:700; font-size:0.9rem; line-height:1.2;">MAASGA Support</div>
-                  <div style="color:rgba(255,255,255,0.75); font-size:0.72rem; margin-top:2px;">🟢 En ligne · Répond rapidement</div>
+                <div class="flex-1">
+                  <div class="text-fg-on-dark font-bold text-[0.9rem]" style="line-height:1.2;">MAASGA Support</div>
+                  <div class="text-[0.72rem] mt-[2px]" style="color:rgba(var(--rgb-white),0.75);">🟢 En ligne · Répond rapidement</div>
                 </div>
-                <button onclick="closeWaPanel()" style="color:rgba(255,255,255,0.65); background:none; border:none; cursor:pointer; font-size:1.15rem; padding:4px; line-height:1; border-radius:50%; transition:all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='none'">✕</button>
+                <button onclick="closeWaPanel()" class="cursor-pointer text-[1.15rem] p-[4px] rounded-[50%]" style="color:rgba(var(--rgb-white),0.65); background:none; border:none; line-height:1; transition:all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='none'">✕</button>
               </div>
             </div>
 
             {/* Chat area */}
             <div style="background:#e5ddd5; padding:14px 12px 16px;">
               {/* Message bubble */}
-              <div style="display:flex; gap:6px; margin-bottom:14px;">
-                <div style="background:white; border-radius:0 10px 10px 10px; padding:10px 12px; box-shadow:0 1px 2px rgba(0,0,0,0.12); max-width:85%;">
-                  <p style="color:#111; font-size:0.83rem; line-height:1.5; margin:0 0 4px;">Bonjour 👋 Comment puis-je vous aider ?</p>
-                  <span style="color:#888; font-size:0.68rem; display:block; text-align:right;">MAASGA Climatisation</span>
+              <div class="flex gap-[6px] mb-[14px]">
+                <div class="bg-surface-card py-[10px] px-[12px] max-w-[85%]" style="border-radius:0 10px 10px 10px; box-shadow:0 1px 2px rgba(var(--rgb-black),0.12);">
+                  <p class="text-[0.83rem]" style="color:#111; line-height:1.5; margin:0 0 4px;">Bonjour 👋 Comment puis-je vous aider ?</p>
+                  <span class="text-[0.68rem] block text-right" style="color:#888;">MAASGA Climatisation</span>
                 </div>
               </div>
 
               {/* Quick replies */}
-              <div style="display:flex; flex-direction:column; gap:7px;">
+              <div class="flex flex-col gap-[7px]">
                 {[
                   { icon: "🔧", label: "Demander un devis", msg: "Bonjour MAASGA, je souhaite un devis pour l'installation ou la maintenance d'un climatiseur." },
                   { icon: "📅", label: "Prendre un rendez-vous", href: "/rendez-vous" },
@@ -487,14 +487,14 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 ].map(opt => (
                   opt.href
                     ? <a href={opt.href}
-                        style="display:flex; align-items:center; gap:8px; background:white; border-radius:20px; padding:8px 14px; font-size:0.8rem; font-weight:600; color:#075E54; text-decoration:none; box-shadow:0 1px 3px rgba(0,0,0,0.1); transition:all 0.18s; border:none; cursor:pointer;"
+                        class="flex items-center gap-[8px] bg-surface-card rounded-[20px] py-[8px] px-[14px] text-[0.8rem] font-semibold no-underline cursor-pointer" style="color:#075E54; box-shadow:0 1px 3px rgba(var(--rgb-black),0.1); transition:all 0.18s; border:none;"
                         onmouseover="this.style.background='#128C7E'; this.style.color='white';" onmouseout="this.style.background='white'; this.style.color='#075E54';">
                         <span>{opt.icon}</span><span>{opt.label}</span>
-                        <i class="fas fa-arrow-right" style="margin-left:auto; font-size:0.65rem; opacity:0.6;"></i>
+                        <i class="fas fa-arrow-right text-[0.65rem]" style="margin-left:auto; opacity:0.6;"></i>
                       </a>
                     : <button
                         onclick={`openWa(${JSON.stringify(opt.msg)})`}
-                        style="display:flex; align-items:center; gap:8px; background:white; border-radius:20px; padding:8px 14px; font-size:0.8rem; font-weight:600; color:#075E54; text-align:left; box-shadow:0 1px 3px rgba(0,0,0,0.1); transition:all 0.18s; border:none; cursor:pointer; width:100%;"
+                        class="flex items-center gap-[8px] bg-surface-card rounded-[20px] py-[8px] px-[14px] text-[0.8rem] font-semibold text-left cursor-pointer w-full" style="color:#075E54; box-shadow:0 1px 3px rgba(var(--rgb-black),0.1); transition:all 0.18s; border:none;"
                         onmouseover="this.style.background='#128C7E'; this.style.color='white';" onmouseout="this.style.background='white'; this.style.color='#075E54';">
                         <span>{opt.icon}</span><span>{opt.label}</span>
                         <i class="fab fa-whatsapp" style="margin-left:auto; font-size:0.85rem; opacity:0.7;"></i>
@@ -502,15 +502,15 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 ))}
               </div>
 
-              <p style="text-align:center; font-size:0.65rem; color:#666; margin-top:12px; margin-bottom:0;">Propulsé par WhatsApp · Réponse en &lt; 30 min</p>
+              <p class="text-center text-[0.65rem] mt-[12px]" style="color:#666; margin-bottom:0;">Propulsé par WhatsApp · Réponse en &lt; 30 min</p>
             </div>
           </div>
 
           {/* Main button */}
-          <button onclick="toggleWaPanel()" id="wa-btn" class="whatsapp-float" aria-label="Discuter sur WhatsApp" style="border:none; cursor:pointer; position:relative;">
+          <button onclick="toggleWaPanel()" id="wa-btn" class="whatsapp-float cursor-pointer" aria-label="Discuter sur WhatsApp" style="border:none; position:relative;">
             <i id="wa-icon-open" class="fab fa-whatsapp" style="transition:all 0.2s;"></i>
             <i id="wa-icon-close" class="fas fa-times" style="display:none; transition:all 0.2s;"></i>
-            <span id="wa-notif-dot" style="position:absolute; top:3px; right:3px; width:11px; height:11px; background:#ff3b30; border-radius:50%; border:2px solid white; animation:waDot 1.8s ease-in-out infinite;"></span>
+            <span id="wa-notif-dot" class="absolute w-[11px] h-[11px] rounded-[50%]" style="top:3px; right:3px; background:#ff3b30; border:2px solid white; animation:waDot 1.8s ease-in-out infinite;"></span>
           </button>
         </div>
 
@@ -524,19 +524,19 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         
 
         {/* Cookie Consent Banner */}
-        <div id="cookie-banner" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:99998; background:rgba(11,17,32,0.97); backdrop-filter:blur(12px); border-top:1px solid rgba(56,189,248,0.2); padding:16px 24px; animation:slideUp 0.3s ease-out;">
+        <div id="cookie-banner" class="py-[16px] px-[24px]" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:99998; background:rgba(11,17,32,0.97); backdrop-filter:blur(12px); border-top:1px solid rgba(var(--rgb-sky),0.2); animation:slideUp 0.3s ease-out;">
           <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
-            <div class="flex items-center gap-2 text-sm" style="color:#e2e8f0; flex:1;">
-              <i class="fas fa-cookie-bite" style="color:#f59e0b; font-size:1.1rem;"></i>
+            <div class="flex items-center gap-2 text-sm flex-1" style="color:var(--fg-on-dark-soft);">
+              <i class="fas fa-cookie-bite text-fg-amber text-[1.1rem]"></i>
               <span>Ce site utilise des cookies pour améliorer votre expérience et analyser le trafic via Google Analytics.
-                <button onclick="document.getElementById('cgu-modal').classList.remove('hidden')" class="underline hover:no-underline" style="color:#38bdf8;">En savoir plus</button>
+                <button onclick="document.getElementById('cgu-modal').classList.remove('hidden')" class="underline hover:no-underline text-fg-on-dark-accent">En savoir plus</button>
               </span>
             </div>
             <div class="flex items-center gap-2 shrink-0">
               <button onclick="handleCookieConsent(false)" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all hover:bg-gray-700" style="background:rgba(255,255,255,0.1); color:#94a3b8; border:1px solid rgba(255,255,255,0.15);">
                 Refuser
               </button>
-              <button onclick="handleCookieConsent(true)" class="px-4 py-2 rounded-lg text-xs font-bold transition-all hover:opacity-90" style="background:linear-gradient(135deg,#0ea5e9,#3b82f6); color:white; border:none; box-shadow:0 2px 8px rgba(14,165,233,0.3);">
+              <button onclick="handleCookieConsent(true)" class="px-4 py-2 rounded-lg text-xs font-bold transition-all hover:opacity-90 text-fg-on-dark" style="background:linear-gradient(135deg,var(--surface-sky),var(--surface-blue)); border:none; box-shadow:0 2px 8px rgba(var(--rgb-sky-deep),0.3);">
                 Accepter
               </button>
             </div>
@@ -546,7 +546,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         <style dangerouslySetInnerHTML={{ __html: '@keyframes slideUp { from { transform:translateY(100%); opacity:0; } to { transform:translateY(0); opacity:1; } }' }} />
 
         {/* Toast Notification System */}
-        <div id="toast-container" class="fixed top-4 right-4 z-[99999] flex flex-col gap-3 pointer-events-none" style="max-width:380px;"></div>
+        <div id="toast-container" class="fixed top-4 right-4 z-[99999] flex flex-col gap-3 pointer-events-none max-w-[380px]"></div>
         
 
         {/* ─── Lenis smooth scroll (se synchronise au ticker GSAP existant) ─── */}

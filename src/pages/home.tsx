@@ -59,7 +59,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             </div>
           ))}
           {/* Overlay sombre : z-index:5 pour rester au-dessus des slides (qui montent à z-index 3 pendant la transition) */}
-          <div class="absolute inset-0" style="z-index:5; background:linear-gradient(100deg,rgba(0,0,0,0.82) 0%,rgba(0,0,0,0.55) 42%,rgba(0,0,0,0.28) 75%,rgba(0,0,0,0.5) 100%),linear-gradient(180deg,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.55) 100%);"></div>
+          <div class="absolute inset-0" style="z-index:5; background:linear-gradient(100deg,rgba(var(--rgb-black),0.82) 0%,rgba(var(--rgb-black),0.55) 42%,rgba(var(--rgb-black),0.28) 75%,rgba(var(--rgb-black),0.5) 100%),linear-gradient(180deg,rgba(var(--rgb-black),0.05) 0%,rgba(var(--rgb-black),0.55) 100%);"></div>
         </div>
 
         {/* Particules de neige — conservées par-dessus le carrousel */}
@@ -83,7 +83,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                 Le Frais <br /><span class="hero-grad">Réinventé</span> au Burkina.
               </h1>
 
-              <p class="text-lg mb-8 leading-relaxed max-w-lg" style="color:#cbd5e1;">
+              <p class="text-lg mb-8 leading-relaxed max-w-lg text-fg-disabled">
                 Spécialiste en <strong class="text-white">vente, installation et maintenance</strong> de climatiseurs à Ouagadougou. Visite technique gratuite sur site · Devis PDF gratuit · Contrats de maintenance personnalisés.
               </p>
 
@@ -93,7 +93,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                   <span>Commander une climatisation</span>
                   <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform text-sm" style="color:var(--accent);"></i>
                 </a>
-                <a href="/rendez-vous" class="font-bold px-8 py-4 rounded-2xl flex items-center justify-center gap-3 transition-all" style="border:1.5px solid rgba(202,240,248,0.35); color:white; background:rgba(255,255,255,0.06);">
+                <a href="/rendez-vous" class="font-bold px-8 py-4 rounded-2xl flex items-center justify-center gap-3 transition-all text-fg-on-dark" style="border:1.5px solid rgba(202,240,248,0.35); background:rgba(var(--rgb-white),0.06);">
                   <i class="fas fa-calendar-plus" style="color:var(--ice);"></i>
                   <span>Demander un devis</span>
                 </a>
@@ -108,7 +108,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                 </div>
                 <div>
                   <div class="flex items-center gap-1">
-                    {[1,2,3,4,5].map(_ => <i class="fas fa-star text-yellow-400" style="font-size:0.65rem;"></i>)}
+                    {[1,2,3,4,5].map(_ => <i class="fas fa-star text-yellow-400 text-[0.65rem]"></i>)}
                     <span class="font-bold text-white text-sm ml-1">{displayNote}</span>
                   </div>
                   <div class="text-xs" style="color:#94a3b8;"><strong class="text-white">{displayClients}</strong> clients satisfaits</div>
@@ -117,7 +117,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
 
               {/* Stats — compteurs animés */}
               <div class="grid grid-cols-3 gap-4">
-                <div class="text-center p-4 rounded-2xl" style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.16);">
+                <div class="text-center p-4 rounded-2xl" style="background:rgba(var(--rgb-slate),0.08); border:1px solid rgba(var(--rgb-slate),0.16);">
                   <div class="text-2xl font-extrabold text-white font-display">
                     {hasClients
                       ? <span data-count={String(stats!.clientCount)} data-suffix="+">{stats!.clientCount}+</span>
@@ -125,11 +125,11 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                   </div>
                   <div class="text-xs mt-1" style="color:#94a3b8;">Clients satisfaits</div>
                 </div>
-                <div class="text-center p-4 rounded-2xl" style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.16);">
+                <div class="text-center p-4 rounded-2xl" style="background:rgba(var(--rgb-slate),0.08); border:1px solid rgba(var(--rgb-slate),0.16);">
                   <div class="text-2xl font-extrabold text-white font-display"><span data-count="5" data-suffix=" ans">5 ans</span></div>
                   <div class="text-xs mt-1" style="color:#94a3b8;">D'expérience</div>
                 </div>
-                <div class="text-center p-4 rounded-2xl" style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.16);">
+                <div class="text-center p-4 rounded-2xl" style="background:rgba(var(--rgb-slate),0.08); border:1px solid rgba(var(--rgb-slate),0.16);">
                   <div class="text-2xl font-extrabold text-white font-display">{displayNote}</div>
                   <div class="text-xs mt-1" style="color:#94a3b8;">Note moyenne{stats?.reviewCount ? ` (${displayReviews} avis)` : ''}</div>
                 </div>
@@ -145,7 +145,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                   { icon: "fa-screwdriver-wrench", color: "#caf0f8", text: "SAV réactif" },
                   { icon: "fa-shield-halved", color: "#fbbf24", text: "Techniciens certifiés" }
                 ].map(b => (
-                  <div class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm" style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.2);">
+                  <div class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm" style="background:rgba(var(--rgb-slate),0.08); border:1px solid rgba(var(--rgb-slate),0.2);">
                     <i class={`fas ${b.icon}`} style={`color:${b.color};`}></i>
                     <span class="font-semibold text-white text-xs">{b.text}</span>
                   </div>
@@ -233,7 +233,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                     <div class="exp-step-icon w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-5" style={`background:${s.iconBg}; color:${s.iconColor};`}>
                       <i class={`${s.icon} icon-pulse`}></i>
                     </div>
-                    <div class="exp-num">Expertise 0{i + 1} <span style="color:#475569;" aria-hidden="true">/ 0{EXPERTISES.length}</span></div>
+                    <div class="exp-num">Expertise 0{i + 1} <span class="text-fg-muted" aria-hidden="true">/ 0{EXPERTISES.length}</span></div>
                     <h3 class="exp-title font-display font-extrabold mb-4" style="color:var(--navy-900);">{s.title}</h3>
                     <p class="exp-desc mb-6" style="color:var(--slate-700);">{s.desc}</p>
                     <ul class="text-sm space-y-2 mb-8" style="color:var(--slate-500);">
@@ -373,18 +373,18 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             ) : featuredProducts.map(p => (
               <div data-tilt class="surface-elevated overflow-hidden group flex flex-col">
                 {/* Image */}
-                <div class="tilt-image relative" style="background:linear-gradient(145deg,#f0f7ff,#dbeafe); padding:28px 24px 20px;">
+                <div class="tilt-image relative" style="background:linear-gradient(145deg,var(--surface-info-alt),#dbeafe); padding:28px 24px 20px;">
                   <div class="flex items-center justify-center" style="min-height:180px;">
                     {(p as any).imageUrl
                       ? <img src={(p as any).imageUrl} alt={p.name}
                           loading="lazy" width={250} height={180}
-                          class="object-contain mx-auto group-hover:scale-105 transition-transform duration-500"
-                          style="max-height:180px; max-width:100%; width:auto;" />
-                      : <div class="group-hover:scale-105 transition-transform duration-500" style="font-size:6rem; line-height:1;">{p.image}</div>
+                          class="object-contain mx-auto group-hover:scale-105 transition-transform duration-500 max-w-[100%]"
+                          style="max-height:180px; width:auto;" />
+                      : <div class="group-hover:scale-105 transition-transform duration-500 text-[6rem]" style="line-height:1;">{p.image}</div>
                     }
                   </div>
                   {p.inverter && (
-                    <span class="absolute top-3 right-3 text-xs px-3 py-1 rounded-full font-bold" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan)); color:#ffffff;">INVERTER</span>
+                    <span class="absolute top-3 right-3 text-xs px-3 py-1 rounded-full font-bold text-fg-on-dark" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan));">INVERTER</span>
                   )}
                   <span class={`absolute top-3 left-3 text-xs px-3 py-1 rounded-full font-semibold inline-flex items-center gap-1.5 ${p.stock > 3 ? 'badge-stock-ok' : p.stock > 0 ? 'badge-stock-low' : 'badge-stock-out'}`}>
                     <i class={`fas ${p.stock > 3 ? 'fa-circle-check' : p.stock > 0 ? 'fa-triangle-exclamation' : 'fa-circle-xmark'}`}></i>
@@ -401,7 +401,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                   <div class="flex items-end justify-between mb-5 mt-auto">
                     <div>
                       <div class="text-2xl font-extrabold font-display" style="color:var(--accent);">{p.price.toLocaleString()} <span class="text-sm font-normal" style="color:var(--slate-500);">FCFA</span></div>
-                      <div class="text-xs font-semibold mt-0.5" style="color:#047857;"><i class="fas fa-circle-check mr-1"></i>Installation et livraison offerte</div>
+                      <div class="text-xs font-semibold mt-0.5 text-fg-success"><i class="fas fa-circle-check mr-1"></i>Installation et livraison offerte</div>
                     </div>
                     <div class="text-right">
                       <div class="text-base font-bold" style="color:var(--navy-900);">{p.btu.toLocaleString()} BTU</div>
@@ -419,10 +419,10 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
           </div>
 
           {/* Notice */}
-          <div class="mt-8 rounded-2xl p-4 flex items-start gap-3" style="background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2);">
-            <i class="fas fa-triangle-exclamation mt-0.5 flex-shrink-0" style="color:#f59e0b;"></i>
+          <div class="mt-8 rounded-2xl p-4 flex items-start gap-3" style="background:rgba(var(--rgb-amber-deep),0.06); border:1px solid rgba(var(--rgb-amber-deep),0.2);">
+            <i class="fas fa-triangle-exclamation mt-0.5 flex-shrink-0 text-fg-amber"></i>
             <p class="text-sm" style="color:var(--slate-700);">
-              <strong style="color:#b45309;">Important :</strong> Toute commande est soumise à une Visite technique gratuite préalable sur site. Le paiement est effectué uniquement après cette visite et confirmation du devis.
+              <strong class="text-fg-warning">Important :</strong> Toute commande est soumise à une Visite technique gratuite préalable sur site. Le paiement est effectué uniquement après cette visite et confirmation du devis.
             </p>
           </div>
         </div>
@@ -463,7 +463,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center" data-reveal>
             <div>
-              <span class="eyebrow mb-5" style="color:#7c3aed; background:rgba(139,92,246,0.1); border-color:rgba(139,92,246,0.25);">
+              <span class="eyebrow mb-5" style="color:var(--fg-violet-bright); background:rgba(139,92,246,0.1); border-color:rgba(139,92,246,0.25);">
                 <i class="fas fa-calculator mr-1"></i> Outil gratuit
               </span>
               <h2 data-split class="display-2 mt-5 mb-4" style="color:var(--navy-900);">Quel climatiseur pour votre pièce ?</h2>
@@ -473,7 +473,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
               <div class="space-y-3 mb-8">
                 {["Surface de la pièce en m²","Hauteur du plafond","Exposition solaire","Nombre de fenêtres"].map(item => (
                   <div class="flex items-center gap-3">
-                    <i class="fas fa-circle-check text-sm" style="color:#047857;"></i>
+                    <i class="fas fa-circle-check text-sm" style="color:var(--fg-success);"></i>
                     <span class="text-sm" style="color:var(--slate-700);">{item}</span>
                   </div>
                 ))}
@@ -509,8 +509,8 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                   </div>
                 ))}
                 <div class="rounded-2xl px-4 py-5 text-center mt-4" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan)); box-shadow:0 8px 30px rgba(3,105,161,0.25);">
-                  <div class="text-xs mb-1" style="color:#ffffff; opacity:0.85;">Puissance recommandée</div>
-                  <div class="text-3xl font-extrabold font-display" style="color:#ffffff;">12 000 BTU / 1,5 CV</div>
+                  <div class="text-xs mb-1 text-fg-on-dark" style="opacity:0.85;">Puissance recommandée</div>
+                  <div class="text-3xl font-extrabold font-display text-fg-on-dark">12 000 BTU / 1,5 CV</div>
                   <div class="text-xs mt-1" style="color:var(--ice);">→ 2 modèles compatibles</div>
                 </div>
               </div>
@@ -541,7 +541,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
           </div>
         ) : (
           <>
-          <div class="relative" style="overflow:hidden;" data-reveal>
+          <div class="relative overflow-hidden" data-reveal>
             <div class="testimonial-track">
               {[...topReviews, ...topReviews, ...topReviews].map((r, idx) => (
                 <div class="surface-elevated p-6 flex-shrink-0 testimonial-card-in rounded-lg" style={`min-width:320px; max-width:360px; transition-delay:${0.08 * (idx % topReviews.length)}s;`} data-testimonial-card>
@@ -644,13 +644,13 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
         <div class="glow-dot w-80 h-80 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style="background:rgba(3,105,161,0.15);" data-parallax="-30"></div>
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <i class="fas fa-rocket text-5xl mb-4" style="color:var(--ice);"></i>
-          <h2 data-split class="display-2 mb-4" style="color:#ffffff;">Prêt à profiter du confort climatisé ?</h2>
-          <p class="mb-4 text-lg max-w-2xl mx-auto" style="color:#cbd5e1;">
+          <h2 data-split class="display-2 mb-4" style="color:var(--fg-on-dark);">Prêt à profiter du confort climatisé ?</h2>
+          <p class="mb-4 text-lg max-w-2xl mx-auto text-fg-disabled">
             Contactez-nous dès aujourd'hui. Visite technique gratuite, devis PDF sous 24h, installation par nos experts certifiés.
           </p>
 
           <div class="inline-flex items-center gap-2 mb-8 px-5 py-2.5 rounded-full" style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3);">
-            <i class="fas fa-phone text-sm" style="color:#38bdf8;"></i>
+            <i class="fas fa-phone text-sm" style="color:var(--fg-on-dark-accent);"></i>
             <span class="text-sm font-bold" style="color:var(--ice);">Devis gratuit sous 24h — Appelez le 55 99 64 18</span>
           </div>
 
@@ -659,7 +659,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
               <i class="fas fa-calendar-plus" style="color:var(--accent);"></i>
               <span>Demander un devis gratuit</span>
             </a>
-            <a href="/catalogue" class="font-extrabold px-10 py-4 rounded-2xl text-lg flex items-center justify-center gap-3 transition-all" style="border:1.5px solid rgba(202,240,248,0.35); color:white; background:rgba(255,255,255,0.06);">
+            <a href="/catalogue" class="font-extrabold px-10 py-4 rounded-2xl text-lg flex items-center justify-center gap-3 transition-all text-fg-on-dark" style="border:1.5px solid rgba(202,240,248,0.35); background:rgba(var(--rgb-white),0.06);">
               <i class="fas fa-table-cells-large"></i>
               <span>Voir le catalogue</span>
             </a>

@@ -27,12 +27,12 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
   return (
   <AdminLayout activePage="parametres">
     <div class="mb-6">
-      <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">Paramètres du site</h2>
+      <h2 class="text-xl font-bold text-admin-fg">Paramètres du site</h2>
       <p class="text-sm mt-1" style="color:var(--admin-text-muted)">Configuration, sécurité et gestion du back-office</p>
     </div>
 
     {success && (
-      <div class="mb-6 rounded-xl p-4 flex items-center space-x-3" style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3);">
+      <div class="mb-6 rounded-xl p-4 flex items-center space-x-3" style="background:rgba(var(--rgb-green),0.1); border:1px solid rgba(var(--rgb-green),0.3);">
         <i class="fas fa-check-circle text-green-400 text-lg"></i>
         <span class="text-green-300 font-medium text-sm">
           {success === 'pwd' ? 'Mot de passe mis à jour avec succès.' : success === 'settings' ? 'Paramètres du site enregistrés.' : 'Opération réussie.'}
@@ -40,7 +40,7 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
       </div>
     )}
     {error && (
-      <div class="mb-6 rounded-xl p-4 flex items-center space-x-3" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3);">
+      <div class="mb-6 rounded-xl p-4 flex items-center space-x-3" style="background:rgba(var(--rgb-red),0.1); border:1px solid rgba(var(--rgb-red),0.3);">
         <i class="fas fa-exclamation-circle text-red-400 text-lg"></i>
         <span class="text-red-300 font-medium text-sm">
           {error === 'wrong_current' ? 'Mot de passe actuel incorrect.' :
@@ -58,11 +58,11 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
       {/* Changer mot de passe */}
       <div class="rounded-2xl p-6 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
         <div class="flex items-center space-x-3 mb-5">
-          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(59,130,246,0.15);">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(var(--rgb-blue),0.15);">
             <i class="fas fa-lock text-blue-400"></i>
           </div>
           <div>
-            <h3 class="font-bold" style="color:var(--admin-text-primary)">Sécurité — Mot de passe admin</h3>
+            <h3 class="font-bold text-admin-fg">Sécurité — Mot de passe admin</h3>
             <p class="text-xs text-gray-400">Modifiez le mot de passe de connexion au back-office</p>
           </div>
         </div>
@@ -93,11 +93,11 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
       {/* Informations site — Éditables */}
       <div class="rounded-2xl p-6 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
         <div class="flex items-center space-x-3 mb-5">
-          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(16,185,129,0.15);">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(var(--rgb-green),0.15);">
             <i class="fas fa-store text-green-400"></i>
           </div>
           <div>
-            <h3 class="font-bold" style="color:var(--admin-text-primary)">Informations MAASGA</h3>
+            <h3 class="font-bold text-admin-fg">Informations MAASGA</h3>
             <p class="text-xs text-gray-400">Modifiez les données de contact et horaires affichés sur le site</p>
           </div>
         </div>
@@ -150,11 +150,11 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
       {/* Statistiques globales */}
       <div class="rounded-2xl p-6 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
         <div class="flex items-center space-x-3 mb-5">
-          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(168,85,247,0.15);">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(var(--rgb-purple),0.15);">
             <i class="fas fa-database text-purple-400"></i>
           </div>
           <div>
-            <h3 class="font-bold" style="color:var(--admin-text-primary)">État de la base de données</h3>
+            <h3 class="font-bold text-admin-fg">État de la base de données</h3>
             <p class="text-xs text-gray-400">Récapitulatif des données enregistrées</p>
           </div>
         </div>
@@ -165,10 +165,10 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
             { label: "Rendez-vous", val: appointments.length, icon: "fa-calendar-alt", color: "#fbbf24" },
             { label: "Avis", val: reviews.length, icon: "fa-star", color: "#f87171" },
           ].map(s => (
-            <div class="flex items-center space-x-3 p-3 rounded-xl" style="background:rgba(255,255,255,0.03); border:1px solid rgba(148,180,220,0.08);">
+            <div class="flex items-center space-x-3 p-3 rounded-xl" style="background:rgba(var(--rgb-white),0.03); border:1px solid rgba(var(--rgb-steel),0.08);">
               <i class={`fas ${s.icon} text-base`} style={`color:${s.color};`}></i>
               <div>
-                <div class="text-lg font-bold leading-none" style="color:var(--admin-text-primary)">{s.val}</div>
+                <div class="text-lg font-bold leading-none text-admin-fg">{s.val}</div>
                 <div class="text-xs text-gray-400">{s.label}</div>
               </div>
             </div>
@@ -179,28 +179,28 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
       {/* Sauvegarde / Backup */}
       <div class="rounded-2xl p-6 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
         <div class="flex items-center space-x-3 mb-5">
-          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(168,85,247,0.15);">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(var(--rgb-purple),0.15);">
             <i class="fas fa-download text-purple-400"></i>
           </div>
           <div>
-            <h3 class="font-bold" style="color:var(--admin-text-primary)">Sauvegarde des données</h3>
+            <h3 class="font-bold text-admin-fg">Sauvegarde des données</h3>
             <p class="text-xs text-gray-400">Téléchargez une copie complète de toutes les données</p>
           </div>
         </div>
         <div class="flex flex-wrap gap-3">
-          <a href="/api/admin/backup" class="text-xs px-5 py-2.5 rounded-xl font-semibold flex items-center space-x-2" style="background:rgba(168,85,247,0.12); color:#a78bfa; border:1px solid rgba(168,85,247,0.2);">
+          <a href="/api/admin/backup" class="text-xs px-5 py-2.5 rounded-xl font-semibold flex items-center space-x-2 text-fg-on-dark-violet" style="background:rgba(var(--rgb-purple),0.12); border:1px solid rgba(var(--rgb-purple),0.2);">
             <i class="fas fa-database"></i>
             <span>Export JSON complet</span>
           </a>
-          <a href="/api/admin/export/clients" class="text-xs px-4 py-2.5 rounded-xl font-semibold flex items-center space-x-2" style="background:rgba(16,185,129,0.12); color:#34d399; border:1px solid rgba(16,185,129,0.2);">
+          <a href="/api/admin/export/clients" class="text-xs px-4 py-2.5 rounded-xl font-semibold flex items-center space-x-2 text-fg-on-dark-success" style="background:rgba(var(--rgb-green),0.12); border:1px solid rgba(var(--rgb-green),0.2);">
             <i class="fas fa-users"></i>
             <span>Clients CSV</span>
           </a>
-          <a href="/api/admin/export/orders" class="text-xs px-4 py-2.5 rounded-xl font-semibold flex items-center space-x-2" style="background:rgba(16,185,129,0.12); color:#34d399; border:1px solid rgba(16,185,129,0.2);">
+          <a href="/api/admin/export/orders" class="text-xs px-4 py-2.5 rounded-xl font-semibold flex items-center space-x-2 text-fg-on-dark-success" style="background:rgba(var(--rgb-green),0.12); border:1px solid rgba(var(--rgb-green),0.2);">
             <i class="fas fa-shopping-cart"></i>
             <span>Commandes CSV</span>
           </a>
-          <a href="/api/admin/export/tickets" class="text-xs px-4 py-2.5 rounded-xl font-semibold flex items-center space-x-2" style="background:rgba(16,185,129,0.12); color:#34d399; border:1px solid rgba(16,185,129,0.2);">
+          <a href="/api/admin/export/tickets" class="text-xs px-4 py-2.5 rounded-xl font-semibold flex items-center space-x-2 text-fg-on-dark-success" style="background:rgba(var(--rgb-green),0.12); border:1px solid rgba(var(--rgb-green),0.2);">
             <i class="fas fa-headset"></i>
             <span>Tickets CSV</span>
           </a>
@@ -208,9 +208,9 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
       </div>
 
       {/* Zone dangereuse */}
-      <div class="rounded-2xl p-6 card-shadow" style="background:rgba(239,68,68,0.05); border:1px solid rgba(239,68,68,0.2);">
+      <div class="rounded-2xl p-6 card-shadow" style="background:rgba(var(--rgb-red),0.05); border:1px solid rgba(var(--rgb-red),0.2);">
         <div class="flex items-center space-x-3 mb-4">
-          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(239,68,68,0.15);">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(var(--rgb-red),0.15);">
             <i class="fas fa-exclamation-triangle text-red-400"></i>
           </div>
           <div>
@@ -219,25 +219,25 @@ export const AdminParametresPage = ({ success, error, siteSettings = {} }: { suc
           </div>
         </div>
         <div class="space-y-3">
-          <div class="p-4 rounded-xl" style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.15);">
+          <div class="p-4 rounded-xl" style="background:rgba(var(--rgb-red),0.08); border:1px solid rgba(var(--rgb-red),0.15);">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div class="font-semibold text-red-300 text-sm">Réinitialiser les données de démo</div>
-                <div class="text-xs mt-0.5" style="color:var(--admin-text-muted)">Supprime tous les RDV, clients et avis de test</div>
+                <div class="text-xs mt-0.5 text-admin-muted">Supprime tous les RDV, clients et avis de test</div>
               </div>
-              <button onclick="confirmReset()" class="text-xs px-4 py-2 rounded-xl font-semibold whitespace-nowrap flex-shrink-0" style="background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3);">
+              <button onclick="confirmReset()" class="text-xs px-4 py-2 rounded-xl font-semibold whitespace-nowrap flex-shrink-0 text-fg-on-dark-danger" style="background:rgba(var(--rgb-red),0.15); border:1px solid rgba(var(--rgb-red),0.3);">
                 <i class="fas fa-trash mr-1"></i>Réinitialiser
               </button>
             </div>
           </div>
-          <div class="p-4 rounded-xl" style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.15);">
+          <div class="p-4 rounded-xl" style="background:rgba(var(--rgb-red),0.08); border:1px solid rgba(var(--rgb-red),0.15);">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div class="font-semibold text-red-300 text-sm">Déconnexion forcée</div>
-                <div class="text-xs mt-0.5" style="color:var(--admin-text-muted)">Invalider la session admin en cours</div>
+                <div class="text-xs mt-0.5 text-admin-muted">Invalider la session admin en cours</div>
               </div>
               <form method="post" action="/api/admin/logout" class="flex-shrink-0">
-                <button type="submit" class="text-xs px-4 py-2 rounded-xl font-semibold whitespace-nowrap text-center" style="background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3);">
+                <button type="submit" class="text-xs px-4 py-2 rounded-xl font-semibold whitespace-nowrap text-center text-fg-on-dark-danger" style="background:rgba(var(--rgb-red),0.15); border:1px solid rgba(var(--rgb-red),0.3);">
                   <i class="fas fa-sign-out-alt mr-1"></i>Déconnecter
                 </button>
               </form>
