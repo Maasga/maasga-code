@@ -23,7 +23,15 @@ npm run migrate:local  # apply migrations to local D1 (wrangler dev)
 
 # Wrangler local sandbox (uses built dist/, not source)
 npm run dev:sandbox    # wrangler pages dev dist --port 3000
+
+# Quality gates (CI runs typecheck + test + build)
+npm run typecheck      # tsc --noEmit (pre-step regenerates src/generated/asset-manifest.ts)
+npm test               # Vitest unit tests (src/__tests__)
+npm run test:e2e       # Playwright E2E + axe a11y against wrangler :3000 (run `npm run build` first)
+npm run assets         # compile src/client/site.js + regenerate asset manifest (also run by build/dev/test)
 ```
+
+> **E2E server gotcha**: `wrangler pages dev` does **not** reload a rebuilt `dist/`. After `npm run build`, kill the process on :3000 before re-testing (Playwright reuses an existing server).
 
 > **Critical**: when editing `src/styles/app.css` or `tailwind.config.cjs`, always run `npm run build:css` before testing in the browser. `npm run dev` serves `public/static/tailwind.css` statically — new Tailwind classes won't appear otherwise.
 
@@ -34,7 +42,7 @@ npm run dev:sandbox    # wrangler pages dev dist --port 3000
 - **Hono** framework for routing and SSR — all pages are server-rendered JSX (`.tsx`) via `hono/jsx`
 - **Zero client-side hydration** — no React, no VDOM on the client. Interactive behaviour is vanilla JS injected via `dangerouslySetInnerHTML` blocks inside JSX components
 - **D1 (SQLite)** for all persistent data — bound as `c.env.DB` in every route handler
-- Worker bundle ceiling: ~1 MB. Current build: ~1,062 KB. Avoid adding server-side dependencies
+- Worker bundle: ~1,38 MB uncompressed (Cloudflare limit is on the *compressed* size: 3 MB free / 10 MB paid). Still avoid heavy server-side dependencies
 
 ### Request flow
 ```
@@ -45,15 +53,30 @@ Browser → Cloudflare PoP (edge cache, 10 min TTL for public pages)
          └── POST /api/*   → validate → D1 query → JSON response
 ```
 
+### Data freshness: versioned catalogue + edge cache (`src/services/catalog.service.ts`)
+- `products` (src/data/products.ts) is an in-memory array **per isolate**. It is kept in sync through `site_settings.content_version`: a middleware in `src/index.tsx` bumps that version after **any successful non-GET** on `/api/admin`, `/admin`, `/api/products`, `/api/devis`, `/api/mobile/admin`, `/api/telegram/webhook`; every isolate re-reads the version at most every 5 s and reloads the catalogue when it changed.
+- The public-page edge-cache key = URL + `__cv` (content version) + `__b` (`BUILD_ID`, hash of `src/` generated at build). So admin edits **and** deploys invalidate cached HTML immediately. A new write path that changes public content outside those prefixes must call `bumpContentVersion(db)`.
+
+### Client JS & assets
+- Global browser behaviour (reveal/GSAP engine, PJAX router, WhatsApp widget, cookie banner, toasts, Lenis, PWA/outbox) lives in **`src/client/site.js`**, compiled by `scripts/build-assets.mjs` (esbuild, *no bundling* so top-level functions stay global for `onclick=`) to `public/static/js/site.js`, loaded once via `<script defer>`.
+- Every `/static/*.css|js` URL is rendered through `asset('/static/…')` (from `src/generated/asset-manifest.ts`, **generated, git-ignored**) → `?v=<hash>`. `public/_headers` serves `/static/*` as `immutable` for 1 year, which is only safe because of that hash — never hard-code a `/static/` URL.
+- Page-specific inline scripts still live in their page (`dangerouslySetInnerHTML`) and must follow the IIFE rule below. Inside such template literals, `\'` renders a bare `'` (it broke `/admin/rdv` once): use the typographic ’ in text.
+- PWA: `public/sw.js` (network-first HTML with offline fallback `public/offline.html`, cache-first versioned assets; never caches `/admin`, `/api`, `/espace-client`). Forms with `data-offline-queue="label"` are queued in `localStorage.maasga_outbox` when offline and re-POSTed on `online`.
+
+### Validation
+- Public form endpoints (`src/routes/web/forms.routes.ts`) validate with **Zod schemas in `src/validation/schemas.ts`** via `validate(schema, body)` → `{ ok, data } | { ok:false, error }` (first message, French). Add new constraints there, not ad hoc in handlers.
+- Rate limiting: use `rateLimitD1` (atomic UPSERT…RETURNING, shared across isolates). The in-memory `rateLimit` is only its fallback.
+
 ### Key files
 | File | Role |
 |------|------|
-| `src/index.tsx` | Single entry point — all routes, middleware, API handlers |
+| `src/index.tsx` | Entry point — global middleware (CORS, edge cache, security headers, CSRF, content version, catalogue sync), sitemap/robots, error pages, mounts the routers below |
+| `src/routes/admin/*.routes.tsx` | Back-office split by domain (`auth`, `notifications`, `maintenance`, `devis`, `catalogue`, `contenu`, `sav`, `crm`, `pages`) — assembled in `src/routes/admin/index.tsx`; cross-domain helpers (`adminAuth`, `refreshAdminCache`, `ensureCoreTables`, `csvEscape`…) in `src/routes/admin/shared.tsx` |
 | `src/types.ts` | `HonoEnv` type (Bindings: DB, ADMIN_SECRET, API keys…) |
 | `src/db.ts` | D1 query functions (never import D1 directly in pages) |
 | `src/utils/helpers.ts` | `escapeHtml`, `isValidEmail`, `isValidPhone`, `validateImageMagicBytes` |
 | `src/utils/notifications.ts` | Telegram bot, SMS (Brevo), admin notifications, activity/security logging |
-| `src/components/Layout.tsx` | Global HTML shell, nav, footer, GSAP engine, `AnimatedIcon` (LordIcon) |
+| `src/components/Layout.tsx` | Global HTML shell, nav, footer, mobile action bar; props `title`, `description`, `canonicalPath`, `jsonLd`, `ogImage`, `ogType`, `noindex` |
 | `src/components/CGUModal.tsx` | CGU/cookie consent — uses `localStorage` key `maasga_cgu_accepted` |
 | `src/styles/app.css` | Source CSS — design tokens in `:root`, utility classes, Tailwind `@layer` |
 | `public/static/tailwind.css` | **Compiled output** — do not edit manually |
@@ -70,7 +93,7 @@ Browser → Cloudflare PoP (edge cache, 10 min TTL for public pages)
 - All animations respect `prefers-reduced-motion` — a global CSS block and GSAP guard disable everything when set. **If a user reports "animations aren't playing," check their OS/browser reduced-motion setting first — most sessions' first hypothesis should be this, not a code bug.** The reduced-motion block zeroes both `transition-duration` **and** `transition-delay` on the universal selector (`*, *::before, *::after`) — duration alone isn't enough, since per-element `transition-delay` (stagger cascades, nested card-layer delays above) would otherwise still make the user wait out the delay before the near-instant transition kicks in.
 
 ### GSAP animation engine
-Injected once in `Layout.tsx` via `dangerouslySetInnerHTML`. It:
+Lives in `src/client/site.js` (loaded once by `Layout.tsx`). It:
 1. Polls for `window.gsap` + `window.ScrollTrigger` (loaded from cdnjs via `<script defer>`)
 2. Adds `html.gsap-ready` class — CSS uses this to set initial `opacity:0; transform:translateY(24px)` on `[data-reveal]` / `[data-stagger] > *` elements (prevents FOUC if GSAP fails)
 3. Wires up all `data-*` attributes site-wide — pages only need HTML attributes, no per-page JS
@@ -106,6 +129,10 @@ Set via `wrangler secret put <NAME>` — never in code.
 ### Database migrations
 28 SQL migration files in `migrations/`. Apply in order with `npm run migrate` (remote) or `npm run migrate:local` (local wrangler D1). Never edit applied migrations — add a new numbered file instead.
 
+### Accessibility (enforced by `e2e/a11y.spec.ts`)
+- axe-core WCAG 2.2 AA on all public pages: any *critical/serious* violation fails E2E. Text on light surfaces must use the accessible palette (`#03045e` navy, `#475569` muted, `#0369a1` accent, `#047857` success, `#b45309` warning, `#6d28d9` violet) — the old dark-theme neons (`#38bdf8`, `#34d399`, `#a78bfa`, `#8ba3c0`, `text-white`…) are only for dark sections.
+- Icon-only buttons need `aria-label`; form controls need a `<label for>` or `aria-label`; global `:focus-visible` ring lives at the end of `app.css`.
+
 ### Local dev / testing gotchas
 - On this machine, `npm run dev` (Vite) sometimes binds `[::1]:5173` (IPv6 loopback) only — `http://localhost:5173` or `http://127.0.0.1:5173` can fail to connect even though the server is up. Try `http://[::1]:5173/` explicitly, or prefer `npm run build && npm run dev:sandbox` (wrangler, binds all interfaces on `:3000`) for automated/browser testing — more reliable, though it serves the last built `dist/`, not live source.
 - Any browser automation (Playwright, etc.) hitting a fresh context will get blocked by the CGU consent modal on first load. Pre-seed `localStorage` before navigating: `maasga_cgu_accepted` and `maasga_cookies_accepted`, both `'true'`.
@@ -116,7 +143,7 @@ Set via `wrangler secret put <NAME>` — never in code.
 `origin` points to `https://github.com/Maasga/maasga-code.git` (private, account `maasgabf@gmail.com`) — changed from a prior personal `sayta22/maasga-code` remote. Local git commit identity (`git config user.email/name`) is still `sayta22` — commits are authored as sayta22 but pushed to the Maasga account; nobody has yet decided whether to update the local commit identity to match.
 
 ### Routing conventions
-All routes live in `src/index.tsx`:
+Routes are split across `src/routes/*` (web, client, admin/*, api-mobile, cron, telegram) and mounted in `src/index.tsx`:
 - `GET /` → `HomePage`, `GET /catalogue` → `CataloguePage`, etc.
 - `GET /admin*` → admin pages (auth-gated middleware)
 - `POST /api/rendez-vous`, `/api/commande`, `/api/contact`, etc. → JSON API

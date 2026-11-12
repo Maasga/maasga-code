@@ -1,1 +1,1 @@
-{"version":1,"include":["/*"],"exclude":["/static/*","/hero/*","/team/*","/favicon.*","/manifest.json","/og-image.png","/logo-site.png","/logo-site.webp","/logo-512.png","/cherif.jpeg","/ines.jpeg","/malick.jpg","/.well-known/*"]}
+{"version":1,"include":["/*"],"exclude":["/static/*","/hero/*","/team/*","/favicon.*","/manifest.json","/og-image.png","/logo-site.png","/logo-site.webp","/logo-512.png","/cherif.jpeg","/ines.jpeg","/malick.jpg","/.well-known/*","/sw.js","/offline.html","/offline"]}

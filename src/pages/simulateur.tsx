@@ -1,4 +1,5 @@
 ﻿import { Layout } from '../components/Layout'
+import { products } from '../data/products'
 
 export const SimulateurPage = ({ 
   product,
@@ -13,6 +14,10 @@ export const SimulateurPage = ({
   productBrand?: string
   productModel?: string
 }) => {
+  // Catalogue réel (anciennement 9 produits fictifs codés en dur) — sérialisé sans « </ » possible
+  const simProducts = JSON.stringify(products.filter(p => p.available).map(p => ({
+    id: p.id, btu: p.btu, name: p.name, brand: p.brand, price: p.price, inStock: p.stock > 0, inverter: p.inverter,
+  }))).replace(/</g, '\\u003c')
   return (
     <Layout title="Simulateur BTU Climatisation - MAASGA" activePage="simulateur" canonicalPath="/simulateur" description="Simulateur BTU gratuit — Calculez la puissance idéale pour votre climatiseur. Recommandation personnalisée adaptée à Ouagadougou.">
 
@@ -43,7 +48,7 @@ export const SimulateurPage = ({
               </div>
               <div class="flex-1">
                 <h2 class="text-2xl font-bold text-white mb-1">Mode Comparaison</h2>
-                <p class="text-sm" style="color:#8ba3c0;">Vérifiez si ce climatiseur est adapté à votre espace</p>
+                <p class="text-sm" style="color:#475569;">Vérifiez si ce climatiseur est adapté à votre espace</p>
               </div>
             </div>
             
@@ -59,8 +64,8 @@ export const SimulateurPage = ({
                   <p class="text-sm" style="color:#94a3b8;">{productName}</p>
                 </div>
                 <div class="text-right">
-                  <div class="text-3xl font-bold" style="color:#38bdf8;">{productBtu.toLocaleString('fr-FR')} BTU</div>
-                  <div class="text-sm font-semibold" style="color:#38bdf8;">{productBtu === 9000 ? '1' : productBtu === 12000 ? '1,5' : productBtu === 18000 ? '2' : productBtu === 24000 ? '3' : '5'} CV</div>
+                  <div class="text-3xl font-bold" style="color:#0369a1;">{productBtu.toLocaleString('fr-FR')} BTU</div>
+                  <div class="text-sm font-semibold" style="color:#0369a1;">{productBtu === 9000 ? '1' : productBtu === 12000 ? '1,5' : productBtu === 18000 ? '2' : productBtu === 24000 ? '3' : '5'} CV</div>
                 </div>
               </div>
               <div class="tilt-shine" aria-hidden="true"></div>
@@ -80,7 +85,7 @@ export const SimulateurPage = ({
             <div class="glass-card rounded-3xl p-4 sm:p-8 reveal">
               <h2 class="text-xl font-bold text-white mb-6 flex items-center space-x-3">
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.2);">
-                  <i class="fas fa-ruler-combined text-cyan-400"></i>
+                  <i class="fas fa-ruler-combined text-cyan-700"></i>
                 </div>
                 <span>Décrivez votre pièce</span>
               </h2>
@@ -131,7 +136,7 @@ export const SimulateurPage = ({
                     Hauteur du plafond
                     <span class="text-gray-400 font-normal ml-1">(optionnel, en m)</span>
                   </label>
-                  <select name="hauteur" class="input-field w-full rounded-xl px-4 py-3 text-white">
+                  <select name="hauteur" aria-label="Hauteur du plafond (optionnel, en mètres)" class="input-field w-full rounded-xl px-4 py-3 text-white">
                     <option value="2.5">Standard: 2,5 m</option>
                     <option value="2.7">Moyen: 2,7 m</option>
                     <option value="3.0">Haut: 3,0 m</option>
@@ -217,7 +222,7 @@ export const SimulateurPage = ({
             {/* Zone résultat (JS dynamique) */}
             <div class="glass-card rounded-3xl p-8 reveal" id="result-zone">
               <h3 class="text-lg font-bold text-white mb-4 flex items-center space-x-2">
-                <i class="fas fa-chart-bar text-cyan-400"></i>
+                <i class="fas fa-chart-bar text-cyan-700"></i>
                 <span>Résultat du calcul</span>
               </h3>
 
@@ -241,7 +246,7 @@ export const SimulateurPage = ({
                   </div>
                   <div class="flex items-center justify-between rounded-xl px-4 py-3" style="background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.15);">
                     <span class="text-sm" style="color:#94a3b8;">Indice de confort</span>
-                    <span class="font-semibold" style="color:#34d399;" id="res-confort">--</span>
+                    <span class="font-semibold" style="color:#047857;" id="res-confort">--</span>
                   </div>
                   <div class="flex items-center justify-between rounded-xl px-4 py-3" style="background:rgba(167,139,250,0.08); border:1px solid rgba(167,139,250,0.15);">
                     <span class="text-sm" style="color:#94a3b8;">Modèles compatibles</span>
@@ -252,22 +257,27 @@ export const SimulateurPage = ({
                 {/* Comparaison produit (si en mode comparaison) */}
                 <div id="comparison-zone" class="hidden mb-6 rounded-xl p-5" style="background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(56,189,248,0.08)); border:1px solid rgba(148,180,220,0.12);">
                   <h4 class="text-sm font-bold text-white mb-4 flex items-center space-x-2">
-                    <i class="fas fa-exchange-alt" style="color:#38bdf8;"></i>
+                    <i class="fas fa-exchange-alt" style="color:#0369a1;"></i>
                     <span>Comparaison avec le produit sélectionné</span>
                   </h4>
                   <div class="grid grid-cols-2 gap-4">
                     <div class="rounded-lg p-4 text-center" style="background:var(--bg-card); border:1px solid rgba(148,180,220,0.12);">
                       <div class="text-xs uppercase mb-2" style="color:#94a3b8;">Recommandation</div>
-                      <div class="text-2xl font-bold mb-1" style="color:#38bdf8;" id="comp-recommended">--</div>
-                      <div class="text-xs" style="color:#8ba3c0;" id="comp-recommended-cv">-- CV</div>
+                      <div class="text-2xl font-bold mb-1" style="color:#0369a1;" id="comp-recommended">--</div>
+                      <div class="text-xs" style="color:#475569;" id="comp-recommended-cv">-- CV</div>
                     </div>
                     <div class="rounded-lg p-4 text-center" style="background:var(--bg-card); border:1px solid rgba(148,180,220,0.12);">
                       <div class="text-xs uppercase mb-2" style="color:#94a3b8;">Votre climatiseur</div>
-                      <div class="text-2xl font-bold mb-1" style="color:#a78bfa;" id="comp-product">--</div>
-                      <div class="text-xs" style="color:#8ba3c0;" id="comp-product-cv">-- CV</div>
+                      <div class="text-2xl font-bold mb-1" style="color:#6d28d9;" id="comp-product">--</div>
+                      <div class="text-xs" style="color:#475569;" id="comp-product-cv">-- CV</div>
                     </div>
                   </div>
                   <div class="mt-4 p-4 rounded-lg text-center text-sm font-semibold" id="comp-verdict">--</div>
+                </div>
+
+                <div id="sim-matches" class="hidden mb-4" aria-live="polite">
+                  <div class="text-sm font-bold mb-2" style="color:#03045e;">Nos modèles adaptés</div>
+                  <div id="sim-matches-list" class="space-y-2"></div>
                 </div>
 
                 <a id="see-products-btn" href="/catalogue" class="w-full btn-primary text-white font-bold py-3.5 rounded-xl flex items-center justify-center space-x-2 shadow-md mb-3">
@@ -278,7 +288,7 @@ export const SimulateurPage = ({
 
                 <a id="demander-devis-btn" href="/rendez-vous"
                   class="w-full flex items-center justify-center space-x-2 font-bold py-3.5 rounded-xl mb-4"
-                  style="background:linear-gradient(135deg,rgba(52,211,153,0.12),rgba(16,185,129,0.08)); color:#34d399; border:1.5px solid rgba(52,211,153,0.3);">
+                  style="background:linear-gradient(135deg,rgba(52,211,153,0.12),rgba(16,185,129,0.08)); color:#047857; border:1.5px solid rgba(52,211,153,0.3);">
                   <i class="fas fa-file-invoice-dollar text-sm"></i>
                   <span>Demander un devis personnalisé</span>
                   <i class="fas fa-arrow-right text-sm"></i>
@@ -311,7 +321,7 @@ export const SimulateurPage = ({
               <div class="flex items-start space-x-3">
                 <i class="fas fa-info-circle text-amber-500 mt-0.5 flex-shrink-0 text-lg"></i>
                 <div>
-                  <p class="text-sm font-semibold mb-1" style="color:#fbbf24;">Calcul indicatif</p>
+                  <p class="text-sm font-semibold mb-1" style="color:#b45309;">Calcul indicatif</p>
                   <p class="text-xs leading-relaxed font-bold" style="color:#03045e;">
                     Ce simulateur fournit une estimation basée sur des paramètres standards. Une Visite technique gratuite sur site par nos experts est <strong>recommandée avant toute installation</strong> pour garantir un dimensionnement précis et adapté à votre configuration réelle.
                   </p>
@@ -322,7 +332,7 @@ export const SimulateurPage = ({
             {/* Guide BTU */}
             <div data-tilt class="glass-card rounded-2xl p-6 reveal">
               <h4 class="font-bold text-white mb-4 flex items-center space-x-2">
-                <i class="fas fa-book text-cyan-400"></i>
+                <i class="fas fa-book text-cyan-700"></i>
                 <span>Guide rapide BTU</span>
               </h4>
               <div class="space-y-3">
@@ -335,7 +345,7 @@ export const SimulateurPage = ({
                 ].map(g => (
                   <div class="flex items-center justify-between py-2 border-b border-gray-700/30 last:border-0">
                     <div>
-                      <span class="text-sm font-bold text-cyan-400">{(g.btu / 1000).toFixed(0)} 000 BTU / {g.cv} CV</span>
+                      <span class="text-sm font-bold text-cyan-700">{(g.btu / 1000).toFixed(0)} 000 BTU / {g.cv} CV</span>
                       <span class="text-xs ml-2" style="color:#94a3b8;">· {g.surf}</span>
                     </div>
                     <span class="text-xs" style="color:#94a3b8;">{g.usage}</span>
@@ -373,11 +383,7 @@ export const SimulateurPage = ({
         const PRODUCT_BTU = ${productBtu ? productBtu : 'null'};
 
         // Données produits pour le simulateur
-        const PRODUCTS = [
-          { id:1, btu:9000 }, { id:2, btu:12000 }, { id:3, btu:18000 },
-          { id:4, btu:9000 }, { id:5, btu:12000 }, { id:6, btu:24000 },
-          { id:7, btu:18000 }, { id:8, btu:24000 }, { id:9, btu:36000 }
-        ];
+        const PRODUCTS = ${simProducts};
 
         // Conversion BTU vers CV — paliers marché Burkina Faso (1, 1.5, 2, 3, 5 CV)
         const BTU_TO_CV = {
@@ -437,7 +443,7 @@ export const SimulateurPage = ({
           if (productBtu >= recommendedBtu * 0.9 && productBtu <= recommendedBtu * 1.1) {
             return { 
               status: 'PARFAIT ✓', 
-              style: 'background:rgba(52,211,153,0.1); color:#34d399; border:1px solid rgba(52,211,153,0.2);',
+              style: 'background:rgba(52,211,153,0.1); color:#047857; border:1px solid rgba(52,211,153,0.2);',
               icon: '✓',
               text: 'Excellente combinaison! Ce climatiseur convient parfaitement à votre espace.'
             };
@@ -445,14 +451,14 @@ export const SimulateurPage = ({
           if (productBtu >= recommendedBtu * 0.75) {
             return { 
               status: 'BON CHOIX', 
-              style: 'background:rgba(56,189,248,0.1); color:#38bdf8; border:1px solid rgba(56,189,248,0.2);',
+              style: 'background:rgba(56,189,248,0.1); color:#0369a1; border:1px solid rgba(56,189,248,0.2);',
               icon: '✓',
               text: "Acceptable pour votre espace, mais légèrement moins puissant que l'optimal."
             };
           }
           return { 
             status: 'INSUFFISANT ✗', 
-              style: 'background:rgba(248,113,113,0.1); color:#f87171; border:1px solid rgba(248,113,113,0.2);',
+              style: 'background:rgba(248,113,113,0.1); color:#b91c1c; border:1px solid rgba(248,113,113,0.2);',
             icon: '✗',
             text: 'Attention: ce modèle est trop faible pour refroidir efficacement votre pièce.'
           };
@@ -481,6 +487,31 @@ export const SimulateurPage = ({
           document.getElementById('res-confort').textContent = 'Adapté ✓';
           document.getElementById('res-nb').textContent = compatibles.length + ' modèle(s)';
           document.getElementById('see-products-btn').href = '/catalogue?btu=' + btu;
+
+          // Modèles réels correspondants : en stock d'abord, puis inverter, puis prix croissant
+          var box = document.getElementById('sim-matches'), list = document.getElementById('sim-matches-list');
+          if (box && list) {
+            list.textContent = '';
+            var picks = compatibles.slice().sort(function (a, b) {
+              return (b.inStock - a.inStock) || (b.inverter - a.inverter) || (a.price - b.price);
+            }).slice(0, 3);
+            picks.forEach(function (p) {
+              var a = document.createElement('a');
+              a.href = '/catalogue/' + p.id;
+              a.className = 'flex items-center justify-between gap-3 rounded-xl px-4 py-3 transition-all';
+              a.style.cssText = 'background:#fff; border:1px solid rgba(3,105,161,0.18);';
+              var left = document.createElement('div');
+              var n = document.createElement('div'); n.className = 'text-sm font-semibold'; n.style.color = '#03045e'; n.textContent = p.brand + ' — ' + p.name;
+              var m = document.createElement('div'); m.className = 'text-xs'; m.style.color = p.inStock ? '#047857' : '#b45309';
+              m.textContent = (p.inStock ? 'En stock' : 'Sur commande') + (p.inverter ? ' · Inverter' : '');
+              left.appendChild(n); left.appendChild(m);
+              var price = document.createElement('div'); price.className = 'text-sm font-bold whitespace-nowrap'; price.style.color = '#0369a1';
+              price.textContent = Number(p.price).toLocaleString('fr-FR') + ' FCFA';
+              a.appendChild(left); a.appendChild(price);
+              list.appendChild(a);
+            });
+            box.classList.toggle('hidden', picks.length === 0);
+          }
 
           // Update devis request link with surface + BTU
           var devisBtn = document.getElementById('demander-devis-btn');

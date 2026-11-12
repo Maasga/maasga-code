@@ -1,6 +1,6 @@
 // Mobile API endpoints updated 2026-09-12
 import { Hono } from 'hono'
-import { asset } from './generated/asset-manifest'
+import { asset, BUILD_ID } from './generated/asset-manifest'
 import { cors } from 'hono/cors'
 import { serveStatic } from 'hono/cloudflare-workers'
 import { setCookie, getCookie, deleteCookie } from 'hono/cookie'
@@ -8,6 +8,7 @@ import type { D1Database } from '@cloudflare/workers-types'
 import { appointments, reviews, orders, clients, notifications, setMaintenanceDueCount, setPendingMaintenanceContractsCount, setPendingMaintenanceRequestsCount, pendingMaintenanceContracts } from './data/store'
 import type { Order } from './data/store'
 import { getContentVersion, bumpContentVersion, ensureCatalogFresh } from './services/catalog.service'
+import { products } from './data/products'
 import { quartiers } from './data/quartiers'
 import { createAppointment, updateAppointmentStatus, createOrder, createReview, getProducts, getReviews, getQuartiers, createClient, getClients, getAppointments, getAppointmentById, getOrders, deleteProduct, deleteClient, deleteOrder, getClientById, getProductById } from './db'
 import type { HonoEnv } from './types'
@@ -61,6 +62,8 @@ app.use(async (c, next) => {
   const version = await getContentVersion(c.env.DB)
   const keyUrl = new URL(url.toString())
   keyUrl.searchParams.set('__cv', version)
+  // …et le build : un nouveau déploiement ne sert jamais le HTML de l'ancien code
+  keyUrl.searchParams.set('__b', BUILD_ID)
   const cacheKey = new Request(keyUrl.toString(), { method: 'GET' })
 
   // Try to serve from edge cache
@@ -279,7 +282,8 @@ app.get('/robots.txt', (c) => {
 
 // Sitemap.xml
 app.get('/sitemap.xml', (c) => {
-  const now = new Date().toISOString().split('T')[0]
+  // Pages publiques indexables (/contrat-maintenance redirige vers la connexion : exclue).
+  // Pas de <lastmod> fictif : Google l'ignore quand il change à chaque visite.
   const pages = [
     { path: '/', freq: 'weekly', priority: '1.0' },
     { path: '/catalogue', freq: 'weekly', priority: '0.9' },
@@ -287,16 +291,19 @@ app.get('/sitemap.xml', (c) => {
     { path: '/rendez-vous', freq: 'monthly', priority: '0.8' },
     { path: '/realisations', freq: 'monthly', priority: '0.7' },
     { path: '/avis', freq: 'weekly', priority: '0.7' },
-    { path: '/a-propos', freq: 'monthly', priority: '0.6' },
     { path: '/contact', freq: 'monthly', priority: '0.7' },
-    { path: '/espace-client', freq: 'monthly', priority: '0.6' },
-    { path: '/contrat-maintenance', freq: 'monthly', priority: '0.7' }
+    { path: '/a-propos', freq: 'monthly', priority: '0.6' },
+    { path: '/espace-client', freq: 'yearly', priority: '0.3' },
+    { path: '/mentions-legales', freq: 'yearly', priority: '0.1' },
+    { path: '/politique-de-confidentialite', freq: 'yearly', priority: '0.1' },
+    // Une fiche par climatiseur disponible (catalogue tenu à jour par le middleware versionné)
+    ...products.filter(p => p.available).map(p => ({ path: `/catalogue/${p.id}`, freq: 'weekly', priority: '0.8' })),
   ]
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${pages.map(p => `  <url><loc>${SITE_URL}${p.path}</loc><lastmod>${now}</lastmod><changefreq>${p.freq}</changefreq><priority>${p.priority}</priority></url>`).join('\n')}
+${pages.map(p => `  <url><loc>${SITE_URL}${p.path}</loc><changefreq>${p.freq}</changefreq><priority>${p.priority}</priority></url>`).join('\n')}
 </urlset>`
-  return new Response(xml, { headers: { 'Content-Type': 'application/xml', 'Cache-Control': 'public, max-age=3600' } })
+  return new Response(xml, { headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' } })
 })
 
 // ============================================================

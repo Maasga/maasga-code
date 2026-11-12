@@ -99,11 +99,11 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                 </a>
               </div>
 
-              {/* Social proof */}
-              <div class="flex items-center gap-4 mb-10">
+              {/* Social proof — masqué tant qu'il n'y a pas de vraies données */}
+              {(hasClients || displayNote !== '—') && <div class="flex items-center gap-4 mb-10">
                 <div class="flex -space-x-2">
                   {['M','A','S','K'].map((l, i) => (
-                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white border-2" style={`background:${['#0369a1','#0077b6','#00b4d8','#48cae4'][i]}; border-color:#0F172A; z-index:${4-i};`}>{l}</div>
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white border-2" style={`background:${['#0369a1','#0077b6','#0e7490','#155e75'][i]}; border-color:#0F172A; z-index:${4-i};`}>{l}</div>
                   ))}
                 </div>
                 <div>
@@ -113,20 +113,20 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                   </div>
                   <div class="text-xs" style="color:#94a3b8;"><strong class="text-white">{displayClients}</strong> clients satisfaits</div>
                 </div>
-              </div>
+              </div>}
 
               {/* Stats — compteurs animés */}
               <div class="grid grid-cols-3 gap-4">
                 <div class="text-center p-4 rounded-2xl" style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.16);">
                   <div class="text-2xl font-extrabold text-white font-display">
                     {hasClients
-                      ? <span data-count={String(stats!.clientCount)} data-suffix="+">0+</span>
+                      ? <span data-count={String(stats!.clientCount)} data-suffix="+">{stats!.clientCount}+</span>
                       : displayClients}
                   </div>
                   <div class="text-xs mt-1" style="color:#94a3b8;">Clients satisfaits</div>
                 </div>
                 <div class="text-center p-4 rounded-2xl" style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.16);">
-                  <div class="text-2xl font-extrabold text-white font-display"><span data-count="5" data-suffix=" ans">0 ans</span></div>
+                  <div class="text-2xl font-extrabold text-white font-display"><span data-count="5" data-suffix=" ans">5 ans</span></div>
                   <div class="text-xs mt-1" style="color:#94a3b8;">D'expérience</div>
                 </div>
                 <div class="text-center p-4 rounded-2xl" style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.16);">
@@ -233,7 +233,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                     <div class="exp-step-icon w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-5" style={`background:${s.iconBg}; color:${s.iconColor};`}>
                       <i class={`${s.icon} icon-pulse`}></i>
                     </div>
-                    <div class="exp-num">Expertise 0{i + 1} <span style="opacity:0.4;">/ 0{EXPERTISES.length}</span></div>
+                    <div class="exp-num">Expertise 0{i + 1} <span style="color:#475569;" aria-hidden="true">/ 0{EXPERTISES.length}</span></div>
                     <h3 class="exp-title font-display font-extrabold mb-4" style="color:var(--navy-900);">{s.title}</h3>
                     <p class="exp-desc mb-6" style="color:var(--slate-700);">{s.desc}</p>
                     <ul class="text-sm space-y-2 mb-8" style="color:var(--slate-500);">
@@ -401,7 +401,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                   <div class="flex items-end justify-between mb-5 mt-auto">
                     <div>
                       <div class="text-2xl font-extrabold font-display" style="color:var(--accent);">{p.price.toLocaleString()} <span class="text-sm font-normal" style="color:var(--slate-500);">FCFA</span></div>
-                      <div class="text-xs font-semibold mt-0.5" style="color:#10b981;"><i class="fas fa-circle-check mr-1"></i>Installation et livraison offerte</div>
+                      <div class="text-xs font-semibold mt-0.5" style="color:#047857;"><i class="fas fa-circle-check mr-1"></i>Installation et livraison offerte</div>
                     </div>
                     <div class="text-right">
                       <div class="text-base font-bold" style="color:var(--navy-900);">{p.btu.toLocaleString()} BTU</div>
@@ -473,7 +473,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
               <div class="space-y-3 mb-8">
                 {["Surface de la pièce en m²","Hauteur du plafond","Exposition solaire","Nombre de fenêtres"].map(item => (
                   <div class="flex items-center gap-3">
-                    <i class="fas fa-circle-check text-sm" style="color:#10b981;"></i>
+                    <i class="fas fa-circle-check text-sm" style="color:#047857;"></i>
                     <span class="text-sm" style="color:var(--slate-700);">{item}</span>
                   </div>
                 ))}

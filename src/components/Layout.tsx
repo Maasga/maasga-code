@@ -39,13 +39,18 @@ export const NavIcon = ({ icon, color = '#94a3b8', size = 16, class: className =
   return <i class={`fas ${icon} ${className}`} style={{ color, fontSize: `${size}px`, width: `${size + 4}px`, textAlign: 'center' }} aria-hidden="true"></i>
 }
 
-export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisation Burkina Faso", activePage = "", description = "MAASGA - Spécialiste vente, installation et maintenance de climatiseurs à Ouagadougou, Burkina Faso. Devis gratuit, techniciens certifiés.", canonicalPath = "", jsonLd }: {
+export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisation Burkina Faso", activePage = "", description = "MAASGA - Spécialiste vente, installation et maintenance de climatiseurs à Ouagadougou, Burkina Faso. Devis gratuit, techniciens certifiés.", canonicalPath = "", jsonLd, ogImage, ogType = "website", noindex = false }: {
   children: any
   title?: string
   activePage?: string
   description?: string
   canonicalPath?: string
   jsonLd?: string
+  /** Image de partage (URL absolue) — par défaut og-image.png */
+  ogImage?: string
+  ogType?: string
+  /** Pages privées (profil client…) : exclues des moteurs */
+  noindex?: boolean
 }) => {
   // SITE_URL importé depuis src/types.ts — modifier là-bas quand le domaine change.
   const siteUrl = SITE_URL
@@ -54,21 +59,21 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
     <html lang="fr">
       <head>
         <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
         <meta name="description" content={description} />
-        <meta name="keywords" content="climatisation Ouagadougou, installation climatiseur Burkina Faso, technicien clim Ouaga, MAASGA, vente climatiseur Ouaga" />
         {canonical && <link rel="canonical" href={canonical} />}
+        {noindex && <meta name="robots" content="noindex,nofollow" />}
         <meta property="og:title" content={title} />
         <meta property="og:description" content={description} />
-        <meta property="og:type" content="website" />
-        <meta property="og:image" content={`${siteUrl}/og-image.png`} />
+        <meta property="og:type" content={ogType} />
+        <meta property="og:image" content={ogImage || `${siteUrl}/og-image.png`} />
         {canonical && <meta property="og:url" content={canonical} />}
         <meta property="og:locale" content="fr_BF" />
         <meta property="og:site_name" content="MAASGA Climatisation" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={title} />
         <meta name="twitter:description" content={description} />
-        <meta name="twitter:image" content={`${siteUrl}/og-image.png`} />
+        <meta name="twitter:image" content={ogImage || `${siteUrl}/og-image.png`} />
         <meta name="theme-color" content="#e8f4ff" />
         <link rel="manifest" href="/manifest.json" />
         {canonicalPath === "/" && <link rel="preload" as="image" href="/hero/hero-1.webp" imagesrcset="/hero/hero-1-800.webp 800w, /hero/hero-1.webp 1600w" imagesizes="100vw" fetchpriority="high" />}
@@ -425,6 +430,22 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         
 
 
+
+        {/* BARRE D'ACTIONS MOBILE — les 4 actions qui convertissent, toujours à portée de pouce (< md) */}
+        <nav class="mobile-action-bar md:hidden" aria-label="Actions rapides">
+          <a href="tel:+22655996418" class="mab-item">
+            <i class="fas fa-phone" aria-hidden="true"></i><span>Appeler</span>
+          </a>
+          <button type="button" onclick="toggleWaPanel()" class="mab-item" aria-controls="wa-panel">
+            <i class="fab fa-whatsapp" aria-hidden="true"></i><span>WhatsApp</span>
+          </button>
+          <a href="/simulateur" class={`mab-item ${activePage === 'simulateur' ? 'is-active' : ''}`} {...(activePage === 'simulateur' ? { 'aria-current': 'page' } : {})}>
+            <i class="fas fa-calculator" aria-hidden="true"></i><span>Simulateur</span>
+          </a>
+          <a href="/rendez-vous" class="mab-item mab-primary" {...(activePage === 'rdv' ? { 'aria-current': 'page' } : {})}>
+            <i class="fas fa-calendar-check" aria-hidden="true"></i><span>Rendez-vous</span>
+          </a>
+        </nav>
 
         {/* WhatsApp Pre-Chat Widget */}
         <div id="wa-widget" style="position:fixed; bottom:1.5rem; left:1.5rem; z-index:9999;">

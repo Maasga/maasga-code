@@ -38,8 +38,15 @@ test.describe('back-office', () => {
   test.skip(!secret, 'ADMIN_SECRET absent de .dev.vars')
   test.skip(({ isMobile }) => isMobile, 'back-office testé sur desktop')
 
+  // `wrangler d1 execute` est lent (jusqu'à ~1 min sous charge) : lu une seule fois
+  let epoch = '1'
+  test.beforeAll(async () => {
+    test.setTimeout(180_000)
+    epoch = currentEpoch()
+  })
+
   test.beforeEach(async ({ context, baseURL }) => {
-    const payload = `admin_${currentEpoch()}_${Date.now()}`
+    const payload = `admin_${epoch}_${Date.now()}`
     const sig = createHmac('sha256', secret!).update(payload).digest('hex')
     await context.addCookies([{ name: 'maasga_admin', value: `${payload}.${sig}`, url: baseURL! }])
   })

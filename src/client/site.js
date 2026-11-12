@@ -46,7 +46,8 @@
                 var el = entry.target;
                 var target = el.getAttribute('data-count');
                 var isNum = /^\d+$/.test(target);
-                if (isNum) {
+                // La valeur finale est déjà rendue côté serveur : l'animation n'est qu'un bonus
+                if (isNum && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
                   var end = parseInt(target);
                   var duration = 1800;
                   var startTime = null;
@@ -605,3 +606,53 @@
             }
             if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
           })();
+
+/* ---- PWA : service worker + boîte d'envoi hors connexion ---- */
+(function () {
+  var secure = location.protocol === 'https:' || location.hostname === '127.0.0.1' || location.hostname === 'localhost'
+  if ('serviceWorker' in navigator && secure) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}) })
+  }
+
+  // Formulaires marqués data-offline-queue : si l'envoi échoue faute de réseau, la demande
+  // est gardée sur l'appareil puis renvoyée automatiquement au retour de la connexion.
+  var KEY = 'maasga_outbox'
+  function read() { try { return JSON.parse(localStorage.getItem(KEY) || '[]') } catch (e) { return [] } }
+  function write(list) { try { localStorage.setItem(KEY, JSON.stringify(list)) } catch (e) {} }
+  function toast(msg, type) { if (window.showToast) window.showToast(msg, type); }
+
+  document.addEventListener('submit', function (e) {
+    var form = e.target
+    if (!form || !form.hasAttribute || !form.hasAttribute('data-offline-queue')) return
+    if (navigator.onLine !== false) return
+    e.preventDefault()
+    var fields = {}
+    new FormData(form).forEach(function (v, k) { if (typeof v === 'string') fields[k] = v })
+    var list = read()
+    list.push({ action: form.getAttribute('action'), fields: fields, at: Date.now(), label: form.getAttribute('data-offline-queue') || 'demande' })
+    write(list)
+    toast('Pas de connexion : nous enverrons votre ' + (form.getAttribute('data-offline-queue') || 'demande') + ' automatiquement dès le retour du réseau.', 'warning')
+  }, true)
+
+  var flushing = false
+  function flush() {
+    if (flushing || navigator.onLine === false) return
+    var list = read()
+    if (!list.length) return
+    flushing = true
+    var item = list[0]
+    var body = new FormData()
+    Object.keys(item.fields).forEach(function (k) { body.append(k, item.fields[k]) })
+    fetch(item.action, { method: 'POST', body: body, credentials: 'same-origin', redirect: 'manual' })
+      .then(function (res) {
+        // le serveur répond par une redirection (succès ou message d'erreur)
+        var ok = res.type === 'opaqueredirect' || res.ok
+        write(read().slice(1))
+        if (ok) toast('Connexion rétablie : envoi de votre ' + item.label + ' effectué.', 'success')
+      })
+      .catch(function () {})
+      .then(function () { flushing = false; if (read().length) setTimeout(flush, 1500) })
+  }
+  window.addEventListener('online', flush)
+  if (document.readyState === 'complete') flush(); else window.addEventListener('load', flush)
+})();

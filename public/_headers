@@ -17,3 +17,10 @@
 
 /manifest.json
   Cache-Control: public, max-age=86400
+
+/sw.js
+  Cache-Control: no-cache
+  Service-Worker-Allowed: /
+
+/offline*
+  Cache-Control: public, max-age=86400

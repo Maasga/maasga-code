@@ -114,7 +114,7 @@ export const AProposPage = () => {
                 <h3 class="font-extrabold text-lg mb-1" style="color:var(--ink);">Sherif SAWADOGO</h3>
                 <p class="text-sm font-semibold mb-1" style="color:#0077b6;">Directeur Technique</p>
                 <p class="text-xs mb-3" style="color:#64748b;">Chef d'équipe installation · 8 ans d'expérience</p>
-                <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#0077b6; border:1px solid rgba(0,119,182,0.2);">
+                <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#035a85; border:1px solid rgba(0,119,182,0.2);">
                   <i class="fas fa-hard-hat text-xs" style="color:#ffffff; background:#0077b6; padding:3px 4px; border-radius:4px;"></i>
                   <span>Directeur technique</span>
                 </div>
@@ -131,7 +131,7 @@ export const AProposPage = () => {
                 <h3 class="font-extrabold text-lg mb-1" style="color:var(--ink);">Kompaore Abdoul Malick</h3>
                 <p class="text-sm font-semibold mb-1" style="color:#0077b6;">Directeur Commercial</p>
                 <p class="text-xs mb-3" style="color:#64748b;">Devis & relation client · 4 ans d'expérience</p>
-                <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#0077b6; border:1px solid rgba(0,119,182,0.2);">
+                <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#035a85; border:1px solid rgba(0,119,182,0.2);">
                   <i class="fas fa-handshake text-xs" style="color:#ffffff; background:#0077b6; padding:3px 4px; border-radius:4px;"></i>
                   <span>Expert commercial</span>
                 </div>
@@ -148,7 +148,7 @@ export const AProposPage = () => {
                 <h3 class="font-extrabold text-lg mb-1" style="color:var(--ink);">Inès</h3>
                 <p class="text-sm font-semibold mb-1" style="color:#0077b6;">Directrice Marketing</p>
                 <p class="text-xs mb-3" style="color:#64748b;">Stratégie & communication</p>
-                <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#0077b6; border:1px solid rgba(0,119,182,0.2);">
+                <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-semibold" style="background:rgba(0,119,182,0.08); color:#035a85; border:1px solid rgba(0,119,182,0.2);">
                   <i class="fas fa-bullhorn text-xs" style="color:#ffffff; background:#0077b6; padding:3px 4px; border-radius:4px;"></i>
                   <span>Directrice marketing</span>
                 </div>
@@ -173,13 +173,13 @@ export const AProposPage = () => {
                 "Secteur 25","Secteur 30","Tampouy","Quartier Zone du Bois"
               ].map(q => (
                 <div class="flex items-center space-x-2 py-2 px-3 rounded-xl" style="background:rgba(56,189,248,0.07); border:1px solid rgba(56,189,248,0.12);">
-                  <i class="fas fa-map-marker-alt text-xs" style="color:#38bdf8;"></i>
-                  <span class="text-sm font-medium" style="color:#7a9cc4;">{q}</span>
+                  <i class="fas fa-map-marker-alt text-xs" style="color:#0369a1;"></i>
+                  <span class="text-sm font-medium" style="color:#475569;">{q}</span>
                 </div>
               ))}
             </div>
             <div class="mt-4 text-center text-sm" style="color:#64748b;">
-              <i class="fas fa-info-circle mr-2" style="color:#38bdf8;"></i>
+              <i class="fas fa-info-circle mr-2" style="color:#0369a1;"></i>
               Votre quartier n'est pas listé ? Contactez-nous, nous étudions chaque demande.
             </div>
           </div>

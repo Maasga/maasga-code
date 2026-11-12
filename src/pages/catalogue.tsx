@@ -46,9 +46,9 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
         <div class="flex flex-col lg:flex-row gap-8">
 
           {/* ===== BOUTON TOGGLE FILTRES MOBILE ===== */}
-          <button type="button" id="toggle-filters-btn" class="lg:hidden w-full flex items-center justify-center space-x-2 glass-card rounded-2xl py-3 px-4 mb-2 text-white font-semibold" aria-label="Afficher/masquer les filtres" onclick="var s=document.getElementById('sidebar-filters');var b=this;if(s.classList.contains('hidden')){s.classList.remove('hidden');b.querySelector('span').textContent='Masquer les filtres';b.querySelector('i').classList.replace('fa-sliders-h','fa-times')}else{s.classList.add('hidden');b.querySelector('span').textContent='Filtres';b.querySelector('i').classList.replace('fa-times','fa-sliders-h')}">
-            <i class="fas fa-sliders-h" style="color:#38bdf8;"></i>
-            <span>Filtres</span>
+          <button type="button" id="toggle-filters-btn" class="lg:hidden w-full flex items-center justify-center space-x-2 glass-card rounded-2xl py-3 px-4 mb-2 font-semibold" style="color:#03045e;" aria-expanded="false" aria-controls="sidebar-filters" onclick="var s=document.getElementById('sidebar-filters');var b=this;if(s.classList.contains('hidden')){s.classList.remove('hidden');b.setAttribute('aria-expanded','true');b.querySelector('span').textContent='Masquer les filtres';b.querySelector('i').classList.replace('fa-sliders-h','fa-times')}else{s.classList.add('hidden');b.setAttribute('aria-expanded','false');b.querySelector('span').textContent='Filtrer les climatiseurs';b.querySelector('i').classList.replace('fa-times','fa-sliders-h')}">
+            <i class="fas fa-sliders-h" style="color:#0369a1;" aria-hidden="true"></i>
+            <span>Filtrer les climatiseurs</span>
           </button>
 
           {/* ===== SIDEBAR FILTRES ===== */}
@@ -56,7 +56,7 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
             <form method="get" action="/catalogue" class="glass-card rounded-2xl p-6 sticky top-24">
               <div class="flex items-center justify-between mb-5">
                 <h3 class="font-bold text-white flex items-center space-x-2">
-                  <i class="fas fa-sliders-h" style="color:#38bdf8;"></i>
+                  <i class="fas fa-sliders-h" style="color:#0369a1;"></i>
                   <span>Filtres</span>
                 </h3>
                 <a href="/catalogue" class="text-xs hover:text-red-400 transition-colors" style="color:#64748b;">Réinitialiser</a>
@@ -64,17 +64,17 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
 
               {/* Marque */}
               <div class="mb-5">
-                <label class="block text-xs font-semibold uppercase tracking-wider mb-3" style="color:#38bdf8;">Marque</label>
+                <label class="block text-xs font-semibold uppercase tracking-wider mb-3" style="color:#0369a1;">Marque</label>
                 <div class="space-y-2">
                   <label class="flex items-center space-x-2 cursor-pointer">
                     <input type="radio" name="brand" value="all" class="accent-cyan-400" checked={!filters?.brand || filters.brand === 'all'} />
-                    <span class="text-sm" style="color:#7a9cc4;">Toutes les marques</span>
+                    <span class="text-sm" style="color:#475569;">Toutes les marques</span>
                   </label>
                   {brands.map(b => (
                     <label class="flex items-center space-x-2 cursor-pointer">
                       <input type="radio" name="brand" value={b} class="accent-cyan-400" checked={filters?.brand === b} />
-                      <span class="text-sm" style="color:#7a9cc4;">{b}</span>
-                      <span class="ml-auto text-xs px-2 py-0.5 rounded-full" style="background:rgba(56,189,248,0.1); color:#38bdf8;">
+                      <span class="text-sm" style="color:#475569;">{b}</span>
+                      <span class="ml-auto text-xs px-2 py-0.5 rounded-full" style="background:rgba(56,189,248,0.1); color:#0369a1;">
                         {products.filter(p => p.brand === b).length}
                       </span>
                     </label>
@@ -84,16 +84,16 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
 
               {/* BTU */}
               <div class="mb-5">
-                <label class="block text-xs font-semibold uppercase tracking-wider mb-3" style="color:#38bdf8;">Puissance BTU</label>
+                <label class="block text-xs font-semibold uppercase tracking-wider mb-3" style="color:#0369a1;">Puissance BTU</label>
                 <div class="space-y-2">
                   <label class="flex items-center space-x-2 cursor-pointer">
                     <input type="radio" name="btu" value="all" class="accent-cyan-400" checked={!filters?.btu || filters.btu === 'all'} />
-                    <span class="text-sm" style="color:#7a9cc4;">Toutes puissances</span>
+                    <span class="text-sm" style="color:#475569;">Toutes puissances</span>
                   </label>
                   {btuList.map(b => (
                     <label class="flex items-center space-x-2 cursor-pointer">
                       <input type="radio" name="btu" value={String(b)} class="accent-cyan-400" checked={filters?.btu === String(b)} />
-                      <span class="text-sm" style="color:#7a9cc4;">{b.toLocaleString()} BTU / {({ 9000: 1, 12000: 1.5, 18000: 2, 24000: 3, 36000: 5 }[b] || 1)} CV</span>
+                      <span class="text-sm" style="color:#475569;">{b.toLocaleString()} BTU / {({ 9000: 1, 12000: 1.5, 18000: 2, 24000: 3, 36000: 5 }[b] || 1)} CV</span>
                     </label>
                   ))}
                 </div>
@@ -101,30 +101,30 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
 
               {/* Inverter */}
               <div class="mb-5">
-                <label class="block text-xs font-semibold uppercase tracking-wider mb-3" style="color:#38bdf8;">Technologie</label>
+                <label class="block text-xs font-semibold uppercase tracking-wider mb-3" style="color:#0369a1;">Technologie</label>
                 <div class="space-y-2">
                   <label class="flex items-center space-x-2 cursor-pointer">
                     <input type="radio" name="inverter" value="all" class="accent-cyan-400" checked={!filters?.inverter} />
-                    <span class="text-sm" style="color:#7a9cc4;">Toutes</span>
+                    <span class="text-sm" style="color:#475569;">Toutes</span>
                   </label>
                   <label class="flex items-center space-x-2 cursor-pointer">
                     <input type="radio" name="inverter" value="true" class="accent-cyan-400" checked={filters?.inverter === 'true'} />
-                    <span class="text-sm" style="color:#7a9cc4;">Inverter uniquement</span>
-                    <span class="ml-auto text-xs px-2 py-0.5 rounded-full" style="background:rgba(52,211,153,0.1); color:#34d399;">ECO</span>
+                    <span class="text-sm" style="color:#475569;">Inverter uniquement</span>
+                    <span class="ml-auto text-xs px-2 py-0.5 rounded-full" style="background:rgba(52,211,153,0.1); color:#047857;">ECO</span>
                   </label>
                   <label class="flex items-center space-x-2 cursor-pointer">
                     <input type="radio" name="inverter" value="false" class="accent-cyan-400" checked={filters?.inverter === 'false'} />
-                    <span class="text-sm" style="color:#7a9cc4;">Non-Inverter</span>
+                    <span class="text-sm" style="color:#475569;">Non-Inverter</span>
                   </label>
                 </div>
               </div>
 
               {/* Disponibilité */}
               <div class="mb-6">
-                <label class="block text-xs font-semibold uppercase tracking-wider mb-3" style="color:#38bdf8;">Disponibilité</label>
+                <label class="block text-xs font-semibold uppercase tracking-wider mb-3" style="color:#0369a1;">Disponibilité</label>
                 <label class="flex items-center space-x-3 cursor-pointer">
                   <input type="checkbox" name="available" value="true" class="accent-cyan-400 w-4 h-4" checked={filters?.available === 'true'} />
-                  <span class="text-sm" style="color:#7a9cc4;">En stock uniquement</span>
+                  <span class="text-sm" style="color:#475569;">En stock uniquement</span>
                 </label>
               </div>
 
@@ -139,12 +139,12 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
           {/* ===== GRILLE PRODUITS ===== */}
           <div class="flex-1">
             <div class="flex items-center justify-between mb-6">
-              <p style="color:#8ba3c0;" id="product-count">
-                <strong class="text-white">{totalFiltered}</strong> climatiseur{totalFiltered > 1 ? 's' : ''} trouvé{totalFiltered > 1 ? 's' : ''}
+              <p style="color:#475569;" id="product-count" aria-live="polite">
+                <strong style="color:#03045e;">{totalFiltered}</strong> climatiseur{totalFiltered > 1 ? 's' : ''} trouvé{totalFiltered > 1 ? 's' : ''}
                 {totalPages > 1 && <span class="ml-2 text-xs">(page {currentPage}/{totalPages})</span>}
               </p>
               <div class="flex items-center space-x-2 text-sm" style="color:#64748b;">
-                <i class="fas fa-info-circle" style="color:#38bdf8;"></i>
+                <i class="fas fa-info-circle" style="color:#0369a1;"></i>
                 <span>Prix en FCFA, installation offerte</span>
               </div>
             </div>
@@ -153,12 +153,12 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
               <div class="text-center py-20 glass-card rounded-2xl">
                 <i class="fas fa-search text-4xl mb-4" style="color:#1e2a3a;"></i>
                 <p class="text-lg font-medium text-white">Aucun produit ne correspond</p>
-                <a href="/catalogue" class="mt-4 inline-block" style="color:#38bdf8;">Réinitialiser les filtres</a>
+                <a href="/catalogue" class="mt-4 inline-block" style="color:#0369a1;">Réinitialiser les filtres</a>
               </div>
             ) : (
               <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 reveal" id="products-grid">
                 {paginatedProducts.map(p => (
-                  <div {...((p.available && p.stock !== 0) ? { 'data-tilt': true } : {})} data-brand={p.brand} data-btu={String(p.btu)} data-inverter={String(p.inverter)} data-stock={String(p.stock)} data-available={String(p.available)} data-id={String(p.id)} data-name={p.name} data-price={String(p.price)} data-model={p.model} data-energy={p.energy_class} data-image={p.image} class={`product-card glass-card rounded-2xl overflow-hidden transition-all duration-300 group ${!p.available || p.stock === 0 ? 'opacity-60' : 'hover-lift'}`}>
+                  <div {...((p.available && p.stock !== 0) ? { 'data-tilt': true } : {})} data-brand={p.brand} data-btu={String(p.btu)} data-inverter={String(p.inverter)} data-stock={String(p.stock)} data-available={String(p.available)} data-id={String(p.id)} data-name={p.name} data-price={String(p.price)} data-model={p.model} data-energy={p.energy_class} data-image={p.image} class={`product-card glass-card rounded-2xl overflow-hidden transition-all duration-300 group ${!p.available || p.stock === 0 ? 'is-out-of-stock' : 'hover-lift'}`}>
                     {/* Image */}
                     <div class="tilt-image relative p-6 text-center" style="background:linear-gradient(145deg,#e8f2ff,#f0f7ff);">
                       {(p as any).imageUrl
@@ -169,7 +169,7 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
                         {p.inverter && (
                           <span class="text-xs text-white px-2 py-1 rounded-lg font-semibold" style="background:linear-gradient(135deg,#0ea5e9,#3b82f6);">INVERTER</span>
                         )}
-                        <span class="text-xs px-2 py-1 rounded-lg font-medium" style="background:rgba(56,189,248,0.1); color:#38bdf8;">{p.energy_class}</span>
+                        <span class="text-xs px-2 py-1 rounded-lg font-medium" style="background:rgba(56,189,248,0.1); color:#0369a1;">{p.energy_class}</span>
                       </div>
                       <span class={`absolute top-3 right-3 text-xs px-2 py-1 rounded-full font-semibold ${p.stock > 3 ? 'badge-stock-ok' : p.stock > 0 ? 'badge-stock-low' : 'badge-stock-out'}`}>
                         {p.stock > 3 ? '✓ Disponible' : p.stock > 0 ? '⚠ Stock limité' : '✗ Rupture'}
@@ -179,26 +179,26 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
                     {/* Info */}
                     <div class="p-5">
                       <div class="tilt-caption">
-                        <div class="text-xs font-bold uppercase tracking-wider mb-1" style="color:#38bdf8;">{p.brand}</div>
+                        <div class="text-xs font-bold uppercase tracking-wider mb-1" style="color:#0369a1;">{p.brand}</div>
                         <h3 class="font-bold text-white text-sm mb-1 leading-tight">{p.name}</h3>
                         <p class="text-xs mb-3" style="color:#64748b;">Réf: {p.model}</p>
                       </div>
 
                       <div class="grid grid-cols-2 gap-2 my-3">
                         <div class="rounded-lg px-2 py-2 text-center" style="background:rgba(56,189,248,0.07); border:1px solid rgba(56,189,248,0.15);">
-                          <div class="text-xs font-medium" style="color:#38bdf8;">Puissance</div>
+                          <div class="text-xs font-medium" style="color:#0369a1;">Puissance</div>
                           <div class="text-sm font-bold text-white">{p.btu.toLocaleString()} BTU</div>
-                          <div class="text-xs" style="color:#38bdf8;">{({ 9000: 1, 12000: 1.5, 18000: 2, 24000: 3, 36000: 5 }[p.btu] || 1)} CV</div>
+                          <div class="text-xs" style="color:#0369a1;">{({ 9000: 1, 12000: 1.5, 18000: 2, 24000: 3, 36000: 5 }[p.btu] || 1)} CV</div>
                         </div>
                         <div class="rounded-lg px-2 py-2 text-center" style="background:rgba(52,211,153,0.07); border:1px solid rgba(52,211,153,0.15);">
-                          <div class="text-xs font-medium" style="color:#34d399;">Surface</div>
+                          <div class="text-xs font-medium" style="color:#047857;">Surface</div>
                           <div class="text-sm font-bold text-white">{p.surface_min}-{p.surface_max} m²</div>
                         </div>
                       </div>
 
                       <div class="flex flex-wrap gap-1 mb-4">
                         {p.features.slice(0, 3).map(f => (
-                          <span class="text-xs px-2 py-0.5 rounded-full" style="background:rgba(56,189,248,0.06); color:#8ba3c0; border:1px solid rgba(56,189,248,0.1);">{f}</span>
+                          <span class="text-xs px-2 py-0.5 rounded-full" style="background:rgba(56,189,248,0.06); color:#475569; border:1px solid rgba(56,189,248,0.1);">{f}</span>
                         ))}
                         {p.features.length > 3 && (
                           <span class="text-xs" style="color:#64748b;">+{p.features.length - 3}</span>
@@ -206,13 +206,13 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
                       </div>
 
                       <div class="pt-3 mb-4" style="border-top:1px solid rgba(56,189,248,0.1);">
-                        <div class="text-lg font-bold text-white">{p.price.toLocaleString()} <span class="text-xs" style="color:#8ba3c0;">FCFA</span></div>
-                        <div class="text-xs font-semibold" style="color:#34d399;">Installation et livraison offerte</div>
+                        <div class="text-lg font-bold text-white">{p.price.toLocaleString()} <span class="text-xs" style="color:#475569;">FCFA</span></div>
+                        <div class="text-xs font-semibold" style="color:#047857;">Installation et livraison offerte</div>
                       </div>
 
                       {p.stock > 0 && p.available ? (
                         <div class="space-y-2">
-                          <a href={`/catalogue/${p.id}`} class="w-full font-semibold py-2 rounded-xl flex items-center justify-center space-x-2 text-sm transition-colors" style="background:rgba(56,189,248,0.1); color:#38bdf8; border:1px solid rgba(56,189,248,0.25);">
+                          <a href={`/catalogue/${p.id}`} class="w-full font-semibold py-2 rounded-xl flex items-center justify-center space-x-2 text-sm transition-colors" style="background:rgba(56,189,248,0.1); color:#0369a1; border:1px solid rgba(56,189,248,0.25);">
                             <i class="fas fa-info-circle text-xs"></i>
                             <span>Voir les détails</span>
                           </a>
@@ -220,18 +220,18 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
                             <i class="fas fa-shopping-bag text-xs"></i>
                             <span>Commander</span>
                           </button>
-                          <a href={`/simulateur?product=${p.id}`} class="w-full flex items-center justify-center space-x-2 text-xs py-1 transition-colors" style="color:#38bdf8;">
+                          <a href={`/simulateur?product=${p.id}`} class="w-full flex items-center justify-center space-x-2 text-xs py-1 transition-colors" style="color:#0369a1;">
                             <i class="fas fa-calculator"></i>
                             <span>Vérifier compatibilité BTU</span>
                           </a>
-                          <button id={`compare-btn-${p.id}`} onclick={`toggleCompare(${p.id})`} class="w-full font-semibold py-1.5 rounded-xl flex items-center justify-center space-x-2 text-xs transition-all" style="background:rgba(167,139,250,0.07); color:#a78bfa; border:1px solid rgba(167,139,250,0.18);">
+                          <button id={`compare-btn-${p.id}`} onclick={`toggleCompare(${p.id})`} class="w-full font-semibold py-1.5 rounded-xl flex items-center justify-center space-x-2 text-xs transition-all" style="background:rgba(167,139,250,0.07); color:#6d28d9; border:1px solid rgba(167,139,250,0.18);">
                             <i class="fas fa-balance-scale text-xs"></i>
                             <span>Comparer</span>
                           </button>
                         </div>
                       ) : (
                         <div class="space-y-2">
-                          <a href={`/catalogue/${p.id}`} class="w-full font-semibold py-2 rounded-xl flex items-center justify-center space-x-2 text-sm transition-colors" style="background:rgba(56,189,248,0.08); color:#38bdf8; border:1px solid rgba(56,189,248,0.2);">
+                          <a href={`/catalogue/${p.id}`} class="w-full font-semibold py-2 rounded-xl flex items-center justify-center space-x-2 text-sm transition-colors" style="background:rgba(56,189,248,0.08); color:#0369a1; border:1px solid rgba(56,189,248,0.2);">
                             <i class="fas fa-info-circle text-xs"></i>
                             <span>Voir les détails</span>
                           </a>
@@ -240,18 +240,18 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
                             <span>Rupture de stock</span>
                           </div>
                           <div id={`stock-alert-${p.id}`} class="w-full">
-                            <button onclick={`document.getElementById('stock-form-${p.id}').classList.toggle('hidden')`} class="w-full flex items-center justify-center space-x-2 text-xs py-1.5 rounded-lg transition-colors" style="color:#38bdf8; background:rgba(56,189,248,0.05);">
+                            <button onclick={`document.getElementById('stock-form-${p.id}').classList.toggle('hidden')`} class="w-full flex items-center justify-center space-x-2 text-xs py-1.5 rounded-lg transition-colors" style="color:#0369a1; background:rgba(56,189,248,0.05);">
                               <i class="fas fa-bell"></i>
                               <span>Me notifier du réapprovisionnement</span>
                             </button>
                             <div id={`stock-form-${p.id}`} class="hidden mt-2 flex gap-2">
                               <input type="tel" id={`stock-phone-${p.id}`} placeholder="Ex: 55 99 64 18" class="flex-1 text-xs px-3 py-2 rounded-lg" style="background:rgba(56,189,248,0.05); border:1px solid rgba(56,189,248,0.2); color:#03045e;" />
-                              <button onclick={`submitStockAlert(${p.id})`} class="text-xs px-3 py-2 rounded-lg font-semibold" style="background:rgba(16,185,129,0.1); color:#34d399; border:1px solid rgba(16,185,129,0.2);">
+                              <button onclick={`submitStockAlert(${p.id})`} class="text-xs px-3 py-2 rounded-lg font-semibold" style="background:rgba(16,185,129,0.1); color:#047857; border:1px solid rgba(16,185,129,0.2);">
                                 <i class="fas fa-check"></i>
                               </button>
                             </div>
                           </div>
-                          <button id={`compare-btn-${p.id}`} onclick={`toggleCompare(${p.id})`} class="w-full font-semibold py-1.5 rounded-xl flex items-center justify-center space-x-2 text-xs transition-all" style="background:rgba(167,139,250,0.07); color:#a78bfa; border:1px solid rgba(167,139,250,0.18);">
+                          <button id={`compare-btn-${p.id}`} onclick={`toggleCompare(${p.id})`} class="w-full font-semibold py-1.5 rounded-xl flex items-center justify-center space-x-2 text-xs transition-all" style="background:rgba(167,139,250,0.07); color:#6d28d9; border:1px solid rgba(167,139,250,0.18);">
                             <i class="fas fa-balance-scale text-xs"></i>
                             <span>Comparer</span>
                           </button>
@@ -269,21 +269,21 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
               <nav class="mt-8 flex items-center justify-center gap-2 flex-wrap" aria-label="Pagination catalogue">
                 {currentPage > 1 && (
                   <a href={`/catalogue?${new URLSearchParams({...(filters?.brand && filters.brand !== 'all' ? {brand: filters.brand} : {}), ...(filters?.btu && filters.btu !== 'all' ? {btu: filters.btu} : {}), ...(filters?.inverter ? {inverter: filters.inverter} : {}), ...(filters?.available ? {available: filters.available} : {}), page: String(currentPage - 1)}).toString()}`}
-                    class="px-4 py-2 rounded-xl text-sm font-medium transition-colors" style="background:rgba(56,189,248,0.08); color:#38bdf8; border:1px solid rgba(56,189,248,0.2);">
+                    class="px-4 py-2 rounded-xl text-sm font-medium transition-colors" style="background:rgba(56,189,248,0.08); color:#0369a1; border:1px solid rgba(56,189,248,0.2);">
                     <i class="fas fa-chevron-left mr-1"></i> Précédent
                   </a>
                 )}
                 {Array.from({length: totalPages}, (_, i) => i + 1).map(p => (
                   <a href={`/catalogue?${new URLSearchParams({...(filters?.brand && filters.brand !== 'all' ? {brand: filters.brand} : {}), ...(filters?.btu && filters.btu !== 'all' ? {btu: filters.btu} : {}), ...(filters?.inverter ? {inverter: filters.inverter} : {}), ...(filters?.available ? {available: filters.available} : {}), page: String(p)}).toString()}`}
                     class={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold transition-colors ${p === currentPage ? 'text-white' : ''}`}
-                    style={p === currentPage ? 'background:linear-gradient(135deg,#0ea5e9,#3b82f6); color:white;' : 'background:rgba(56,189,248,0.05); color:#8ba3c0; border:1px solid rgba(56,189,248,0.1);'}
+                    style={p === currentPage ? 'background:linear-gradient(135deg,#0ea5e9,#3b82f6); color:white;' : 'background:rgba(56,189,248,0.05); color:#475569; border:1px solid rgba(56,189,248,0.1);'}
                     aria-current={p === currentPage ? 'page' : undefined}>
                     {p}
                   </a>
                 ))}
                 {currentPage < totalPages && (
                   <a href={`/catalogue?${new URLSearchParams({...(filters?.brand && filters.brand !== 'all' ? {brand: filters.brand} : {}), ...(filters?.btu && filters.btu !== 'all' ? {btu: filters.btu} : {}), ...(filters?.inverter ? {inverter: filters.inverter} : {}), ...(filters?.available ? {available: filters.available} : {}), page: String(currentPage + 1)}).toString()}`}
-                    class="px-4 py-2 rounded-xl text-sm font-medium transition-colors" style="background:rgba(56,189,248,0.08); color:#38bdf8; border:1px solid rgba(56,189,248,0.2);">
+                    class="px-4 py-2 rounded-xl text-sm font-medium transition-colors" style="background:rgba(56,189,248,0.08); color:#0369a1; border:1px solid rgba(56,189,248,0.2);">
                     Suivant <i class="fas fa-chevron-right ml-1"></i>
                   </a>
                 )}
@@ -297,11 +297,11 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
               <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div class="flex items-start space-x-4">
                   <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.2);">
-                    <i class="fas fa-clipboard-check text-xl" style="color:#38bdf8;"></i>
+                    <i class="fas fa-clipboard-check text-xl" style="color:#0369a1;"></i>
                   </div>
                   <div>
-                    <h4 class="font-bold text-white mb-1">Votre achat en 5 étapes</h4>
-                    <p class="text-sm" style="color:#8ba3c0;">
+                    <h4 class="font-bold mb-1" style="color:#03045e;">Votre achat en 5 étapes</h4>
+                    <p class="text-sm" style="color:#475569;">
                       1. Choisissez votre climatiseur · 2. Passez commande en ligne · 3. Confirmez le paiement · 4. Livraison à domicile · 5. Installation professionnelle
                     </p>
                   </div>
@@ -386,7 +386,7 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
             const visible = Math.min(ITEMS_PER_PAGE, totalVisible - (currentPage - 1) * ITEMS_PER_PAGE);
 
             if (countEl) {
-              countEl.innerHTML = '<strong class="text-white">' + totalVisible + '</strong> climatiseur' + (totalVisible > 1 ? 's' : '') + ' trouvé' + (totalVisible > 1 ? 's' : '');
+              countEl.innerHTML = '<strong style="color:#03045e;">' + totalVisible + '</strong> climatiseur' + (totalVisible > 1 ? 's' : '') + ' trouvé' + (totalVisible > 1 ? 's' : '');
             }
             if (liveCount) {
               if (totalPages > 1) {
@@ -404,7 +404,7 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
                 let html = '';
                 const btnBase = 'px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ';
                 const btnActive = 'background:linear-gradient(135deg,#2563eb,#0284c7); color:white; box-shadow:0 2px 8px rgba(37,99,235,0.3);';
-                const btnNormal = 'background:rgba(56,189,248,0.08); color:#8ba3c0; border:1px solid rgba(56,189,248,0.15);';
+                const btnNormal = 'background:rgba(56,189,248,0.08); color:#475569; border:1px solid rgba(56,189,248,0.15);';
                 const btnDisabled = 'background:rgba(255,255,255,0.03); color:#475569; cursor:not-allowed;';
                 // Prev
                 html += '<button onclick="window._catPage(' + (currentPage - 1) + ')" class="' + btnBase + '" style="' + (currentPage <= 1 ? btnDisabled : btnNormal) + '"' + (currentPage <= 1 ? ' disabled' : '') + '><i class="fas fa-chevron-left text-xs"></i></button>';
@@ -470,7 +470,7 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
 
       {/* ===== BARRE COMPARATEUR ===== */}
       <div id="compare-bar" class="hidden fixed bottom-16 md:bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-2xl px-5 py-3 flex items-center gap-4 shadow-2xl" style="background:rgba(11,17,32,0.97); border:1px solid rgba(167,139,250,0.35); min-width:280px; max-width:90vw;">
-        <i class="fas fa-balance-scale flex-shrink-0" style="color:#a78bfa;"></i>
+        <i class="fas fa-balance-scale flex-shrink-0" style="color:#6d28d9;"></i>
         <span id="compare-count" class="text-sm font-semibold text-white flex-1">0 sélectionné</span>
         <button onclick="openCompareModal()" id="compare-open-btn" disabled class="btn-primary text-white text-xs font-bold px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed">
           Comparer
@@ -573,20 +573,20 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
               { label: 'Modèle', fn: p => esc(p.model) },
               { label: 'Puissance', fn: p => Number(p.btu).toLocaleString('fr-FR') + ' BTU' },
               { label: 'Prix', fn: p => Number(p.price).toLocaleString('fr-FR') + ' FCFA' },
-              { label: 'Inverter', fn: p => p.inverter ? '<span style="color:#34d399;">✓ Oui</span>' : '<span style="color:#f87171;">✗ Non</span>' },
+              { label: 'Inverter', fn: p => p.inverter ? '<span style="color:#047857;">✓ Oui</span>' : '<span style="color:#b91c1c;">✗ Non</span>' },
               { label: 'Classe énergie', fn: p => esc(p.energy) },
-              { label: 'Stock', fn: p => p.stock > 0 ? '<span style="color:#34d399;">' + Number(p.stock) + ' dispo</span>' : '<span style="color:#f87171;">Rupture</span>' },
+              { label: 'Stock', fn: p => p.stock > 0 ? '<span style="color:#047857;">' + Number(p.stock) + ' dispo</span>' : '<span style="color:#b91c1c;">Rupture</span>' },
             ];
 
             let html = '<div style="display:grid; grid-template-columns: 140px repeat(' + cols.length + ', 1fr); gap:0;">';
             // Header
-            html += '<div style="background:rgba(56,189,248,0.05); padding:12px; font-weight:700; font-size:0.75rem; color:#38bdf8; text-transform:uppercase;">Caractéristique</div>';
+            html += '<div style="background:rgba(56,189,248,0.05); padding:12px; font-weight:700; font-size:0.75rem; color:#0369a1; text-transform:uppercase;">Caractéristique</div>';
             cols.forEach(p => {
               html += '<div style="background:rgba(56,189,248,0.05); padding:12px; text-align:center; border-left:1px solid rgba(56,189,248,0.08);">';
               // dataset expose 'image' (data-image), pas 'imageUrl' : l'ancienne clé
               // était toujours undefined, donc toutes les vignettes tombaient sur le placeholder.
               html += '<img src="' + esc(p.image || '/static/ac-placeholder.svg') + '" alt="' + esc(p.name) + '" style="width:50px;height:50px;object-fit:contain;margin-bottom:4px;" loading="lazy" />';
-              html += '<div style="font-size:0.7rem; color:#38bdf8; font-weight:700; text-transform:uppercase;">' + esc(p.brand) + '</div>';
+              html += '<div style="font-size:0.7rem; color:#0369a1; font-weight:700; text-transform:uppercase;">' + esc(p.brand) + '</div>';
               html += '<div style="font-size:0.8rem; color:white; font-weight:600; line-height:1.3; margin-bottom:6px;">' + esc(p.name) + '</div>';
               html += '<a href="/rendez-vous?product=' + Number(p.id) + '" style="display:inline-block; background:linear-gradient(135deg,#0ea5e9,#3b82f6); color:white; padding:5px 10px; border-radius:8px; font-size:0.7rem; font-weight:700; text-decoration:none;">Commander</a>';
               html += '</div>';
@@ -594,7 +594,7 @@ export const CataloguePage = ({ filters, page = 1 }: { filters?: { brand?: strin
             // Rows
             rows.forEach((row, ri) => {
               const bg = ri % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent';
-              html += '<div style="background:' + bg + '; padding:10px 12px; font-size:0.75rem; font-weight:600; color:#8ba3c0; border-top:1px solid rgba(56,189,248,0.06);">' + row.label + '</div>';
+              html += '<div style="background:' + bg + '; padding:10px 12px; font-size:0.75rem; font-weight:600; color:#475569; border-top:1px solid rgba(56,189,248,0.06);">' + row.label + '</div>';
               cols.forEach(p => {
                 html += '<div style="background:' + bg + '; padding:10px 12px; text-align:center; font-size:0.82rem; color:white; border-left:1px solid rgba(56,189,248,0.06); border-top:1px solid rgba(56,189,248,0.06);">' + row.fn(p) + '</div>';
               });

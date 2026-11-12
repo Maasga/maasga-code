@@ -28,7 +28,7 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
         {success && (
           <div class="mb-8 rounded-2xl p-5 flex items-center space-x-4 reveal" style="background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.25);">
             <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(52,211,153,0.15);">
-              <i class="fas fa-check-circle text-xl" style="color:#34d399;"></i>
+              <i class="fas fa-check-circle text-xl" style="color:#047857;"></i>
             </div>
             <div>
               <div class="font-bold text-white">Message envoyé avec succès !</div>
@@ -44,13 +44,13 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
 
             <div data-tilt class="glass-card rounded-2xl p-6">
               <h3 class="font-bold text-white text-lg mb-5 flex items-center space-x-2">
-                <i class="fas fa-info-circle" style="color:#38bdf8;"></i>
+                <i class="fas fa-info-circle" style="color:#0369a1;"></i>
                 <span>Nos coordonnées</span>
               </h3>
               <div class="space-y-4">
                 <div class="flex items-start space-x-4">
                   <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.2);">
-                    <i class="fas fa-phone" style="color:#34d399;"></i>
+                    <i class="fas fa-phone" style="color:#047857;"></i>
                   </div>
                   <div>
                     <div class="text-xs font-medium mb-1" style="color:#64748b;">Téléphone (Whatsapp)</div>
@@ -61,7 +61,7 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
 
                 <div class="flex items-start space-x-4">
                   <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.2);">
-                    <i class="fas fa-envelope" style="color:#38bdf8;"></i>
+                    <i class="fas fa-envelope" style="color:#0369a1;"></i>
                   </div>
                   <div>
                     <div class="text-xs font-medium mb-1" style="color:#64748b;">Email</div>
@@ -72,7 +72,7 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
 
                 <div class="flex items-start space-x-4">
                   <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.2);">
-                    <i class="fas fa-map-marker-alt" style="color:#f87171;"></i>
+                    <i class="fas fa-map-marker-alt" style="color:#b91c1c;"></i>
                   </div>
                   <div>
                     <div class="text-xs font-medium mb-1" style="color:#64748b;">Adresse</div>
@@ -83,11 +83,11 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
 
                 <div class="flex items-start space-x-4">
                   <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(167,139,250,0.1); border:1px solid rgba(167,139,250,0.2);">
-                    <i class="fas fa-clock" style="color:#a78bfa;"></i>
+                    <i class="fas fa-clock" style="color:#6d28d9;"></i>
                   </div>
                   <div>
                     <div class="text-xs font-medium mb-1" style="color:#64748b;">Horaires</div>
-                    <div class="text-sm" style="color:#7a9cc4;">
+                    <div class="text-sm" style="color:#475569;">
                       <div>Lundi–Dimanche · 8h00–18h00</div>
                       <div class="text-xs mt-0.5" style="color:#64748b;">Urgences 7j/7</div>
                     </div>
@@ -106,7 +106,7 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
                 </div>
                 <div>
                   <div class="font-bold text-white">Écrire sur WhatsApp</div>
-                  <div class="text-sm" style="color:#8ba3c0;">Réponse rapide garantie</div>
+                  <div class="text-sm" style="color:#475569;">Réponse rapide garantie</div>
                 </div>
                 <i class="fas fa-arrow-right ml-auto" style="color:#64748b;"></i>
               </div>
@@ -132,12 +132,12 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
             {/* Zones d'intervention */}
             <div data-tilt class="glass-card rounded-2xl p-6">
               <h4 class="font-bold text-white mb-3 flex items-center space-x-2">
-                <i class="fas fa-map" style="color:#38bdf8;"></i>
+                <i class="fas fa-map" style="color:#0369a1;"></i>
                 <span>Zones d'intervention</span>
               </h4>
               <div class="flex flex-wrap gap-2">
                 {['Pissy', 'Gounghin', 'Dassasgho', 'Wemtenga', 'Karpala', 'Samandin', 'Koulouba', 'Tanghin', 'Boulmiougou', 'Sig-Noghin'].map(z => (
-                  <span class="text-xs px-2.5 py-1 rounded-full font-medium" style="background:rgba(56,189,248,0.1); color:#38bdf8; border:1px solid rgba(56,189,248,0.2);">{z}</span>
+                  <span class="text-xs px-2.5 py-1 rounded-full font-medium" style="background:rgba(56,189,248,0.1); color:#0369a1; border:1px solid rgba(56,189,248,0.2);">{z}</span>
                 ))}
                 <span class="text-xs px-2 py-1" style="color:#64748b;">+ environs</span>
               </div>
@@ -150,10 +150,10 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
             {success ? (
               <div class="glass-card rounded-3xl p-10 text-center">
                 <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style="background:rgba(52,211,153,0.15); border:1px solid rgba(52,211,153,0.3);">
-                  <i class="fas fa-check text-3xl" style="color:#34d399;"></i>
+                  <i class="fas fa-check text-3xl" style="color:#047857;"></i>
                 </div>
                 <h3 class="text-2xl font-bold text-white mb-3">Message envoyé !</h3>
-                <p class="mb-6" style="color:#8ba3c0;">Merci pour votre message. Notre équipe vous répondra dans les 2 heures suivantes.</p>
+                <p class="mb-6" style="color:#475569;">Merci pour votre message. Notre équipe vous répondra dans les 2 heures suivantes.</p>
                 <div class="flex flex-col sm:flex-row gap-3 justify-center">
                   <a href="/" class="btn-primary text-white font-semibold px-6 py-3 rounded-xl inline-flex items-center space-x-2">
                     <i class="fas fa-home"></i><span>Retour à l'accueil</span>
@@ -167,30 +167,30 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
               <div class="glass-card rounded-3xl p-8 reveal">
                 <h2 class="text-xl font-bold text-white mb-6 flex items-center space-x-3">
                   <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.2);">
-                    <i class="fas fa-paper-plane" style="color:#38bdf8;"></i>
+                    <i class="fas fa-paper-plane" style="color:#0369a1;"></i>
                   </div>
                   <span>Envoyez-nous un message</span>
                 </h2>
 
                 {error && (
-                  <div class="mb-5 rounded-xl p-3 flex items-center space-x-2 text-sm" style="background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.25); color:#f87171;">
+                  <div class="mb-5 rounded-xl p-3 flex items-center space-x-2 text-sm" style="background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.25); color:#b91c1c;">
                     <i class="fas fa-exclamation-circle"></i>
                     <span>{error}</span>
                   </div>
                 )}
 
-                <form method="post" action="/api/contact" class="space-y-5">
+                <form data-offline-queue="message" method="post" action="/api/contact" class="space-y-5">
                   <div class="hidden" aria-hidden="true"><input type="text" name="website" tabindex={-1} autocomplete="off" /></div>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
-                      <label class="block text-sm font-semibold mb-2" style="color:#7a9cc4;">
-                        Nom complet <span style="color:#f87171;">*</span>
+                      <label class="block text-sm font-semibold mb-2" style="color:#475569;">
+                        Nom complet <span style="color:#b91c1c;">*</span>
                       </label>
                       <input type="text" name="name" required placeholder="Ex: Moussa Ouédraogo"
                         autocomplete="name" class="input-field w-full rounded-xl px-4 py-3" />
                     </div>
                     <div>
-                      <label class="block text-sm font-semibold mb-2" style="color:#7a9cc4;">
+                      <label class="block text-sm font-semibold mb-2" style="color:#475569;">
                         Téléphone (Whatsapp)
                       </label>
                       <input type="tel" name="phone" placeholder="+226 55 99 64 18"
@@ -199,14 +199,14 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
                   </div>
 
                   <div>
-                    <label class="block text-sm font-semibold mb-2" style="color:#7a9cc4;">Email</label>
+                    <label class="block text-sm font-semibold mb-2" style="color:#475569;">Email</label>
                     <input type="email" name="email" placeholder="votre@email.com"
                       autocomplete="email" class="input-field w-full rounded-xl px-4 py-3" />
                   </div>
 
                   <div>
-                    <label class="block text-sm font-semibold mb-2" style="color:#7a9cc4;">Objet de votre demande</label>
-                    <select name="subject" class="input-field w-full rounded-xl px-4 py-3" style="color:#f0f6ff;">
+                    <label class="block text-sm font-semibold mb-2" style="color:#475569;">Objet de votre demande</label>
+                    <select name="subject" aria-label="Sujet de votre message" class="input-field w-full rounded-xl px-4 py-3" style="color:#03045e;">
                       <option value="devis">Demande de devis</option>
                       <option value="installation">Installation climatiseur</option>
                       <option value="maintenance">Maintenance / Entretien</option>
@@ -217,8 +217,8 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
                   </div>
 
                   <div>
-                    <label class="block text-sm font-semibold mb-2" style="color:#7a9cc4;">
-                      Votre message <span style="color:#f87171;">*</span>
+                    <label class="block text-sm font-semibold mb-2" style="color:#475569;">
+                      Votre message <span style="color:#b91c1c;">*</span>
                     </label>
                     <textarea name="message" required rows={5}
                       placeholder="Décrivez votre besoin en détail : surface de la pièce, type de climatisation souhaité, délai, etc."
@@ -230,10 +230,10 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
                     <label class="flex items-center space-x-3 cursor-pointer">
                       <input type="checkbox" name="urgent" value="1" class="accent-yellow-400 w-4 h-4" />
                       <div>
-                        <div class="text-sm font-semibold" style="color:#fbbf24;">
+                        <div class="text-sm font-semibold" style="color:#b45309;">
                           <i class="fas fa-bolt mr-1"></i>Demande urgente
                         </div>
-                        <div class="text-xs" style="color:#92794a;">Nous vous recontactons dans l'heure</div>
+                        <div class="text-xs" style="color:#713f12;">Nous vous recontactons dans l'heure</div>
                       </div>
                     </label>
                   </div>
@@ -247,7 +247,7 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
                   </button>
 
                   <p class="text-xs text-center" style="color:#64748b;">
-                    <i class="fas fa-shield-alt mr-1" style="color:#38bdf8;"></i>
+                    <i class="fas fa-shield-alt mr-1" style="color:#0369a1;"></i>
                     Vos données sont confidentielles et ne seront jamais partagées.
                   </p>
                 </form>
@@ -257,7 +257,7 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
             {/* FAQ rapide */}
             <div class="mt-8 glass-card rounded-2xl p-6 reveal">
               <h3 class="font-bold text-white mb-5 flex items-center space-x-2">
-                <i class="fas fa-question-circle" style="color:#38bdf8;"></i>
+                <i class="fas fa-question-circle" style="color:#0369a1;"></i>
                 <span>Questions fréquentes</span>
               </h3>
               <div class="space-y-4" id="faq-list">
@@ -286,7 +286,7 @@ export const ContactPage = ({ success, error }: { success?: boolean; error?: str
                       <span class="text-sm font-semibold text-white">{item.q}</span>
                       <i class={`fas fa-chevron-down text-xs transition-transform`} style="color:#64748b;" id={`faq-icon-${i}`}></i>
                     </button>
-                    <div class="hidden px-4 pb-4 text-sm leading-relaxed" style="color:#8ba3c0;" id={`faq-ans-${i}`} role="region" aria-labelledby={`faq-btn-${i}`}>
+                    <div class="hidden px-4 pb-4 text-sm leading-relaxed" style="color:#475569;" id={`faq-ans-${i}`} role="region" aria-labelledby={`faq-btn-${i}`}>
                       {item.a}
                     </div>
                   </div>

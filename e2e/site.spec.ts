@@ -48,7 +48,9 @@ test('les fonctions globales appelées par onclick existent (widget WhatsApp)', 
   const fns = await page.evaluate(() => ['toggleWaPanel', 'closeWaPanel', 'openWa', 'handleCookieConsent']
     .filter((n) => typeof (window as any)[n] !== 'function'))
   expect(fns).toEqual([])
-  await page.locator('#wa-btn').click()
+  // desktop : bouton flottant ; mobile : entrée « WhatsApp » de la barre d'actions
+  const trigger = page.locator('#wa-btn:visible, nav.mobile-action-bar button:visible').first()
+  await trigger.click()
   await expect(page.locator('#wa-panel')).toBeVisible()
 })
 

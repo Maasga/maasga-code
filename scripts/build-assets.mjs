@@ -43,6 +43,20 @@ const walk = (dir) => {
 }
 walk('public/static')
 
+// Identifiant de build = empreinte de tout le code source : entre dans la clé du
+// cache edge HTML pour qu'un déploiement invalide immédiatement les pages en cache.
+const buildHash = createHash('sha256')
+const walkSrc = (dir) => {
+  for (const ent of readdirSync(p(dir), { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    const rel = `${dir}/${ent.name}`
+    if (ent.isDirectory()) { if (ent.name !== 'generated' && ent.name !== '__tests__') walkSrc(rel) }
+    else { buildHash.update(rel); buildHash.update(readFileSync(p(rel))) }
+  }
+}
+walkSrc('src')
+Object.values(versions).forEach((h) => buildHash.update(h))
+const BUILD_ID = buildHash.digest('hex').slice(0, 12)
+
 const v = (path) => `${path}?v=${versions[path]}`
 const manifest = {
   siteJs: v('/static/js/site.js'),
@@ -55,6 +69,9 @@ writeFileSync(p('src/generated/asset-manifest.ts'), `// Fichier généré par sc
 export const ASSET_VERSIONS: Record<string, string> = ${JSON.stringify(versions, null, 2)}
 
 export const ASSETS = ${JSON.stringify(manifest, null, 2)} as const
+
+/** Empreinte du code source au moment du build (clé du cache edge HTML). */
+export const BUILD_ID = '${BUILD_ID}'
 
 /** URL versionnée d'un fichier de public/static (cache immutable côté navigateur). */
 export const asset = (path: string): string =>

@@ -85,7 +85,7 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
 
           {/* ===== LISTE AVIS ===== */}
           <div class="lg:col-span-2">
-            <h2 class="text-xl font-bold text-white mb-6">Tous les avis ({approvedReviews.length})</h2>
+            <h2 class="text-xl font-bold mb-6" style="color:#03045e;">Tous les avis ({approvedReviews.length})</h2>
             <div class="space-y-5 reveal">
               {approvedReviews.map(r => (
                 <div data-tilt class="glass-card rounded-2xl p-6 transition-all">
@@ -110,8 +110,8 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
                   </div>
                   <p class="text-sm text-gray-300 leading-relaxed italic">"{r.comment}"</p>
                   <div class="mt-3 flex items-center space-x-2">
-                    <i class="fas fa-check-circle text-blue-500 text-xs"></i>
-                    <span class="text-xs text-blue-500 font-medium">Avis vérifié</span>
+                    <i class="fas fa-check-circle text-blue-700 text-xs"></i>
+                    <span class="text-xs text-blue-700 font-medium">Avis vérifié</span>
                   </div>
                   <div class="tilt-shine" aria-hidden="true"></div>
                 </div>
@@ -150,12 +150,12 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
               </h3>
               <p class="text-xs mb-5" style="color:#94a3b8;">Partagez votre expérience avec MAASGA. Votre avis sera publié après modération.</p>
 
-              <form method="post" action="/api/avis" class="space-y-4">
+              <form data-offline-queue="avis" method="post" action="/api/avis" class="space-y-4">
                 <div>
-                  <label class="block text-xs font-semibold mb-2" style="color:#8ba3c0;">Votre note</label>
-                  <div class="flex space-x-2" id="star-rating">
+                  <label class="block text-xs font-semibold mb-2" style="color:#475569;">Votre note</label>
+                  <div class="flex space-x-2" id="star-rating" role="group" aria-label="Votre note sur 5">
                     {[1,2,3,4,5].map(n => (
-                      <button type="button" onclick={`rateUs(${n})`} class="text-2xl star-btn hover:scale-110 transition-transform" data-rating={n}>
+                      <button type="button" onclick={`rateUs(${n})`} class="text-2xl star-btn hover:scale-110 transition-transform" data-rating={n} aria-label={`${n} étoile${n > 1 ? 's' : ''} sur 5`} aria-pressed={n === 5 ? 'true' : 'false'}>
                         <i class="far fa-star text-gray-300" id={`star-${n}`}></i>
                       </button>
                     ))}
@@ -164,14 +164,14 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
                 </div>
 
                 <div>
-                  <label class="block text-xs font-semibold mb-2" style="color:#8ba3c0;">Votre nom</label>
+                  <label class="block text-xs font-semibold mb-2" style="color:#475569;">Votre nom</label>
                   <input type="text" name="name" required placeholder="Prénom ou nom"
                     autocomplete="name" class="input-field w-full rounded-xl px-3 py-2.5 text-sm text-white" />
                 </div>
 
                 <div>
-                  <label class="block text-xs font-semibold mb-2" style="color:#8ba3c0;">Service utilisé</label>
-                  <select name="service" class="input-field w-full rounded-xl px-3 py-2.5 text-sm text-white">
+                  <label class="block text-xs font-semibold mb-2" style="color:#475569;">Service utilisé</label>
+                  <select name="service" aria-label="Service utilisé" class="input-field w-full rounded-xl px-3 py-2.5 text-sm text-white">
                     <option value="Installation climatiseur">Installation climatiseur</option>
                     <option value="Maintenance trimestrielle">Maintenance trimestrielle</option>
                     <option value="Devis technique">Devis technique</option>
@@ -181,7 +181,7 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
                 </div>
 
                 <div>
-                  <label class="block text-xs font-semibold mb-2" style="color:#8ba3c0;">Votre commentaire</label>
+                  <label class="block text-xs font-semibold mb-2" style="color:#475569;">Votre commentaire</label>
                   <textarea name="comment" required rows={4} placeholder="Décrivez votre expérience avec MAASGA..."
                     class="input-field w-full rounded-xl px-3 py-2.5 text-sm text-white resize-none"></textarea>
                 </div>
@@ -220,6 +220,7 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
             } else {
               star.className = 'far fa-star text-gray-300';
             }
+            if (star.parentElement) star.parentElement.setAttribute('aria-pressed', i === rating ? 'true' : 'false');
           }
         }
         rateUs(5);

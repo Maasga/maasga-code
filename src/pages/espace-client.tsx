@@ -143,10 +143,10 @@ const ClientLogin = ({ error, success, defaultTab, redirect }: { error?: string;
 
           {/* Tabs */}
           <div class="flex rounded-2xl p-1 mb-6" style="background:rgba(0,119,182,0.08); border:1px solid rgba(0,119,182,0.12);">
-            <button id="tab-login" onclick="switchTab('login')" class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all" style={defaultTab === 'signup' ? 'background:transparent; color:#0077b6;' : 'background:linear-gradient(135deg,#0077b6,#00b4d8); color:#ffffff; box-shadow:0 4px 12px rgba(0,119,182,0.3);'}>
+            <button id="tab-login" onclick="switchTab('login')" class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all" style={defaultTab === 'signup' ? 'background:transparent; color:#035a85;' : 'background:linear-gradient(135deg,#0077b6,#00b4d8); color:#ffffff; box-shadow:0 4px 12px rgba(0,119,182,0.3);'}>
               <i class="fas fa-sign-in-alt mr-1.5"></i>Connexion
             </button>
-            <button id="tab-signup" onclick="switchTab('signup')" class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all" style={defaultTab === 'signup' ? 'background:linear-gradient(135deg,#0077b6,#00b4d8); color:#ffffff; box-shadow:0 4px 12px rgba(0,119,182,0.3);' : 'background:transparent; color:#0077b6;'}>
+            <button id="tab-signup" onclick="switchTab('signup')" class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all" style={defaultTab === 'signup' ? 'background:linear-gradient(135deg,#0077b6,#00b4d8); color:#ffffff; box-shadow:0 4px 12px rgba(0,119,182,0.3);' : 'background:transparent; color:#035a85;'}>
               <i class="fas fa-user-plus mr-1.5"></i>S'inscrire
             </button>
           </div>
@@ -179,7 +179,7 @@ const ClientLogin = ({ error, success, defaultTab, redirect }: { error?: string;
                 <div class="relative">
                   <input type="password" name="password" required placeholder="••••••••"
                     autocomplete="current-password" class="w-full rounded-xl px-4 py-3 pr-12 text-sm transition-all outline-none" style="border:1.5px solid rgba(0,119,182,0.2); background:#f8fbff; color:#03045e;" id="pwd-input" />
-                  <button type="button" onclick="togglePwd()" class="absolute right-4 top-1/2 -translate-y-1/2" style="color:#94a3b8;">
+                  <button type="button" onclick="togglePwd()" aria-label="Afficher le mot de passe" aria-controls="pwd-input" class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-lg" style="color:#64748b;">
                     <i class="fas fa-eye text-sm" id="eye-icon"></i>
                   </button>
                 </div>
@@ -232,7 +232,7 @@ const ClientLogin = ({ error, success, defaultTab, redirect }: { error?: string;
                 <div class="relative">
                   <input type="password" name="password" required placeholder="••••••••" minlength={8}
                     autocomplete="new-password" class="w-full rounded-xl px-4 py-3 pr-12 text-sm outline-none" style="border:1.5px solid rgba(0,119,182,0.2); background:#f8fbff; color:#03045e;" id="pwd-signup" />
-                  <button type="button" onclick="togglePwdSignup()" class="absolute right-4 top-1/2 -translate-y-1/2" style="color:#94a3b8;">
+                  <button type="button" onclick="togglePwdSignup()" aria-label="Afficher le mot de passe" aria-controls="pwd-signup" class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-lg" style="color:#64748b;">
                     <i class="fas fa-eye text-sm" id="eye-signup"></i>
                   </button>
                 </div>
@@ -268,10 +268,12 @@ const ClientLogin = ({ error, success, defaultTab, redirect }: { error?: string;
       function togglePwd() {
         var i=document.getElementById('pwd-input'),e=document.getElementById('eye-icon');
         i.type=i.type==='password'?'text':'password'; e.className='fas fa-eye'+(i.type==='text'?'-slash':'');
+        if (e.parentElement) e.parentElement.setAttribute('aria-label', i.type==='text' ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
       }
       function togglePwdSignup() {
         var i=document.getElementById('pwd-signup'),e=document.getElementById('eye-signup');
         i.type=i.type==='password'?'text':'password'; e.className='fas fa-eye'+(i.type==='text'?'-slash':'');
+        if (e.parentElement) e.parentElement.setAttribute('aria-label', i.type==='text' ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
       }
       function switchTab(tab) {
         var isLogin=tab==='login';
@@ -279,7 +281,7 @@ const ClientLogin = ({ error, success, defaultTab, redirect }: { error?: string;
         document.getElementById('form-signup').style.display=isLogin?'none':'block';
         var tl=document.getElementById('tab-login'),ts=document.getElementById('tab-signup');
         var activeStyle='background:linear-gradient(135deg,#0077b6,#00b4d8);color:#ffffff;box-shadow:0 4px 12px rgba(0,119,182,0.3);';
-        var inactiveStyle='background:transparent;color:#0077b6;box-shadow:none;';
+        var inactiveStyle='background:transparent;color:#035a85;box-shadow:none;';
         tl.style.cssText=isLogin?activeStyle:inactiveStyle;
         ts.style.cssText=isLogin?inactiveStyle:activeStyle;
       }
@@ -309,11 +311,11 @@ function orderStatusLabel(status: string): string {
   return map[status] || status
 }
 function orderStatusColor(status: string): string {
-  if (status === 'livre') return 'color:#10b981; background:rgba(16,185,129,0.12);'
-  if (status === 'en_livraison') return 'color:#a78bfa; background:rgba(167,139,250,0.12);'
-  if (status === 'confirme') return 'color:#34d399; background:rgba(52,211,153,0.12);'
-  if (status === 'contacte') return 'color:#38bdf8; background:rgba(56,189,248,0.12);'
-  if (status === 'annule') return 'color:#f87171; background:rgba(248,113,113,0.12);'
+  if (status === 'livre') return 'color:#047857; background:rgba(16,185,129,0.12);'
+  if (status === 'en_livraison') return 'color:#6d28d9; background:rgba(167,139,250,0.12);'
+  if (status === 'confirme') return 'color:#047857; background:rgba(52,211,153,0.12);'
+  if (status === 'contacte') return 'color:#0369a1; background:rgba(56,189,248,0.12);'
+  if (status === 'annule') return 'color:#b91c1c; background:rgba(248,113,113,0.12);'
   return 'color:#fbbf24; background:rgba(251,191,36,0.12);'
 }
 function orderStepIndex(status: string): number {
@@ -339,8 +341,8 @@ function rdvStatusLabel(status: string): string {
   return map[status] || status
 }
 function rdvStatusColor(status: string): string {
-  if (status === 'done') return 'color:#34d399; background:rgba(52,211,153,0.12);'
-  if (status === 'confirmed') return 'color:#38bdf8; background:rgba(56,189,248,0.12);'
+  if (status === 'done') return 'color:#047857; background:rgba(52,211,153,0.12);'
+  if (status === 'confirmed') return 'color:#0369a1; background:rgba(56,189,248,0.12);'
   return 'color:#fbbf24; background:rgba(251,191,36,0.12);'
 }
 function rdvTypeLabel(type: string): string {
@@ -401,7 +403,7 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
   const allMaintenanceItems = [...maintenanceVisits, ...maintenanceRequests].length
 
   return (
-    <Layout title={`Mon profil — ${clientName}`} activePage="client">
+    <Layout title={`Mon profil — ${clientName}`} activePage="client" noindex>
 
       {/* Hero profil */}
       <section class="gradient-hero py-12 text-white relative overflow-hidden">

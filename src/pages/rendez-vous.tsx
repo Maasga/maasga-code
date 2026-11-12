@@ -49,10 +49,10 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                 <div id="rdv-create-account" data-client-name={clientName?.replace(/[<>"'&]/g, '') || ''} data-client-phone={clientPhone?.replace(/[^0-9+\s]/g, '') || ''} style="margin-top:20px;">
                   <div style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.15); border-radius:14px; padding:16px;">
                     <div style="font-size:0.85rem; font-weight:700; color:#03045e; margin-bottom:8px;">
-                      <i class="fas fa-user-circle" style="color:#38bdf8; margin-right:6px;"></i>Créer votre compte MAASGA
+                      <i class="fas fa-user-circle" style="color:#0369a1; margin-right:6px;"></i>Créer votre compte MAASGA
                     </div>
                     <p style="font-size:0.95rem; color:#03045e; font-weight:700; margin-bottom:14px; line-height:1.5;">Suivez vos commandes et RDV. Nous vous contacterons bientôt</p>
-                    <a href="/espace-client" style="display:block; width:100%; padding:11px; border-radius:10px; background:rgba(56,189,248,0.15); color:#38bdf8; font-weight:700; font-size:0.85rem; border:1px solid rgba(56,189,248,0.25); text-align:center; text-decoration:none;">
+                    <a href="/espace-client" style="display:block; width:100%; padding:11px; border-radius:10px; background:rgba(56,189,248,0.15); color:#0369a1; font-weight:700; font-size:0.85rem; border:1px solid rgba(56,189,248,0.25); text-align:center; text-decoration:none;">
                       <i class="fas fa-user-plus" style="margin-right:6px;"></i>Créer mon compte
                     </a>
                   </div>
@@ -113,9 +113,9 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                     const data = await res.json();
                     if (data.success) {
                       document.getElementById('rdv-create-account').innerHTML =
-                        '<div style="text-align:center; color:#34d399; font-size:0.85rem; padding:14px; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.2); border-radius:12px;">'
+                        '<div style="text-align:center; color:#047857; font-size:0.85rem; padding:14px; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.2); border-radius:12px;">'
                         + '<i class="fas fa-check-circle" style="margin-right:6px;"></i>'
-                        + 'Compte créé ! <a href="/espace-client" style="color:#38bdf8; font-weight:700; margin-left:6px;">Se connecter →</a>'
+                        + 'Compte créé ! <a href="/espace-client" style="color:#0369a1; font-weight:700; margin-left:6px;">Se connecter →</a>'
                         + '</div>';
                     } else {
                       btn.disabled = false;
@@ -157,15 +157,15 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
               </div>
               <div>
                 <div class="font-bold text-sm" style="color:#03045e;">Besoin d'une réponse rapide ?</div>
-                <div class="text-xs" style="color:#8ba3c0;">Contactez-nous directement, on répond en moins de 30 min</div>
+                <div class="text-xs" style="color:#475569;">Contactez-nous directement, on répond en moins de 30 min</div>
               </div>
             </div>
             <div class="flex items-center gap-3">
-              <a href="https://wa.me/22655996418?text=Bonjour%20MAASGA%2C%20je%20souhaite%20prendre%20rendez-vous%20pour%20une%20visite%20technique." target="_blank" rel="noopener noreferrer" class="flex items-center space-x-2 px-5 py-2.5 rounded-xl font-semibold text-sm text-white transition-all hover:scale-105" style="background:#25D366;">
+              <a href="https://wa.me/22655996418?text=Bonjour%20MAASGA%2C%20je%20souhaite%20prendre%20rendez-vous%20pour%20une%20visite%20technique." target="_blank" rel="noopener noreferrer" class="flex items-center space-x-2 px-5 py-2.5 rounded-xl font-semibold text-sm text-white transition-all hover:scale-105" style="background:#075E54;">
                 <i class="fab fa-whatsapp"></i>
                 <span>WhatsApp</span>
               </a>
-              <a href="tel:+22655996418" class="flex items-center space-x-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all hover:scale-105" style="background:rgba(56,189,248,0.12); color:#38bdf8; border:1px solid rgba(56,189,248,0.25);">
+              <a href="tel:+22655996418" class="flex items-center space-x-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all hover:scale-105" style="background:rgba(56,189,248,0.12); color:#0369a1; border:1px solid rgba(56,189,248,0.25);">
                 <i class="fas fa-phone"></i>
                 <span>Appeler</span>
               </a>
@@ -197,7 +197,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                 </div>
               )}
 
-              <form method="post" action="/api/rdv" class="space-y-5">
+              <form data-offline-queue="demande de rendez-vous" method="post" action="/api/rdv" class="space-y-5">
                 <div class="hidden" aria-hidden="true"><input type="text" name="website" tabindex={-1} autocomplete="off" /></div>
                 {selectedProduct && <input type="hidden" name="product_id" value={String(selectedProduct.id)} />}
                 {surface && <input type="hidden" name="surface_hint" value={surface} />}
@@ -210,7 +210,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                       <i class="fas fa-calculator text-green-400"></i>
                     </div>
                     <div>
-                      <p class="text-xs font-semibold" style="color:#34d399;">Données du simulateur</p>
+                      <p class="text-xs font-semibold" style="color:#047857;">Données du simulateur</p>
                       <p class="text-sm text-white font-bold">{parseInt(btu).toLocaleString()} BTU{surface ? ` — ${surface} m²` : ''}</p>
                       <p class="text-xs" style="color:#6b7280;">Ces informations seront transmises à notre équipe technique</p>
                     </div>
@@ -257,7 +257,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                       Téléphone (Whatsapp)<span class="text-red-400">*</span>
                     </label>
                     <div class="relative">
-                      <span class="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400 text-sm font-medium">🇧🇫 +226</span>
+                      <span class="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-700 text-sm font-medium">🇧🇫 +226</span>
                       <input type="tel" id="rdv-phone" name="phone" required placeholder="55 99 64 18"
                         autocomplete="tel" class="input-field w-full rounded-xl pl-20 pr-4 py-3 text-white" />
                     </div>
@@ -318,7 +318,7 @@ export const RendezVousPage = ({ success, error, productId, type, clientName, cl
                 <div>
                   <label class="block text-sm font-semibold text-cyan-300 mb-3">Horaire souhaité</label>
                   <div class="rounded-xl p-4 mb-4" style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.15);">
-                    <p class="text-xs mb-3" style="color:#38bdf8;">
+                    <p class="text-xs mb-3" style="color:#0369a1;">
                       <i class="fas fa-info-circle mr-2"></i>Choisissez l'intervalle de temps pendant lequel vous êtes disponible
                     </p>
                     <div class="grid grid-cols-2 gap-4">

@@ -260,7 +260,7 @@
 .btn-secondary:active { transform: translateY(0); }
 
 /* ─── BADGES STOCK ─── */
-.badge-stock-ok  { background: rgba(16,185,129,0.1); color: #059669; border: 1px solid rgba(16,185,129,0.2); }
+.badge-stock-ok  { background: rgba(16,185,129,0.1); color: #047857; border: 1px solid rgba(16,185,129,0.2); }
 .badge-stock-low { background: rgba(245,158,11,0.1); color: #d97706; border: 1px solid rgba(245,158,11,0.2); }
 .badge-stock-out { background: rgba(239,68,68,0.1);  color: #dc2626; border: 1px solid rgba(239,68,68,0.2); }
 
@@ -713,12 +713,13 @@ html.js-ready .testimonial-card-in.in { opacity: 1; transform: none; }
   font-size: 1.6rem;
   font-weight: 800;
   letter-spacing: 0.02em;
-  color: var(--navy-900);
-  opacity: 0.45;
+  color: #475569; /* slate-600 : 7,6:1 — l'ancienne opacité 0,45 donnait 2,9:1 */
   white-space: nowrap;
   transition: opacity 0.25s ease, color 0.25s ease;
 }
-.brand-item:hover { opacity: 1; color: var(--accent); }
+.brand-item:hover { color: var(--accent); }
+/* Produit en rupture : seule l'image est désaturée, le texte reste lisible */
+.is-out-of-stock .tilt-image, .is-out-of-stock img { filter: grayscale(0.85); opacity: 0.7; }
 @media (prefers-reduced-motion: reduce) {
   .brand-track { animation: none; flex-wrap: wrap; justify-content: center; }
 }
@@ -854,3 +855,45 @@ html.js-ready .testimonial-card-in.in { opacity: 1; transform: none; }
   #btu-form label > div { min-height: 44px; }
 }
 
+
+/* ─── Barre d'actions mobile (Layout.tsx) ─── */
+.mobile-action-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 9990;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(3,4,94,0.08);
+  box-shadow: 0 -6px 24px rgba(3,4,94,0.08);
+}
+.mab-item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  min-height: 52px; border-radius: 14px; border: 0; background: transparent; cursor: pointer;
+  color: #334155; font-size: 0.7rem; font-weight: 600; text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit; line-height: 1.15;
+}
+.mab-item i { font-size: 1.15rem; color: #0369a1; }
+.mab-item .fa-whatsapp { color: #075E54; font-size: 1.3rem; }
+.mab-item:active { background: rgba(3,105,161,0.08); }
+.mab-item.is-active { color: #03045e; background: rgba(3,105,161,0.08); }
+.mab-primary { background: linear-gradient(135deg,#0369a1,#0077b6); color: #fff; box-shadow: 0 6px 16px rgba(3,105,161,0.3); }
+.mab-primary i { color: #fff; }
+.mab-item:focus-visible { outline: 3px solid #0ea5e9; outline-offset: 2px; }
+@media (max-width: 767px) {
+  /* le bouton flottant WhatsApp recouvrait les CTA : remplacé par l'entrée de la barre (le panneau reste) */
+  #wa-btn { display: none !important; }
+  #wa-widget { bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px)) !important; left: 0.75rem !important; }
+  .cart-float { bottom: calc(5rem + env(safe-area-inset-bottom, 0px)) !important; right: 1rem !important; }
+  #back-to-top { bottom: calc(9rem + env(safe-area-inset-bottom, 0px)) !important; }
+  main#main-content { padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px)) !important; }
+}
+
+/* ─── Focus clavier visible partout (WCAG 2.4.7 / 2.4.11) ───
+   Spécificité (0,1,1) : l'emporte sur .outline-none (0,1,0) qui masquait le focus des champs. */
+html :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid #0ea5e9;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+html :is(input, select, textarea):focus-visible { outline-offset: 0; }

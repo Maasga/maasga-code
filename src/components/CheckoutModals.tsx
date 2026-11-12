@@ -21,7 +21,7 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
   return (
     <>
       {/* Bouton panier flottant */}
-      <button onclick="openCartModal()" class="fixed bottom-6 right-6 z-40 flex items-center space-x-2 px-5 py-3 rounded-2xl shadow-2xl font-bold text-sm text-white transition-all hover:scale-105" style="background:linear-gradient(135deg,#0ea5e9,#3b82f6); border:2px solid rgba(255,255,255,0.15);">
+      <button onclick="openCartModal()" class="cart-float fixed bottom-6 right-6 z-40 flex items-center space-x-2 px-5 py-3 rounded-2xl shadow-2xl font-bold text-sm text-white transition-all hover:scale-105" style="background:linear-gradient(135deg,#0ea5e9,#3b82f6); border:2px solid rgba(255,255,255,0.15);">
         <i class="fas fa-shopping-cart text-lg"></i>
         <span>Mon panier</span>
         <span id="cart-count-badge" class="hidden ml-1 bg-pink-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-black">0</span>
@@ -32,11 +32,11 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
         <div class="w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden" style="background:#ffffff; border:1px solid rgba(59,130,246,0.2); max-height:90vh; display:flex; flex-direction:column;">
           <div class="flex items-center justify-between px-6 py-4 flex-shrink-0" style="background:rgba(59,130,246,0.05); border-bottom:1px solid rgba(59,130,246,0.1);">
             <h3 class="font-bold text-slate-800 text-lg flex items-center space-x-2">
-              <i class="fas fa-shopping-cart" style="color:#38bdf8;"></i>
+              <i class="fas fa-shopping-cart" style="color:#0369a1;"></i>
               <span>Mon panier</span>
               <span id="cart-modal-count" class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:rgba(236,72,153,0.2); color:#f472b6;">0 article</span>
             </h3>
-            <button onclick="closeCartModal()" class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/10 transition-colors" style="color:#38bdf8;" aria-label="Fermer le panier">
+            <button onclick="closeCartModal()" class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/10 transition-colors" style="color:#0369a1;" aria-label="Fermer le panier">
               <i class="fas fa-times"></i>
             </button>
           </div>
@@ -53,11 +53,11 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
               <span class="text-sm font-semibold" style="color:#475569;">Total estimé</span>
               <span id="cart-total" class="text-xl font-bold" style="color:#111827;">0 FCFA</span>
             </div>
-            <div class="text-xs mb-4 px-3 py-2 rounded-xl" style="background:rgba(52,211,153,0.08); color:#34d399; border:1px solid rgba(52,211,153,0.2);">
+            <div class="text-xs mb-4 px-3 py-2 rounded-xl" style="background:rgba(52,211,153,0.08); color:#047857; border:1px solid rgba(52,211,153,0.2);">
               <i class="fas fa-shield-alt mr-1"></i> Livraison et installation comprises. Paiement sécurisé.
             </div>
             <div class="flex gap-3">
-              <button onclick="clearCart()" class="flex-none px-4 py-3 rounded-xl text-sm font-semibold" style="background:rgba(239,68,68,0.1); color:#f87171; border:1px solid rgba(239,68,68,0.2);">
+              <button onclick="clearCart()" class="flex-none px-4 py-3 rounded-xl text-sm font-semibold" style="background:rgba(239,68,68,0.1); color:#b91c1c; border:1px solid rgba(239,68,68,0.2);">
                 <i class="fas fa-trash mr-1"></i>Vider
               </button>
               <button onclick="validateCart()" class="flex-1 py-3 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#0ea5e9,#3b82f6);">
@@ -177,25 +177,25 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
 
           <div id="order-success-msg" class="hidden px-6 py-8 text-center">
             <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background:rgba(52,211,153,0.15); border:2px solid rgba(52,211,153,0.3);">
-              <i class="fas fa-check text-2xl" style="color:#34d399;"></i>
+              <i class="fas fa-check text-2xl" style="color:#047857;"></i>
             </div>
             <h4 class="font-bold text-lg mb-2" style="color:#03045e;">Commande confirmée !</h4>
-            <p class="text-sm mb-1" style="color:#8ba3c0;">Merci pour votre achat.</p>
-            <p class="text-sm mb-3" style="color:#8ba3c0;">Votre commande est enregistrée. Un conseiller MAASGA vous contactera sous <strong style="color:#25d366;">2h</strong> par <strong style="color:#25d366;"><i class="fab fa-whatsapp"></i> WhatsApp</strong> et par <strong style="color:#0077b6;"><i class="fas fa-envelope"></i> e-mail</strong> pour finaliser les modalités de paiement et de livraison.</p>
+            <p class="text-sm mb-1" style="color:#475569;">Merci pour votre achat.</p>
+            <p class="text-sm mb-3" style="color:#475569;">Votre commande est enregistrée. Un conseiller MAASGA vous contactera sous <strong style="color:#25d366;">2h</strong> par <strong style="color:#25d366;"><i class="fab fa-whatsapp"></i> WhatsApp</strong> et par <strong style="color:#0077b6;"><i class="fas fa-envelope"></i> e-mail</strong> pour finaliser les modalités de paiement et de livraison.</p>
 
             <div id="create-account-section" style="margin-top:20px; text-align:left;">
               <div style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.15); border-radius:14px; padding:16px;">
                 <div style="font-size:0.82rem; font-weight:700; color:#111827; margin-bottom:8px;">
-                  <i class="fas fa-user-circle" style="color:#38bdf8; margin-right:6px;"></i>Créer votre compte MAASGA
+                  <i class="fas fa-user-circle" style="color:#0369a1; margin-right:6px;"></i>Créer votre compte MAASGA
                 </div>
                 <p style="font-size:0.95rem; color:#7ab8d4; margin-bottom:14px; line-height:1.5;">Suivez vos commandes et RDV. Ne re-remplissez plus jamais les formulaires.</p>
-                <a href="/espace-client" style="display:block; width:100%; padding:11px; border-radius:10px; background:rgba(56,189,248,0.15); color:#38bdf8; font-weight:700; font-size:0.82rem; border:1px solid rgba(56,189,248,0.25); text-align:center; text-decoration:none;">
+                <a href="/espace-client" style="display:block; width:100%; padding:11px; border-radius:10px; background:rgba(56,189,248,0.15); color:#0369a1; font-weight:700; font-size:0.82rem; border:1px solid rgba(56,189,248,0.25); text-align:center; text-decoration:none;">
                   <i class="fas fa-user-plus" style="margin-right:6px;"></i>Créer mon compte
                 </a>
               </div>
             </div>
 
-            <button onclick="closeOrderModal()" class="mt-4 px-8 py-3 rounded-xl font-semibold text-sm" style="background:rgba(56,189,248,0.1); color:#38bdf8; border:1px solid rgba(56,189,248,0.25);">Fermer</button>
+            <button onclick="closeOrderModal()" class="mt-4 px-8 py-3 rounded-xl font-semibold text-sm" style="background:rgba(56,189,248,0.1); color:#0369a1; border:1px solid rgba(56,189,248,0.25);">Fermer</button>
           </div>
         </div>
       </div>
@@ -353,14 +353,14 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
             return '<div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:rgba(56,189,248,0.05);border:1px solid rgba(56,189,248,0.1);">'
               + '<div style="flex:1;">'
                 + '<div style="font-weight:600;color:#111827;font-size:0.85rem;">' + item.name + '</div>'
-                + '<div style="font-size:0.7rem;color:#38bdf8;margin-top:2px;">' + item.brand + '</div>'
-                + '<div style="font-size:0.7rem;color:#8ba3c0;margin-top:2px;">' + item.price.toLocaleString() + ' FCFA / unité</div>'
+                + '<div style="font-size:0.7rem;color:#0369a1;margin-top:2px;">' + item.brand + '</div>'
+                + '<div style="font-size:0.7rem;color:#475569;margin-top:2px;">' + item.price.toLocaleString() + ' FCFA / unité</div>'
               + '</div>'
               + '<div style="display:flex;align-items:center;gap:6px;">'
-                + '<button onclick="cartQty(' + item.id + ',-1)" style="width:28px;height:28px;border-radius:8px;background:rgba(56,189,248,0.1);color:#38bdf8;font-weight:bold;border:none;cursor:pointer;">−</button>'
+                + '<button onclick="cartQty(' + item.id + ',-1)" style="width:28px;height:28px;border-radius:8px;background:rgba(56,189,248,0.1);color:#0369a1;font-weight:bold;border:none;cursor:pointer;">−</button>'
                 + '<span style="font-weight:bold;color:#111827;width:24px;text-align:center;">' + item.quantity + '</span>'
-                + '<button onclick="cartQty(' + item.id + ',1)" style="width:28px;height:28px;border-radius:8px;background:rgba(56,189,248,0.1);color:#38bdf8;font-weight:bold;border:none;cursor:pointer;">+</button>'
-                + '<button onclick="cartRemove(' + item.id + ')" style="width:28px;height:28px;border-radius:8px;background:rgba(239,68,68,0.1);color:#f87171;border:none;cursor:pointer;margin-left:4px;"><i class="fas fa-trash" style="font-size:0.7rem;"></i></button>'
+                + '<button onclick="cartQty(' + item.id + ',1)" style="width:28px;height:28px;border-radius:8px;background:rgba(56,189,248,0.1);color:#0369a1;font-weight:bold;border:none;cursor:pointer;">+</button>'
+                + '<button onclick="cartRemove(' + item.id + ')" style="width:28px;height:28px;border-radius:8px;background:rgba(239,68,68,0.1);color:#b91c1c;border:none;cursor:pointer;margin-left:4px;"><i class="fas fa-trash" style="font-size:0.7rem;"></i></button>'
               + '</div>'
             + '</div>';
           }).join('');
@@ -412,7 +412,7 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
           const status = document.getElementById('order-gps-status');
           if (!navigator.geolocation) {
             status.innerHTML = '<i class="fas fa-times-circle"></i> Géolocalisation non supportée par votre navigateur.';
-            status.style.cssText = 'display:block; background:rgba(239,68,68,0.08); color:#f87171; border:1px solid rgba(239,68,68,0.2);';
+            status.style.cssText = 'display:block; background:rgba(239,68,68,0.08); color:#b91c1c; border:1px solid rgba(239,68,68,0.2);';
             return;
           }
           label.textContent = 'Localisation en cours…';
@@ -421,7 +421,7 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
           navigator.geolocation.getCurrentPosition(
             function(pos) {
               __ORDER_GPS__ = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: Math.round(pos.coords.accuracy) };
-              btn.style.cssText = 'width:100%; padding:11px 16px; border-radius:12px; background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.3); color:#34d399; font-weight:600; font-size:0.82rem; cursor:default; display:flex; align-items:center; justify-content:center; gap:8px;';
+              btn.style.cssText = 'width:100%; padding:11px 16px; border-radius:12px; background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.3); color:#047857; font-weight:600; font-size:0.82rem; cursor:default; display:flex; align-items:center; justify-content:center; gap:8px;';
               label.innerHTML = '<i class="fas fa-check" style="margin-right:4px;"></i>Position partagée (±' + __ORDER_GPS__.accuracy + 'm)';
               btn.disabled = false;
               status.style.display = 'none';
@@ -435,7 +435,7 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
               else if (err.code === 2) msg = '<i class="fas fa-times-circle"></i> Position indisponible. Vérifiez votre GPS.';
               else if (err.code === 3) msg = '<i class="fas fa-times-circle"></i> Délai dépassé. Réessayez.';
               status.innerHTML = msg;
-              status.style.cssText = 'display:block; background:rgba(239,68,68,0.08); color:#f87171; border:1px solid rgba(239,68,68,0.2); border-radius:8px; padding:8px 12px; font-size:0.72rem; margin-top:8px;';
+              status.style.cssText = 'display:block; background:rgba(239,68,68,0.08); color:#b91c1c; border:1px solid rgba(239,68,68,0.2); border-radius:8px; padding:8px 12px; font-size:0.72rem; margin-top:8px;';
             },
             { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
           );
@@ -491,7 +491,7 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
                 + '</div>';
             }).join('') + '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(56,189,248,0.15);display:flex;justify-content:space-between;">'
               + '<span style="font-weight:700;color:#111827;">Total</span>'
-              + '<span style="font-weight:700;color:#38bdf8;">' + total.toLocaleString() + ' FCFA</span>'
+              + '<span style="font-weight:700;color:#0369a1;">' + total.toLocaleString() + ' FCFA</span>'
               + '</div>';
             box.style.display = 'block';
           } else {
@@ -531,7 +531,7 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
           __ORDER_GPS__ = null;
           const gpsBtn = document.getElementById('order-gps-btn');
           if (gpsBtn) {
-            gpsBtn.style.cssText = 'width:100%; padding:11px 16px; border-radius:12px; background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.25); color:#38bdf8; font-weight:600; font-size:0.82rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;';
+            gpsBtn.style.cssText = 'width:100%; padding:11px 16px; border-radius:12px; background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.25); color:#0369a1; font-weight:600; font-size:0.82rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;';
             gpsBtn.disabled = false;
           }
           const gpsLabel = document.getElementById('order-gps-label');
@@ -730,9 +730,9 @@ export const CheckoutModals = ({ products, redirectTarget }: { products: any[], 
             const data = await res.json();
             if (data.success) {
               document.getElementById('create-account-section').innerHTML =
-                '<div style="text-align:center; color:#34d399; font-size:0.82rem; padding:14px; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.2); border-radius:12px;">'
+                '<div style="text-align:center; color:#047857; font-size:0.82rem; padding:14px; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.2); border-radius:12px;">'
                 + '<i class="fas fa-check-circle" style="margin-right:6px;"></i>'
-                + 'Compte créé ! <a href="/espace-client" style="color:#38bdf8; font-weight:700; margin-left:6px;">Se connecter →</a>'
+                + 'Compte créé ! <a href="/espace-client" style="color:#0369a1; font-weight:700; margin-left:6px;">Se connecter →</a>'
                 + '</div>';
             } else {
               btn.disabled = false;
