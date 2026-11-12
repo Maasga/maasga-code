@@ -5,6 +5,7 @@ import type { HonoEnv } from '../../types'
 import { SITE_URL } from '../../types'
 import { AdminBannersPage } from '../../pages/banners'
 import { products } from '../../data/products'
+import { gallerySelectColumns, parseGallery, saveProductGallery } from '../../utils/productGallery'
 import {
   getProducts
 } from '../../db'
@@ -1217,15 +1218,12 @@ adminCatalogueRouter.post('/api/admin/media/brand/delete', adminAuth, async (c) 
       // (a) Image principale : vider imageUrl et image_url (alias) pour tous les produits qui référencent l'URL
       await db.prepare(`UPDATE products SET imageUrl = '', image_url = '', updated_at = ? WHERE imageUrl = ? OR image_url = ?`).bind(new Date().toISOString(), url, url).run()
       // (b) Galerie : retirer l'URL de media_urls et gallery (alias) pour chaque produit concerné
-      const rows = await db.prepare('SELECT id, media_urls, gallery FROM products').all() as any
+      const rows = await db.prepare(`SELECT id, ${await gallerySelectColumns(db)} FROM products`).all() as any
       for (const p of (rows?.results || [])) {
-        let galleryList: any[] = []
-        try { galleryList = JSON.parse(p.media_urls || p.gallery || '[]') } catch (_) { galleryList = [] }
-        if (!Array.isArray(galleryList)) galleryList = []
+        const galleryList = parseGallery(p)
         const filtered = galleryList.filter((g: any) => (typeof g === 'string' ? g : g?.url) !== url)
         if (filtered.length !== galleryList.length) {
-          const galleryJson = JSON.stringify(filtered)
-          await db.prepare('UPDATE products SET media_urls = ?, gallery = ?, updated_at = ? WHERE id = ?').bind(galleryJson, galleryJson, new Date().toISOString(), p.id).run()
+          await saveProductGallery(db, p.id, filtered)
         }
       }
       // Synchroniser le cache mémoire `products` : imageUrl et media nettoyés pour l'URL supprimée
@@ -1248,14 +1246,15 @@ adminCatalogueRouter.post('/api/admin/media/brand/assign', adminAuth, async (c) 
   try { body = await c.req.formData() } catch (_) { body = await c.req.parseBody() }
 
   const getVal = (k: string) => typeof body.get === 'function' ? body.get(k) : body[k]
+  // Accepte la clé répétée ET/OU des listes séparées par des virgules ("4,5,6").
+  // (Avant : une valeur CSV unique était renvoyée telle quelle, puis parseInt("4,5,6")
+  // ne gardait que 4 → une seule image/un seul produit réellement affecté.)
   const getAll = (k: string): string[] => {
-    if (typeof body.getAll === 'function') {
-      const vals = body.getAll(k) as string[]
-      if (vals && vals.length > 0) return vals
-    }
-    const v = getVal(k)
-    if (!v) return []
-    return String(v).split(',').map((s: string) => s.trim()).filter(Boolean)
+    const raw: any[] = typeof body.getAll === 'function' ? body.getAll(k) : [getVal(k)]
+    return raw
+      .flatMap((v: any) => (v === null || v === undefined ? [] : String(v).split(',')))
+      .map((s: string) => s.trim())
+      .filter(Boolean)
   }
 
   const scope = (getVal('scope') as string) === 'brand' ? 'brand' : 'single'
@@ -1281,9 +1280,16 @@ adminCatalogueRouter.post('/api/admin/media/brand/assign', adminAuth, async (c) 
   }
   const productIds = [...new Set(rawProductIds.map(v => parseInt(v)).filter(n => Number.isFinite(n) && n > 0))]
 
-  // target=main n'est autorisé que pour une seule image
-  if (target === 'main' && mediaIds.length > 1) {
-    return c.json({ error: 'Une seule image peut être l\'image principale. Sélectionnez une seule image pour ce mode.' }, 400)
+  // main_media_id (optionnel) : cette image devient la vignette, les AUTRES images
+  // de la sélection partent en images annexes (galerie) — le tout en un seul appel.
+  const mainMediaId = parseInt(String(getVal('main_media_id') || '')) || 0
+  if (mainMediaId && !mediaIds.includes(mainMediaId)) {
+    return c.json({ error: 'L\'image choisie comme vignette ne fait pas partie de la sélection.' }, 400)
+  }
+
+  // Sans main_media_id (ancien mode), target=main n'est autorisé que pour une seule image
+  if (!mainMediaId && target === 'main' && mediaIds.length > 1) {
+    return c.json({ error: 'Une seule image peut être la vignette. Indiquez laquelle, ou sélectionnez une seule image.' }, 400)
   }
 
   try {
@@ -1295,67 +1301,90 @@ adminCatalogueRouter.post('/api/admin/media/brand/assign', adminAuth, async (c) 
     }
     if (!mediaRows.length) return c.json({ error: 'Aucune image trouvée dans la médiathèque pour les IDs fournis' }, 404)
 
-    if (scope === 'brand') {
-      // Pour chaque média, affecter à tous les produits de sa marque
-      let totalCount = 0
-      for (const mediaRow of mediaRows) {
-        const brandName = mediaRow.brand
-        if (!brandName) continue
-
-        if (target === 'main') {
-          await db.prepare('UPDATE products SET imageUrl = ?, image_url = ?, updated_at = ? WHERE LOWER(brand) = LOWER(?)').bind(mediaRow.url, mediaRow.url, new Date().toISOString(), brandName).run()
-          products.forEach(p => {
-            if ((p.brand || '').toLowerCase() === brandName.toLowerCase()) {
-              (p as any).imageUrl = mediaRow.url
-              totalCount++
-            }
-          })
-        } else {
-          const matchingProds = await db.prepare('SELECT id, media_urls FROM products WHERE LOWER(brand) = LOWER(?)').bind(brandName).all() as any
-          const rows = matchingProds?.results || []
-          for (const prodRow of rows) {
-            let gallery: any[] = []
-            try { gallery = JSON.parse(prodRow.media_urls || '[]') } catch (_) {}
-            if (!gallery.some((g: any) => (typeof g === 'string' ? g : g?.url) === mediaRow.url)) {
-              gallery.push({ url: mediaRow.url, deleteUrl: mediaRow.delete_url || '', type: 'image', caption: mediaRow.label || '' })
-              await db.prepare('UPDATE products SET media_urls = ?, gallery = ? WHERE id = ?').bind(JSON.stringify(gallery), JSON.stringify(gallery), prodRow.id).run()
-              const p = products.find(item => item.id === prodRow.id)
-              if (p) p.media = gallery
-              totalCount++
-            }
-          }
-        }
-      }
-      const noun = target === 'main' ? 'image principale appliquée' : 'affectation(s) galerie effectuée(s)'
-      return c.json({ success: true, count: totalCount, images: mediaRows.length, message: `${mediaRows.length} image(s) — ${totalCount} ${noun}.` })
-    } else {
-      // scope=single : affecter chaque média à chacun des produits ciblés
-      if (!productIds.length) return c.json({ error: 'ID produit manquant' }, 400)
-
-      let totalAssigned = 0
-      for (const pid of productIds) {
-        for (const mediaRow of mediaRows) {
-          if (target === 'main') {
-            await db.prepare('UPDATE products SET imageUrl = ?, image_url = ?, updated_at = ? WHERE id = ?').bind(mediaRow.url, mediaRow.url, new Date().toISOString(), pid).run()
-            const p = products.find(p => p.id === pid)
-            if (p) (p as any).imageUrl = mediaRow.url
-            totalAssigned++
-          } else {
-            const prodRow = await db.prepare('SELECT media_urls FROM products WHERE id = ?').bind(pid).first() as any
-            let gallery: any[] = []
-            try { gallery = JSON.parse(prodRow?.media_urls || '[]') } catch (_) {}
-            if (!gallery.some((g: any) => (typeof g === 'string' ? g : g?.url) === mediaRow.url)) {
-              gallery.push({ url: mediaRow.url, deleteUrl: mediaRow.delete_url || '', type: 'image', caption: mediaRow.label || '' })
-              await db.prepare('UPDATE products SET media_urls = ?, gallery = ? WHERE id = ?').bind(JSON.stringify(gallery), JSON.stringify(gallery), pid).run()
-              const p = products.find(p => p.id === pid)
-              if (p) p.media = gallery
-              totalAssigned++
-            }
-          }
-        }
-      }
-      return c.json({ success: true, count: totalAssigned, images: mediaRows.length, message: `${mediaRows.length} image(s) affectée(s) à ${productIds.length} produit(s).` })
+    // Répartition des rôles : une vignette au plus, le reste en images annexes
+    let mainRow: any = null
+    if (mainMediaId) {
+      mainRow = mediaRows.find(r => Number(r.id) === mainMediaId) || null
+      if (!mainRow) return c.json({ error: 'L\'image choisie comme vignette est introuvable dans la médiathèque.' }, 404)
+    } else if (target === 'main') {
+      mainRow = mediaRows[0]
     }
+    const galleryRows = mediaRows.filter(r => r !== mainRow)
+
+    if (scope === 'single' && !productIds.length) return c.json({ error: 'ID produit manquant' }, 400)
+
+    // Produits ciblés par une image : ceux choisis (single) ou tous ceux de sa marque (brand)
+    const brandCache = new Map<string, number[]>()
+    const targetsFor = async (row: any): Promise<number[]> => {
+      if (scope === 'single') return productIds
+      const key = String(row.brand || '').toLowerCase()
+      if (!key) return []
+      if (!brandCache.has(key)) {
+        const res = await db.prepare('SELECT id FROM products WHERE LOWER(brand) = LOWER(?)').bind(row.brand).all() as any
+        brandCache.set(key, (res?.results || []).map((r: any) => Number(r.id)))
+      }
+      return brandCache.get(key)!
+    }
+    // D1 limite à 100 paramètres liés par requête
+    const chunks = <T,>(arr: T[], size = 80): T[][] => {
+      const out: T[][] = []
+      for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
+      return out
+    }
+    const now = new Date().toISOString()
+    const touched = new Set<number>()
+
+    // (1) Vignette
+    let mainCount = 0
+    if (mainRow) {
+      const ids = await targetsFor(mainRow)
+      for (const part of chunks(ids)) {
+        await db.prepare(`UPDATE products SET imageUrl = ?, image_url = ?, updated_at = ? WHERE id IN (${part.map(() => '?').join(',')})`)
+          .bind(mainRow.url, mainRow.url, now, ...part).run()
+      }
+      for (const pid of ids) {
+        const p = products.find(item => item.id === pid)
+        if (p) (p as any).imageUrl = mainRow.url
+        touched.add(pid)
+        mainCount++
+      }
+    }
+
+    // (2) Images annexes : regrouper par produit pour ne lire/écrire chaque galerie qu'une fois
+    const additions = new Map<number, any[]>()
+    for (const row of galleryRows) {
+      for (const pid of await targetsFor(row)) {
+        if (!additions.has(pid)) additions.set(pid, [])
+        additions.get(pid)!.push(row)
+      }
+    }
+    let galleryCount = 0
+    const galleryCols = await gallerySelectColumns(db)
+    for (const part of chunks([...additions.keys()])) {
+      const res = await db.prepare(`SELECT id, ${galleryCols} FROM products WHERE id IN (${part.map(() => '?').join(',')})`).bind(...part).all() as any
+      for (const prodRow of (res?.results || [])) {
+        const gallery = parseGallery(prodRow)
+        let added = 0
+        for (const row of additions.get(Number(prodRow.id)) || []) {
+          if (gallery.some((g: any) => (typeof g === 'string' ? g : g?.url) === row.url)) continue
+          gallery.push({ url: row.url, deleteUrl: row.delete_url || '', type: 'image', caption: row.label || '' })
+          added++
+        }
+        if (!added) continue
+        await saveProductGallery(db, Number(prodRow.id), gallery)
+        const p = products.find(item => item.id === Number(prodRow.id))
+        if (p) p.media = gallery
+        touched.add(Number(prodRow.id))
+        galleryCount += added
+      }
+    }
+
+    const nbProducts = scope === 'single' ? productIds.length : touched.size
+    const parts: string[] = []
+    if (mainRow) parts.push('vignette définie')
+    if (galleryRows.length) parts.push(galleryCount > 0 ? `${galleryCount} image(s) annexe(s) ajoutée(s)` : 'images annexes déjà présentes')
+    const message = `${nbProducts} produit(s) mis à jour : ${parts.join(' + ')}.`
+    return c.json({ success: true, count: mainCount + galleryCount, images: mediaRows.length, main: mainCount, gallery: galleryCount, products: nbProducts, message })
   } catch (e: any) {
     console.error('Brand media assign error:', e)
     return c.json({ error: 'Erreur lors de l\'affectation : ' + (e?.message || 'Erreur DB') }, 500)

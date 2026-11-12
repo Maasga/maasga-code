@@ -5,7 +5,8 @@ import { defineConfig, devices } from '@playwright/test'
  *   npm run build && npm run test:e2e
  * Le serveur est démarré automatiquement s'il ne tourne pas déjà sur :3000.
  */
-const PORT = 3000
+// E2E_PORT permet de tester un build neuf quand un ancien serveur occupe déjà :3000
+const PORT = Number(process.env.E2E_PORT) || 3000
 
 export default defineConfig({
   testDir: './e2e',
