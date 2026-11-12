@@ -24,7 +24,8 @@
   },
   "dependencies": {
     "dotenv": "^17.4.2",
-    "hono": "^4.13.18"
+    "hono": "^4.13.18",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260302.0",

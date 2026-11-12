@@ -473,7 +473,7 @@ export const AdminRDVPage = ({ filterStatus }: { filterStatus?: string }) => {
               if (!d.found) {
                 document.getElementById('rdv-client-status').innerHTML = '<span style="color:#f97316;"><i class="fas fa-exclamation-circle mr-1"></i>Pas de compte</span>';
                 document.getElementById('rdv-client-body').innerHTML =
-                  '<p class="text-xs text-gray-500 text-center py-2">Ce numéro n\'a pas de compte client enregistré.</p>' +
+                  '<p class="text-xs text-gray-500 text-center py-2">Ce numéro n’a pas de compte client enregistré.</p>' +
                   '<div class="flex justify-center"><a href="/admin/clients" class="text-xs px-3 py-1.5 rounded-xl font-semibold" style="background:rgba(59,130,246,0.15);color:#60a5fa;"><i class="fas fa-user-plus mr-1"></i>Créer un client</a></div>';
                 return;
               }
