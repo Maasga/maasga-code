@@ -1,4 +1,4 @@
-﻿import { Layout } from '../components/Layout'
+import { Layout } from '../components/Layout'
 import { products } from '../data/products'
 
 export const SimulateurPage = ({ 

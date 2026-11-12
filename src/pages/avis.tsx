@@ -1,4 +1,4 @@
-﻿import { Layout } from '../components/Layout'
+import { Layout } from '../components/Layout'
 
 export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: boolean; error?: string; approvedReviews?: any[] }) => {
   const avgNote = approvedReviews.length > 0

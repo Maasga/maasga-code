@@ -1,4 +1,4 @@
-﻿import { CGUModal, initCGUModal } from './CGUModal'
+import { CGUModal, initCGUModal } from './CGUModal'
 import { SITE_URL } from '../types'
 import { asset } from '../generated/asset-manifest'
 

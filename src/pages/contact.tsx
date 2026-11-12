@@ -1,4 +1,4 @@
-﻿import { Layout } from '../components/Layout'
+import { Layout } from '../components/Layout'
 
 export const ContactPage = ({ success, error }: { success?: boolean; error?: string }) => {
   return (
