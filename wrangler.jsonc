@@ -1,16 +1,17 @@
 {
-"$schema": "node_modules/wrangler/config-schema.json",
-"name": "webapp",
-"compatibility_date": "2026-02-21",
-"pages_build_output_dir": "./dist",
-"compatibility_flags": ["nodejs_compat"],
-"d1_databases": [{
-"binding": "DB",
-"database_name": "maasga_db",
-"database_id": "2317adea-fdbe-4597-b64d-11d68d03b63b"
-}],
-"r2_buckets": [{
-"binding": "IMAGES_BUCKET",
-"bucket_name": "maasga-images"
-}]
+  // Configuration unique (Wrangler 4 ignore wrangler.toml quand ce fichier existe).
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "maasga-website",
+  "compatibility_date": "2026-02-21",
+  "pages_build_output_dir": "./dist",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "maasga_db",
+    "database_id": "2317adea-fdbe-4597-b64d-11d68d03b63b"
+  }],
+  "r2_buckets": [{
+    "binding": "IMAGES_BUCKET",
+    "bucket_name": "maasga-images"
+  }]
 }

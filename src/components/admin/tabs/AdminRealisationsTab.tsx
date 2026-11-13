@@ -1,5 +1,6 @@
 // Admin Tab Component
 import { products } from '../../../data/products'
+import { categoryLabels } from '../labels'
 import {
   reviews,
   appointments,
@@ -29,7 +30,7 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
   return (
   <AdminLayout activePage="realisations">
     <div class="mb-6">
-      <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">Gestion des réalisations</h2>
+      <h2 class="text-xl font-bold text-admin-fg">Gestion des réalisations</h2>
       <p class="text-sm mt-1" style="color:var(--admin-text-muted)">Ajoutez et gérez vos projets terminés visibles sur le site</p>
     </div>
 
@@ -40,7 +41,7 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
       </div>
     )}
     {error && (
-      <div class="mb-4 p-3 rounded-lg text-sm font-medium" style="background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3);">
+      <div class="mb-4 p-3 rounded-lg text-sm font-medium" style="background:rgba(var(--rgb-red),0.15); color:var(--fg-on-dark-danger); border:1px solid rgba(var(--rgb-red),0.3);">
         <i class="fas fa-exclamation-circle mr-2"></i>Erreur : {error}
       </div>
     )}
@@ -58,7 +59,7 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
               <i class={`fas ${s.icon} text-lg`} style={`color:${s.color};`}></i>
             </div>
             <div>
-              <div class="text-xl font-bold" style="color:var(--admin-text-primary)">{s.val}</div>
+              <div class="text-xl font-bold text-admin-fg">{s.val}</div>
               <div class="text-xs text-gray-400">{s.label}</div>
             </div>
           </div>
@@ -67,9 +68,9 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
     </div>
 
     {/* Formulaire d'ajout */}
-    <div class="rounded-2xl card-shadow overflow-hidden mb-6" style="background:var(--admin-card-bg); border:1px solid rgba(16,185,129,0.2);">
-      <div class="p-5" style="border-bottom:1px solid rgba(16,185,129,0.15);">
-        <h3 class="font-semibold flex items-center space-x-2" style="color:var(--admin-text-primary)">
+    <div class="rounded-2xl card-shadow overflow-hidden mb-6" style="background:var(--admin-card-bg); border:1px solid rgba(var(--rgb-green),0.2);">
+      <div class="p-5" style="border-bottom:1px solid rgba(var(--rgb-green),0.15);">
+        <h3 class="font-semibold flex items-center space-x-2 text-admin-fg">
           <i class="fas fa-plus-circle text-green-400"></i>
           <span>Ajouter une réalisation</span>
         </h3>
@@ -122,16 +123,16 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
             </label>
           </div>
         </div>
-        <button type="submit" class="px-6 py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:scale-105" style="background:linear-gradient(135deg,#10b981,#059669);">
+        <button type="submit" class="px-6 py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:scale-105" style="background:linear-gradient(135deg,var(--surface-success-bright),var(--surface-success));">
           <i class="fas fa-plus mr-2"></i>Ajouter la réalisation
         </button>
       </form>
     </div>
 
     {/* Liste des réalisations */}
-    <div class="rounded-2xl card-shadow overflow-hidden" style="background:var(--admin-card-bg); border:1px solid rgba(59,130,246,0.1);">
-      <div class="p-5" style="border-bottom:1px solid rgba(148,163,184,0.08);">
-        <h3 class="font-semibold flex items-center space-x-2" style="color:var(--admin-text-primary)">
+    <div class="rounded-2xl card-shadow overflow-hidden" style="background:var(--admin-card-bg); border:1px solid rgba(var(--rgb-blue),0.1);">
+      <div class="p-5" style="border-bottom:1px solid rgba(var(--rgb-slate),0.08);">
+        <h3 class="font-semibold flex items-center space-x-2 text-admin-fg">
           <i class="fas fa-list text-blue-400"></i>
           <span>Toutes les réalisations ({realisations.length})</span>
         </h3>
@@ -149,34 +150,34 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
                 <div class="flex-1">
                   <div class="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
                     <h4 class="font-bold text-sm" style="color:var(--admin-text-primary)">{r.title}</h4>
-                    {r.is_featured ? <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:rgba(251,191,36,0.15); color:#fbbf24;"><i class="fas fa-star mr-1"></i>Vedette</span> : null}
-                    {!r.is_visible ? <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:rgba(239,68,68,0.15); color:#f87171;"><i class="fas fa-eye-slash mr-1"></i>Masqué</span> : null}
-                    <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:rgba(59,130,246,0.15); color:#60a5fa;">{categoryLabels[r.category] || r.category}</span>
+                    {r.is_featured ? <span class="text-xs px-2 py-0.5 rounded-full font-medium text-fg-on-dark-warning" style="background:rgba(var(--rgb-amber),0.15);"><i class="fas fa-star mr-1"></i>Vedette</span> : null}
+                    {!r.is_visible ? <span class="text-xs px-2 py-0.5 rounded-full font-medium text-fg-on-dark-danger" style="background:rgba(var(--rgb-red),0.15);"><i class="fas fa-eye-slash mr-1"></i>Masqué</span> : null}
+                    <span class="text-xs px-2 py-0.5 rounded-full font-medium text-fg-on-dark-info" style="background:rgba(var(--rgb-blue),0.15);">{categoryLabels[r.category] || r.category}</span>
                   </div>
-                  {r.description && <p class="text-xs mb-2 line-clamp-2" style="color:var(--admin-text-muted)">{r.description}</p>}
-                  <div class="flex flex-wrap gap-3 text-xs" style="color:var(--admin-text-muted)">
+                  {r.description && <p class="text-xs mb-2 line-clamp-2 text-admin-muted">{r.description}</p>}
+                  <div class="flex flex-wrap gap-3 text-xs text-admin-muted">
                     {r.client_name && <span><i class="fas fa-user mr-1"></i>{r.client_name}</span>}
                     {r.quartier && <span><i class="fas fa-map-marker-alt mr-1"></i>{r.quartier}</span>}
                     {r.date_realisation && <span><i class="fas fa-calendar mr-1"></i>{r.date_realisation}</span>}
                   </div>
                 </div>
                 {r.image_url && (
-                  <img src={r.image_url} alt={r.title} class="w-20 h-20 rounded-lg object-cover flex-shrink-0" style="border:1px solid rgba(148,163,184,0.15);" />
+                  <img src={r.image_url} alt={r.title} class="w-20 h-20 rounded-lg object-cover flex-shrink-0" style="border:1px solid rgba(var(--rgb-slate),0.15);" />
                 )}
               </div>
               <div class="flex items-center gap-2 mt-3">
-                <button onclick={`document.getElementById('edit-form-${r.id}').classList.toggle('hidden')`} class="text-xs px-3 py-1.5 rounded-lg font-medium" style="background:rgba(59,130,246,0.1); color:#60a5fa; border:1px solid rgba(59,130,246,0.2);">
+                <button onclick={`document.getElementById('edit-form-${r.id}').classList.toggle('hidden')`} class="text-xs px-3 py-1.5 rounded-lg font-medium text-fg-on-dark-info" style="background:rgba(var(--rgb-blue),0.1); border:1px solid rgba(var(--rgb-blue),0.2);">
                   <i class="fas fa-edit mr-1"></i>Modifier
                 </button>
-                <form method="post" action="/api/admin/realisations/delete" style="display:inline" onsubmit="return confirm('Supprimer cette réalisation ?')">
+                <form method="post" action="/api/admin/realisations/delete" class="inline" onsubmit="return confirm('Supprimer cette réalisation ?')">
                   <input type="hidden" name="id" value={String(r.id)} />
-                  <button type="submit" class="text-xs px-3 py-1.5 rounded-lg font-medium" style="background:rgba(239,68,68,0.1); color:#f87171; border:1px solid rgba(239,68,68,0.2);">
+                  <button type="submit" class="text-xs px-3 py-1.5 rounded-lg font-medium text-fg-on-dark-danger" style="background:rgba(var(--rgb-red),0.1); border:1px solid rgba(var(--rgb-red),0.2);">
                     <i class="fas fa-trash mr-1"></i>Supprimer
                   </button>
                 </form>
               </div>
               {/* Formulaire d'édition inline (caché) */}
-              <form id={`edit-form-${r.id}`} method="post" action="/api/admin/realisations/update" class="hidden mt-4 p-4 rounded-xl space-y-3" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">
+              <form id={`edit-form-${r.id}`} method="post" action="/api/admin/realisations/update" class="hidden mt-4 p-4 rounded-xl space-y-3 bg-admin-elevated border border-admin-line">
                 <input type="hidden" name="id" value={String(r.id)} />
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <input type="text" name="title" value={r.title} required class="input-field text-sm" />
@@ -203,7 +204,7 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
                     <span class="text-sm" style="color:var(--admin-text-primary)">Visible</span>
                   </label>
                 </div>
-                <button type="submit" class="px-4 py-2 rounded-lg text-sm font-bold text-white" style="background:linear-gradient(135deg,#3b82f6,#2563eb);">
+                <button type="submit" class="px-4 py-2 rounded-lg text-sm font-bold text-white" style="background:linear-gradient(135deg,var(--surface-blue),#2563eb);">
                   <i class="fas fa-save mr-1"></i>Enregistrer
                 </button>
               </form>
@@ -220,27 +221,6 @@ export const AdminRealisationsPage = ({ realisations = [], success, error }: { r
 // SAV / Tickets Support
 // ============================================================
 
-const ticketCategoryLabels: Record<string, { label: string; icon: string; color: string }> = {
-  panne: { label: 'Panne', icon: 'fa-exclamation-triangle', color: '#f87171' },
-  garantie: { label: 'Garantie', icon: 'fa-shield-alt', color: '#60a5fa' },
-  installation: { label: 'Installation', icon: 'fa-tools', color: '#a78bfa' },
-  maintenance: { label: 'Maintenance', icon: 'fa-wrench', color: '#fbbf24' },
-  reclamation: { label: 'Réclamation', icon: 'fa-flag', color: '#fb923c' },
-  autre: { label: 'Autre', icon: 'fa-question-circle', color: '#94a3b8' }
-}
 
-const ticketStatusLabels: Record<string, { label: string; color: string; bg: string }> = {
-  ouvert: { label: 'Ouvert', color: '#34d399', bg: 'rgba(52,211,153,0.12)' },
-  en_cours: { label: 'En cours', color: '#60a5fa', bg: 'rgba(96,165,250,0.12)' },
-  attente_client: { label: 'Attente client', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
-  resolu: { label: 'Résolu', color: '#34d399', bg: 'rgba(52,211,153,0.12)' },
-  ferme: { label: 'Fermé', color: '#94a3b8', bg: 'rgba(148,163,184,0.12)' }
-}
 
-const ticketPriorityLabels: Record<string, { label: string; color: string }> = {
-  basse: { label: 'Basse', color: '#94a3b8' },
-  normal: { label: 'Normal', color: '#60a5fa' },
-  haute: { label: 'Haute', color: '#fb923c' },
-  urgente: { label: 'Urgente', color: '#f87171' }
-}
 

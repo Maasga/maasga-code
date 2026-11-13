@@ -1,5 +1,6 @@
-﻿import { CGUModal, initCGUModal } from './CGUModal'
+import { CGUModal, initCGUModal } from './CGUModal'
 import { SITE_URL } from '../types'
+import { asset } from '../generated/asset-manifest'
 
 const PAGE_LABELS: Record<string, string> = {
   home: "Accueil",
@@ -14,7 +15,7 @@ const PAGE_LABELS: Record<string, string> = {
   realisations: "Réalisations",
 }
 
-// Mapping route â†’ libellé pour le texte de l'overlay de transition de page
+// Mapping route → libellé pour le texte de l'overlay de transition de page
 // (client-side, voir bloc ASYNC PAGE TRANSITIONS). Couvre toutes les routes
 // publiques définies dans src/index.tsx ; /admin* n'a pas besoin d'entrée
 // puisqu'il est exclu du pipeline de transition.
@@ -31,46 +32,52 @@ const ROUTE_LABELS: Record<string, string> = {
   "/espace-client": PAGE_LABELS.client,
 }
 
-// Icônes Font Awesome (déjÃ  chargé, fiable) — remplace l'ancien AnimatedIcon
+// Icônes Font Awesome (déjà chargé, fiable) — remplace l'ancien AnimatedIcon
 // basé sur Lordicon : la plupart des IDs Lordicon gratuits renvoyaient 404 et
 // le player Lottie plantait en boucle (voir CLAUDE.md, "known issue").
 export const NavIcon = ({ icon, color = '#94a3b8', size = 16, class: className = '' }: { icon: string, color?: string, size?: number, class?: string }) => {
   return <i class={`fas ${icon} ${className}`} style={{ color, fontSize: `${size}px`, width: `${size + 4}px`, textAlign: 'center' }} aria-hidden="true"></i>
 }
 
-export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisation Burkina Faso", activePage = "", description = "MAASGA - Spécialiste vente, installation et maintenance de climatiseurs à Ouagadougou, Burkina Faso. Devis gratuit, techniciens certifiés.", canonicalPath = "", jsonLd }: {
+export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisation Burkina Faso", activePage = "", description = "MAASGA - Spécialiste vente, installation et maintenance de climatiseurs à Ouagadougou, Burkina Faso. Devis gratuit, techniciens certifiés.", canonicalPath = "", jsonLd, ogImage, ogType = "website", noindex = false }: {
   children: any
   title?: string
   activePage?: string
   description?: string
   canonicalPath?: string
   jsonLd?: string
+  /** Image de partage (URL absolue) — par défaut og-image.png */
+  ogImage?: string
+  ogType?: string
+  /** Pages privées (profil client…) : exclues des moteurs */
+  noindex?: boolean
 }) => {
-  // SITE_URL importé depuis src/types.ts — modifier lÃ -bas quand le domaine change.
+  // SITE_URL importé depuis src/types.ts — modifier là-bas quand le domaine change.
   const siteUrl = SITE_URL
   const canonical = canonicalPath ? `${siteUrl}${canonicalPath}` : ''
   return (
     <html lang="fr">
       <head>
         <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
         <meta name="description" content={description} />
-        <meta name="keywords" content="climatisation Ouagadougou, installation climatiseur Burkina Faso, technicien clim Ouaga, MAASGA, vente climatiseur Ouaga" />
         {canonical && <link rel="canonical" href={canonical} />}
+        {noindex && <meta name="robots" content="noindex,nofollow" />}
         <meta property="og:title" content={title} />
         <meta property="og:description" content={description} />
-        <meta property="og:type" content="website" />
-        <meta property="og:image" content={`${siteUrl}/og-image.png`} />
+        <meta property="og:type" content={ogType} />
+        <meta property="og:image" content={ogImage || `${siteUrl}/og-image.png`} />
         {canonical && <meta property="og:url" content={canonical} />}
         <meta property="og:locale" content="fr_BF" />
         <meta property="og:site_name" content="MAASGA Climatisation" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={title} />
         <meta name="twitter:description" content={description} />
-        <meta name="twitter:image" content={`${siteUrl}/og-image.png`} />
+        <meta name="twitter:image" content={ogImage || `${siteUrl}/og-image.png`} />
         <meta name="theme-color" content="#e8f4ff" />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/favicon.png" />
+        {canonicalPath === "/" && <link rel="preload" as="image" href="/hero/hero-1.webp" imagesrcset="/hero/hero-1-800.webp 800w, /hero/hero-1.webp 1600w" imagesizes="100vw" fetchpriority="high" />}
+        <link rel="apple-touch-icon" href="/logo-512.png" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="icon" type="image/png" href="/favicon.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -79,54 +86,12 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         <noscript><link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" /></noscript>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js" defer crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js" defer crossorigin="anonymous"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/SplitText.min.js" defer crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js" defer crossorigin="anonymous"></script>
-        <link rel="stylesheet" href="/static/tailwind.css" />
-        <link rel="stylesheet" href="/static/style.css" />
+        <link rel="stylesheet" href={asset("/static/tailwind.css")} />
+        <link rel="stylesheet" href={asset("/static/style.css")} />
         <title>{title}</title>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" media="print" onload="this.media='all'" />
         <noscript><link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" /></noscript>
-        <link href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/duotone/style.css" rel="stylesheet" media="print" onload="this.media='all'" />
-        <link href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/fill/style.css" rel="stylesheet" media="print" onload="this.media='all'" />
-
-        {/* Global Agentation System — Control via ?agentation=1 */}
-        <script type="importmap" dangerouslySetInnerHTML={{ __html: `{
-          "imports": {
-            "react": "https://esm.sh/react@18.3.1",
-            "react-dom/client": "https://esm.sh/react-dom@18.3.1/client?external=react"
-          }
-        }` }} />
-        <script type="module" dangerouslySetInnerHTML={{ __html: `
-          (async function() {
-            try {
-              var qs = new URLSearchParams(window.location.search);
-              if (qs.get('agentation') === '1') localStorage.setItem('maasga_agentation', '1');
-              if (qs.get('agentation') === '0') localStorage.removeItem('maasga_agentation');
-              if (localStorage.getItem('maasga_agentation') !== '1') return;
-
-              const [reactMod, domMod, agentMod] = await Promise.all([
-                import('react'),
-                import('react-dom/client'),
-                import('https://esm.sh/agentation@3.0.2?external=react,react-dom/client')
-              ]);
-
-              const { Agentation } = agentMod;
-              function mount() {
-                if (document.getElementById('agentation-root')) return;
-                const host = document.createElement('div');
-                host.id = 'agentation-root';
-                document.body.appendChild(host);
-                domMod.createRoot(host).render(reactMod.createElement(Agentation, {}));
-              }
-              if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', mount, { once: true });
-              } else { mount(); }
-              console.info('[Agentation] activé (public)');
-            } catch (e) {
-              console.error('[Agentation] échec:', e);
-            }
-          })();
-        ` }} />
 
         {/* Google Analytics GA4 — consent-aware (load async FIRST, then configure) */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-LCQJE6963G"></script>
@@ -143,29 +108,29 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         {/* JSON-LD Structured Data injection point */}
         {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />}
       </head>
-      <body class="min-h-screen pb-16 md:pb-0" style="background-color:#f8fbff; color:var(--ink);" onload="window.initCGUModal?.()">
+      <body class="min-h-screen pb-16 md:pb-0 bg-surface-base" style="color:var(--ink);" onload="window.initCGUModal?.()">
 
         {/* js-ready : pose immédiatement la classe pour activer l'état initial caché
-            des reveals. Si JS est désactivé, la classe n'est jamais posée â†’ contenu visible. */}
+            des reveals. Si JS est désactivé, la classe n'est jamais posée → contenu visible. */}
         <script dangerouslySetInnerHTML={{ __html: `document.documentElement.classList.add('js-ready');` }} />
 
         {/* PAGE LOADER — affiché uniquement au premier chargement de la session */}
-        <div id="page-loader" style="position:fixed;inset:0;z-index:999999;background:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.3s ease,visibility 0.3s ease;">
-          <div style="position:relative;margin-bottom:1.5rem;">
-            <div style="width:72px;height:72px;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,119,182,0.2);animation:loader-pulse 1.5s ease-in-out infinite;">
-              <img src="/logo-site.png" alt="MAASGA" style="width:100%;height:100%;object-fit:cover;" />
+        <div id="page-loader" class="bg-surface-card flex flex-col items-center justify-center" style="position:fixed; inset:0; z-index:999999; transition:opacity 0.3s ease,visibility 0.3s ease;">
+          <div class="relative mb-[1.5rem]">
+            <div class="w-[72px] h-[72px] rounded-[20px] overflow-hidden" style="box-shadow:0 4px 24px rgba(var(--rgb-brand),0.2); animation:loader-pulse 1.5s ease-in-out infinite;">
+              <img src="/logo-site.webp" width="192" height="192" alt="MAASGA" class="w-full h-[100%]" style="object-fit:cover;" />
             </div>
           </div>
-          <div style="color:#03045e;font-size:1.6rem;font-weight:800;letter-spacing:0.1em;margin-bottom:0.4rem;">MAASGA</div>
-          <div style="color:#0077b6;font-size:0.75rem;letter-spacing:0.2em;margin-bottom:2rem;font-weight:600;">FROID &amp; CLIMATISATION</div>
-          <div style="display:flex;gap:6px;">
-            <span style="width:8px;height:8px;border-radius:50%;background:#0077b6;animation:loader-bounce 0.8s ease-in-out infinite;"></span>
-            <span style="width:8px;height:8px;border-radius:50%;background:#0077b6;animation:loader-bounce 0.8s ease-in-out 0.15s infinite;"></span>
-            <span style="width:8px;height:8px;border-radius:50%;background:#0077b6;animation:loader-bounce 0.8s ease-in-out 0.3s infinite;"></span>
+          <div class="text-fg-heading text-[1.6rem] font-extrabold mb-[0.4rem]" style="letter-spacing:0.1em;">MAASGA</div>
+          <div class="text-fg-brand text-[0.75rem] mb-[2rem] font-semibold" style="letter-spacing:0.2em;">FROID &amp; CLIMATISATION</div>
+          <div class="flex gap-[6px]">
+            <span class="w-[8px] h-[8px] rounded-[50%] bg-surface-brand" style="animation:loader-bounce 0.8s ease-in-out infinite;"></span>
+            <span class="w-[8px] h-[8px] rounded-[50%] bg-surface-brand" style="animation:loader-bounce 0.8s ease-in-out 0.15s infinite;"></span>
+            <span class="w-[8px] h-[8px] rounded-[50%] bg-surface-brand" style="animation:loader-bounce 0.8s ease-in-out 0.3s infinite;"></span>
           </div>
         </div>
         <script dangerouslySetInnerHTML={{ __html: `
-          // Cacher immédiatement le loader si déjÃ  visité dans la session
+          // Cacher immédiatement le loader si déjà visité dans la session
           (function(){
             var l=document.getElementById('page-loader');
             if(!l)return;
@@ -204,15 +169,15 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         `}</style>
 
         {/* Skip to content — accessibility */}
-        <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[99999] focus:px-4 focus:py-2 focus:rounded-lg focus:text-white" style="background:#0ea5e9;">Aller au contenu principal</a>
+        <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[99999] focus:px-4 focus:py-2 focus:rounded-lg focus:text-white bg-surface-sky">Aller au contenu principal</a>
 
         {/* PAGE TRANSITION OVERLAY — grand texte qui traverse pendant le fetch async */}
-        <div id="page-transition" style="position:fixed; inset:0; z-index:99999; background:#03045e; display:flex; align-items:center; justify-content:center; overflow:hidden; transition:opacity 0.3s ease; pointer-events:none; opacity:0;">
+        <div id="page-transition" class="bg-surface-navy flex items-center justify-center overflow-hidden" style="position:fixed; inset:0; z-index:99999; transition:opacity 0.3s ease; pointer-events:none; opacity:0;">
           <span id="page-transition-text" class="pt-text"></span>
         </div>
 
         {/* BACK TO TOP */}
-        <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Retour en haut" style="position:fixed; bottom:6rem; right:1.5rem; z-index:9998; width:44px; height:44px; border-radius:50%; background:rgba(14,165,233,0.9); color:white; border:none; cursor:pointer; display:none; align-items:center; justify-content:center; font-size:1rem; box-shadow:0 4px 20px rgba(14,165,233,0.35); transition:all 0.3s ease; backdrop-filter:blur(10px);">
+        <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Retour en haut" class="w-[44px] h-[44px] rounded-[50%] text-fg-on-dark cursor-pointer items-center justify-center text-[1rem]" style="position:fixed; bottom:6rem; right:1.5rem; z-index:9998; background:rgba(var(--rgb-sky-deep),0.9); border:none; display:none; box-shadow:0 4px 20px rgba(var(--rgb-sky-deep),0.35); transition:all 0.3s ease; backdrop-filter:blur(10px);">
           <i class="fas fa-chevron-up"></i>
         </button>
 
@@ -222,8 +187,8 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
 
             {/* Logo */}
             <a href="/" class="font-extrabold tracking-tight flex items-center shrink-0 gap-2">
-              <img src="/logo-site.png" alt="MAASGA Logo" class="h-9 sm:h-10 w-auto rounded-lg" />
-              <span class="hidden sm:inline text-sm font-bold uppercase tracking-widest" style="color:#03045e;">MAASGA</span>
+              <img src="/logo-site.webp" width="192" height="192" alt="MAASGA Logo" class="h-9 sm:h-10 w-auto rounded-lg" />
+              <span class="hidden sm:inline text-sm font-bold uppercase tracking-widest" style="color:var(--fg-heading);">MAASGA</span>
             </a>
 
             {/* Nav Desktop — visible xl+ */}
@@ -266,7 +231,7 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                   <i class="fas fa-ellipsis-h text-[10px]" style="color:#94a3b8;"></i>
                   Plus
                 </button>
-                <div id="nav-more-dropdown" class="hidden absolute right-0 top-full mt-2 w-48 rounded-xl shadow-xl py-2" style="background:rgba(255,255,255,0.98); backdrop-filter:blur(20px); border:1px solid rgba(0,119,182,0.12); z-index:60;">
+                <div id="nav-more-dropdown" class="hidden absolute right-0 top-full mt-2 w-48 rounded-xl shadow-xl py-2" style="background:rgba(var(--rgb-white),0.98); backdrop-filter:blur(20px); border:1px solid rgba(var(--rgb-brand),0.12); z-index:60;">
                   {[
                     { href: "/a-propos", icon: "fa-circle-info", label: "À propos", key: "apropos" },
                     { href: "/espace-client", icon: "fa-user", label: "Espace client", key: "client" },
@@ -287,20 +252,20 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
 
             {/* Actions */}
             <div class="flex items-center gap-1.5 sm:gap-2">
-              <a href="/espace-client" id="user-nav-btn" class="hidden lg:flex items-center justify-center w-9 h-9 rounded-full transition-all hover:bg-blue-50" style="color:#0077b6;" title="Espace client" aria-label="Espace client">
+              <a href="/espace-client" id="user-nav-btn" class="hidden lg:flex items-center justify-center w-9 h-9 rounded-full transition-all hover:bg-blue-50 text-fg-brand" title="Espace client" aria-label="Espace client">
                 <i class="fas fa-user text-sm"></i>
               </a>
-              <button onclick="var m=document.getElementById('mobile-menu');var b=this.querySelector('i');if(m.classList.contains('open')){m.classList.remove('open');b.className='fas fa-bars text-lg';}else{m.classList.add('open');b.className='fas fa-times text-lg';}this.setAttribute('aria-expanded',m.classList.contains('open'))" class="lg:hidden flex items-center justify-center w-10 h-10 rounded-full hover:bg-blue-50 transition-colors" style="color:#475569;" aria-label="Menu de navigation" aria-expanded="false" aria-controls="mobile-menu">
+              <button onclick="var m=document.getElementById('mobile-menu');var b=this.querySelector('i');if(m.classList.contains('open')){m.classList.remove('open');b.className='fas fa-bars text-lg';}else{m.classList.add('open');b.className='fas fa-times text-lg';}this.setAttribute('aria-expanded',m.classList.contains('open'))" class="lg:hidden flex items-center justify-center w-10 h-10 rounded-full hover:bg-blue-50 transition-colors text-fg-muted" aria-label="Menu de navigation" aria-expanded="false" aria-controls="mobile-menu">
                 <i class="fas fa-bars text-lg"></i>
               </button>
             </div>
           </div>
 
           {/* Mobile menu dropdown */}
-          <div id="mobile-menu" class="mobile-menu lg:hidden max-w-7xl mx-auto mt-2 rounded-2xl shadow-xl overflow-hidden" style="background:rgba(248,251,255,0.98); backdrop-filter:blur(20px); border:1px solid rgba(0,119,182,0.12);">
+          <div id="mobile-menu" class="mobile-menu lg:hidden max-w-7xl mx-auto mt-2 rounded-2xl shadow-xl overflow-hidden" style="background:rgba(248,251,255,0.98); backdrop-filter:blur(20px); border:1px solid rgba(var(--rgb-brand),0.12);">
             {/* Quick contact bar */}
-            <div class="flex items-center justify-end px-5 py-3" style="background:rgba(0,119,182,0.04); border-bottom:1px solid rgba(0,119,182,0.08);">
-              <a href="/espace-client" class="flex items-center gap-2 text-xs font-semibold" style="color:#0077b6;">
+            <div class="flex items-center justify-end px-5 py-3" style="background:rgba(var(--rgb-brand),0.04); border-bottom:1px solid rgba(var(--rgb-brand),0.08);">
+              <a href="/espace-client" class="flex items-center gap-2 text-xs font-semibold text-fg-brand">
                 <i class="fas fa-user"></i>
                 <span>Espace client</span>
               </a>
@@ -342,8 +307,8 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
 
         {/* FOOTER */}
         <footer style="background:linear-gradient(135deg,#ffffff 0%,#e0f2fe 50%,#bae6fd 100%); margin-top:5rem; position:relative; overflow:hidden;">
-          <div style="position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.08);pointer-events:none;"></div>
-          <div style="position:absolute;bottom:-40px;left:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.06);pointer-events:none;"></div>
+          <div class="absolute w-[200px] h-[200px] rounded-[50%]" style="top:-60px; right:-60px; background:rgba(var(--rgb-white),0.08); pointer-events:none;"></div>
+          <div class="absolute w-[160px] h-[160px] rounded-[50%]" style="bottom:-40px; left:-40px; background:rgba(var(--rgb-white),0.06); pointer-events:none;"></div>
           <div class="cyan-line"></div>
           <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
@@ -351,51 +316,51 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               <div class="md:col-span-2">
                 <div class="flex items-center space-x-3 mb-5">
                   <div class="w-14 h-14 rounded-xl overflow-hidden shadow-lg border border-white/20">
-                    <img src="/logo-site.png" alt="MAASGA Logo" class="w-full h-full object-cover" loading="lazy" />
+                    <img src="/logo-site.webp" width="192" height="192" alt="MAASGA Logo" class="w-full h-full object-cover" loading="lazy" />
                   </div>
                   <div>
                     <div class="font-bold text-white text-xl tracking-wide">MAASGA</div>
-                    <div class="text-xs font-medium" style="color:#1e3a5f;">Froid &amp; Climatisation</div>
+                    <div class="text-xs font-medium text-fg-navy-soft">Froid &amp; Climatisation</div>
                   </div>
                 </div>
-                <p class="text-sm leading-relaxed max-w-sm" style="color:#1e3a5f;">
+                <p class="text-sm leading-relaxed max-w-sm" style="color:var(--fg-navy-soft);">
                   Spécialiste en vente, installation et maintenance de systèmes de climatisation à Ouagadougou et dans tout le Burkina Faso.
                 </p>
                 <div class="mt-5 space-y-3">
-                  <div class="text-sm" style="color:#1e3a5f;">
-                    <div class="font-semibold mb-3" style="color:#03045e;">Directeurs</div>
+                  <div class="text-sm" style="color:var(--fg-navy-soft);">
+                    <div class="font-semibold mb-3 text-fg-heading">Directeurs</div>
                     <div class="flex items-center space-x-2 mb-2">
-                      <div style="width:22px;height:22px;border-radius:50%;background:rgba(0,119,182,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                      <div class="w-[22px] h-[22px] rounded-[50%] flex items-center justify-center shrink-0" style="background:rgba(var(--rgb-brand),0.18);">
                         <NavIcon icon="fa-user" size={11} color="#0077b6" />
                       </div>
                       <span>Malick KOMPAORE - Directeur Commercial</span>
                     </div>
                     <div class="flex items-center space-x-2 mb-3">
-                      <div style="width:22px;height:22px;border-radius:50%;background:rgba(0,119,182,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                      <div class="w-[22px] h-[22px] rounded-[50%] flex items-center justify-center shrink-0" style="background:rgba(var(--rgb-brand),0.18);">
                         <NavIcon icon="fa-phone" size={11} color="#0077b6" />
                       </div>
                       <a href="tel:+22607494444" class="hover:text-white transition">+226 07 49 44 44</a>
                     </div>
                     <div class="flex items-center space-x-2 mb-2">
-                      <div style="width:22px;height:22px;border-radius:50%;background:rgba(124,58,237,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                      <div class="w-[22px] h-[22px] rounded-[50%] flex items-center justify-center shrink-0" style="background:rgba(124,58,237,0.18);">
                         <NavIcon icon="fa-user" size={11} color="#7c3aed" />
                       </div>
                       <span>Sherif SAWADOGO - Directeur Technique</span>
                     </div>
                     <div class="flex items-center space-x-2">
-                      <div style="width:22px;height:22px;border-radius:50%;background:rgba(124,58,237,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                      <div class="w-[22px] h-[22px] rounded-[50%] flex items-center justify-center shrink-0" style="background:rgba(124,58,237,0.18);">
                         <NavIcon icon="fa-phone" size={11} color="#7c3aed" />
                       </div>
                       <a href="tel:+22655996418" class="hover:text-white transition">+226 55 99 64 18</a>
                     </div>
                   </div>
-                  <div class="pt-3 border-t flex items-center gap-4" style="border-color:rgba(0,0,0,0.1);">
-                    <a href="https://wa.me/22655996418" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-2 text-sm font-semibold transition-all hover:scale-105" style="color:#16a34a;">
-                      <i class="fab fa-whatsapp text-xl" style="color:#25d366;"></i><span>WhatsApp</span>
+                  <div class="pt-3 border-t flex items-center gap-4" style="border-color:rgba(var(--rgb-black),0.1);">
+                    <a href="https://wa.me/22655996418" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-2 text-sm font-semibold transition-all hover:scale-105" style="color:var(--fg-success-bright);">
+                      <i class="fab fa-whatsapp text-xl" style="color:var(--fg-whatsapp);"></i><span>WhatsApp</span>
                     </a>
-                    <a href="mailto:maasgabf@gmail.com" class="flex items-center space-x-2 text-sm font-semibold transition-all hover:scale-105" style="color:#0077b6;">
-                      <div style="width:22px;height:22px;border-radius:50%;background:rgba(0,119,182,0.15);display:flex;align-items:center;justify-content:center;">
-                        <i class="fas fa-envelope text-xs" style="color:#0077b6;"></i>
+                    <a href="mailto:maasgabf@gmail.com" class="flex items-center space-x-2 text-sm font-semibold transition-all hover:scale-105" style="color:var(--fg-brand);">
+                      <div class="w-[22px] h-[22px] rounded-[50%] flex items-center justify-center" style="background:rgba(var(--rgb-brand),0.15);">
+                        <i class="fas fa-envelope text-xs text-fg-brand"></i>
                       </div><span>maasgabf@gmail.com</span>
                     </a>
                   </div>
@@ -403,8 +368,8 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               </div>
 
               <div>
-                <h4 class="font-semibold text-white mb-5 text-sm uppercase tracking-widest" style="color:#38bdf8;">Navigation</h4>
-                <ul class="space-y-3 text-sm" style="color:#64748b;">
+                <h4 class="font-semibold text-white mb-5 text-sm uppercase tracking-widest" style="color:var(--fg-on-dark-accent);">Navigation</h4>
+                <ul class="space-y-3 text-sm" style="color:var(--fg-subtle);">
                   {["/", "/catalogue", "/contrat-maintenance", "/simulateur", "/rendez-vous", "/avis", "/a-propos", "/contact"].map((href, i) => (
                     <li><a href={href} class="hover:text-white hover:pl-1 transition-all block">
                       {["Accueil","Catalogue","Maintenance","Simulateur BTU","Prendre RDV","Avis clients","À propos","Contact"][i]}
@@ -414,8 +379,8 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
               </div>
 
               <div>
-                <h4 class="font-semibold mb-5 text-sm uppercase tracking-widest" style="color:#38bdf8;">Services</h4>
-                <ul class="space-y-3 text-sm" style="color:#64748b;">
+                <h4 class="font-semibold mb-5 text-sm uppercase tracking-widest" style="color:var(--fg-on-dark-accent);">Services</h4>
+                <ul class="space-y-3 text-sm" style="color:var(--fg-subtle);">
                   {["Vente climatiseurs","Installation pro","Maintenance tri.","Devis gratuit","SAV réactif","Techniciens certifiés"].map(s => (
                     <li class="flex items-center space-x-2">
                       <NavIcon icon="fa-circle-check" size={13} color="#0ea5e9" />
@@ -426,14 +391,14 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 <div class="mt-5 p-3 rounded-xl text-xs" style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.12); color:#64748b;">
                   <NavIcon icon="fa-location-dot" size={13} color="#0ea5e9" class="mr-2" />
                   Ouagadougou, Secteurs 35
-                  <div class="mt-1 ml-5" style="color:#475569;">Burkina Faso</div>
+                  <div class="mt-1 ml-5 text-fg-muted">Burkina Faso</div>
                 </div>
               </div>
             </div>
 
             <div class="cyan-line mt-10 mb-6"></div>
-            <div class="flex flex-col md:flex-row justify-between items-center text-xs gap-4" style="color:#475569;">
-              <span>Â© 2026 MAASGA - Tous droits réservés</span>
+            <div class="flex flex-col md:flex-row justify-between items-center text-xs gap-4 text-fg-muted">
+              <span>© 2026 MAASGA - Tous droits réservés</span>
               <div class="flex items-center space-x-3 text-xs">
                 <button onclick="document.getElementById('cgu-modal').classList.remove('hidden')" class="hover:text-white transition">
                   <i class="fas fa-file-contract mr-1"></i>Conditions & Politique
@@ -445,487 +410,74 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
         </footer>
 
         {/* Loader hide + Scroll Reveal + Scroll Progress + Back-to-top + Counter animation */}
-        <script dangerouslySetInnerHTML={{ __html: `
-          // Hide loader (rapide si déjÃ  visité)
-          (function() {
-            function hideLoader() {
-              var l = document.getElementById('page-loader');
-              if (!l || l.style.display === 'none') return;
-              l.style.opacity = '0';
-              l.style.visibility = 'hidden';
-              setTimeout(function() { l.style.display = 'none'; }, 350);
-            }
-            // Use DOMContentLoaded instead of load — don't wait for external fonts/images
-            if (document.readyState !== 'loading') { setTimeout(hideLoader, 50); }
-            else { document.addEventListener('DOMContentLoaded', function() { setTimeout(hideLoader, 50); }); }
-          })();
+        <script dangerouslySetInnerHTML={{ __html: `window.__MAASGA_ROUTE_LABELS__ = ${JSON.stringify(ROUTE_LABELS)};` }} />
+        <script src={asset("/static/js/site.js")} defer></script>
 
-          // Scroll reveal (+ left/right variants) — classe legacy .visible
-          var legacyRevealObserver = new IntersectionObserver(function(entries) {
-            entries.forEach(function(entry) {
-              if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
-                legacyRevealObserver.unobserve(entry.target);
-              }
-            });
-          }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
-
-          // Moteur de révélation data-* — robuste, indépendant de GSAP.
-          // Ajoute .in dès que l'élément entre Ã  l'écran (CSS gère l'anim + cascade).
-          var revealObserver = new IntersectionObserver(function(entries) {
-            entries.forEach(function(entry) {
-              if (entry.isIntersecting) {
-                entry.target.classList.add('in');
-                revealObserver.unobserve(entry.target);
-              }
-            });
-          }, { threshold: 0.05, rootMargin: '0px 0px -8% 0px' });
-
-          // Animated number counters
-          var counterObserver = new IntersectionObserver(function(entries) {
-            entries.forEach(function(entry) {
-              if (entry.isIntersecting) {
-                var el = entry.target;
-                var target = el.getAttribute('data-count');
-                var isNum = /^\\d+$/.test(target);
-                if (isNum) {
-                  var end = parseInt(target);
-                  var duration = 1800;
-                  var startTime = null;
-                  function animate(timestamp) {
-                    if (!startTime) startTime = timestamp;
-                    var progress = Math.min((timestamp - startTime) / duration, 1);
-                    var eased = 1 - Math.pow(1 - progress, 3);
-                    el.textContent = Math.floor(eased * end) + (el.getAttribute('data-suffix') || '');
-                    if (progress < 1) requestAnimationFrame(animate);
-                  }
-                  requestAnimationFrame(animate);
-                }
-                counterObserver.unobserve(el);
-              }
-            });
-          }, { threshold: 0.3 });
-
-          // Attache les 3 observers ci-dessus Ã  tout élément concerné sous root —
-          // document au chargement initial, le nouveau <main> après un swap de
-          // transition async (voir bloc "ASYNC PAGE TRANSITIONS" plus bas).
-          function initPageBehaviors(root) {
-            root = root || document;
-            root.querySelectorAll('.reveal,.reveal-left,.reveal-right').forEach(function(el) { legacyRevealObserver.observe(el); });
-            root.querySelectorAll('[data-reveal],[data-stagger],[data-hero]').forEach(function(el) { revealObserver.observe(el); });
-            root.querySelectorAll('[data-count]').forEach(function(el) { counterObserver.observe(el); });
-          }
-          window.__maasgaInitPageBehaviors = initPageBehaviors;
-
-          document.addEventListener('DOMContentLoaded', function() {
-            // Close "Plus" dropdown on outside click
-            document.addEventListener('click', function(e) {
-              var dd = document.getElementById('nav-more-dropdown');
-              var wr = document.getElementById('nav-more-wrapper');
-              if (dd && wr && !wr.contains(e.target)) dd.classList.add('hidden');
-            });
-            // Close mobile menu on link click
-            document.querySelectorAll('#mobile-menu a').forEach(function(a) {
-              a.addEventListener('click', function() {
-                var m = document.getElementById('mobile-menu');
-                if (m) m.classList.remove('open');
-              });
-            });
-
-            // Profile avatar: show first letter of name when logged in
-            (function() {
-              fetch('/api/session-check', { credentials: 'same-origin' })
-                .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-                .then(function(data) {
-                  if (data && data.loggedIn && data.name) {
-                    var btn = document.getElementById('user-nav-btn');
-                    if (!btn) return;
-                    var letter = data.name.trim().charAt(0).toUpperCase();
-                    btn.innerHTML = '<span style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#0077b6,#0ea5e9);color:#fff;font-weight:800;font-size:0.85rem;display:flex;align-items:center;justify-content:center;pointer-events:none;">' + letter + '</span>';
-                    btn.style.padding = '0';
-                    btn.title = data.name;
-                  }
-                })
-                .catch(function() {});
-            })();
-
-            initPageBehaviors(document);
-
-            var backToTop = document.getElementById('back-to-top');
-            var headerPill = document.getElementById('header-pill');
-            window.addEventListener('scroll', function() {
-              var scrollTop = window.scrollY;
-              if (backToTop) backToTop.style.display = scrollTop > 400 ? 'flex' : 'none';
-              if (headerPill) headerPill.classList.toggle('scrolled', scrollTop > 20);
-            }, { passive: true });
-          });
-        `}} />
-
-        {/* â”€â”€â”€ MOTEUR D'ANIMATION GSAP DÉCLARATIF (perf-safe) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        {/* ─── MOTEUR D'ANIMATION GSAP DÉCLARATIF (perf-safe) ───────────────
              Piloté par attributs data-* sur n'importe quelle page :
-               data-reveal    â†’ apparition au scroll
-               data-stagger   â†’ enfants directs révélés en cascade
-               data-parallax  â†’ parallax léger (valeur = intensité px, borné Â±60)
-               .magnetic      â†’ CTA magnétique (desktop pointer:fine uniquement)
+               data-reveal    → apparition au scroll
+               data-stagger   → enfants directs révélés en cascade
+               data-parallax  → parallax léger (valeur = intensité px, borné ±60)
+               .magnetic      → CTA magnétique (desktop pointer:fine uniquement)
              FALLBACK : le contenu est visible par défaut ; l'état caché (opacity:0)
              n'existe que sous html.gsap-ready, posé seulement quand GSAP répond.
-             Si GSAP absent/lent ou reduced-motion â†’ tout reste visible. */}
-        <script dangerouslySetInnerHTML={{ __html: `
-          (function() {
-            var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            var finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-
-            function initGsap(root) {
-              root = root || document;
-              if (!window.gsap || !window.ScrollTrigger) return false;
-              var gsap = window.gsap;
-              gsap.registerPlugin(window.ScrollTrigger);
-
-              // Les reveals/cascades sont gérés en CSS+IntersectionObserver (robuste).
-              // GSAP n'ajoute QUE des enrichissements. Distinction clé sous reduced-motion :
-              //  - parallax = mouvement AUTOMATIQUE au scroll â†’ désactivé sous reduced-motion.
-              //  - tilt + CTA magnétiques = interactions DIRECTES au pointeur (déclenchées par
-              //    l'utilisateur, pas auto-jouées) â†’ CONSERVÉS même sous reduced-motion, sinon
-              //    l'effet demandé ne se voit jamais chez un utilisateur qui a Â« réduire les
-              //    animations Â» activé (cas de l'owner de ce site).
-              if (!reduce) {
-                gsap.utils.toArray(root.querySelectorAll('[data-parallax]')).forEach(function(el) {
-                  var amount = parseFloat(el.getAttribute('data-parallax')) || 30;
-                  amount = Math.max(-80, Math.min(80, amount));
-                  gsap.to(el, {
-                    y: amount, ease: 'none',
-                    scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: 1 }
-                  });
-                });
-              }
-
-              if (finePointer) {
-                root.querySelectorAll('.magnetic').forEach(function(btn) {
-                  btn.addEventListener('mousemove', function(e) {
-                    var r = btn.getBoundingClientRect();
-                    var mx = e.clientX - r.left - r.width / 2;
-                    var my = e.clientY - r.top - r.height / 2;
-                    gsap.to(btn, { x: mx * 0.22, y: my * 0.3, duration: 0.4, ease: 'power3.out' });
-                  });
-                  btn.addEventListener('mouseleave', function() {
-                    gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: 'elastic.out(1, 0.4)' });
-                  });
-                });
-
-                // Tilt 3D Â« carte entière Â» (type Tympanus) — SEULE la carte s'incline (plus
-                // de couches internes qui glissent, plus de reflet). Suivi RÉACTIF de la
-                // souris : lissage court (0.14s) + overwrite:'auto' pour que chaque mouvement
-                // reprenne la main immédiatement (sinon les tweens s'empilent et l'effet
-                // Â« traîne Â»). Rebond élastique accentué au départ du curseur.
-                root.querySelectorAll('[data-tilt]').forEach(function(card) {
-                  gsap.set(card, { transformPerspective: 900, transformOrigin: 'center' });
-                  var rect = null;
-                  card.addEventListener('mouseenter', function() { rect = card.getBoundingClientRect(); });
-                  card.addEventListener('mousemove', function(e) {
-                    if (!rect) rect = card.getBoundingClientRect();
-                    var x = (e.clientX - rect.left) / rect.width - 0.5;
-                    var y = (e.clientY - rect.top) / rect.height - 0.5;
-                    gsap.to(card, {
-                      rotateY: x * 20, rotateX: -y * 20,
-                      duration: 0.14, ease: 'power2.out', overwrite: 'auto'
-                    });
-                  });
-                  card.addEventListener('mouseleave', function() {
-                    rect = null;
-                    gsap.to(card, { rotateX: 0, rotateY: 0, duration: 1.05, ease: 'elastic.out(1.3, 0.3)', overwrite: 'auto' });
-                  });
-                });
-              }
-              return true;
-            }
-            window.__maasgaReinitGsap = initGsap;
-
-            // GSAP est chargé en <script defer> depuis un CDN : sur un réseau lent le
-            // download peut prendre plusieurs secondes (mesuré ~5s ici). L'ancienne fenêtre
-            // de 3s abandonnait avant que window.gsap soit prêt â†’ le tilt/parallax ne
-            // s'attachaient jamais au 1er chargement (il fallait naviguer pour re-déclencher
-            // l'init). On élargit le poll Ã  ~20s ET on relance au 'load' de la fenêtre (qui
-            // ne se déclenche qu'une fois les scripts defer téléchargés, même très tard).
-            var gsapInited = initGsap(document);
-            if (!gsapInited) {
-              var tries = 0;
-              var iv = setInterval(function() {
-                tries++;
-                if (!gsapInited) gsapInited = initGsap(document);
-                if (gsapInited || tries > 400) clearInterval(iv);
-              }, 50);
-              window.addEventListener('load', function() {
-                if (!gsapInited) gsapInited = initGsap(document);
-              });
-            }
-          })();
-        `}} />
+             Si GSAP absent/lent ou reduced-motion → tout reste visible. */}
+        
 
         {/* ASYNC PAGE TRANSITIONS — fetch + swap de <main>, overlay texte qui glisse */}
-        <script dangerouslySetInnerHTML={{ __html: `
-          (function() {
-            var MIN_DISPLAY_MS = 900;
-            var FETCH_TIMEOUT_MS = 5000;
-            var ROUTE_LABELS = ${JSON.stringify(ROUTE_LABELS)};
-            var navigationInProgress = false;
+        
 
-            function labelForPath(pathname) {
-              if (ROUTE_LABELS[pathname]) return ROUTE_LABELS[pathname];
-              var segment = pathname.split('/').filter(Boolean).pop() || 'Accueil';
-              return segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
-            }
-
-            function showOverlay(label) {
-              var overlay = document.getElementById('page-transition');
-              var text = document.getElementById('page-transition-text');
-              if (!overlay || !text) return;
-              text.textContent = label;
-              text.classList.remove('pt-slide');
-              void text.offsetWidth; // force reflow so the animation restarts every time
-              text.classList.add('pt-slide');
-              overlay.style.opacity = '1';
-              overlay.style.pointerEvents = 'all';
-            }
-
-            function hideOverlay() {
-              var overlay = document.getElementById('page-transition');
-              if (overlay) {
-                overlay.style.opacity = '0';
-                overlay.style.pointerEvents = 'none';
-              }
-            }
-
-            function runNewMainScripts(main) {
-              main.querySelectorAll('script').forEach(function(oldScript) {
-                var newScript = document.createElement('script');
-                for (var i = 0; i < oldScript.attributes.length; i++) {
-                  var attr = oldScript.attributes[i];
-                  newScript.setAttribute(attr.name, attr.value);
-                }
-                newScript.textContent = oldScript.textContent;
-                oldScript.parentNode.replaceChild(newScript, oldScript);
-              });
-            }
-
-            function syncNavActiveState(doc) {
-              var oldHeader = document.querySelector('header');
-              var newHeader = doc.querySelector('header');
-              if (!oldHeader || !newHeader) return;
-              // Le header est rendu par le MÊME composant Layout pour chaque page :
-              // l'ordre des <a href> est identique d'une page Ã  l'autre, seul l'état
-              // actif change. On apparie donc par INDEX (et non par href) — car le
-              // même href apparaît dans plusieurs variantes (nav xl / nav lg /
-              // dropdown / menu mobile) ET comme CTA (bouton "Rendez-vous"), chacun
-              // avec un style actif différent. L'ancien appariement par href
-              // recopiait la classe de CHAQUE nouveau lien vers TOUS les anciens de
-              // même href : le dernier dans l'ordre DOM (souvent un CTA non-actif)
-              // écrasait l'état actif du vrai lien nav â†’ aucune page marquée active.
-              var oldLinks = oldHeader.querySelectorAll('a[href]');
-              var newLinks = newHeader.querySelectorAll('a[href]');
-              if (oldLinks.length === newLinks.length) {
-                for (var i = 0; i < oldLinks.length; i++) {
-                  var oldLink = oldLinks[i], newLink = newLinks[i];
-                  oldLink.className = newLink.className;
-                  if (newLink.hasAttribute('aria-current')) oldLink.setAttribute('aria-current', newLink.getAttribute('aria-current'));
-                  else oldLink.removeAttribute('aria-current');
-                  if (newLink.hasAttribute('style')) oldLink.setAttribute('style', newLink.getAttribute('style'));
-                  else oldLink.removeAttribute('style');
-                  var newIcon = newLink.querySelector('i.fas');
-                  var oldIcon = oldLink.querySelector('i.fas');
-                  if (newIcon && oldIcon && newIcon.hasAttribute('style')) oldIcon.setAttribute('style', newIcon.getAttribute('style'));
-                }
-              }
-              // Bouton "Plus" (dropdown lg) : ce n'est pas un <a href>, on le
-              // synchronise Ã  part pour qu'il s'illumine quand la page courante est
-              // l'une de ses entrées (À propos / Espace client).
-              var oldPlus = oldHeader.querySelector('#nav-more-wrapper > button');
-              var newPlus = newHeader.querySelector('#nav-more-wrapper > button');
-              if (oldPlus && newPlus) oldPlus.className = newPlus.className;
-              var oldEyebrow = oldHeader.querySelector('.eyebrow');
-              var newEyebrow = newHeader.querySelector('.eyebrow');
-              if (oldEyebrow && newEyebrow) {
-                oldEyebrow.textContent = newEyebrow.textContent;
-              } else if (oldEyebrow && !newEyebrow) {
-                oldEyebrow.remove();
-              }
-            }
-
-            function swapContent(html) {
-              var doc = new DOMParser().parseFromString(html, 'text/html');
-              var newMain = doc.getElementById('main-content');
-              var currentMain = document.getElementById('main-content');
-              if (!newMain || !currentMain) return false;
-              newMain = document.adoptNode(newMain);
-              if (window.ScrollTrigger) {
-                window.ScrollTrigger.getAll().forEach(function(st) {
-                  if (st.trigger && currentMain.contains(st.trigger)) st.kill();
-                });
-              }
-              currentMain.replaceWith(newMain);
-              document.title = doc.title;
-              syncNavActiveState(doc);
-              runNewMainScripts(newMain);
-              if (window.__maasgaInitPageBehaviors) window.__maasgaInitPageBehaviors(newMain);
-              if (window.__maasgaReinitGsap) window.__maasgaReinitGsap(newMain);
-              return true;
-            }
-
-            function navigate(href, isPopstate) {
-              if (navigationInProgress) return;
-              navigationInProgress = true;
-              // Replie toute navigation ouverte AVANT la transition — sinon le
-              // dropdown "Plus" (fermé uniquement au clic extérieur) et le menu
-              // mobile restent ouverts par-dessus la nouvelle page.
-              var dd = document.getElementById('nav-more-dropdown');
-              if (dd) dd.classList.add('hidden');
-              var mm = document.getElementById('mobile-menu');
-              if (mm) mm.classList.remove('open');
-              var burger = document.querySelector('button[aria-controls="mobile-menu"]');
-              if (burger) {
-                burger.setAttribute('aria-expanded', 'false');
-                var bi = burger.querySelector('i');
-                if (bi) bi.className = 'fas fa-bars text-lg';
-              }
-              var pathname = href.split('?')[0].split('#')[0];
-              var supportsVT = typeof document.startViewTransition === 'function';
-              // Le morph View Transitions (sans overlay) est réservé aux navigations
-              // catalogue â†” fiche produit (/catalogue/:id) — lÃ  où une image partage un
-              // view-transition-name. Partout ailleurs on garde l'overlay navy (Â« preloader Â»)
-              // Ã  texte glissant, historique du site.
-              function isProductPath(p) { return /^\\/catalogue\\/[0-9]+$/.test(p); }
-              var here = window.location.pathname;
-              // Morph uniquement sur catalogue â†’ fiche produit, et fiche produit â†’ catalogue.
-              // Quitter une fiche vers une AUTRE page (ex: contact) garde l'overlay navy.
-              var useMorph = supportsVT && (isProductPath(pathname) || (isProductPath(here) && pathname === '/catalogue'));
-
-              var controller = new AbortController();
-              var timeoutId = setTimeout(function() { controller.abort(); }, FETCH_TIMEOUT_MS);
-              var fetchPromise = fetch(href, { credentials: 'same-origin', signal: controller.signal })
-                .then(function(res) {
-                  clearTimeout(timeoutId);
-                  if (!res.ok) throw new Error('HTTP ' + res.status);
-                  return res.text();
-                });
-
-              function finishNav(html) {
-                var ok = swapContent(html);
-                if (!ok) { window.location.href = href; return false; }
-                if (!isPopstate) { history.pushState(null, '', href); window.scrollTo(0, 0); }
-                if (typeof window.gtag === 'function') {
-                  window.gtag('event', 'page_view', { page_path: pathname, page_title: document.title });
-                }
-                return true;
-              }
-
-              if (useMorph) {
-                // Navigation catalogue â†” fiche produit : le crossfade + le morph de l'image
-                // (view-transition-name partagé) SONT la transition — pas d'overlay navy,
-                // il masquerait le morph.
-                fetchPromise.then(function(html) {
-                  var vt = document.startViewTransition(function() { finishNav(html); });
-                  vt.finished.then(function() { navigationInProgress = false; }, function() { navigationInProgress = false; });
-                }).catch(function() {
-                  navigationInProgress = false;
-                  window.location.href = href;
-                });
-              } else {
-                // Toutes les autres navigations : overlay navy Ã  texte glissant (Â« preloader Â») + swap.
-                showOverlay(labelForPath(pathname));
-                var minTimer = new Promise(function(resolve) { setTimeout(resolve, MIN_DISPLAY_MS); });
-                Promise.all([fetchPromise, minTimer]).then(function(results) {
-                  finishNav(results[0]);
-                  hideOverlay();
-                  navigationInProgress = false;
-                }).catch(function() {
-                  navigationInProgress = false;
-                  window.location.href = href;
-                });
-              }
-            }
-
-            document.addEventListener('click', function(e) {
-              var link = e.target.closest('a[href]');
-              if (!link) return;
-              if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-              var href = link.getAttribute('href');
-              if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('tel:') || href.startsWith('mailto:') || href.startsWith('/admin') || link.target === '_blank') return;
-              e.preventDefault();
-              navigate(href, false);
-            });
-
-            window.__maasgaNavigate = navigate; // exposé pour le hardening des tâches suivantes
-
-            window.addEventListener('popstate', function() {
-              navigate(window.location.pathname + window.location.search, true);
-            });
-          })();
-        `}} />
-
-        <script dangerouslySetInnerHTML={{ __html: `
-          (function() {
-            const hasAccepted = localStorage.getItem('maasga_cgu_accepted') === 'true'
-            if (!hasAccepted) {
-              setTimeout(() => {
-                const modal = document.getElementById('cgu-modal')
-                if (modal) modal.classList.remove('hidden')
-              }, 500)
-            }
-            const checkbox = document.getElementById('accept-cgu')
-            const acceptBtn = document.getElementById('accept-btn')
-            if (checkbox && acceptBtn) {
-              checkbox.addEventListener('change', () => {
-                acceptBtn.disabled = !checkbox.checked
-              })
-            }
-            window.acceptCGU = () => {
-              const checkbox = document.getElementById('accept-cgu')
-              if (checkbox?.checked) {
-                localStorage.setItem('maasga_cgu_accepted', 'true');
-                // Legacy: also keep version info in a separate key (does not bloat the check key)
-                localStorage.setItem('maasga_cgu_meta', JSON.stringify({
-                  timestamp: new Date().toISOString(),
-                  version: '1.0'
-                }))
-                const modal = document.getElementById('cgu-modal')
-                if (modal) modal.classList.add('hidden')
-              }
-            }
-          })()
-        `}} />
+        
 
 
+
+        {/* BARRE D'ACTIONS MOBILE — les 4 actions qui convertissent, toujours à portée de pouce (< md) */}
+        <nav class="mobile-action-bar md:hidden" aria-label="Actions rapides">
+          <a href="tel:+22655996418" class="mab-item">
+            <i class="fas fa-phone" aria-hidden="true"></i><span>Appeler</span>
+          </a>
+          <button type="button" onclick="toggleWaPanel()" class="mab-item" aria-controls="wa-panel">
+            <i class="fab fa-whatsapp" aria-hidden="true"></i><span>WhatsApp</span>
+          </button>
+          <a href="/simulateur" class={`mab-item ${activePage === 'simulateur' ? 'is-active' : ''}`} {...(activePage === 'simulateur' ? { 'aria-current': 'page' } : {})}>
+            <i class="fas fa-calculator" aria-hidden="true"></i><span>Simulateur</span>
+          </a>
+          <a href="/rendez-vous" class="mab-item mab-primary" {...(activePage === 'rdv' ? { 'aria-current': 'page' } : {})}>
+            <i class="fas fa-calendar-check" aria-hidden="true"></i><span>Rendez-vous</span>
+          </a>
+        </nav>
 
         {/* WhatsApp Pre-Chat Widget */}
         <div id="wa-widget" style="position:fixed; bottom:1.5rem; left:1.5rem; z-index:9999;">
 
           {/* Panel */}
-          <div id="wa-panel" style="display:none; position:absolute; bottom:72px; left:0; width:300px; border-radius:18px; overflow:hidden; box-shadow:0 24px 64px rgba(0,0,0,0.45); transform-origin:bottom left; animation:waPop 0.22s cubic-bezier(.34,1.56,.64,1) both;">
+          <div id="wa-panel" class="absolute w-[300px] rounded-[18px] overflow-hidden" style="display:none; bottom:72px; left:0; box-shadow:0 24px 64px rgba(var(--rgb-black),0.45); transform-origin:bottom left; animation:waPop 0.22s cubic-bezier(.34,1.56,.64,1) both;">
             {/* Header WhatsApp */}
             <div style="background:#075E54; padding:14px 14px 20px;">
-              <div style="display:flex; align-items:center; gap:10px;">
+              <div class="flex items-center gap-[10px]">
                 <div style="width:44px; height:44px; border-radius:50%; background:#128C7E; display:flex; align-items:center; justify-content:center; flex-shrink:0; border:2px solid rgba(255,255,255,0.2);">
-                  <i class="fab fa-whatsapp" style="color:white; font-size:1.5rem;"></i>
+                  <i class="fab fa-whatsapp" style="color:var(--fg-on-dark); font-size:1.5rem;"></i>
                 </div>
-                <div style="flex:1;">
-                  <div style="color:white; font-weight:700; font-size:0.9rem; line-height:1.2;">MAASGA Support</div>
-                  <div style="color:rgba(255,255,255,0.75); font-size:0.72rem; margin-top:2px;">🟢 En ligne · Répond rapidement</div>
+                <div class="flex-1">
+                  <div class="text-fg-on-dark font-bold text-[0.9rem]" style="line-height:1.2;">MAASGA Support</div>
+                  <div class="text-[0.72rem] mt-[2px]" style="color:rgba(var(--rgb-white),0.75);">🟢 En ligne · Répond rapidement</div>
                 </div>
-                <button onclick="closeWaPanel()" style="color:rgba(255,255,255,0.65); background:none; border:none; cursor:pointer; font-size:1.15rem; padding:4px; line-height:1; border-radius:50%; transition:all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='none'">✕</button>
+                <button onclick="closeWaPanel()" class="cursor-pointer text-[1.15rem] p-[4px] rounded-[50%]" style="color:rgba(var(--rgb-white),0.65); background:none; border:none; line-height:1; transition:all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='none'">✕</button>
               </div>
             </div>
 
             {/* Chat area */}
             <div style="background:#e5ddd5; padding:14px 12px 16px;">
               {/* Message bubble */}
-              <div style="display:flex; gap:6px; margin-bottom:14px;">
-                <div style="background:white; border-radius:0 10px 10px 10px; padding:10px 12px; box-shadow:0 1px 2px rgba(0,0,0,0.12); max-width:85%;">
-                  <p style="color:#111; font-size:0.83rem; line-height:1.5; margin:0 0 4px;">Bonjour 👋 Comment puis-je vous aider ?</p>
-                  <span style="color:#888; font-size:0.68rem; display:block; text-align:right;">MAASGA Climatisation</span>
+              <div class="flex gap-[6px] mb-[14px]">
+                <div class="bg-surface-card py-[10px] px-[12px] max-w-[85%]" style="border-radius:0 10px 10px 10px; box-shadow:0 1px 2px rgba(var(--rgb-black),0.12);">
+                  <p class="text-[0.83rem]" style="color:#111; line-height:1.5; margin:0 0 4px;">Bonjour 👋 Comment puis-je vous aider ?</p>
+                  <span class="text-[0.68rem] block text-right" style="color:#888;">MAASGA Climatisation</span>
                 </div>
               </div>
 
               {/* Quick replies */}
-              <div style="display:flex; flex-direction:column; gap:7px;">
+              <div class="flex flex-col gap-[7px]">
                 {[
                   { icon: "🔧", label: "Demander un devis", msg: "Bonjour MAASGA, je souhaite un devis pour l'installation ou la maintenance d'un climatiseur." },
                   { icon: "📅", label: "Prendre un rendez-vous", href: "/rendez-vous" },
@@ -935,14 +487,14 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 ].map(opt => (
                   opt.href
                     ? <a href={opt.href}
-                        style="display:flex; align-items:center; gap:8px; background:white; border-radius:20px; padding:8px 14px; font-size:0.8rem; font-weight:600; color:#075E54; text-decoration:none; box-shadow:0 1px 3px rgba(0,0,0,0.1); transition:all 0.18s; border:none; cursor:pointer;"
+                        class="flex items-center gap-[8px] bg-surface-card rounded-[20px] py-[8px] px-[14px] text-[0.8rem] font-semibold no-underline cursor-pointer" style="color:#075E54; box-shadow:0 1px 3px rgba(var(--rgb-black),0.1); transition:all 0.18s; border:none;"
                         onmouseover="this.style.background='#128C7E'; this.style.color='white';" onmouseout="this.style.background='white'; this.style.color='#075E54';">
                         <span>{opt.icon}</span><span>{opt.label}</span>
-                        <i class="fas fa-arrow-right" style="margin-left:auto; font-size:0.65rem; opacity:0.6;"></i>
+                        <i class="fas fa-arrow-right text-[0.65rem]" style="margin-left:auto; opacity:0.6;"></i>
                       </a>
                     : <button
                         onclick={`openWa(${JSON.stringify(opt.msg)})`}
-                        style="display:flex; align-items:center; gap:8px; background:white; border-radius:20px; padding:8px 14px; font-size:0.8rem; font-weight:600; color:#075E54; text-align:left; box-shadow:0 1px 3px rgba(0,0,0,0.1); transition:all 0.18s; border:none; cursor:pointer; width:100%;"
+                        class="flex items-center gap-[8px] bg-surface-card rounded-[20px] py-[8px] px-[14px] text-[0.8rem] font-semibold text-left cursor-pointer w-full" style="color:#075E54; box-shadow:0 1px 3px rgba(var(--rgb-black),0.1); transition:all 0.18s; border:none;"
                         onmouseover="this.style.background='#128C7E'; this.style.color='white';" onmouseout="this.style.background='white'; this.style.color='#075E54';">
                         <span>{opt.icon}</span><span>{opt.label}</span>
                         <i class="fab fa-whatsapp" style="margin-left:auto; font-size:0.85rem; opacity:0.7;"></i>
@@ -950,15 +502,15 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
                 ))}
               </div>
 
-              <p style="text-align:center; font-size:0.65rem; color:#666; margin-top:12px; margin-bottom:0;">Propulsé par WhatsApp · Réponse en &lt; 30 min</p>
+              <p class="text-center text-[0.65rem] mt-[12px]" style="color:#666; margin-bottom:0;">Propulsé par WhatsApp · Réponse en &lt; 30 min</p>
             </div>
           </div>
 
           {/* Main button */}
-          <button onclick="toggleWaPanel()" id="wa-btn" class="whatsapp-float" aria-label="Discuter sur WhatsApp" style="border:none; cursor:pointer; position:relative;">
+          <button onclick="toggleWaPanel()" id="wa-btn" class="whatsapp-float cursor-pointer" aria-label="Discuter sur WhatsApp" style="border:none; position:relative;">
             <i id="wa-icon-open" class="fab fa-whatsapp" style="transition:all 0.2s;"></i>
             <i id="wa-icon-close" class="fas fa-times" style="display:none; transition:all 0.2s;"></i>
-            <span id="wa-notif-dot" style="position:absolute; top:3px; right:3px; width:11px; height:11px; background:#ff3b30; border-radius:50%; border:2px solid white; animation:waDot 1.8s ease-in-out infinite;"></span>
+            <span id="wa-notif-dot" class="absolute w-[11px] h-[11px] rounded-[50%]" style="top:3px; right:3px; background:#ff3b30; border:2px solid white; animation:waDot 1.8s ease-in-out infinite;"></span>
           </button>
         </div>
 
@@ -969,201 +521,36 @@ export const Layout = ({ children, title = "MAASGA - Expert Froid & Climatisatio
           #back-to-top:hover { transform:scale(1.1) translateY(-2px); box-shadow:0 8px 30px rgba(14,165,233,0.5); }
         ` }} />
 
-        <script dangerouslySetInnerHTML={{ __html: `
-          function toggleWaPanel() {
-            const panel = document.getElementById('wa-panel');
-            const iconOpen = document.getElementById('wa-icon-open');
-            const iconClose = document.getElementById('wa-icon-close');
-            const dot = document.getElementById('wa-notif-dot');
-            const isOpen = panel.style.display !== 'none';
-            if (isOpen) {
-              panel.style.display = 'none';
-              iconOpen.style.display = '';
-              iconClose.style.display = 'none';
-            } else {
-              panel.style.display = '';
-              panel.style.animation = 'none';
-              void panel.offsetWidth;
-              panel.style.animation = 'waPop 0.22s cubic-bezier(.34,1.56,.64,1) both';
-              iconOpen.style.display = 'none';
-              iconClose.style.display = '';
-              dot.style.display = 'none';
-            }
-          }
-          function closeWaPanel() {
-            document.getElementById('wa-panel').style.display = 'none';
-            document.getElementById('wa-icon-open').style.display = '';
-            document.getElementById('wa-icon-close').style.display = 'none';
-          }
-          function openWa(msg) {
-            window.open('https://wa.me/22655996418?text=' + encodeURIComponent(msg), '_blank');
-          }
-          // Auto-open after 30s on first visit (only if user hasn't dismissed, no DNT)
-          if (!sessionStorage.getItem('wa_shown') && navigator.doNotTrack !== '1') {
-            setTimeout(function() {
-              if (document.getElementById('wa-panel').style.display === 'none') {
-                toggleWaPanel();
-                sessionStorage.setItem('wa_shown', '1');
-              }
-            }, 30000);
-          }
-        ` }} />
+        
 
         {/* Cookie Consent Banner */}
-        <div id="cookie-banner" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:99998; background:rgba(11,17,32,0.97); backdrop-filter:blur(12px); border-top:1px solid rgba(56,189,248,0.2); padding:16px 24px; animation:slideUp 0.3s ease-out;">
+        <div id="cookie-banner" class="py-[16px] px-[24px]" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:99998; background:rgba(11,17,32,0.97); backdrop-filter:blur(12px); border-top:1px solid rgba(var(--rgb-sky),0.2); animation:slideUp 0.3s ease-out;">
           <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
-            <div class="flex items-center gap-2 text-sm" style="color:#e2e8f0; flex:1;">
-              <i class="fas fa-cookie-bite" style="color:#f59e0b; font-size:1.1rem;"></i>
+            <div class="flex items-center gap-2 text-sm flex-1" style="color:var(--fg-on-dark-soft);">
+              <i class="fas fa-cookie-bite text-fg-amber text-[1.1rem]"></i>
               <span>Ce site utilise des cookies pour améliorer votre expérience et analyser le trafic via Google Analytics.
-                <button onclick="document.getElementById('cgu-modal').classList.remove('hidden')" class="underline hover:no-underline" style="color:#38bdf8;">En savoir plus</button>
+                <button onclick="document.getElementById('cgu-modal').classList.remove('hidden')" class="underline hover:no-underline text-fg-on-dark-accent">En savoir plus</button>
               </span>
             </div>
             <div class="flex items-center gap-2 shrink-0">
               <button onclick="handleCookieConsent(false)" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all hover:bg-gray-700" style="background:rgba(255,255,255,0.1); color:#94a3b8; border:1px solid rgba(255,255,255,0.15);">
                 Refuser
               </button>
-              <button onclick="handleCookieConsent(true)" class="px-4 py-2 rounded-lg text-xs font-bold transition-all hover:opacity-90" style="background:linear-gradient(135deg,#0ea5e9,#3b82f6); color:white; border:none; box-shadow:0 2px 8px rgba(14,165,233,0.3);">
+              <button onclick="handleCookieConsent(true)" class="px-4 py-2 rounded-lg text-xs font-bold transition-all hover:opacity-90 text-fg-on-dark" style="background:linear-gradient(135deg,var(--surface-sky),var(--surface-blue)); border:none; box-shadow:0 2px 8px rgba(var(--rgb-sky-deep),0.3);">
                 Accepter
               </button>
             </div>
           </div>
         </div>
-        <script dangerouslySetInnerHTML={{ __html: `
-          (function() {
-            var consent = localStorage.getItem('maasga_cookies_accepted');
-            if (consent === null) {
-              setTimeout(function() {
-                var b = document.getElementById('cookie-banner');
-                if (b) b.style.display = 'block';
-              }, 2000);
-            }
-          })();
-          function handleCookieConsent(accepted) {
-            localStorage.setItem('maasga_cookies_accepted', accepted ? 'true' : 'false');
-            document.getElementById('cookie-banner').style.display = 'none';
-            if (accepted && typeof gtag === 'function') {
-              gtag('consent', 'update', { analytics_storage: 'granted' });
-            }
-          }
-        `}} />
+        
         <style dangerouslySetInnerHTML={{ __html: '@keyframes slideUp { from { transform:translateY(100%); opacity:0; } to { transform:translateY(0); opacity:1; } }' }} />
 
         {/* Toast Notification System */}
-        <div id="toast-container" class="fixed top-4 right-4 z-[99999] flex flex-col gap-3 pointer-events-none" style="max-width:380px;"></div>
-        <script dangerouslySetInnerHTML={{ __html: `
-          window.showToast = function(msg, type) {
-            type = type || 'info';
-            var colors = {
-              success: 'linear-gradient(135deg,#059669,#10b981)',
-              error: 'linear-gradient(135deg,#dc2626,#ef4444)',
-              warning: 'linear-gradient(135deg,#d97706,#f59e0b)',
-              info: 'linear-gradient(135deg,#0ea5e9,#3b82f6)'
-            };
-            var icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
-            var container = document.getElementById('toast-container');
-            var el = document.createElement('div');
-            el.className = 'pointer-events-auto flex items-center space-x-3 px-5 py-3.5 rounded-2xl shadow-2xl text-white text-sm font-medium';
-            el.style.cssText = 'background:' + (colors[type]||colors.info) + ';animation:slideInRight .35s ease-out;border:1px solid rgba(255,255,255,0.15);';
-            var ico = document.createElement('i');
-            ico.className = 'fas ' + (icons[type]||icons.info) + ' text-lg opacity-90';
-            var sp = document.createElement('span');
-            sp.textContent = msg;
-            el.appendChild(ico);
-            el.appendChild(sp);
-            container.appendChild(el);
-            setTimeout(function() {
-              el.style.animation = 'fadeOutRight .35s ease-in forwards';
-              setTimeout(function() { el.remove(); }, 350);
-            }, 4000);
-          };
+        <div id="toast-container" class="fixed top-4 right-4 z-[99999] flex flex-col gap-3 pointer-events-none max-w-[380px]"></div>
+        
 
-          // Focus trap utility for modals
-          window.__focusTrapStack = [];
-          window.trapFocus = function(modalEl) {
-            var focusable = modalEl.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])');
-            if (focusable.length === 0) return;
-            var first = focusable[0];
-            var last = focusable[focusable.length - 1];
-            function handler(e) {
-              if (e.key !== 'Tab') return;
-              if (e.shiftKey) {
-                if (document.activeElement === first) { e.preventDefault(); last.focus(); }
-              } else {
-                if (document.activeElement === last) { e.preventDefault(); first.focus(); }
-              }
-            }
-            modalEl.__focusTrapHandler = handler;
-            modalEl.addEventListener('keydown', handler);
-            window.__focusTrapStack.push(modalEl);
-            first.focus();
-          };
-          window.releaseFocus = function(modalEl) {
-            if (modalEl && modalEl.__focusTrapHandler) {
-              modalEl.removeEventListener('keydown', modalEl.__focusTrapHandler);
-              delete modalEl.__focusTrapHandler;
-            }
-            window.__focusTrapStack = window.__focusTrapStack.filter(function(m) { return m !== modalEl; });
-          };
-
-          // Alerte réappro stock (utilisée par les cartes catalogue et la page produit)
-          window.submitStockAlert = function(productId) {
-            var phoneEl = document.getElementById('stock-phone-' + productId) || document.getElementById('modal-stock-phone');
-            var phone = phoneEl ? phoneEl.value.trim() : '';
-            if (!phone || phone.length < 8) {
-              alert('Veuillez saisir un numéro de téléphone valide.');
-              return;
-            }
-            var fd = new FormData();
-            fd.append('product_id', String(productId));
-            fd.append('phone', phone);
-            fetch('/api/stock-alert', { method: 'POST', body: fd })
-              .then(function(r) { return r.json(); })
-              .then(function(data) {
-                if (data.ok) {
-                  var safeMsg = (data.message || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-                  var container = document.getElementById('stock-alert-' + productId);
-                  if (container) {
-                    container.innerHTML = '<div class="text-xs text-center py-2 rounded-lg" style="background:rgba(16,185,129,0.1); color:#34d399; border:1px solid rgba(16,185,129,0.2);"><i class="fas fa-check-circle mr-1"></i>' + safeMsg + '</div>';
-                  }
-                  var modalForm = document.getElementById('modal-stock-form');
-                  if (modalForm) {
-                    modalForm.parentElement.innerHTML = '<div style="text-align:center;padding:12px;border-radius:12px;background:rgba(16,185,129,0.1);color:#34d399;border:1px solid rgba(16,185,129,0.2);font-size:0.85rem;"><i class="fas fa-check-circle" style="margin-right:6px;"></i>' + safeMsg + '</div>';
-                  }
-                } else {
-                  alert(data.error || 'Erreur, réessayez.');
-                }
-              })
-              .catch(function() { alert('Erreur réseau.'); });
-          };
-        ` }} />
-
-        {/* â”€â”€â”€ Lenis smooth scroll (se synchronise au ticker GSAP existant) â”€â”€â”€ */}
-        <script dangerouslySetInnerHTML={{ __html: `
-          (function(){
-            function boot(){
-              if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-              if (typeof Lenis === 'undefined') return;
-              var lenis = new Lenis({ duration: 1.1, smoothWheel: true });
-              window.__lenis = lenis;
-              var usingGsap = false;
-              // Fallback rAF : garantit que Lenis avance même si GSAP tarde (jamais de scroll figé)
-              function raf(t){ if (!usingGsap) { lenis.raf(t); requestAnimationFrame(raf); } }
-              requestAnimationFrame(raf);
-              function wire(){
-                if (window.gsap && window.ScrollTrigger) {
-                  lenis.on('scroll', ScrollTrigger.update);
-                  gsap.ticker.add(function(t){ lenis.raf(t * 1000); });
-                  gsap.ticker.lagSmoothing(0);
-                  usingGsap = true; // stoppe le fallback Ã  sa prochaine frame
-                  return true;
-                }
-                return false;
-              }
-              if (!wire()) { var n = 0, iv = setInterval(function(){ n++; if (wire() || n > 60) clearInterval(iv); }, 50); }
-            }
-            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
-          })();
-        ` }} />
+        {/* ─── Lenis smooth scroll (se synchronise au ticker GSAP existant) ─── */}
+        
 
       </body>
     </html>

@@ -1,5 +1,6 @@
 // Admin Tab Component
 import { products } from '../../../data/products'
+import { ticketCategoryLabels, ticketStatusLabels, ticketPriorityLabels } from '../labels'
 import {
   reviews,
   appointments,
@@ -33,11 +34,11 @@ export const AdminSAVPage = ({ tickets = [], filterStatus = '' }: { tickets: any
   <AdminLayout activePage="sav">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
       <div>
-        <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)"><i class="fas fa-headset mr-2 text-cyan-400"></i>SAV / Tickets Support</h2>
+        <h2 class="text-xl font-bold text-admin-fg"><i class="fas fa-headset mr-2 text-cyan-400"></i>SAV / Tickets Support</h2>
         <p class="text-sm mt-1" style="color:var(--admin-text-muted)">{tickets.length} tickets · {open} ouverts · {inProgress} en cours</p>
       </div>
       <div class="flex gap-2">
-        <a href="/api/admin/export/tickets" class="text-xs px-3 py-2 rounded-xl font-semibold flex items-center space-x-2" style="background:rgba(16,185,129,0.12); color:#34d399; border:1px solid rgba(16,185,129,0.2);">
+        <a href="/api/admin/export/tickets" class="text-xs px-3 py-2 rounded-xl font-semibold flex items-center space-x-2 text-fg-on-dark-success" style="background:rgba(var(--rgb-green),0.12); border:1px solid rgba(var(--rgb-green),0.2);">
           <i class="fas fa-file-csv"></i>
           <span>Export CSV</span>
         </a>
@@ -63,8 +64,8 @@ export const AdminSAVPage = ({ tickets = [], filterStatus = '' }: { tickets: any
               <i class={`fas ${s.icon} text-lg`} style={`color:${s.color};`}></i>
             </div>
             <div>
-              <div class="text-xl font-bold leading-none" style="color:var(--admin-text-primary)">{s.val}</div>
-              <div class="text-xs mt-0.5" style="color:var(--admin-text-muted)">{s.label}</div>
+              <div class="text-xl font-bold leading-none text-admin-fg">{s.val}</div>
+              <div class="text-xs mt-0.5 text-admin-muted">{s.label}</div>
             </div>
           </div>
         </div>
@@ -91,7 +92,7 @@ export const AdminSAVPage = ({ tickets = [], filterStatus = '' }: { tickets: any
 
     {/* Tickets list */}
     {filtered.length === 0 ? (
-      <div class="text-center py-16 rounded-xl" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">
+      <div class="text-center py-16 rounded-xl bg-admin-elevated border border-admin-line">
         <i class="fas fa-headset text-3xl text-gray-600 mb-3"></i>
         <p class="text-gray-500">Aucun ticket{filterStatus ? ` avec ce statut` : ''}</p>
       </div>
@@ -102,11 +103,11 @@ export const AdminSAVPage = ({ tickets = [], filterStatus = '' }: { tickets: any
           const st = ticketStatusLabels[t.status] || ticketStatusLabels.ouvert
           const pr = ticketPriorityLabels[t.priority] || ticketPriorityLabels.normal
           return (
-          <a href={`/admin/sav/${t.id}`} class="block rounded-xl p-4 hover:scale-[1.005] transition-all cursor-pointer" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">
+          <a href={`/admin/sav/${t.id}`} class="block rounded-xl p-4 hover:scale-[1.005] transition-all cursor-pointer bg-admin-elevated border border-admin-line">
             <div class="flex items-start justify-between gap-4">
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 flex-wrap mb-1">
-                  <span class="text-xs font-mono px-2 py-0.5 rounded-lg" style="background:rgba(59,130,246,0.15); color:#60a5fa;">{t.ticket_ref}</span>
+                  <span class="text-xs font-mono px-2 py-0.5 rounded-lg text-fg-on-dark-info" style="background:rgba(var(--rgb-blue),0.15);">{t.ticket_ref}</span>
                   <span class="text-xs px-2 py-0.5 rounded-lg font-medium" style={`background:${st.bg}; color:${st.color};`}>{st.label}</span>
                   <span class="text-xs px-2 py-0.5 rounded-lg" style={`color:${pr.color};`}>
                     <i class="fas fa-flag mr-1"></i>{pr.label}
@@ -129,11 +130,11 @@ export const AdminSAVPage = ({ tickets = [], filterStatus = '' }: { tickets: any
     )}
 
     {/* Modal création ticket */}
-    <div id="create-ticket-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.7);">
-      <div class="rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto" style="background:linear-gradient(135deg,#0f172a,#1e293b); border:1px solid rgba(148,163,184,0.15);">
+    <div id="create-ticket-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(var(--rgb-black),0.7);">
+      <div class="rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto" style="background:linear-gradient(135deg,#0f172a,#1e293b); border:1px solid rgba(var(--rgb-slate),0.15);">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-bold" style="color:var(--admin-text-primary)"><i class="fas fa-plus-circle mr-2 text-cyan-400"></i>Nouveau ticket SAV</h3>
-          <button onclick="document.getElementById('create-ticket-modal').classList.add('hidden')" class="text-xl" style="color:var(--admin-text-muted);">&times;</button>
+          <h3 class="text-lg font-bold text-admin-fg"><i class="fas fa-plus-circle mr-2 text-cyan-400"></i>Nouveau ticket SAV</h3>
+          <button onclick="document.getElementById('create-ticket-modal').classList.add('hidden')" class="text-xl text-admin-muted">&times;</button>
         </div>
         <form method="post" action="/api/admin/sav/create" class="space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -204,13 +205,13 @@ export const AdminSAVDetailPage = ({ ticket, messages = [] }: { ticket: any; mes
       <div class="flex items-start justify-between gap-4">
         <div>
           <div class="flex items-center gap-2 mb-1">
-            <span class="text-xs font-mono px-2 py-0.5 rounded-lg" style="background:rgba(59,130,246,0.15); color:#60a5fa;">{ticket.ticket_ref}</span>
+            <span class="text-xs font-mono px-2 py-0.5 rounded-lg text-fg-on-dark-info" style="background:rgba(var(--rgb-blue),0.15);">{ticket.ticket_ref}</span>
             <span class="text-xs px-2 py-0.5 rounded-lg font-medium" style={`background:${st.bg}; color:${st.color};`}>{st.label}</span>
             <span class="text-xs px-2 py-0.5 rounded-lg" style={`color:${pr.color};`}>
               <i class="fas fa-flag mr-1"></i>{pr.label}
             </span>
           </div>
-          <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">{ticket.subject}</h2>
+          <h2 class="text-xl font-bold text-admin-fg">{ticket.subject}</h2>
         </div>
       </div>
     </div>
@@ -219,14 +220,14 @@ export const AdminSAVDetailPage = ({ ticket, messages = [] }: { ticket: any; mes
       {/* Main conversation area */}
       <div class="lg:col-span-2 space-y-4">
         {/* Original description */}
-        <div class="rounded-xl p-5" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">
+        <div class="rounded-xl p-5 bg-admin-elevated border border-admin-line">
           <div class="flex items-center gap-2 mb-3">
-            <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style="background:rgba(59,130,246,0.2); color:#60a5fa;">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-fg-on-dark-info" style="background:rgba(var(--rgb-blue),0.2);">
               <i class="fas fa-user"></i>
             </div>
             <div>
               <span class="text-sm font-semibold" style="color:var(--admin-text-primary)">{ticket.client_name || ticket.client_phone}</span>
-              <span class="text-xs ml-2" style="color:var(--admin-text-muted)">{ticket.created_at}</span>
+              <span class="text-xs ml-2 text-admin-muted">{ticket.created_at}</span>
             </div>
           </div>
           <p class="text-sm whitespace-pre-wrap" style="color:var(--admin-text-primary)">{ticket.description}</p>
@@ -240,7 +241,7 @@ export const AdminSAVDetailPage = ({ ticket, messages = [] }: { ticket: any; mes
                 <i class={`fas ${m.sender_type === 'admin' ? 'fa-user-shield' : 'fa-user'}`}></i>
               </div>
               <span class="text-sm font-medium" style="color:var(--admin-text-primary)">{m.sender_name || (m.sender_type === 'admin' ? 'Admin' : 'Client')}</span>
-              <span class="text-xs" style="color:var(--admin-text-muted)">{m.created_at}</span>
+              <span class="text-xs text-admin-muted">{m.created_at}</span>
             </div>
             <p class="text-sm whitespace-pre-wrap" style="color:var(--admin-text-primary)">{m.message}</p>
           </div>
@@ -248,7 +249,7 @@ export const AdminSAVDetailPage = ({ ticket, messages = [] }: { ticket: any; mes
 
         {/* Reply form */}
         {(ticket.status !== 'ferme') && (
-        <form method="post" action="/api/admin/sav/message" class="rounded-xl p-4" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">
+        <form method="post" action="/api/admin/sav/message" class="rounded-xl p-4 bg-admin-elevated border border-admin-line">
           <input type="hidden" name="ticket_id" value={ticket.id} />
           <label class="block text-xs mb-2" style="color:var(--admin-text-muted);"><i class="fas fa-reply mr-1"></i>Répondre</label>
           <textarea name="message" required rows={3} class="input-field text-sm mb-3" placeholder="Votre réponse..."></textarea>
@@ -262,15 +263,15 @@ export const AdminSAVDetailPage = ({ ticket, messages = [] }: { ticket: any; mes
       {/* Sidebar: ticket info + actions */}
       <div class="space-y-4">
         {/* Ticket info card */}
-        <div class="rounded-xl p-5" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">
+        <div class="rounded-xl p-5 bg-admin-elevated border border-admin-line">
           <h3 class="text-sm font-bold mb-3" style="color:var(--admin-text-primary)"><i class="fas fa-info-circle mr-1 text-cyan-400"></i>Informations</h3>
           <div class="space-y-2.5 text-xs">
-            <div class="flex justify-between"><span style="color:var(--admin-text-muted)">Client:</span><span style="color:var(--admin-text-primary)">{ticket.client_name || '-'}</span></div>
-            <div class="flex justify-between"><span style="color:var(--admin-text-muted)">Téléphone:</span><span style="color:var(--admin-text-primary)">{ticket.client_phone}</span></div>
-            <div class="flex justify-between"><span style="color:var(--admin-text-muted)">Catégorie:</span><span style={`color:${cat.color};`}><i class={`fas ${cat.icon} mr-1`}></i>{cat.label}</span></div>
-            {ticket.product_info && <div class="flex justify-between"><span style="color:var(--admin-text-muted)">Produit:</span><span style="color:var(--admin-text-primary)">{ticket.product_info}</span></div>}
-            <div class="flex justify-between"><span style="color:var(--admin-text-muted)">Créé le:</span><span style="color:var(--admin-text-primary)">{ticket.created_at?.substring(0, 10)}</span></div>
-            {ticket.resolved_at && <div class="flex justify-between"><span style="color:var(--admin-text-muted)">Résolu le:</span><span class="text-green-400">{ticket.resolved_at?.substring(0, 10)}</span></div>}
+            <div class="flex justify-between"><span class="text-admin-muted">Client:</span><span class="text-admin-fg">{ticket.client_name || '-'}</span></div>
+            <div class="flex justify-between"><span class="text-admin-muted">Téléphone:</span><span class="text-admin-fg">{ticket.client_phone}</span></div>
+            <div class="flex justify-between"><span class="text-admin-muted">Catégorie:</span><span style={`color:${cat.color};`}><i class={`fas ${cat.icon} mr-1`}></i>{cat.label}</span></div>
+            {ticket.product_info && <div class="flex justify-between"><span class="text-admin-muted">Produit:</span><span class="text-admin-fg">{ticket.product_info}</span></div>}
+            <div class="flex justify-between"><span class="text-admin-muted">Créé le:</span><span class="text-admin-fg">{ticket.created_at?.substring(0, 10)}</span></div>
+            {ticket.resolved_at && <div class="flex justify-between"><span class="text-admin-muted">Résolu le:</span><span class="text-green-400">{ticket.resolved_at?.substring(0, 10)}</span></div>}
           </div>
         </div>
 
@@ -279,7 +280,7 @@ export const AdminSAVDetailPage = ({ ticket, messages = [] }: { ticket: any; mes
           <i class="fas fa-file-invoice-dollar"></i>
           <span>Créer un devis réparation</span>
         </a>
-        <form method="post" action="/api/admin/sav/update-status" class="rounded-xl p-5" style="background:var(--admin-bg-elevated); border:1px solid var(--admin-border);">
+        <form method="post" action="/api/admin/sav/update-status" class="rounded-xl p-5 bg-admin-elevated border border-admin-line">
           <h3 class="text-sm font-bold mb-3" style="color:var(--admin-text-primary)"><i class="fas fa-edit mr-1 text-cyan-400"></i>Modifier le statut</h3>
           <input type="hidden" name="id" value={ticket.id} />
           <select name="status" class="input-field text-sm mb-3">

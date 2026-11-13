@@ -80,3 +80,14 @@ mobile/
 # bytecode Python des skills
 __pycache__/
 *.pyc
+
+# médias inutilisés retirés de public/ (conservés localement)
+archive/
+
+# assets générés (scripts/build-assets.mjs)
+src/generated/
+public/static/js/site.js
+
+# Playwright
+test-results/
+playwright-report/

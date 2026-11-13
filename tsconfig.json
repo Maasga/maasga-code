@@ -9,8 +9,18 @@
       "ESNext",
       "WebWorker"
     ],
-    "types": ["vite/client"],
+    "types": [
+      "vite/client"
+    ],
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx"
   },
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "src/__tests__",
+    "src/tests",
+    "src/**/*.test.ts"
+  ]
 }

@@ -6,26 +6,39 @@
     "dev": "vite",
     "dev:sandbox": "wrangler pages dev dist --ip 0.0.0.0 --port 3000",
     "build:css": "npx tailwindcss -i src/styles/app.css -o public/static/tailwind.css --minify",
-    "build": "npm run build:css && vite build && npm run build:copy-static",
+    "build": "npm run clean && npm run build:css && npm run assets && vite build && npm run build:copy-static",
     "build:copy-static": "node -e \"const fs=require('fs');const src='public/.well-known';const dst='dist/.well-known';if(fs.existsSync(src)){fs.mkdirSync(dst,{recursive:true});fs.readdirSync(src).forEach(f=>fs.copyFileSync(src+'/'+f,dst+'/'+f));console.log('Copied .well-known/ →',dst)}\"",
     "deploy": "npm run build && wrangler pages deploy dist --project-name maasga-website",
     "migrate": "wrangler d1 migrations apply maasga_db --remote",
     "migrate:local": "wrangler d1 migrations apply maasga_db --local",
     "clean-port": "fuser -k 3000/tcp 2>/dev/null || true",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p .",
+    "check": "npm run typecheck && npm test",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "assets": "node scripts/build-assets.mjs",
+    "predev": "npm run build:css && npm run assets",
+    "pretypecheck": "npm run assets",
+    "pretest": "npm run assets",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
-    "hono": "^4.13.18"
+    "hono": "^4.13.18",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
     "@cloudflare/workers-types": "^4.20260302.0",
     "@hono/vite-build": "^1.2.0",
     "@hono/vite-dev-server": "^0.18.2",
+    "@playwright/test": "^1.58.2",
     "autoprefixer": "^10.4.24",
     "cross-env": "^10.1.0",
+    "esbuild": "^0.25.12",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",
+    "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vitest": "^5.0.5",
     "wrangler": "^4.73.0"

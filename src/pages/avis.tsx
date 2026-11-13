@@ -1,4 +1,4 @@
-﻿import { Layout } from '../components/Layout'
+import { Layout } from '../components/Layout'
 
 export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: boolean; error?: string; approvedReviews?: any[] }) => {
   const avgNote = approvedReviews.length > 0
@@ -31,7 +31,7 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
       {/* Hero */}
       <section class="gradient-hero py-16 text-white relative overflow-hidden">
         <div class="max-w-4xl mx-auto px-4 relative z-10">
-          <div class="inline-flex items-center space-x-2 border rounded-full px-4 py-2 text-sm mb-4" style="background-color:rgba(241,245,249,0.15); border-color:rgba(226,232,240,0.1);">
+          <div class="inline-flex items-center space-x-2 border rounded-full px-4 py-2 text-sm mb-4" style="background-color:rgba(var(--rgb-slate-100),0.15); border-color:rgba(var(--rgb-slate-200),0.1);">
             <i class="fas fa-star text-yellow-400"></i>
             <span>Avis vérifiés · Clients réels</span>
           </div>
@@ -41,7 +41,7 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
           </p>
           {/* Note globale */}
           {hasReviews ? (
-          <div class="mt-8 inline-flex items-center space-x-4 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-4" style="background-color:rgba(241,245,249,0.1);">
+          <div class="mt-8 inline-flex items-center space-x-4 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-4" style="background-color:rgba(var(--rgb-slate-100),0.1);">
             <div class="text-5xl font-bold text-yellow-400">{avgNote}</div>
             <div>
               <div class="flex space-x-0.5 mb-1">
@@ -53,7 +53,7 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
             </div>
           </div>
           ) : (
-          <div class="mt-8 inline-flex items-center space-x-3 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-4" style="background-color:rgba(241,245,249,0.1);">
+          <div class="mt-8 inline-flex items-center space-x-3 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-4" style="background-color:rgba(var(--rgb-slate-100),0.1);">
             <i class="fas fa-comments text-2xl text-blue-200/60"></i>
             <span class="text-blue-200 text-sm">Aucun avis pour le moment — soyez le premier !</span>
           </div>
@@ -64,7 +64,7 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
       <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Erreur soumission */}
         {error && (
-          <div class="mb-8 rounded-2xl p-5 flex items-center space-x-4" style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.3);">
+          <div class="mb-8 rounded-2xl p-5 flex items-center space-x-4" style="background:rgba(var(--rgb-red),0.08); border:1px solid rgba(var(--rgb-red),0.3);">
             <i class="fas fa-exclamation-circle text-red-400 text-2xl flex-shrink-0"></i>
             <p class="text-red-300 text-sm">{error}</p>
           </div>
@@ -85,7 +85,7 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
 
           {/* ===== LISTE AVIS ===== */}
           <div class="lg:col-span-2">
-            <h2 class="text-xl font-bold text-white mb-6">Tous les avis ({approvedReviews.length})</h2>
+            <h2 class="text-xl font-bold mb-6 text-fg-heading">Tous les avis ({approvedReviews.length})</h2>
             <div class="space-y-5 reveal">
               {approvedReviews.map(r => (
                 <div data-tilt class="glass-card rounded-2xl p-6 transition-all">
@@ -110,8 +110,8 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
                   </div>
                   <p class="text-sm text-gray-300 leading-relaxed italic">"{r.comment}"</p>
                   <div class="mt-3 flex items-center space-x-2">
-                    <i class="fas fa-check-circle text-blue-500 text-xs"></i>
-                    <span class="text-xs text-blue-500 font-medium">Avis vérifié</span>
+                    <i class="fas fa-check-circle text-blue-700 text-xs"></i>
+                    <span class="text-xs text-blue-700 font-medium">Avis vérifié</span>
                   </div>
                   <div class="tilt-shine" aria-hidden="true"></div>
                 </div>
@@ -132,7 +132,7 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
                         <i class={`fas fa-star text-xs ${s <= n.note ? 'star-filled' : 'opacity-30'}`}></i>
                       ))}
                     </div>
-                    <div class="flex-1 rounded-full h-2" style="background:rgba(255,255,255,0.07);">
+                    <div class="flex-1 rounded-full h-2" style="background:rgba(var(--rgb-white),0.07);">
                       <div class="bg-yellow-400 h-2 rounded-full transition-all" style={`width: ${n.pct}%`}></div>
                     </div>
                     <span class="text-xs w-8 text-right" style="color:#94a3b8;">{n.count}</span>
@@ -150,12 +150,12 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
               </h3>
               <p class="text-xs mb-5" style="color:#94a3b8;">Partagez votre expérience avec MAASGA. Votre avis sera publié après modération.</p>
 
-              <form method="post" action="/api/avis" class="space-y-4">
+              <form data-offline-queue="avis" method="post" action="/api/avis" class="space-y-4">
                 <div>
-                  <label class="block text-xs font-semibold mb-2" style="color:#8ba3c0;">Votre note</label>
-                  <div class="flex space-x-2" id="star-rating">
+                  <label class="block text-xs font-semibold mb-2" style="color:var(--fg-muted);">Votre note</label>
+                  <div class="flex space-x-2" id="star-rating" role="group" aria-label="Votre note sur 5">
                     {[1,2,3,4,5].map(n => (
-                      <button type="button" onclick={`rateUs(${n})`} class="text-2xl star-btn hover:scale-110 transition-transform" data-rating={n}>
+                      <button type="button" onclick={`rateUs(${n})`} class="text-2xl star-btn hover:scale-110 transition-transform" data-rating={n} aria-label={`${n} étoile${n > 1 ? 's' : ''} sur 5`} aria-pressed={n === 5 ? 'true' : 'false'}>
                         <i class="far fa-star text-gray-300" id={`star-${n}`}></i>
                       </button>
                     ))}
@@ -164,14 +164,14 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
                 </div>
 
                 <div>
-                  <label class="block text-xs font-semibold mb-2" style="color:#8ba3c0;">Votre nom</label>
+                  <label class="block text-xs font-semibold mb-2" style="color:var(--fg-muted);">Votre nom</label>
                   <input type="text" name="name" required placeholder="Prénom ou nom"
                     autocomplete="name" class="input-field w-full rounded-xl px-3 py-2.5 text-sm text-white" />
                 </div>
 
                 <div>
-                  <label class="block text-xs font-semibold mb-2" style="color:#8ba3c0;">Service utilisé</label>
-                  <select name="service" class="input-field w-full rounded-xl px-3 py-2.5 text-sm text-white">
+                  <label class="block text-xs font-semibold mb-2" style="color:var(--fg-muted);">Service utilisé</label>
+                  <select name="service" aria-label="Service utilisé" class="input-field w-full rounded-xl px-3 py-2.5 text-sm text-white">
                     <option value="Installation climatiseur">Installation climatiseur</option>
                     <option value="Maintenance trimestrielle">Maintenance trimestrielle</option>
                     <option value="Devis technique">Devis technique</option>
@@ -181,7 +181,7 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
                 </div>
 
                 <div>
-                  <label class="block text-xs font-semibold mb-2" style="color:#8ba3c0;">Votre commentaire</label>
+                  <label class="block text-xs font-semibold mb-2" style="color:var(--fg-muted);">Votre commentaire</label>
                   <textarea name="comment" required rows={4} placeholder="Décrivez votre expérience avec MAASGA..."
                     class="input-field w-full rounded-xl px-3 py-2.5 text-sm text-white resize-none"></textarea>
                 </div>
@@ -220,6 +220,7 @@ export const AvisPage = ({ success, error, approvedReviews = [] }: { success?: b
             } else {
               star.className = 'far fa-star text-gray-300';
             }
+            if (star.parentElement) star.parentElement.setAttribute('aria-pressed', i === rating ? 'true' : 'false');
           }
         }
         rateUs(5);

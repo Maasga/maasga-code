@@ -28,14 +28,14 @@ export const CommandesKPIs = ({ orders }: CommandesKPIsProps) => {
   return (
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
       {kpis.map((kpi, i) => (
-        <div key={i} class="rounded-xl p-4" style="background: var(--admin-accent-light); border: 1px solid var(--admin-border);">
+        <div key={i} class="rounded-xl p-4 border border-admin-line" style="background: var(--admin-accent-light);">
           <div class="flex items-center space-x-3">
             <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background: var(--admin-accent-light);">
               <i class={`fas ${kpi.icon} text-lg`} style={`color:${kpi.color};`}></i>
             </div>
             <div>
-              <div class="text-xl font-bold leading-none" style="color: var(--admin-text-primary);">{kpi.val}</div>
-              <div class="text-xs mt-0.5" style="color: var(--admin-text-muted);">{kpi.label}</div>
+              <div class="text-xl font-bold leading-none text-admin-fg">{kpi.val}</div>
+              <div class="text-xs mt-0.5 text-admin-muted">{kpi.label}</div>
             </div>
           </div>
         </div>

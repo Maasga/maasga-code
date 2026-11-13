@@ -1,11 +1,13 @@
 // Mobile API endpoints updated 2026-09-12
 import { Hono } from 'hono'
+import { asset, BUILD_ID } from './generated/asset-manifest'
 import { cors } from 'hono/cors'
 import { serveStatic } from 'hono/cloudflare-workers'
 import { setCookie, getCookie, deleteCookie } from 'hono/cookie'
 import type { D1Database } from '@cloudflare/workers-types'
 import { appointments, reviews, orders, clients, notifications, setMaintenanceDueCount, setPendingMaintenanceContractsCount, setPendingMaintenanceRequestsCount, pendingMaintenanceContracts } from './data/store'
 import type { Order } from './data/store'
+import { getContentVersion, bumpContentVersion, ensureCatalogFresh } from './services/catalog.service'
 import { products } from './data/products'
 import { quartiers } from './data/quartiers'
 import { createAppointment, updateAppointmentStatus, createOrder, createReview, getProducts, getReviews, getQuartiers, createClient, getClients, getAppointments, getAppointmentById, getOrders, deleteProduct, deleteClient, deleteOrder, getClientById, getProductById } from './db'
@@ -25,7 +27,7 @@ import { rateLimit } from './utils/security'
 
 const app = new Hono<HonoEnv>()
 
-// SITE_URL importé depuis src/types.ts — modifier lÃ -bas quand le domaine change.
+// SITE_URL importé depuis src/types.ts — modifier là-bas quand le domaine change.
 
 app.use('/api/*', cors({
   origin: (origin) => {
@@ -53,8 +55,16 @@ app.use(async (c, next) => {
   if (!CACHEABLE_PATHS.has(url.pathname)) return next()
 
   // @ts-ignore — caches.default is available in CF Workers runtime
-  const cache = (caches as any).default
-  const cacheKey = new Request(url.toString(), { method: 'GET' })
+  const cache = (caches as any)?.default
+  if (!cache) return next() // dev Vite : pas de Cache API
+  // La version de contenu fait partie de la clé : toute mutation admin
+  // (bumpContentVersion) rend les anciennes entrées inatteignables = purge implicite.
+  const version = await getContentVersion(c.env.DB)
+  const keyUrl = new URL(url.toString())
+  keyUrl.searchParams.set('__cv', version)
+  // …et le build : un nouveau déploiement ne sert jamais le HTML de l'ancien code
+  keyUrl.searchParams.set('__b', BUILD_ID)
+  const cacheKey = new Request(keyUrl.toString(), { method: 'GET' })
 
   // Try to serve from edge cache
   const cached = await cache.match(cacheKey)
@@ -89,12 +99,13 @@ app.use(async (c, next) => {
   await next()
   c.res.headers.set('X-Content-Type-Options', 'nosniff')
   c.res.headers.set('X-Frame-Options', 'DENY')
-  c.res.headers.set('X-XSS-Protection', '1; mode=block')
+  // X-XSS-Protection retiré : obsolète, et l'auditeur XSS qu'il activait introduisait lui-même des failles.
+  c.res.headers.set('Cross-Origin-Opener-Policy', 'same-origin')
   c.res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-  c.res.headers.set('Permissions-Policy', 'camera=(), microphone=()')
+  c.res.headers.set('Permissions-Policy', 'camera=(), microphone=(), payment=(), usb=(), interest-cohort=(), geolocation=(self)')
   c.res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
   // CSP: allow inline styles/scripts for SSR JSX, Font Awesome CDN, Google Analytics
-  c.res.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' data: https:; connect-src 'self' https://app.ligdicash.com https://www.google-analytics.com https://analytics.google.com https://www.google.com https://cdn.jsdelivr.net;")
+  c.res.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' data: https:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; connect-src 'self' https://app.ligdicash.com https://www.google-analytics.com https://analytics.google.com https://www.google.com https://cdn.jsdelivr.net;")
   // Cache control per route type
   const path = new URL(c.req.url).pathname
   if (path.startsWith('/api/')) {
@@ -170,46 +181,39 @@ app.use(async (c, next) => {
   return next()
 })
 
-// Charger les produits ET orders depuis D1 en parallèle (une seule fois par isolate)
-let _d1LoadPromise: Promise<void> | null = null
+// ============================================================
+// VERSION DE CONTENU — toute mutation admin réussie incrémente
+// site_settings.content_version (cf. services/catalog.service.ts) :
+// les autres isolates rechargent le catalogue et le cache edge est purgé.
+// ============================================================
+const CONTENT_MUTATION_PREFIXES = ['/api/admin', '/admin', '/api/products', '/api/devis', '/api/mobile/admin', '/api/telegram/webhook']
 
 app.use(async (c, next) => {
-  if (products.length === 0 && c.env.DB) {
-    // Deduplicate: if already loading, wait for the same promise
-    if (!_d1LoadPromise) {
-      _d1LoadPromise = (async () => {
-        const db = c.env.DB!
-        const [prodResult, ordResult] = await Promise.allSettled([
-          db.prepare('SELECT * FROM products').all(),
-          getOrders(db)
-        ])
+  await next()
+  const method = c.req.method
+  if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return
+  if (c.res.status >= 400) return
+  const path = new URL(c.req.url).pathname
+  if (path === '/api/admin/login' || path === '/api/admin/logout') return
+  if (!CONTENT_MUTATION_PREFIXES.some(p => path === p || path.startsWith(p + '/'))) return
+  await bumpContentVersion(c.env.DB)
+})
 
-        if (prodResult.status === 'fulfilled' && prodResult.value.results) {
-          prodResult.value.results.forEach((p: any) => {
-            products.push({
-              id: p.id,
-              name: p.name,
-              brand: p.brand,
-              model: p.model,
-              btu: p.btu,
-              price: p.price,
-              price_install: 0,
-              stock: p.stock,
-              surface_min: p.surface_min,
-              surface_max: p.surface_max,
-              energy_class: p.energy_class,
-              description: p.description,
-              inverter: p.inverter === 1,
-              available: p.available === 1,
-              image: p.image || '❄️',
-              imageUrl: p.imageUrl || p.image_url,
-              features: (() => { try { return JSON.parse(p.features || '[]') } catch { return [] } })(),
-              warranty: p.warranty || '1 an constructeur',
-              techSpecs: (() => { try { return p.tech_specs ? JSON.parse(p.tech_specs) : undefined } catch { return undefined } })(),
-              media: (() => { try { return p.media_urls ? JSON.parse(p.media_urls) : [] } catch { return [] } })()
-            })
-          })
-        }
+// Catalogue : rechargé dès que la version de contenu change (≤ 5 s de décalage entre isolates)
+app.use(async (c, next) => {
+  await ensureCatalogFresh(c.env.DB)
+  await next()
+})
+
+// Commandes : chargées une fois par isolate (les vues admin les rechargent à chaque requête)
+let _ordersLoadPromise: Promise<void> | null = null
+
+app.use(async (c, next) => {
+  if (orders.length === 0 && c.env.DB) {
+    if (!_ordersLoadPromise) {
+      _ordersLoadPromise = (async () => {
+        const db = c.env.DB!
+        const [ordResult] = await Promise.allSettled([getOrders(db)])
 
         if (ordResult.status === 'fulfilled' && Array.isArray(ordResult.value)) {
           (ordResult.value as any[]).forEach((o: any) => {
@@ -234,7 +238,7 @@ app.use(async (c, next) => {
         }
       })()
     }
-    await _d1LoadPromise
+    await _ordersLoadPromise
   }
   await next()
 })
@@ -278,7 +282,8 @@ app.get('/robots.txt', (c) => {
 
 // Sitemap.xml
 app.get('/sitemap.xml', (c) => {
-  const now = new Date().toISOString().split('T')[0]
+  // Pages publiques indexables (/contrat-maintenance redirige vers la connexion : exclue).
+  // Pas de <lastmod> fictif : Google l'ignore quand il change à chaque visite.
   const pages = [
     { path: '/', freq: 'weekly', priority: '1.0' },
     { path: '/catalogue', freq: 'weekly', priority: '0.9' },
@@ -286,16 +291,19 @@ app.get('/sitemap.xml', (c) => {
     { path: '/rendez-vous', freq: 'monthly', priority: '0.8' },
     { path: '/realisations', freq: 'monthly', priority: '0.7' },
     { path: '/avis', freq: 'weekly', priority: '0.7' },
-    { path: '/a-propos', freq: 'monthly', priority: '0.6' },
     { path: '/contact', freq: 'monthly', priority: '0.7' },
-    { path: '/espace-client', freq: 'monthly', priority: '0.6' },
-    { path: '/contrat-maintenance', freq: 'monthly', priority: '0.7' }
+    { path: '/a-propos', freq: 'monthly', priority: '0.6' },
+    { path: '/espace-client', freq: 'yearly', priority: '0.3' },
+    { path: '/mentions-legales', freq: 'yearly', priority: '0.1' },
+    { path: '/politique-de-confidentialite', freq: 'yearly', priority: '0.1' },
+    // Une fiche par climatiseur disponible (catalogue tenu à jour par le middleware versionné)
+    ...products.filter(p => p.available).map(p => ({ path: `/catalogue/${p.id}`, freq: 'weekly', priority: '0.8' })),
   ]
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${pages.map(p => `  <url><loc>${SITE_URL}${p.path}</loc><lastmod>${now}</lastmod><changefreq>${p.freq}</changefreq><priority>${p.priority}</priority></url>`).join('\n')}
+${pages.map(p => `  <url><loc>${SITE_URL}${p.path}</loc><changefreq>${p.freq}</changefreq><priority>${p.priority}</priority></url>`).join('\n')}
 </urlset>`
-  return new Response(xml, { headers: { 'Content-Type': 'application/xml', 'Cache-Control': 'public, max-age=3600' } })
+  return new Response(xml, { headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' } })
 })
 
 // ============================================================
@@ -314,6 +322,13 @@ app.route('', telegramRouter)
 // Global error handler — catch unhandled exceptions and display nice error page
 app.onError((err, c) => {
   console.error('Unhandled error:', err.message, err.stack)
+  // Le détail technique n'est montré qu'en local : en production il pourrait
+  // révéler des noms de tables, chemins ou fragments SQL.
+  let isLocal = false
+  try { isLocal = LOCAL_HOSTNAMES.has(new URL(c.req.url).hostname) } catch {}
+  const errorRef = crypto.randomUUID().slice(0, 8)
+  console.error('[error-ref]', errorRef)
+  if (c.req.path.startsWith('/api/')) return c.json({ error: 'Erreur serveur', ref: errorRef }, 500)
   return c.html(
     <html lang="fr">
       <head>
@@ -321,14 +336,16 @@ app.onError((err, c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="robots" content="noindex,nofollow" />
         <title>Erreur - MAASGA</title>
-        <link rel="stylesheet" href="/static/tailwind.css" />
+        <link rel="stylesheet" href={asset("/static/tailwind.css")} />
       </head>
       <body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
         <div class="text-center max-w-xl">
           <div class="text-6xl mb-6">⚠️</div>
           <h1 class="text-2xl font-bold text-gray-900 mb-3">Erreur serveur</h1>
           <p class="text-gray-500 mb-4">Une erreur inattendue s'est produite. Veuillez réessayer.</p>
-          <pre class="bg-red-50 border border-red-200 text-red-700 text-xs text-left p-4 rounded-xl mb-6 overflow-x-auto font-mono max-h-48 whitespace-pre-wrap">{err?.message || String(err)}</pre>
+          {isLocal
+            ? <pre class="bg-red-50 border border-red-200 text-red-700 text-xs text-left p-4 rounded-xl mb-6 overflow-x-auto font-mono max-h-48 whitespace-pre-wrap">{err?.message || String(err)}</pre>
+            : <p class="text-xs text-gray-400 mb-6">Référence : {errorRef}</p>}
           <a href="/" class="bg-blue-600 text-white font-semibold px-8 py-3 rounded-xl hover:bg-blue-700 transition-colors inline-flex items-center space-x-2">
             <span>Retour à l'accueil</span>
           </a>
@@ -347,7 +364,7 @@ app.notFound((c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="robots" content="noindex,nofollow" />
         <title>Page non trouvée - MAASGA</title>
-        <link rel="stylesheet" href="/static/tailwind.css" />
+        <link rel="stylesheet" href={asset("/static/tailwind.css")} />
       </head>
       <body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
         <div class="text-center max-w-md">

@@ -29,10 +29,10 @@ export const AdminPaiementsPage = ({ payments = [], stats }: { payments: any[]; 
     <div class="space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 fade-in-up">
         <div>
-          <h2 class="text-xl font-bold" style="color:var(--admin-text-primary)">Paiements</h2>
+          <h2 class="text-xl font-bold text-admin-fg">Paiements</h2>
           <p class="text-sm text-blue-300/60 mt-1">Suivi et gestion de tous les paiements</p>
         </div>
-        <a href="/api/admin/export/payments" class="text-xs px-4 py-2.5 rounded-xl font-semibold flex items-center space-x-2" style="background:rgba(16,185,129,0.12); color:#34d399; border:1px solid rgba(16,185,129,0.2);">
+        <a href="/api/admin/export/payments" class="text-xs px-4 py-2.5 rounded-xl font-semibold flex items-center space-x-2 text-fg-on-dark-success" style="background:rgba(var(--rgb-green),0.12); border:1px solid rgba(var(--rgb-green),0.2);">
           <i class="fas fa-file-csv"></i>
           <span>Export CSV</span>
         </a>
@@ -53,8 +53,8 @@ export const AdminPaiementsPage = ({ payments = [], stats }: { payments: any[]; 
                 <i class={`fas ${c.icon}`} style={`color:${c.color};`}></i>
               </div>
               <div>
-                <div class="text-xs font-medium" style="color:#64748b;">{c.label}</div>
-                <div class="text-xl font-bold" style="color:var(--admin-text-primary)">{c.val}</div>
+                <div class="text-xs font-medium text-fg-subtle">{c.label}</div>
+                <div class="text-xl font-bold text-admin-fg">{c.val}</div>
               </div>
             </div>
           </div>
@@ -74,25 +74,25 @@ export const AdminPaiementsPage = ({ payments = [], stats }: { payments: any[]; 
       </div>
 
       {/* Table */}
-      <div class="rounded-2xl overflow-hidden fade-in-up delay-3" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
+      <div class="rounded-2xl overflow-hidden fade-in-up delay-3 bg-admin-card border border-admin-line">
         {payments.length === 0 ? (
           <div class="text-center py-16">
-            <i class="fas fa-receipt text-4xl mb-3" style="color:#1e3a5f;"></i>
-            <p class="text-sm" style="color:#64748b;">Aucun paiement enregistré</p>
+            <i class="fas fa-receipt text-4xl mb-3 text-fg-navy-soft"></i>
+            <p class="text-sm" style="color:var(--fg-subtle);">Aucun paiement enregistré</p>
           </div>
         ) : (
           <div class="overflow-x-auto">
             <table class="admin-table w-full text-sm">
               <thead>
-                <tr style="background:#f1f5f9; border-bottom:1px solid var(--admin-border);">
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden lg:table-cell" style="color:var(--admin-text-muted)">ID</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Client</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden sm:table-cell" style="color:var(--admin-text-muted)">Type</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Montant</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell" style="color:var(--admin-text-muted)">Méthode</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider" style="color:var(--admin-text-muted)">Statut</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden lg:table-cell" style="color:var(--admin-text-muted)">Réf.</th>
-                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell" style="color:var(--admin-text-muted)">Date</th>
+                <tr class="bg-surface-muted border-b border-admin-line">
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden lg:table-cell text-admin-muted">ID</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-admin-muted">Client</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden sm:table-cell text-admin-muted">Type</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-admin-muted">Montant</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell text-admin-muted">Méthode</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider text-admin-muted">Statut</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden lg:table-cell text-admin-muted">Réf.</th>
+                  <th class="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wider hidden md:table-cell text-admin-muted">Date</th>
                   <th class="px-5 py-3"></th>
                 </tr>
               </thead>
@@ -110,20 +110,20 @@ export const AdminPaiementsPage = ({ payments = [], stats }: { payments: any[]; 
                   const methodMap: Record<string,string> = { orange_money: 'Orange Money', moov_money: 'Moov Money', wave: 'Wave', carte_bancaire: 'Carte', ligdicash: 'LigdiCash', cash: 'Espèces' }
                   const typeMap: Record<string,string> = { order: 'Commande', maintenance: 'Maintenance' }
                   return (
-                    <tr style="border-bottom:1px solid var(--admin-border);" class="hover:bg-[rgba(3,105,161,0.04)]">
-                      <td class="px-5 py-3 font-mono text-xs hidden lg:table-cell" style="color:var(--admin-accent)">#{p.id}</td>
+                    <tr class="hover:bg-[rgba(3,105,161,0.04)] border-b border-admin-line">
+                      <td class="px-5 py-3 font-mono text-xs hidden lg:table-cell text-admin-accent">#{p.id}</td>
                       <td class="px-5 py-3">
                         <div class="font-semibold text-sm" style="color:var(--admin-text-primary)">{p.client_name || '—'}</div>
-                        <div class="text-xs" style="color:var(--admin-text-muted)">{p.client_phone || ''}</div>
+                        <div class="text-xs text-admin-muted">{p.client_phone || ''}</div>
                       </td>
                       <td class="px-5 py-3 text-sm hidden sm:table-cell" style="color:var(--admin-text-primary)">{typeMap[p.payment_type] || p.payment_type}</td>
-                      <td class="px-5 py-3 font-bold" style="color:var(--admin-text-primary)">{(p.amount || 0).toLocaleString()} F</td>
+                      <td class="px-5 py-3 font-bold text-admin-fg">{(p.amount || 0).toLocaleString()} F</td>
                       <td class="px-5 py-3 text-sm hidden md:table-cell" style="color:var(--admin-text-muted)">{methodMap[p.method] || p.method}</td>
                       <td class="px-5 py-3"><span class={`text-xs font-bold px-2.5 py-1 rounded-full ${st.cls}`}>{st.label}</span></td>
-                      <td class="px-5 py-3 text-xs font-mono hidden lg:table-cell" style="color:#64748b;">{p.provider_ref || '—'}</td>
+                      <td class="px-5 py-3 text-xs font-mono hidden lg:table-cell text-fg-subtle">{p.provider_ref || '—'}</td>
                       <td class="px-5 py-3 text-xs hidden md:table-cell" style="color:#94a3b8;">{p.created_at ? new Date(p.created_at).toLocaleDateString('fr-FR') : '—'}</td>
                       <td class="px-5 py-3">
-                        <span class="text-xs" style="color:#475569;">—</span>
+                        <span class="text-xs text-fg-muted">—</span>
                       </td>
                     </tr>
                   )

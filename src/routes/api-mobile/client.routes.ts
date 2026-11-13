@@ -32,6 +32,9 @@ mobileClientRouter.post('/login', mobileAuth, async (c) => {
           firebase_uid: user.uid,
           name: user.name || '',
           email: user.email || '',
+          // clients.phone est NOT NULL UNIQUE : valeur provisoire unique, à
+          // remplacer par le vrai numéro quand le client complète son profil.
+          phone: `google:${user.uid}`,
         })
       } else if (!existing.firebase_uid) {
         await clientRepo.update(existing.id, { firebase_uid: user.uid })

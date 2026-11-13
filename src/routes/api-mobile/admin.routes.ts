@@ -12,6 +12,7 @@ import {
 } from '../../repositories'
 import { logAdminAudit } from '../../utils/notifications'
 import { validateImageMagicBytes } from '../../utils/helpers'
+import { gallerySelectColumns, parseGallery, saveProductGallery } from '../../utils/productGallery'
 import { StorageService } from '../../services/storage.service'
 
 export const mobileAdminRouter = new Hono<HonoEnv>()
@@ -562,15 +563,12 @@ async function cleanupProductImageReferences(db: any, url: string) {
     // (a) Image principale : vider imageUrl et image_url (alias) pour tous les produits qui référencent l'URL
     await db.prepare(`UPDATE products SET imageUrl = '', image_url = '', updated_at = ? WHERE imageUrl = ? OR image_url = ?`).bind(new Date().toISOString(), url, url).run()
     // (b) Galerie : retirer l'URL de media_urls et gallery (alias) pour chaque produit concerné
-    const rows = await db.prepare('SELECT id, media_urls, gallery FROM products').all() as any
+    const rows = await db.prepare(`SELECT id, ${await gallerySelectColumns(db)} FROM products`).all() as any
     for (const p of (rows?.results || [])) {
-      let galleryList: any[] = []
-      try { galleryList = JSON.parse(p.media_urls || p.gallery || '[]') } catch (_) { galleryList = [] }
-      if (!Array.isArray(galleryList)) galleryList = []
+      const galleryList = parseGallery(p)
       const filtered = galleryList.filter((g: any) => (typeof g === 'string' ? g : g?.url) !== url)
       if (filtered.length !== galleryList.length) {
-        const galleryJson = JSON.stringify(filtered)
-        await db.prepare('UPDATE products SET media_urls = ?, gallery = ?, updated_at = ? WHERE id = ?').bind(galleryJson, galleryJson, new Date().toISOString(), p.id).run()
+        await saveProductGallery(db, p.id, filtered)
       }
     }
   } catch (e) {
@@ -710,7 +708,7 @@ mobileAdminRouter.post('/admin/media/brand/assign', async (c) => {
     } catch (_) {
       try {
         const form = await c.req.formData()
-        body = Object.fromEntries(form.entries())
+        body = Object.fromEntries((form as any).entries())
       } catch (_) {
         body = await c.req.parseBody().catch(() => ({} as Record<string, any>))
       }
@@ -762,7 +760,7 @@ mobileAdminRouter.post('/admin/media/brand/assign', async (c) => {
       } else {
         // Ajouter à la galerie de tous les produits de la marque
         const matchingProds = await db.prepare(`
-          SELECT id, media_urls, gallery FROM products WHERE LOWER(brand) = LOWER(?)
+          SELECT id, ${await gallerySelectColumns(db)} FROM products WHERE LOWER(brand) = LOWER(?)
         `).bind(brandName).all() as any
 
         const rows = matchingProds?.results || []
@@ -781,12 +779,7 @@ mobileAdminRouter.post('/admin/media/brand/assign', async (c) => {
               type: 'image',
               caption: mediaRow.label || '',
             })
-            const galleryJson = JSON.stringify(galleryList)
-            await db.prepare(`
-              UPDATE products
-              SET media_urls = ?, gallery = ?, updated_at = datetime('now')
-              WHERE id = ?
-            `).bind(galleryJson, galleryJson, prodRow.id).run()
+            await saveProductGallery(db, Number(prodRow.id), galleryList)
             count++
           }
         }
@@ -834,7 +827,7 @@ mobileAdminRouter.post('/admin/media/brand/assign', async (c) => {
         })
       } else {
         const prodRow = await db.prepare(`
-          SELECT id, media_urls, gallery FROM products WHERE id = ?
+          SELECT id, ${await gallerySelectColumns(db)} FROM products WHERE id = ?
         `).bind(productId).first() as any
 
         if (!prodRow) {
@@ -854,12 +847,7 @@ mobileAdminRouter.post('/admin/media/brand/assign', async (c) => {
             type: 'image',
             caption: mediaRow.label || '',
           })
-          const galleryJson = JSON.stringify(galleryList)
-          await db.prepare(`
-            UPDATE products
-            SET media_urls = ?, gallery = ?, updated_at = datetime('now')
-            WHERE id = ?
-          `).bind(galleryJson, galleryJson, productId).run()
+          await saveProductGallery(db, Number(productId), galleryList)
         }
 
         await logAdminAudit(db, {

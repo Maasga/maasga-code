@@ -2,11 +2,11 @@ import { Layout } from '../components/Layout'
 
 const renderCell = (val: string) => {
   if (val === '✅') {
-    return <span><i class="fas fa-check-circle" style="color:#16a34a;"></i></span>;
+    return <span><i class="fas fa-check-circle text-fg-success-bright"></i></span>;
   }
   if (val.includes('✅')) {
     const rest = val.replace('✅', '').trim();
-    return <span><i class="fas fa-check-circle" style="color:#16a34a;"></i>{rest ? ` ${rest}` : ''}</span>;
+    return <span><i class="fas fa-check-circle text-fg-success-bright"></i>{rest ? ` ${rest}` : ''}</span>;
   }
   return val;
 };
@@ -34,7 +34,7 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
     {/* Hero */}
     <section class="gradient-hero py-16 text-white text-center relative overflow-hidden reveal">
       <div class="relative z-10 max-w-4xl mx-auto px-4">
-        <div class="inline-flex items-center space-x-2 rounded-full px-4 py-2 text-sm mb-4 font-medium" style="background-color:rgba(241,245,249,0.1); border-color:rgba(226,232,240,0.1);">
+        <div class="inline-flex items-center space-x-2 rounded-full px-4 py-2 text-sm mb-4 font-medium" style="background-color:rgba(var(--rgb-slate-100),0.1); border-color:rgba(var(--rgb-slate-200),0.1);">
           <i class="fas fa-shield-alt"></i><span>Maintenance préventive · MAASGA (v2)</span>
         </div>
         <h1 class="text-4xl md:text-5xl font-extrabold mb-4">Contrats de Maintenance</h1>
@@ -48,8 +48,8 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
     <section class="py-12 px-4 reveal">
       <div class="max-w-6xl mx-auto">
         <div class="text-center mb-10">
-          <h2 class="text-2xl font-extrabold mb-3" style="color:#03045e;">Pourquoi un contrat de maintenance ?</h2>
-          <p class="text-sm max-w-xl mx-auto" style="color:#64748b;">Un climatiseur bien entretenu consomme jusqu'à 30% d'énergie en moins et dure 2× plus longtemps.</p>
+          <h2 class="text-2xl font-extrabold mb-3 text-fg-heading">Pourquoi un contrat de maintenance ?</h2>
+          <p class="text-sm max-w-xl mx-auto" style="color:var(--fg-subtle);">Un climatiseur bien entretenu consomme jusqu'à 30% d'énergie en moins et dure 2× plus longtemps.</p>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
@@ -62,8 +62,8 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
               <div class="w-12 h-12 mx-auto rounded-xl flex items-center justify-center mb-3" style={`background:${a.color}15;`}>
                 <i class={`fas ${a.icon}`} style={`color:${a.color}; font-size:1.2rem;`}></i>
               </div>
-              <div class="text-sm font-bold mb-1" style="color:#03045e;">{a.label}</div>
-              <div class="text-xs" style="color:#64748b;">{a.desc}</div>
+              <div class="text-sm font-bold mb-1" style="color:var(--fg-heading);">{a.label}</div>
+              <div class="text-xs text-fg-subtle">{a.desc}</div>
             </div>
           ))}
         </div>
@@ -71,41 +71,41 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
     </section>
 
     {/* SIMULATEUR DYNAMIQUE INTERACTIF (v2) */}
-    <section id="sim-section" class="py-10 px-4 reveal transition-all duration-300" style="background:linear-gradient(180deg,#f8fafc 0%,#f0f9ff 100%);">
+    <section id="sim-section" class="py-10 px-4 reveal transition-all duration-300" style="background:linear-gradient(180deg,var(--surface-subtle) 0%,var(--surface-info) 100%);">
       <div class="max-w-4xl mx-auto">
-        <div class="glass-card rounded-3xl p-6 md:p-8 shadow-xl" style="border:2px solid #bae6fd; background:#ffffff;">
+        <div class="glass-card rounded-3xl p-6 md:p-8 shadow-xl" style="border:2px solid var(--line-accent); background:var(--surface-card);">
           <div class="flex items-center space-x-3 mb-6">
             <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background:linear-gradient(135deg,#0077b6,#00b4d8); color:#fff; box-shadow:0 6px 16px rgba(0,119,182,0.25);">
               <i class="fas fa-calculator text-xl"></i>
             </div>
             <div>
-              <h2 class="text-xl md:text-2xl font-black" style="color:#03045e;">Simulateur de contrat dynamique</h2>
-              <p class="text-xs md:text-sm" style="color:#64748b;">Estimez votre tarif en direct selon votre parc de climatiseurs</p>
+              <h2 class="text-xl md:text-2xl font-black text-fg-heading">Simulateur de contrat dynamique</h2>
+              <p class="text-xs md:text-sm" style="color:var(--fg-subtle);">Estimez votre tarif en direct selon votre parc de climatiseurs</p>
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             {/* Nombre de climatiseurs */}
-            <div class="p-4 rounded-2xl" style="background:#f8fafc; border:1px solid #e2e8f0;">
-              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:#03045e;">
+            <div class="p-4 rounded-2xl bg-surface-subtle border border-line">
+              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--fg-heading);">
                 1. Nombre de climatiseurs
               </label>
-              <div class="flex items-center justify-between mb-3 bg-white p-2 rounded-xl border" style="border-color:#cbd5e1;">
-                <button type="button" id="ac-minus-btn" class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg hover:bg-slate-100 transition cursor-pointer" style="color:#0077b6;">
+              <div class="flex items-center justify-between mb-3 bg-white p-2 rounded-xl border" style="border-color:var(--line-strong);">
+                <button type="button" id="ac-minus-btn" class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg hover:bg-slate-100 transition cursor-pointer text-fg-brand">
                   <i class="fas fa-minus"></i>
                 </button>
                 <div class="text-center">
-                  <span id="sim-ac-count" class="text-3xl font-extrabold" style="color:#03045e;">2</span>
-                  <span class="text-xs ml-1 font-semibold" style="color:#64748b;">climatiseur(s)</span>
+                  <span id="sim-ac-count" class="text-3xl font-extrabold text-fg-heading">2</span>
+                  <span class="text-xs ml-1 font-semibold text-fg-subtle">climatiseur(s)</span>
                 </div>
-                <button type="button" id="ac-plus-btn" class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg hover:bg-slate-100 transition cursor-pointer" style="color:#0077b6;">
+                <button type="button" id="ac-plus-btn" class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg hover:bg-slate-100 transition cursor-pointer text-fg-brand">
                   <i class="fas fa-plus"></i>
                 </button>
               </div>
               {/* Chips rapides */}
               <div class="flex flex-wrap gap-1.5">
                 {[1, 2, 4, 8, 12, 20].map(cnt => (
-                  <button key={cnt} type="button" data-count={cnt} class="ac-quick-chip px-2.5 py-1 text-xs font-semibold rounded-lg border transition cursor-pointer" style="background:#ffffff; border-color:#e2e8f0; color:#334155;">
+                  <button key={cnt} type="button" data-count={cnt} class="ac-quick-chip px-2.5 py-1 text-xs font-semibold rounded-lg border transition cursor-pointer bg-surface-card text-fg-body" style="border-color:var(--line);">
                     {cnt} clim
                   </button>
                 ))}
@@ -113,8 +113,8 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
             </div>
 
             {/* Fréquence de visites */}
-            <div class="p-4 rounded-2xl" style="background:#f8fafc; border:1px solid #e2e8f0;">
-              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:#03045e;">
+            <div class="p-4 rounded-2xl bg-surface-subtle border border-line">
+              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--fg-heading);">
                 2. Fréquence des visites
               </label>
               <div class="grid grid-cols-3 gap-2 mb-3">
@@ -123,13 +123,13 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
                   { id: 'Confort', visits: 2, label: 'Confort', sub: '2 visites/an' },
                   { id: 'Pro', visits: 3, label: 'Pro', sub: '3 visites/an' }
                 ].map(freq => (
-                  <button key={freq.id} type="button" data-freq={freq.id} data-visits={freq.visits} class="freq-chip p-2 rounded-xl text-center border calc-pill transition cursor-pointer" style="background:#ffffff; border-color:#e2e8f0; color:#334155;">
+                  <button key={freq.id} type="button" data-freq={freq.id} data-visits={freq.visits} class="freq-chip p-2 rounded-xl text-center border calc-pill transition cursor-pointer bg-surface-card text-fg-body" style="border-color:var(--line);">
                     <div class="font-bold text-xs">{freq.label}</div>
                     <div class="text-[10px] opacity-75">{freq.sub}</div>
                   </button>
                 ))}
               </div>
-              <div class="text-[11px] p-2 rounded-lg" style="background:rgba(0,119,182,0.06); color:#0077b6;">
+              <div class="text-[11px] p-2 rounded-lg text-fg-brand" style="background:rgba(var(--rgb-brand),0.06);">
                 <i class="fas fa-info-circle mr-1"></i> Grille dégressive : 8 500 F (1-4) · 7 500 F (5-8) · 6 000 F (9-15) · 5 000 F (16+)
               </div>
             </div>
@@ -139,15 +139,15 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
           <div class="p-5 rounded-2xl mb-5" style="background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%); border:1.5px solid #86efac;">
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center sm:text-left items-center">
               <div>
-                <div class="text-xs font-semibold" style="color:#166534;">Tarif unitaire applicable :</div>
+                <div class="text-xs font-semibold text-fg-success-deep">Tarif unitaire applicable :</div>
                 <div id="res-unit-rate" class="text-lg font-bold" style="color:#14532d;">8 500 F <span class="text-xs font-normal">/ unité / visite</span></div>
               </div>
               <div>
-                <div class="text-xs font-semibold" style="color:#166534;">Par visite globale :</div>
+                <div class="text-xs font-semibold text-fg-success-deep">Par visite globale :</div>
                 <div id="res-visit-price" class="text-lg font-bold" style="color:#14532d;">17 000 F CFA</div>
               </div>
               <div class="sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0" style="border-color:#86efac;">
-                <div class="text-xs font-bold uppercase tracking-wider" style="color:#166534;">Total annuel estimé :</div>
+                <div class="text-xs font-bold uppercase tracking-wider text-fg-success-deep">Total annuel estimé :</div>
                 <div id="res-total-annual" class="text-2xl md:text-3xl font-black" style="color:#14532d;">34 000 F CFA</div>
               </div>
             </div>
@@ -158,7 +158,7 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
               <i class="fas fa-check-circle"></i>
               <span>Souscrire avec cette configuration</span>
             </button>
-            <a href="#offres-cards" class="px-5 py-3.5 rounded-xl font-semibold text-sm text-center border transition-all hover:bg-slate-50 flex items-center justify-center space-x-1.5" style="border-color:#cbd5e1; color:#475569;">
+            <a href="#offres-cards" class="px-5 py-3.5 rounded-xl font-semibold text-sm text-center border transition-all hover:bg-slate-50 flex items-center justify-center space-x-1.5" style="border-color:var(--line-strong); color:var(--fg-muted);">
               <span>Voir les 4 formules</span>
               <i class="fas fa-arrow-down text-xs"></i>
             </a>
@@ -168,11 +168,11 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
     </section>
 
     {/* LES 4 FORMULES DE MAINTENANCE (v2) */}
-    <section id="offres-cards" class="py-14 px-4 reveal" style="background:linear-gradient(180deg,#f0f9ff 0%,#e0f2fe 100%);">
+    <section id="offres-cards" class="py-14 px-4 reveal" style="background:linear-gradient(180deg,var(--surface-info) 0%,var(--surface-accent) 100%);">
       <div class="max-w-6xl mx-auto">
         <div class="text-center mb-10">
-          <h2 class="text-2xl md:text-3xl font-extrabold mb-3" style="color:#03045e;">Nos 4 formules de maintenance</h2>
-          <p class="text-sm max-w-xl mx-auto" style="color:#64748b;">
+          <h2 class="text-2xl md:text-3xl font-extrabold mb-3 text-fg-heading">Nos 4 formules de maintenance</h2>
+          <p class="text-sm max-w-xl mx-auto" style="color:var(--fg-subtle);">
             Chaque formule est adaptée à votre taille de parc. Les tarifs unitaires sont dégressifs selon vos équipements.
           </p>
         </div>
@@ -180,25 +180,25 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto items-stretch">
 
           {/* CARTE 1 — RÉSIDENTIEL */}
-          <div id="card-residentiel" class="formula-card glass-card rounded-3xl p-6 relative flex flex-col justify-between" style="border:2px solid rgba(0,119,182,0.15); background:#ffffff;">
+          <div id="card-residentiel" class="formula-card glass-card rounded-3xl p-6 relative flex flex-col justify-between" style="border:2px solid rgba(var(--rgb-brand),0.15); background:var(--surface-card);">
             <div>
               <div class="flex items-center justify-between mb-4">
-                <span class="text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider" style="background:rgba(0,119,182,0.08); color:#0077b6;">
+                <span class="text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider text-fg-brand" style="background:rgba(var(--rgb-brand),0.08);">
                   1 à 4 clims
                 </span>
-                <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:#f1f5f9; color:#0077b6;">
+                <div class="w-9 h-9 rounded-full flex items-center justify-center bg-surface-muted text-fg-brand">
                   <i class="fas fa-home"></i>
                 </div>
               </div>
-              <h3 class="text-lg font-black mb-1" style="color:#03045e;">RÉSIDENTIEL</h3>
-              <div class="text-xs font-medium mb-3" style="color:#64748b;">Fréquence : <strong>Essentiel (1x) ou Confort (2x)</strong></div>
+              <h3 class="text-lg font-black mb-1 text-fg-heading">RÉSIDENTIEL</h3>
+              <div class="text-xs font-medium mb-3 text-fg-subtle">Fréquence : <strong>Essentiel (1x) ou Confort (2x)</strong></div>
 
-              <div class="p-3 rounded-2xl mb-4" style="background:#f8fafc; border:1px solid #e2e8f0;">
-                <div class="text-2xl font-black" style="color:#03045e;">8 500 <span class="text-xs font-bold text-slate-500">F / clim / visite</span></div>
-                <div class="text-[11px] mt-0.5" style="color:#64748b;">Tarif unitaire applicable de 1 à 4 climatiseurs</div>
+              <div class="p-3 rounded-2xl mb-4 bg-surface-subtle border border-line">
+                <div class="text-2xl font-black text-fg-heading">8 500 <span class="text-xs font-bold text-slate-500">F / clim / visite</span></div>
+                <div class="text-[11px] mt-0.5 text-fg-subtle">Tarif unitaire applicable de 1 à 4 climatiseurs</div>
               </div>
 
-              <div class="text-xs font-bold uppercase tracking-wider mb-2" style="color:#03045e;">Ce qui est inclus :</div>
+              <div class="text-xs font-bold uppercase tracking-wider mb-2 text-fg-heading">Ce qui est inclus :</div>
               <div class="space-y-2 mb-6">
                 {[
                   'Nettoyage des filtres',
@@ -208,18 +208,18 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
                   'Diagnostic technique'
                 ].map((f, index) => (
                   <div key={index} class="flex items-start space-x-2 text-xs">
-                    <i class="fas fa-check-circle mt-0.5 flex-shrink-0" style="color:#16a34a; font-size:0.75rem;"></i>
-                    <span style="color:#334155;">{f}</span>
+                    <i class="fas fa-check-circle mt-0.5 flex-shrink-0 text-fg-success-bright text-[0.75rem]"></i>
+                    <span class="text-fg-body">{f}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             <div>
-              <div class="text-[11px] text-center mb-4 p-2 rounded-xl" style="background:#f1f5f9; color:#64748b;">
+              <div class="text-[11px] text-center mb-4 p-2 rounded-xl bg-surface-muted text-fg-subtle">
                 <i class="fas fa-check mr-1 text-blue-500"></i>Logements et petits bureaux
               </div>
-              <button type="button" onclick="simulateFormula('residentiel')" class="w-full text-center font-bold py-3 rounded-xl transition-all hover:-translate-y-0.5 cursor-pointer text-sm flex items-center justify-center space-x-1.5" style="background:rgba(0,119,182,0.08); color:#0077b6; border:1.5px solid rgba(0,119,182,0.2);">
+              <button type="button" onclick="simulateFormula('residentiel')" class="w-full text-center font-bold py-3 rounded-xl transition-all hover:-translate-y-0.5 cursor-pointer text-sm flex items-center justify-center space-x-1.5" style="background:rgba(var(--rgb-brand),0.08); color:var(--fg-brand); border:1.5px solid rgba(var(--rgb-brand),0.2);">
                 <i class="fas fa-calculator text-xs"></i>
                 <span>Simuler mon prix</span>
               </button>
@@ -227,28 +227,28 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
           </div>
 
           {/* CARTE 2 — PROFESSIONNEL / PME ⭐ RECOMMANDÉ */}
-          <div id="card-professionnel" class="formula-card glass-card rounded-3xl p-6 relative flex flex-col justify-between" style="border:2px solid #0077b6; background:#ffffff; box-shadow:0 12px 32px rgba(0,119,182,0.12);">
+          <div id="card-professionnel" class="formula-card glass-card rounded-3xl p-6 relative flex flex-col justify-between" style="border:2px solid var(--line-brand); background:var(--surface-card); box-shadow:0 12px 32px rgba(var(--rgb-brand),0.12);">
             <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[11px] font-extrabold shadow-md whitespace-nowrap" style="background:linear-gradient(135deg,#0077b6,#00b4d8); color:#ffffff;">
               <i class="fas fa-star mr-1"></i>RECOMMANDÉ
             </div>
             <div>
               <div class="flex items-center justify-between mb-4 mt-1">
-                <span class="text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider" style="background:rgba(0,119,182,0.1); color:#0077b6;">
+                <span class="text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider text-fg-brand" style="background:rgba(var(--rgb-brand),0.1);">
                   5 à 15 clims
                 </span>
-                <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:#e0f2fe; color:#0077b6;">
+                <div class="w-9 h-9 rounded-full flex items-center justify-center bg-surface-accent text-fg-brand">
                   <i class="fas fa-building"></i>
                 </div>
               </div>
-              <h3 class="text-lg font-black mb-1" style="color:#03045e;">PROFESSIONNEL / PME</h3>
-              <div class="text-xs font-medium mb-3" style="color:#64748b;">Fréquence : <strong>Confort (2x) ou Pro (3x)</strong></div>
+              <h3 class="text-lg font-black mb-1 text-fg-heading">PROFESSIONNEL / PME</h3>
+              <div class="text-xs font-medium mb-3 text-fg-subtle">Fréquence : <strong>Confort (2x) ou Pro (3x)</strong></div>
 
-              <div class="p-3 rounded-2xl mb-4" style="background:#f0f9ff; border:1px solid #bae6fd;">
-                <div class="text-2xl font-black" style="color:#03045e;">7 500 à 6 000 <span class="text-xs font-bold text-slate-500">F / unité / visite</span></div>
-                <div class="text-[11px] mt-0.5" style="color:#64748b;">7 500 F (5-8 clims) · 6 000 F (9-15 clims)</div>
+              <div class="p-3 rounded-2xl mb-4 bg-surface-info border border-line-accent">
+                <div class="text-2xl font-black text-fg-heading">7 500 à 6 000 <span class="text-xs font-bold text-slate-500">F / unité / visite</span></div>
+                <div class="text-[11px] mt-0.5 text-fg-subtle">7 500 F (5-8 clims) · 6 000 F (9-15 clims)</div>
               </div>
 
-              <div class="text-xs font-bold uppercase tracking-wider mb-2" style="color:#03045e;">Ce qui est inclus :</div>
+              <div class="text-xs font-bold uppercase tracking-wider mb-2 text-fg-heading">Ce qui est inclus :</div>
               <div class="space-y-2 mb-4">
                 {[
                   'Nettoyage unité intérieure + extérieure',
@@ -258,20 +258,20 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
                   'Conseils d\'optimisation énergétique'
                 ].map((f, index) => (
                   <div key={index} class="flex items-start space-x-2 text-xs">
-                    <i class="fas fa-check-circle mt-0.5 flex-shrink-0" style="color:#16a34a; font-size:0.75rem;"></i>
-                    <span style="color:#334155;">{f}</span>
+                    <i class="fas fa-check-circle mt-0.5 flex-shrink-0 text-fg-success-bright text-[0.75rem]"></i>
+                    <span class="text-fg-body">{f}</span>
                   </div>
                 ))}
               </div>
 
-              <div class="p-2.5 rounded-xl mb-4" style="background:linear-gradient(135deg,rgba(0,119,182,0.06),rgba(0,180,216,0.06)); border:1px solid rgba(0,119,182,0.15);">
-                <div class="text-[11px] font-bold" style="color:#0077b6;"><i class="fas fa-gift mr-1"></i>Bonus client inclus :</div>
-                <div class="text-[11px] mt-0.5" style="color:#334155;">1 diagnostic panne offert dans l'année</div>
+              <div class="p-2.5 rounded-xl mb-4" style="background:linear-gradient(135deg,rgba(var(--rgb-brand),0.06),rgba(0,180,216,0.06)); border:1px solid rgba(var(--rgb-brand),0.15);">
+                <div class="text-[11px] font-bold text-fg-brand"><i class="fas fa-gift mr-1"></i>Bonus client inclus :</div>
+                <div class="text-[11px] mt-0.5 text-fg-body">1 diagnostic panne offert dans l'année</div>
               </div>
             </div>
 
             <div>
-              <div class="text-[11px] text-center mb-4 p-2 rounded-xl" style="background:#f1f5f9; color:#64748b;">
+              <div class="text-[11px] text-center mb-4 p-2 rounded-xl bg-surface-muted text-fg-subtle">
                 <i class="fas fa-check mr-1 text-blue-500"></i>Bureaux, commerces, PME
               </div>
               <button type="button" onclick="simulateFormula('professionnel')" class="w-full text-center font-bold py-3 rounded-xl transition-all hover:-translate-y-0.5 cursor-pointer text-sm text-white flex items-center justify-center space-x-1.5" style="background:linear-gradient(135deg,#0077b6,#00b4d8); box-shadow:0 6px 18px rgba(0,119,182,0.3);">
@@ -282,28 +282,28 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
           </div>
 
           {/* CARTE 3 — INDUSTRIEL 🏆 MEILLEUR CHOIX */}
-          <div id="card-industriel" class="formula-card glass-card rounded-3xl p-6 relative flex flex-col justify-between" style="border:2px solid rgba(3,4,94,0.25); background:#ffffff;">
+          <div id="card-industriel" class="formula-card glass-card rounded-3xl p-6 relative flex flex-col justify-between" style="border:2px solid rgba(var(--rgb-navy),0.25); background:var(--surface-card);">
             <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[11px] font-extrabold shadow-md whitespace-nowrap" style="background:linear-gradient(135deg,#03045e,#0077b6); color:#ffffff;">
               <i class="fas fa-crown mr-1"></i>MEILLEUR CHOIX
             </div>
             <div>
               <div class="flex items-center justify-between mb-4 mt-1">
-                <span class="text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider" style="background:rgba(3,4,94,0.08); color:#03045e;">
+                <span class="text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider text-fg-heading" style="background:rgba(var(--rgb-navy),0.08);">
                   16 clims et +
                 </span>
-                <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:#f1f5f9; color:#03045e;">
+                <div class="w-9 h-9 rounded-full flex items-center justify-center bg-surface-muted text-fg-heading">
                   <i class="fas fa-industry"></i>
                 </div>
               </div>
-              <h3 class="text-lg font-black mb-1" style="color:#03045e;">INDUSTRIEL</h3>
-              <div class="text-xs font-medium mb-3" style="color:#64748b;">Fréquence : <strong>Pro (3x) ou contrat sur mesure</strong></div>
+              <h3 class="text-lg font-black mb-1 text-fg-heading">INDUSTRIEL</h3>
+              <div class="text-xs font-medium mb-3 text-fg-subtle">Fréquence : <strong>Pro (3x) ou contrat sur mesure</strong></div>
 
-              <div class="p-3 rounded-2xl mb-4" style="background:#f8fafc; border:1px solid #e2e8f0;">
-                <div class="text-2xl font-black" style="color:#03045e;">Dès 5 000 <span class="text-xs font-bold text-slate-500">F / unité / visite</span></div>
-                <div class="text-[11px] mt-0.5" style="color:#64748b;">Sur devis · Base de négociation dégressive selon volume</div>
+              <div class="p-3 rounded-2xl mb-4 bg-surface-subtle border border-line">
+                <div class="text-2xl font-black text-fg-heading">Dès 5 000 <span class="text-xs font-bold text-slate-500">F / unité / visite</span></div>
+                <div class="text-[11px] mt-0.5 text-fg-subtle">Sur devis · Base de négociation dégressive selon volume</div>
               </div>
 
-              <div class="text-xs font-bold uppercase tracking-wider mb-2" style="color:#03045e;">Ce qui est inclus :</div>
+              <div class="text-xs font-bold uppercase tracking-wider mb-2 text-fg-heading">Ce qui est inclus :</div>
               <div class="space-y-2 mb-3">
                 {[
                   'Nettoyage complet professionnel',
@@ -313,15 +313,15 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
                   'Suivi technique & rapport personnalisé'
                 ].map((f, index) => (
                   <div key={index} class="flex items-start space-x-2 text-xs">
-                    <i class="fas fa-check-circle mt-0.5 flex-shrink-0" style="color:#16a34a; font-size:0.75rem;"></i>
-                    <span style="color:#334155;">{f}</span>
+                    <i class="fas fa-check-circle mt-0.5 flex-shrink-0 text-fg-success-bright text-[0.75rem]"></i>
+                    <span class="text-fg-body">{f}</span>
                   </div>
                 ))}
               </div>
 
-              <div class="p-2.5 rounded-xl mb-4" style="background:rgba(3,4,94,0.04); border:1px solid rgba(3,4,94,0.08);">
-                <div class="text-[11px] font-bold mb-1" style="color:#03045e;"><i class="fas fa-shield-alt mr-1"></i>Avantages exclusifs :</div>
-                <div class="text-[11px] space-y-0.5" style="color:#334155;">
+              <div class="p-2.5 rounded-xl mb-4" style="background:rgba(var(--rgb-navy),0.04); border:1px solid rgba(var(--rgb-navy),0.08);">
+                <div class="text-[11px] font-bold mb-1 text-fg-heading"><i class="fas fa-shield-alt mr-1"></i>Avantages exclusifs :</div>
+                <div class="text-[11px] space-y-0.5 text-fg-body">
                   <div>• 1 recharge de gaz gratuite (si nécessaire)</div>
                   <div>• 10% de réduction sur réparations</div>
                   <div>• Support technique prioritaire</div>
@@ -330,10 +330,10 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
             </div>
 
             <div>
-              <div class="text-[11px] text-center mb-4 p-2 rounded-xl" style="background:#f1f5f9; color:#64748b;">
+              <div class="text-[11px] text-center mb-4 p-2 rounded-xl bg-surface-muted text-fg-subtle">
                 <i class="fas fa-check mr-1 text-blue-500"></i>Usines, hôtels, gros parcs
               </div>
-              <button type="button" onclick="openMaintenanceModal('industriel')" class="w-full text-center font-bold py-3 rounded-xl transition-all hover:-translate-y-0.5 cursor-pointer text-sm flex items-center justify-center space-x-1.5" style="background:rgba(3,4,94,0.08); color:#03045e; border:1.5px solid rgba(3,4,94,0.2);">
+              <button type="button" onclick="openMaintenanceModal('industriel')" class="w-full text-center font-bold py-3 rounded-xl transition-all hover:-translate-y-0.5 cursor-pointer text-sm flex items-center justify-center space-x-1.5" style="background:rgba(var(--rgb-navy),0.08); color:var(--fg-heading); border:1.5px solid rgba(var(--rgb-navy),0.2);">
                 <i class="fas fa-file-invoice text-xs"></i>
                 <span>Demander un devis</span>
               </button>
@@ -341,39 +341,39 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
           </div>
 
           {/* CARTE 4 — SUR MESURE (Sobre) */}
-          <div id="card-sur_mesure" class="formula-card glass-card rounded-3xl p-6 relative flex flex-col justify-between" style="border:1.5px solid #cbd5e1; background:#ffffff;">
+          <div id="card-sur_mesure" class="formula-card glass-card rounded-3xl p-6 relative flex flex-col justify-between" style="border:1.5px solid var(--line-strong); background:var(--surface-card);">
             <div>
               <div class="flex items-center justify-between mb-4">
-                <span class="text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider" style="background:#f1f5f9; color:#475569;">
+                <span class="text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider bg-surface-muted text-fg-muted">
                   CONTRAT PERSONNALISÉ
                 </span>
-                <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:#f8fafc; color:#475569;">
+                <div class="w-9 h-9 rounded-full flex items-center justify-center bg-surface-subtle text-fg-muted">
                   <i class="fas fa-handshake"></i>
                 </div>
               </div>
               <h3 class="text-lg font-black mb-1" style="color:#1e293b;">SUR MESURE</h3>
-              <div class="text-xs font-medium mb-3" style="color:#64748b;">Parcs mixtes & Multi-sites</div>
+              <div class="text-xs font-medium mb-3 text-fg-subtle">Parcs mixtes & Multi-sites</div>
 
-              <div class="p-3 rounded-2xl mb-4" style="background:#f8fafc; border:1px solid #e2e8f0;">
+              <div class="p-3 rounded-2xl mb-4 bg-surface-subtle border border-line">
                 <div class="text-2xl font-black" style="color:#1e293b;">Sur devis</div>
-                <div class="text-[11px] mt-0.5" style="color:#64748b;">Selon vos besoins et votre cahier des charges</div>
+                <div class="text-[11px] mt-0.5 text-fg-subtle">Selon vos besoins et votre cahier des charges</div>
               </div>
 
-              <p class="text-xs leading-relaxed mb-4" style="color:#475569;">
+              <p class="text-xs leading-relaxed mb-4 text-fg-muted">
                 Votre parc ou vos exigences ne rentrent pas dans une formule standard ? Décrivez-nous votre besoin (plusieurs sites, chambres froides, astreinte, délai garanti SLA), nous construisons un contrat adapté.
               </p>
 
-              <div class="p-2.5 rounded-xl mb-4" style="background:#f8fafc; border:1px solid #e2e8f0;">
-                <div class="text-[11px] font-bold mb-0.5" style="color:#334155;"><i class="fas fa-cogs mr-1"></i>Prestations flexibles :</div>
-                <div class="text-[11px]" style="color:#64748b;">SLA garanti, astreintes WE, parc froid mixte.</div>
+              <div class="p-2.5 rounded-xl mb-4 bg-surface-subtle border border-line">
+                <div class="text-[11px] font-bold mb-0.5 text-fg-body"><i class="fas fa-cogs mr-1"></i>Prestations flexibles :</div>
+                <div class="text-[11px] text-fg-subtle">SLA garanti, astreintes WE, parc froid mixte.</div>
               </div>
             </div>
 
             <div>
-              <div class="text-[11px] text-center mb-4 p-2 rounded-xl" style="background:#f8fafc; color:#64748b;">
+              <div class="text-[11px] text-center mb-4 p-2 rounded-xl bg-surface-subtle text-fg-subtle">
                 <i class="fas fa-check mr-1 text-slate-500"></i>Multi-sites, parcs mixtes, SLA
               </div>
-              <button type="button" onclick="openMaintenanceModal('sur_mesure')" class="w-full text-center font-bold py-3 rounded-xl transition-all hover:-translate-y-0.5 cursor-pointer text-sm mb-2 flex items-center justify-center space-x-1.5" style="background:#334155; color:#ffffff;">
+              <button type="button" onclick="openMaintenanceModal('sur_mesure')" class="w-full text-center font-bold py-3 rounded-xl transition-all hover:-translate-y-0.5 cursor-pointer text-sm mb-2 flex items-center justify-center space-x-1.5" style="background:#334155; color:var(--fg-on-dark);">
                 <i class="fas fa-handshake text-xs"></i>
                 <span>Demander un contrat personnalisé</span>
               </button>
@@ -387,19 +387,19 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
         </div>
 
         {/* Tableau Comparatif Rapide */}
-        <div class="mt-14 max-w-4xl mx-auto glass-card rounded-3xl p-6 md:p-8 reveal shadow-lg" style="background:#ffffff; border:1px solid #e2e8f0;">
-          <h3 class="font-extrabold text-lg md:text-xl text-center mb-6" style="color:#03045e;">
-            <i class="fas fa-chart-bar mr-2" style="color:#0077b6;"></i>Comparatif des formules
+        <div class="mt-14 max-w-4xl mx-auto glass-card rounded-3xl p-6 md:p-8 reveal shadow-lg" style="background:var(--surface-card); border:1px solid var(--line);">
+          <h3 class="font-extrabold text-lg md:text-xl text-center mb-6 text-fg-heading">
+            <i class="fas fa-chart-bar mr-2 text-fg-brand"></i>Comparatif des formules
           </h3>
           <div class="overflow-x-auto">
             <table class="w-full text-xs md:text-sm">
               <thead>
-                <tr style="border-bottom:2px solid rgba(0,119,182,0.12);">
-                  <th class="text-left py-3 px-3 font-bold" style="color:#03045e;">Critère</th>
-                  <th class="text-center py-3 px-3 font-bold" style="color:#0077b6;">Résidentiel</th>
-                  <th class="text-center py-3 px-3 font-bold" style="color:#0077b6;">Pro / PME ⭐</th>
-                  <th class="text-center py-3 px-3 font-bold" style="color:#03045e;">Industriel 🏆</th>
-                  <th class="text-center py-3 px-3 font-bold" style="color:#475569;">Sur Mesure</th>
+                <tr style="border-bottom:2px solid rgba(var(--rgb-brand),0.12);">
+                  <th class="text-left py-3 px-3 font-bold text-fg-heading">Critère</th>
+                  <th class="text-center py-3 px-3 font-bold text-fg-brand">Résidentiel</th>
+                  <th class="text-center py-3 px-3 font-bold text-fg-brand">Pro / PME ⭐</th>
+                  <th class="text-center py-3 px-3 font-bold text-fg-heading">Industriel 🏆</th>
+                  <th class="text-center py-3 px-3 font-bold text-fg-muted">Sur Mesure</th>
                 </tr>
               </thead>
               <tbody>
@@ -412,12 +412,12 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
                   ['Réduction sur réparations', '—', '—', '✅ 10%', 'Négociée'],
                   ['Support & intervention', 'Standard', 'Prioritaire', 'Haute priorité', 'SLA Garanti'],
                 ].map((row, idx) => (
-                  <tr key={idx} style="border-bottom:1px solid rgba(0,119,182,0.06);">
-                    <td class="py-2.5 px-3 font-medium" style="color:#334155;">{row[0]}</td>
-                    <td class="py-2.5 px-3 text-center" style="color:#64748b;">{renderCell(row[1])}</td>
-                    <td class="py-2.5 px-3 text-center font-semibold" style="color:#0077b6;">{renderCell(row[2])}</td>
-                    <td class="py-2.5 px-3 text-center font-semibold" style="color:#03045e;">{renderCell(row[3])}</td>
-                    <td class="py-2.5 px-3 text-center" style="color:#475569;">{renderCell(row[4])}</td>
+                  <tr key={idx} style="border-bottom:1px solid rgba(var(--rgb-brand),0.06);">
+                    <td class="py-2.5 px-3 font-medium text-fg-body">{row[0]}</td>
+                    <td class="py-2.5 px-3 text-center text-fg-subtle">{renderCell(row[1])}</td>
+                    <td class="py-2.5 px-3 text-center font-semibold text-fg-brand">{renderCell(row[2])}</td>
+                    <td class="py-2.5 px-3 text-center font-semibold text-fg-heading">{renderCell(row[3])}</td>
+                    <td class="py-2.5 px-3 text-center text-fg-muted">{renderCell(row[4])}</td>
                   </tr>
                 ))}
               </tbody>
@@ -428,38 +428,38 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
     </section>
 
     {/* MODAL DE SOUSCRIPTION & DEVIS (v2) */}
-    <div id="maintenance-modal" data-lenis-prevent class="hidden fixed inset-0 z-50 flex items-start justify-center p-4 pt-6" style="background:rgba(0,0,0,0.65); backdrop-filter:blur(6px);">
-      <div class="w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden" style="background:#ffffff; max-height:92vh; overflow-y:auto;">
+    <div id="maintenance-modal" data-lenis-prevent class="hidden fixed inset-0 z-50 flex items-start justify-center p-4 pt-6" style="background:rgba(var(--rgb-black),0.65); backdrop-filter:blur(6px);">
+      <div class="w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden bg-surface-card" style="max-height:92vh; overflow-y:auto;">
         {/* Modal Header */}
-        <div class="flex items-center justify-between px-6 py-4 sticky top-0 z-10" style="background:#f8fafc; border-bottom:2px solid #e2e8f0;">
+        <div class="flex items-center justify-between px-6 py-4 sticky top-0 z-10 bg-surface-subtle" style="border-bottom:2px solid var(--line);">
           <div>
-            <h3 class="font-extrabold text-lg" style="color:#03045e;">
-              <i class="fas fa-file-contract mr-2" style="color:#0077b6;"></i>Demande de Contrat de Maintenance
+            <h3 class="font-extrabold text-lg text-fg-heading">
+              <i class="fas fa-file-contract mr-2 text-fg-brand"></i>Demande de Contrat de Maintenance
             </h3>
-            <p class="text-xs mt-0.5" style="color:#64748b;">Traitement rapide · Confirmation technique sous 2h</p>
+            <p class="text-xs mt-0.5 text-fg-subtle">Traitement rapide · Confirmation technique sous 2h</p>
           </div>
-          <button type="button" onclick="closeMaintenanceModal()" class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-slate-100 transition-colors cursor-pointer" style="color:#64748b;">
+          <button type="button" onclick="closeMaintenanceModal()" class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-slate-100 transition-colors cursor-pointer text-fg-subtle">
             <i class="fas fa-times text-base"></i>
           </button>
         </div>
 
         <div class="px-6 py-6">
           {error && (
-            <div class="mb-6 p-4 rounded-xl flex items-center space-x-3" style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.15);">
-              <i class="fas fa-exclamation-circle text-xl" style="color:#ef4444;"></i>
-              <span class="text-sm" style="color:#ef4444;">{error}</span>
+            <div class="mb-6 p-4 rounded-xl flex items-center space-x-3" style="background:rgba(var(--rgb-red),0.08); border:1px solid rgba(var(--rgb-red),0.15);">
+              <i class="fas fa-exclamation-circle text-xl text-fg-danger-bright"></i>
+              <span class="text-sm" style="color:var(--fg-danger-bright);">{error}</span>
             </div>
           )}
 
           {success ? (
             <div class="py-6 px-2 text-center space-y-6">
               <div class="w-16 h-16 rounded-full mx-auto flex items-center justify-center" style="background:rgba(22,163,74,0.12); border:2px solid rgba(22,163,74,0.3);">
-                <i class="fas fa-check-circle text-3xl" style="color:#16a34a;"></i>
+                <i class="fas fa-check-circle text-3xl text-fg-success-bright"></i>
               </div>
               <div class="space-y-2">
-                <h4 class="text-xl font-extrabold" style="color:#03045e;">Demande transmise avec succès !</h4>
-                <p class="text-sm max-w-md mx-auto leading-relaxed" style="color:#475569;">
-                  Votre demande a été enregistrée. Notre équipe technique vous contactera sous <strong>2h</strong> par <span style="color:#25d366; font-weight:700;"><i class="fab fa-whatsapp"></i> WhatsApp</span> pour confirmer les détails et planifier la 1ère visite.
+                <h4 class="text-xl font-extrabold text-fg-heading">Demande transmise avec succès !</h4>
+                <p class="text-sm max-w-md mx-auto leading-relaxed" style="color:var(--fg-muted);">
+                  Votre demande a été enregistrée. Notre équipe technique vous contactera sous <strong>2h</strong> par <span class="text-fg-whatsapp font-bold"><i class="fab fa-whatsapp"></i> WhatsApp</span> pour confirmer les détails et planifier la 1ère visite.
                 </p>
               </div>
 
@@ -468,7 +468,7 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
                   <i class="fas fa-user-circle"></i>
                   <span>Voir mon Espace Client</span>
                 </a>
-                <button type="button" onclick="closeMaintenanceModal()" class="w-full sm:w-auto px-6 py-3.5 rounded-xl font-semibold transition-all hover:bg-slate-100 text-sm cursor-pointer" style="color:#64748b; border:1.5px solid #cbd5e1;">
+                <button type="button" onclick="closeMaintenanceModal()" class="w-full sm:w-auto px-6 py-3.5 rounded-xl font-semibold transition-all hover:bg-slate-100 text-sm cursor-pointer" style="color:var(--fg-subtle); border:1.5px solid var(--line-strong);">
                   Fermer
                 </button>
               </div>
@@ -481,7 +481,7 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
 
               {/* Sélection de la formule */}
               <div>
-                <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:#03045e;">Formule souhaitée</label>
+                <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--fg-heading);">Formule souhaitée</label>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="modal-formula-selector">
                   {[
                     { id: 'residentiel', label: 'Résidentiel', range: '1-4 clims' },
@@ -491,9 +491,9 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
                   ].map(f => (
                     <label key={f.id} class="cursor-pointer">
                       <input type="radio" name="plan_type" value={f.id} class="hidden peer" />
-                      <div class="peer-checked:border-blue-600 peer-checked:bg-blue-50 border-2 rounded-xl p-2.5 text-center transition hover:border-blue-300" style="border-color:#e2e8f0;">
-                        <div class="text-xs font-bold" style="color:#03045e;">{f.label}</div>
-                        <div class="text-[10px]" style="color:#64748b;">{f.range}</div>
+                      <div class="peer-checked:border-blue-600 peer-checked:bg-blue-50 border-2 rounded-xl p-2.5 text-center transition hover:border-blue-300" style="border-color:var(--line);">
+                        <div class="text-xs font-bold text-fg-heading">{f.label}</div>
+                        <div class="text-[10px] text-fg-subtle">{f.range}</div>
                       </div>
                     </label>
                   ))}
@@ -501,15 +501,15 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
               </div>
 
               {/* Paramètres dynamiques (clims + fréquence) */}
-              <div id="modal-ac-config" class="p-4 rounded-2xl" style="background:#f8fafc; border:1px solid #e2e8f0;">
+              <div id="modal-ac-config" class="p-4 rounded-2xl bg-surface-subtle border border-line">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
                   <div>
-                    <label class="block text-xs font-semibold mb-1" style="color:#03045e;">Nombre de climatiseurs</label>
-                    <input type="number" id="modal-nb-clims" name="nb_climatiseurs" min={1} max={200} value={2} class="w-full rounded-xl px-3 py-2.5 text-sm font-bold border" style="border-color:#cbd5e1; color:#03045e;" />
+                    <label class="block text-xs font-semibold mb-1" style="color:var(--fg-heading);">Nombre de climatiseurs</label>
+                    <input type="number" id="modal-nb-clims" name="nb_climatiseurs" min={1} max={200} value={2} class="w-full rounded-xl px-3 py-2.5 text-sm font-bold border" style="border-color:var(--line-strong); color:var(--fg-heading);" />
                   </div>
                   <div>
-                    <label class="block text-xs font-semibold mb-1" style="color:#03045e;">Fréquence de visite</label>
-                    <select id="modal-freq-select" name="frequence_visites" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium border" style="border-color:#cbd5e1; color:#03045e;">
+                    <label class="block text-xs font-semibold mb-1" style="color:var(--fg-heading);">Fréquence de visite</label>
+                    <select id="modal-freq-select" name="frequence_visites" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium border" style="border-color:var(--line-strong); color:var(--fg-heading);">
                       <option value="Essentiel">Essentiel (1 visite/an)</option>
                       <option value="Confort" selected>Confort (2 visites/an)</option>
                       <option value="Pro">Pro (3 visites/an)</option>
@@ -517,14 +517,14 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
                   </div>
                 </div>
                 {/* Récapitulatif tarifaire calculé */}
-                <div id="modal-pricing-recap" class="p-3 rounded-xl flex items-center justify-between" style="background:#e0f2fe; border:1px solid #bae6fd;">
+                <div id="modal-pricing-recap" class="p-3 rounded-xl flex items-center justify-between bg-surface-accent border border-line-accent">
                   <div>
-                    <div class="text-[11px] font-semibold" style="color:#0369a1;">Tarif unitaire applicable :</div>
-                    <div id="modal-unit-label" class="text-xs font-bold" style="color:#03045e;">8 500 F / unité</div>
+                    <div class="text-[11px] font-semibold text-fg-link">Tarif unitaire applicable :</div>
+                    <div id="modal-unit-label" class="text-xs font-bold text-fg-heading">8 500 F / unité</div>
                   </div>
                   <div class="text-right">
-                    <div class="text-[11px] font-semibold" style="color:#0369a1;">Estimation globale :</div>
-                    <div id="modal-total-label" class="text-base font-extrabold" style="color:#03045e;">34 000 F CFA / an</div>
+                    <div class="text-[11px] font-semibold text-fg-link">Estimation globale :</div>
+                    <div id="modal-total-label" class="text-base font-extrabold text-fg-heading">34 000 F CFA / an</div>
                   </div>
                 </div>
               </div>
@@ -532,48 +532,48 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
               {/* Champs spécifiques Industriel / Sur Mesure */}
               <div id="modal-custom-fields" class="space-y-4" style="display:none;">
                 <div>
-                  <label class="block text-xs font-semibold mb-1" style="color:#03045e;">Nom de l'établissement ou nombre de site(s)</label>
-                  <input type="text" name="type_etablissement" placeholder="Ex: Hôtel 30 chambres, Clinique 2 sites..." class="w-full rounded-xl px-4 py-2.5 text-sm border" style="border-color:#cbd5e1; color:#03045e;" />
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--fg-heading);">Nom de l'établissement ou nombre de site(s)</label>
+                  <input type="text" name="type_etablissement" placeholder="Ex: Hôtel 30 chambres, Clinique 2 sites..." class="w-full rounded-xl px-4 py-2.5 text-sm border" style="border-color:var(--line-strong); color:var(--fg-heading);" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold mb-1" style="color:#03045e;">Exigences particulières (SLA, astreinte, froid commercial)</label>
-                  <textarea name="exigences" rows={2} placeholder="Ex: Astreinte week-end demandée, présence de chambres froides..." class="w-full rounded-xl px-4 py-2 text-sm border resize-none" style="border-color:#cbd5e1; color:#03045e;"></textarea>
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--fg-heading);">Exigences particulières (SLA, astreinte, froid commercial)</label>
+                  <textarea name="exigences" rows={2} placeholder="Ex: Astreinte week-end demandée, présence de chambres froides..." class="w-full rounded-xl px-4 py-2 text-sm border resize-none" style="border-color:var(--line-strong); color:var(--fg-heading);"></textarea>
                 </div>
               </div>
 
               {/* Coordonnées client */}
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-xs font-semibold mb-1" style="color:#03045e;">Nom complet <span style="color:#e11d48;">*</span></label>
-                  <input type="text" name="name" required value={clientName || ''} placeholder="Votre nom" class="w-full rounded-xl px-4 py-2.5 text-sm border" style="border-color:#cbd5e1; color:#03045e;" />
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--fg-heading);">Nom complet <span style="color:#e11d48;">*</span></label>
+                  <input type="text" name="name" required value={clientName || ''} placeholder="Votre nom" class="w-full rounded-xl px-4 py-2.5 text-sm border" style="border-color:var(--line-strong); color:var(--fg-heading);" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold mb-1" style="color:#03045e;">Téléphone WhatsApp <span style="color:#e11d48;">*</span></label>
-                  <div class="flex rounded-xl overflow-hidden border" style="border-color:#cbd5e1;">
-                    <div class="flex items-center px-3 text-xs font-bold" style="background:#f1f5f9; color:#0077b6; border-right:1px solid #cbd5e1; white-space:nowrap;">🇧🇫 +226</div>
-                    <input type="tel" name="phone" required value={clientPhone || ''} placeholder="55 99 64 18" class="flex-1 px-3 py-2.5 text-sm outline-none" style="background:#ffffff; color:#03045e;" />
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--fg-heading);">Téléphone WhatsApp <span style="color:#e11d48;">*</span></label>
+                  <div class="flex rounded-xl overflow-hidden border" style="border-color:var(--line-strong);">
+                    <div class="flex items-center px-3 text-xs font-bold bg-surface-muted text-fg-brand border-r border-line-strong whitespace-nowrap">🇧🇫 +226</div>
+                    <input type="tel" name="phone" required value={clientPhone || ''} placeholder="55 99 64 18" class="flex-1 px-3 py-2.5 text-sm outline-none bg-surface-card" style="color:var(--fg-heading);" />
                   </div>
                 </div>
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-xs font-semibold mb-1" style="color:#03045e;">Quartier <span style="color:#94a3b8; font-weight:400;">(optionnel)</span></label>
-                  <input type="text" name="quartier" placeholder="Ouaga 2000, Somgandé, Pissy..." class="w-full rounded-xl px-4 py-2.5 text-sm border" style="border-color:#cbd5e1; color:#03045e;" />
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--fg-heading);">Quartier <span style="color:#94a3b8; font-weight:400;">(optionnel)</span></label>
+                  <input type="text" name="quartier" placeholder="Ouaga 2000, Somgandé, Pissy..." class="w-full rounded-xl px-4 py-2.5 text-sm border" style="border-color:var(--line-strong); color:var(--fg-heading);" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold mb-1" style="color:#03045e;">Date souhaitée de 1ère visite</label>
-                  <input type="date" name="preferred_date" class="w-full rounded-xl px-4 py-2.5 text-sm border" style="border-color:#cbd5e1; color:#03045e;" />
+                  <label class="block text-xs font-semibold mb-1" style="color:var(--fg-heading);">Date souhaitée de 1ère visite</label>
+                  <input type="date" name="preferred_date" class="w-full rounded-xl px-4 py-2.5 text-sm border" style="border-color:var(--line-strong); color:var(--fg-heading);" />
                 </div>
               </div>
 
               <div>
-                <label class="block text-xs font-semibold mb-1" style="color:#03045e;">Notes ou précisions complémentaires</label>
-                <textarea name="description" rows={2} placeholder="Marque des climatiseurs, pannes récentes observées..." class="w-full rounded-xl px-4 py-2 text-sm border resize-none" style="border-color:#cbd5e1; color:#03045e;"></textarea>
+                <label class="block text-xs font-semibold mb-1" style="color:var(--fg-heading);">Notes ou précisions complémentaires</label>
+                <textarea name="description" rows={2} placeholder="Marque des climatiseurs, pannes récentes observées..." class="w-full rounded-xl px-4 py-2 text-sm border resize-none" style="border-color:var(--line-strong); color:var(--fg-heading);"></textarea>
               </div>
 
               {/* Règlement info */}
-              <div class="p-3 rounded-xl text-xs" style="background:#f0fdf4; border:1px solid #bbf7d0; color:#166534;">
+              <div class="p-3 rounded-xl text-xs text-fg-success-deep" style="background:#f0fdf4; border:1px solid #bbf7d0;">
                 <i class="fas fa-info-circle mr-1 text-green-600"></i>
                 <span>Le contrat est validé ensemble sous 2h. Le règlement s'effectue directement lors de la première visite technique — aucun paiement en ligne requis.</span>
               </div>
@@ -597,11 +597,11 @@ export const ContratMaintenancePage = ({ success, error, clientName, clientPhone
 
     {/* Bannière WhatsApp en bas de page */}
     <section class="py-10 px-4 reveal">
-      <div class="max-w-3xl mx-auto text-center glass-card rounded-3xl p-8 shadow-md" style="background:linear-gradient(135deg,rgba(37,211,102,0.06),rgba(22,163,74,0.06)); border:1px solid rgba(37,211,102,0.18);">
-        <i class="fab fa-whatsapp text-4xl mb-3" style="color:#25d366;"></i>
-        <h3 class="text-xl font-bold mb-2" style="color:#03045e;">Une question ou un besoin spécifique ?</h3>
-        <p class="text-sm mb-5" style="color:#64748b;">Nos conseillers techniques répondent à vos questions en direct sur WhatsApp pour évaluer vos besoins d'entretien.</p>
-        <a href="https://wa.me/22655996418?text=Bonjour%20MAASGA%2C%20je%20souhaite%20des%20informations%20sur%20vos%20contrats%20de%20maintenance." target="_blank" rel="noopener noreferrer" class="inline-flex items-center space-x-2 px-6 py-3 rounded-xl font-bold text-white transition-all hover:-translate-y-0.5" style="background:#25d366; box-shadow:0 8px 24px rgba(37,211,102,0.3);">
+      <div class="max-w-3xl mx-auto text-center glass-card rounded-3xl p-8 shadow-md" style="background:linear-gradient(135deg,rgba(var(--rgb-whatsapp),0.06),rgba(22,163,74,0.06)); border:1px solid rgba(var(--rgb-whatsapp),0.18);">
+        <i class="fab fa-whatsapp text-4xl mb-3" style="color:var(--fg-whatsapp);"></i>
+        <h3 class="text-xl font-bold mb-2 text-fg-heading">Une question ou un besoin spécifique ?</h3>
+        <p class="text-sm mb-5" style="color:var(--fg-subtle);">Nos conseillers techniques répondent à vos questions en direct sur WhatsApp pour évaluer vos besoins d'entretien.</p>
+        <a href="https://wa.me/22655996418?text=Bonjour%20MAASGA%2C%20je%20souhaite%20des%20informations%20sur%20vos%20contrats%20de%20maintenance." target="_blank" rel="noopener noreferrer" class="inline-flex items-center space-x-2 px-6 py-3 rounded-xl font-bold text-white transition-all hover:-translate-y-0.5" style="background:#25d366; box-shadow:0 8px 24px rgba(var(--rgb-whatsapp),0.3);">
           <i class="fab fa-whatsapp text-lg"></i>
           <span>Écrire à notre conseiller WhatsApp</span>
         </a>

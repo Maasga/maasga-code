@@ -34,9 +34,9 @@ export const CommandesTable = ({
 
   if (orders.length === 0) {
     return (
-      <div class="p-8 text-center rounded-2xl" style="background:rgba(15,23,42,0.4); border:1px solid rgba(56,189,248,0.06);">
-        <i class="fas fa-shopping-cart text-3xl mb-3" style="color:#334155;"></i>
-        <p style="color:#64748b;">{emptyMessage}</p>
+      <div class="p-8 text-center rounded-2xl" style="background:rgba(15,23,42,0.4); border:1px solid rgba(var(--rgb-sky),0.06);">
+        <i class="fas fa-shopping-cart text-3xl mb-3 text-fg-body"></i>
+        <p class="text-fg-subtle">{emptyMessage}</p>
       </div>
     );
   }
@@ -46,37 +46,37 @@ export const CommandesTable = ({
       {/* Barre de recherche côté client */}
       <div class="flex items-center gap-3">
         <div class="relative flex-1 max-w-xs">
-          <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-xs" style="color:#64748b;"></i>
+          <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-fg-subtle"></i>
           <input
             type="text"
             placeholder="Rechercher..."
             oninput={`filterTable('${tableId}', this.value)`}
-            class="w-full pl-9 pr-4 py-2 text-sm rounded-xl"
-            style="background: var(--admin-bg-elevated); border:1px solid var(--admin-border); color: var(--admin-text-primary);"
+            class="w-full pl-9 pr-4 py-2 text-sm rounded-xl bg-admin-elevated border border-admin-line"
+            style="color: var(--admin-text-primary);"
           />
         </div>
         <a
           href={`/api/admin/commandes/export?type=${tableId}`}
-          class="text-xs px-3 py-2 rounded-xl font-semibold flex items-center gap-2"
-          style="background: rgba(5,150,105,0.08); color: #059669; border: 1px solid rgba(5,150,105,0.2);"
+          class="text-xs px-3 py-2 rounded-xl font-semibold flex items-center gap-2 text-fg-success-alt"
+          style="background: rgba(5,150,105,0.08); border: 1px solid rgba(5,150,105,0.2);"
         >
           <i class="fas fa-file-csv"></i> Export CSV
         </a>
       </div>
 
       {/* Tableau */}
-      <div style="background: var(--admin-card-bg); border: 1px solid var(--admin-border); border-radius: var(--admin-radius)">
+      <div class="bg-admin-card border border-admin-line" style="border-radius: var(--admin-radius);">
         <div class="overflow-x-auto">
         <table id={tableId} class="w-full text-sm">
           <thead>
-            <tr style="background:#f1f5f9;">
-              <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider hidden lg:table-cell" style="color: var(--admin-text-muted);">#ID</th>
-              <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider" style="color: var(--admin-text-muted);">Client</th>
-              <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider hidden md:table-cell" style="color: var(--admin-text-muted);">Produit / Notes</th>
-              <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider" style="color: var(--admin-text-muted);">Montant</th>
-              <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider" style="color: var(--admin-text-muted);">Statut</th>
-              <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider hidden md:table-cell" style="color: var(--admin-text-muted);">Date</th>
-              <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider" style="color: var(--admin-text-muted);">Actions</th>
+            <tr class="bg-surface-muted">
+              <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider hidden lg:table-cell text-admin-muted">#ID</th>
+              <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-admin-muted">Client</th>
+              <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider hidden md:table-cell text-admin-muted">Produit / Notes</th>
+              <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-admin-muted">Montant</th>
+              <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-admin-muted">Statut</th>
+              <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider hidden md:table-cell text-admin-muted">Date</th>
+              <th class="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-admin-muted">Actions</th>
             </tr>
           </thead>
           <tbody data-paginate="20">
@@ -94,22 +94,22 @@ export const CommandesTable = ({
                   class="border-t hover:bg-[rgba(3,105,161,0.04)] transition-colors"
                   style="border-color: var(--admin-border);"
                 >
-                  <td class="py-3 px-4 text-xs font-mono font-bold hidden lg:table-cell" style="color:#475569;">
+                  <td class="py-3 px-4 text-xs font-mono font-bold hidden lg:table-cell text-fg-muted">
                     #CMD-{String(order.id).padStart(4, '0')}
                   </td>
                   <td class="py-3 px-4">
                     <div class="font-semibold text-sm" style="color: var(--admin-text-primary);">{order.client_name}</div>
-                    <div class="text-xs" style="color: var(--admin-text-muted);">{order.client_phone}</div>
-                    {payment && <div class="text-xs mt-0.5" style="color: var(--admin-text-muted);">{paymentLabel}</div>}
+                    <div class="text-xs text-admin-muted">{order.client_phone}</div>
+                    {payment && <div class="text-xs mt-0.5 text-admin-muted">{paymentLabel}</div>}
                   </td>
-                  <td class="py-3 px-4 text-xs hidden md:table-cell" style="color: var(--admin-text-muted);" title={order.notes || ''}>
-                    <span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{order.notes || '—'}</span>
+                  <td class="py-3 px-4 text-xs hidden md:table-cell text-admin-muted" title={order.notes || ''}>
+                    <span class="overflow-hidden" style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">{order.notes || '—'}</span>
                   </td>
                   <td class="py-3 px-4 text-sm font-bold" style="color: var(--admin-text-primary);">
                     {order.total_price ? order.total_price.toLocaleString('fr-FR') + ' F' : '—'}
                   </td>
                   <td class="py-3 px-4">
-                    <form method="post" action="/api/admin/commande/status" style="display:inline;">
+                    <form method="post" action="/api/admin/commande/status" class="inline">
                       <input type="hidden" name="id" value={String(order.id)} />
                       <select
                         name="status"
@@ -118,14 +118,14 @@ export const CommandesTable = ({
                         style={`background:${si.bg}; color:${si.color}; border:1px solid rgba(${si.color === '#d97706' ? '217,119,6' : si.color === '#059669' ? '5,150,105' : si.color === '#2563eb' ? '37,99,235' : si.color === '#0369a1' ? '3,105,161' : '220,38,38'},0.25); border-radius:9999px; padding:0.2rem 0.65rem; font-size:0.7rem; font-weight:600;`}
                       >
                         {Object.entries(STATUS_MAP).map(([val, info]) => (
-                          <option value={val} selected={val === order.status} style="background:#0b1120; color:#e2e8f0;">
+                          <option value={val} selected={val === order.status} class="text-fg-on-dark-soft" style="background:#0b1120;">
                             {info.label}
                           </option>
                         ))}
                       </select>
                     </form>
                   </td>
-                  <td class="py-3 px-4 text-xs hidden md:table-cell" style="color: var(--admin-text-muted);">
+                  <td class="py-3 px-4 text-xs hidden md:table-cell text-admin-muted">
                     {new Date(order.created_at).toLocaleDateString('fr-FR')}
                   </td>
                   <td class="py-3 px-4">
@@ -133,8 +133,8 @@ export const CommandesTable = ({
                       {(order.status === 'confirme' || order.status === 'en_livraison' || order.status === 'livre') && (
                         <a
                           href={`/admin/devis/new?order_id=${order.id}`}
-                          class="text-xs px-2 py-1 rounded-lg font-semibold whitespace-nowrap"
-                          style="background:rgba(245,158,11,0.12); color:#f59e0b; border:1px solid rgba(245,158,11,0.2);"
+                          class="text-xs px-2 py-1 rounded-lg font-semibold whitespace-nowrap text-fg-amber"
+                          style="background:rgba(var(--rgb-amber-deep),0.12); border:1px solid rgba(var(--rgb-amber-deep),0.2);"
                         >
                           <i class="fas fa-file-invoice-dollar mr-1"></i>Devis
                         </a>
@@ -143,22 +143,22 @@ export const CommandesTable = ({
                         href={`/api/order/invoice/${order.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="text-xs px-2 py-1 rounded-lg font-semibold whitespace-nowrap"
-                        style="background:rgba(16,185,129,0.12); color:#34d399; border:1px solid rgba(16,185,129,0.2);"
+                        class="text-xs px-2 py-1 rounded-lg font-semibold whitespace-nowrap text-fg-on-dark-success"
+                        style="background:rgba(var(--rgb-green),0.12); border:1px solid rgba(var(--rgb-green),0.2);"
                       >
                         <i class="fas fa-file-invoice mr-1"></i>Facture
                       </a>
                       <form
                         method="post"
                         action="/api/admin/commande/delete"
-                        style="display:inline;"
+                        class="inline"
                         onsubmit="return confirm('Supprimer cette commande ?')"
                       >
                         <input type="hidden" name="id" value={String(order.id)} />
                         <button
                           type="submit"
-                          class="text-xs px-2 py-1 rounded-lg font-semibold"
-                          style="background:rgba(239,68,68,0.12); color:#f87171; border:1px solid rgba(239,68,68,0.2);"
+                          class="text-xs px-2 py-1 rounded-lg font-semibold text-fg-on-dark-danger"
+                          style="background:rgba(var(--rgb-red),0.12); border:1px solid rgba(var(--rgb-red),0.2);"
                         >
                           <i class="fas fa-trash"></i>
                         </button>

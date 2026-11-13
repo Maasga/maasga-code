@@ -15,7 +15,7 @@ interface BulkActionsToolbarProps {
 export const BulkActionsToolbar = ({ selectedCount, totalCount }: BulkActionsToolbarProps) => {
   if (selectedCount === 0) return null;
   return (
-    <div class="flex items-center justify-between gap-4 px-4 py-3 rounded-xl" style="background: var(--admin-accent-light); border: 1px solid var(--admin-border)">
+    <div class="flex items-center justify-between gap-4 px-4 py-3 rounded-xl border border-admin-line" style="background: var(--admin-accent-light);">
       <span class="text-sm font-medium" style="color: var(--admin-text-primary);">
         {selectedCount} / {totalCount} commande{selectedCount > 1 ? 's' : ''} sélectionnée{selectedCount > 1 ? 's' : ''}
       </span>
@@ -47,8 +47,8 @@ export const BulkActionsToolbar = ({ selectedCount, totalCount }: BulkActionsToo
         <button
           type="button"
           onclick="adminClearSelection()"
-          class="text-xs px-3 py-1.5 rounded-lg"
-          style="background: var(--admin-bg-elevated); color: var(--admin-text-muted);"
+          class="text-xs px-3 py-1.5 rounded-lg bg-admin-elevated text-admin-muted"
+         
         >
           Effacer sélection
         </button>

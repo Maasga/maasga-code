@@ -1,4 +1,5 @@
 import type { D1Database } from '@cloudflare/workers-types'
+import { productsHaveGalleryColumn } from '../utils/productGallery'
 
 export interface ProductRecord {
   id: number
@@ -186,8 +187,14 @@ export class ProductRepository {
 
     const gal = input.gallery !== undefined ? input.gallery : input.media_urls
     if (gal !== undefined) {
-      fields.push('gallery = ?', 'media_urls = ?')
-      params.push(gal, gal)
+      // `gallery` n'existe pas sur toutes les bases (aucune migration ne la crée)
+      if (await productsHaveGalleryColumn(this.db)) {
+        fields.push('gallery = ?', 'media_urls = ?')
+        params.push(gal, gal)
+      } else {
+        fields.push('media_urls = ?')
+        params.push(gal)
+      }
     }
 
     if (fields.length === 0) return false

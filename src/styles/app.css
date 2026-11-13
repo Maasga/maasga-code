@@ -1,11 +1,98 @@
-﻿@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* â”€â”€â”€ Google Fonts â”€â”€â”€ */
+/* ─── Google Fonts ─── */
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
-/* â”€â”€â”€ COLOR SYSTEM â”€â”€â”€ */
+/* ─── TOKENS SÉMANTIQUES (styles inline → var(--…) / classes Tailwind) ───
+   Rôle d'abord, valeur ensuite : un futur mode sombre ne redéfinit que ce bloc.
+   --fg-*      couleur de texte        (classes text-fg-*)
+   --surface-* fond                    (classes bg-surface-*)
+   --line-*    bordure                 (classes border-line-*)
+   --rgb-*     canaux R,G,B pour les teintes translucides : rgba(var(--rgb-sky),0.1)
+   Les --fg-on-dark-* (néons) ne s'emploient que sur sections sombres (contraste AA). */
+:root {
+  --fg-heading: #03045e;
+  --fg-ink: #111827;
+  --fg-ink-slate: #0f172a;
+  --fg-body: #334155;
+  --fg-muted: #475569;
+  --fg-subtle: #64748b;
+  --fg-gray: #6b7280;
+  --fg-faint: #94a3b8;
+  --fg-disabled: #cbd5e1;
+  --fg-link: #0369a1;
+  --fg-brand: #0077b6;
+  --fg-success: #047857;
+  --fg-success-bright: #16a34a;
+  --fg-success-deep: #166534;
+  --fg-success-alt: #059669;
+  --fg-danger: #b91c1c;
+  --fg-danger-bright: #ef4444;
+  --fg-warning: #b45309;
+  --fg-warning-bright: #d97706;
+  --fg-amber: #f59e0b;
+  --fg-violet: #6d28d9;
+  --fg-violet-bright: #7c3aed;
+  --fg-whatsapp: #25d366;
+  --fg-navy-soft: #1e3a5f;
+  --fg-sky: #0ea5e9;
+  --fg-on-dark: #ffffff;
+  --fg-on-dark-soft: #e2e8f0;
+  --fg-on-dark-success: #34d399;
+  --fg-on-dark-accent: #38bdf8;
+  --fg-on-dark-danger: #f87171;
+  --fg-on-dark-info: #60a5fa;
+  --fg-on-dark-warning: #fbbf24;
+  --fg-on-dark-violet: #a78bfa;
+
+  --surface-card: #ffffff;
+  --surface-subtle: #f8fafc;
+  --surface-muted: #f1f5f9;
+  --surface-base: #f8fbff;
+  --surface-info: #f0f9ff;
+  --surface-info-alt: #f0f7ff;
+  --surface-accent: #e0f2fe;
+  --surface-brand: #0077b6;
+  --surface-brand-cyan: #00b4d8;
+  --surface-sky: #0ea5e9;
+  --surface-sky-deep: #0284c7;
+  --surface-navy: #03045e;
+  --surface-blue: #3b82f6;
+  --surface-success: #059669;
+  --surface-success-bright: #10b981;
+
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --line-accent: #bae6fd;
+  --line-brand: #0077b6;
+  --line-soft: #f1f5f9;
+
+  --rgb-sky: 56,189,248;
+  --rgb-red: 239,68,68;
+  --rgb-emerald: 52,211,153;
+  --rgb-green: 16,185,129;
+  --rgb-blue: 59,130,246;
+  --rgb-brand: 0,119,182;
+  --rgb-amber: 251,191,36;
+  --rgb-whatsapp: 37,211,102;
+  --rgb-slate: 148,163,184;
+  --rgb-white: 255,255,255;
+  --rgb-sky-deep: 14,165,233;
+  --rgb-slate-100: 241,245,249;
+  --rgb-slate-200: 226,232,240;
+  --rgb-purple: 168,85,247;
+  --rgb-amber-deep: 245,158,11;
+  --rgb-steel: 148,180,220;
+  --rgb-navy: 3,4,94;
+  --rgb-ink: 2,6,23;
+  --rgb-black: 0,0,0;
+  --rgb-violet: 109,40,217;
+  --rgb-indigo: 99,102,241;
+}
+
+/* ─── COLOR SYSTEM ─── */
 :root {
   --primary: #0077b6;
   --secondary: #caf0f8;
@@ -26,7 +113,7 @@
   --glow-primary: 0 4px 20px rgba(0,119,182,0.12);
   --glow-primary-strong: 0 8px 40px rgba(0,119,182,0.2);
 
-  /* â”€â”€â”€ NAVY PREMIUM SYSTEM (Â« Trust & Authority Â») â”€â”€â”€ */
+  /* ─── NAVY PREMIUM SYSTEM (« Trust & Authority ») ─── */
   --navy-950: #020617;
   --navy-900: #0F172A;
   --navy-800: #1E293B;
@@ -34,7 +121,7 @@
   --accent: #0369A1;          /* accent CTA premium */
   --accent-bright: #0077b6;   /* accent vif (brand) */
   --accent-cyan: #00b4d8;     /* halo froid */
-  --ice: #caf0f8;             /* highlight glacÃ© sur fonds sombres */
+  --ice: #caf0f8;             /* highlight glacé sur fonds sombres */
   --slate-50: #F8FAFC;
   --slate-100: #F1F5F9;
   --slate-200: #E2E8F0;
@@ -42,7 +129,7 @@
   --slate-700: #334155;
   --ink: #020617;             /* texte le plus sombre */
 
-  /* Ã‰chelle d'ombres froides graduÃ©es */
+  /* Échelle d'ombres froides graduées */
   --shadow-sm: 0 1px 2px rgba(2,6,23,0.02), 0 2px 6px rgba(3,105,161,0.025);
   --shadow-md: 0 4px 12px rgba(3,105,161,0.035), 0 8px 24px rgba(2,6,23,0.025);
   --shadow-lg: 0 12px 28px rgba(3,105,161,0.05), 0 20px 48px rgba(2,6,23,0.04);
@@ -66,7 +153,7 @@
 
 * { font-family: var(--font-body); }
 
-/* â”€â”€â”€ TYPOGRAPHIE PREMIUM (titres en display, clamp responsive) â”€â”€â”€ */
+/* ─── TYPOGRAPHIE PREMIUM (titres en display, clamp responsive) ─── */
 .font-display { font-family: var(--font-display); }
 .display-1 {
   font-family: var(--font-display);
@@ -111,7 +198,7 @@
   border-color: rgba(202,240,248,0.25);
 }
 
-/* â”€â”€â”€ SURFACES PREMIUM â”€â”€â”€ */
+/* ─── SURFACES PREMIUM ─── */
 .surface {
   background: var(--bg-base);
   border: 1px solid var(--slate-200);
@@ -152,10 +239,10 @@
   color: var(--slate-700);
 }
 
-/* â”€â”€â”€ MAGNETIC CTA (dÃ©placement pilotÃ© par GSAP) â”€â”€â”€ */
+/* ─── MAGNETIC CTA (déplacement piloté par GSAP) ─── */
 .magnetic { transition: transform 0.25s var(--ease-out-expo); will-change: transform; }
 
-/* â”€â”€â”€ GLASS COMPONENTS â”€â”€â”€ */
+/* ─── GLASS COMPONENTS ─── */
 .glass {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(10px);
@@ -175,7 +262,7 @@
   transform: translateY(-2px);
 }
 
-/* â”€â”€â”€ GRADIENT HERO (navy premium) â”€â”€â”€ */
+/* ─── GRADIENT HERO (navy premium) ─── */
 .gradient-hero {
   background: linear-gradient(160deg, #0F172A 0%, #18212F 25%, #212E42 100%);
   position: relative;
@@ -190,7 +277,7 @@
   pointer-events: none;
 }
 
-/* â”€â”€â”€ CARD HOVER â”€â”€â”€ */
+/* ─── CARD HOVER ─── */
 .card-hover {
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -199,7 +286,7 @@
   box-shadow: 0 20px 40px rgba(0, 119, 182, 0.12);
 }
 
-/* â”€â”€â”€ NAV LINKS â”€â”€â”€ */
+/* ─── NAV LINKS ─── */
 .nav-link {
   transition: all 0.25s ease;
   color: #475569;
@@ -219,7 +306,7 @@
 }
 .nav-link:hover::after { width: 100%; }
 
-/* â”€â”€â”€ BUTTONS â”€â”€â”€ */
+/* ─── BUTTONS ─── */
 .btn-primary {
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-bright) 55%, var(--accent-cyan) 100%);
   color: #ffffff;
@@ -259,12 +346,12 @@
 }
 .btn-secondary:active { transform: translateY(0); }
 
-/* â”€â”€â”€ BADGES STOCK â”€â”€â”€ */
-.badge-stock-ok  { background: rgba(16,185,129,0.1); color: #059669; border: 1px solid rgba(16,185,129,0.2); }
+/* ─── BADGES STOCK ─── */
+.badge-stock-ok  { background: rgba(16,185,129,0.1); color: #047857; border: 1px solid rgba(16,185,129,0.2); }
 .badge-stock-low { background: rgba(245,158,11,0.1); color: #d97706; border: 1px solid rgba(245,158,11,0.2); }
 .badge-stock-out { background: rgba(239,68,68,0.1);  color: #dc2626; border: 1px solid rgba(239,68,68,0.2); }
 
-/* â”€â”€â”€ INPUTS â”€â”€â”€ */
+/* ─── INPUTS ─── */
 .input-field {
   border: 1px solid rgba(0,119,182,0.18);
   background: #ffffff;
@@ -280,11 +367,11 @@
   box-shadow: 0 0 0 3px rgba(0,119,182,0.1);
 }
 
-/* â”€â”€â”€ STARS â”€â”€â”€ */
+/* ─── STARS ─── */
 .star-filled { color: #f59e0b; }
 .star-empty  { color: #cbd5e1; }
 
-/* â”€â”€â”€ DECORATIVE â”€â”€â”€ */
+/* ─── DECORATIVE ─── */
 .glow-dot {
   position: absolute;
   border-radius: 9999px;
@@ -296,7 +383,7 @@
   background: linear-gradient(90deg, transparent, rgba(0,119,182,0.25), transparent);
 }
 
-/* â”€â”€â”€ SNOW PARTICLES â”€â”€â”€ */
+/* ─── SNOW PARTICLES ─── */
 .snow-particle {
   position: absolute;
   background: white;
@@ -305,7 +392,7 @@
   opacity: 0.5;
 }
 
-/* â”€â”€â”€ ANIMATIONS â”€â”€â”€ */
+/* ─── ANIMATIONS ─── */
 .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
 @keyframes fadeInUp {
@@ -336,17 +423,17 @@
 @keyframes float { 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-8px); } }
 .float { animation: float 3s ease-in-out infinite; }
 
-/* â”€â”€â”€ HOVER EFFECTS â”€â”€â”€ */
+/* ─── HOVER EFFECTS ─── */
 .hover-lift { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease; }
 .hover-lift:hover { transform: translateY(-1.5px); box-shadow: 0 4px 10px rgba(3,105,161,0.08), 0 1px 3px rgba(3,105,161,0.04); }
 
 .hover-glow { transition: box-shadow 0.3s ease; }
 .hover-glow:hover { box-shadow: 0 0 8px rgba(0,119,182,0.08); }
 
-/* â”€â”€â”€ Tilt 3D Â« carte entiÃ¨re Â» (type Tympanus) â”€â”€â”€
+/* ─── Tilt 3D « carte entière » (type Tympanus) ───
    Seule la carte [data-tilt] s'incline au survol (rotateX/rotateY via GSAP, perspective
-   portÃ©e par transformPerspective). Feedback de survol accentuÃ© : bordure + anneau accent
-   cyan + ombre portÃ©e profonde, en transition douce. */
+   portée par transformPerspective). Feedback de survol accentué : bordure + anneau accent
+   cyan + ombre portée profonde, en transition douce. */
 [data-tilt] {
   position: relative;
   overflow: hidden;
@@ -360,10 +447,10 @@
   box-shadow: 0 0 0 1px rgba(0,180,216,0.15), 0 8px 16px -4px rgba(3,105,161,0.15) !important;
 }
 
-/* Reflet retirÃ© Ã  la demande â€” masquÃ© partout (l'Ã©lÃ©ment peut subsister dans le markup). */
+/* Reflet retiré à la demande — masqué partout (l'élément peut subsister dans le markup). */
 .tilt-shine { display: none !important; }
 
-/* â”€â”€â”€ Â« Notre Expertise Â» â€” split-Ã©cran Ã©pinglÃ© (sticky) + rÃ©vÃ©lation au scroll â”€â”€â”€ */
+/* ─── « Notre Expertise » — split-écran épinglé (sticky) + révélation au scroll ─── */
 .expertise-pin { position: relative; }
 .exp-num {
   font-size: 0.8rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
@@ -373,7 +460,7 @@
 .exp-desc { font-size: 1.075rem; line-height: 1.6; max-width: 34rem; }
 .exp-step-icon { flex: 0 0 auto; }
 
-/* Panneau navy Ã  droite (grande carte Ã©pinglÃ©e) */
+/* Panneau navy à droite (grande carte épinglée) */
 .exp-right { display: flex; flex-direction: column; align-items: center; }
 .exp-panel {
   position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 1.75rem;
@@ -399,7 +486,7 @@
 }
 .exp-dot.is-active { width: 26px; background: var(--accent); }
 
-/* â”€â”€ Desktop (lg+) : Ã©pinglage sticky + Ã©tapes empilÃ©es en cross-fade â”€â”€ */
+/* ── Desktop (lg+) : épinglage sticky + étapes empilées en cross-fade ── */
 @media (min-width: 1024px) {
   .expertise-pin { height: 320vh; }
   .expertise-stage {
@@ -414,10 +501,10 @@
     pointer-events: none;
   }
   .exp-step.is-active { opacity: 1; transform: none; pointer-events: auto; }
-  .exp-step-icon { display: none; } /* l'icÃ´ne est portÃ©e par le grand panneau navy */
+  .exp-step-icon { display: none; } /* l'icône est portée par le grand panneau navy */
 }
 
-/* â”€â”€ Mobile / tablette : liste verticale classique (pas d'Ã©pinglage) â”€â”€ */
+/* ── Mobile / tablette : liste verticale classique (pas d'épinglage) ── */
 @media (max-width: 1023px) {
   .exp-right { display: none; }
   .exp-step {
@@ -428,7 +515,7 @@
   .exp-step:last-child { border-bottom: 0; margin-bottom: 0; }
 }
 
-/* â”€â”€â”€ Icon pulse (cartes services) â”€â”€â”€ */
+/* ─── Icon pulse (cartes services) ─── */
 @keyframes icon-pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.12); }
@@ -440,7 +527,7 @@
   .icon-pulse { animation: none; }
 }
 
-/* â”€â”€â”€ Page transition overlay : texte qui glisse (async page transitions) â”€â”€â”€ */
+/* ─── Page transition overlay : texte qui glisse (async page transitions) ─── */
 /* ─── Page transition overlay : texte qui glisse (async page transitions) ─── */
 .pt-text {
   position: relative;
@@ -462,28 +549,28 @@
   to { transform: translateX(-110%); }
 }
 
-/* â”€â”€â”€ MOBILE MENU â”€â”€â”€ */
+/* ─── MOBILE MENU ─── */
 .mobile-menu { display: none; opacity: 0; transform: translateY(-8px); transition: opacity 0.25s ease, transform 0.25s ease; }
 .mobile-menu.open { display: block; opacity: 1; transform: translateY(0); animation: menuSlideIn 0.25s ease forwards; }
 @keyframes menuSlideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 .mobile-nav-active { background: rgba(0,119,182,0.08); color: #0077b6; font-weight: 700; }
 
-/* â”€â”€â”€ SCROLLBAR â”€â”€â”€ */
+/* ─── SCROLLBAR ─── */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: #f1f5f9; }
 ::-webkit-scrollbar-thumb { background: #0077b6; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: #00b4d8; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 
-/* â”€â”€â”€ SCROLL REVEAL (legacy class, conservÃ©e pour compat) â”€â”€â”€ */
+/* ─── SCROLL REVEAL (legacy class, conservée pour compat) ─── */
 .reveal { opacity: 0; transform: translateY(20px); transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
 .reveal.visible { opacity: 1; transform: translateY(0); }
 
-/* â”€â”€â”€ MOTEUR DE RÃ‰VÃ‰LATION (IntersectionObserver + CSS, robuste) â”€â”€â”€â”€â”€
-   IndÃ©pendant de GSAP/CDN : se dÃ©clenche de faÃ§on fiable Ã  chaque section
-   qui entre Ã  l'Ã©cran. Contenu VISIBLE par dÃ©faut ; l'Ã©tat cachÃ© n'existe
-   que sous html.js-ready (posÃ© immÃ©diatement par un script inline).
-   â†’ JS dÃ©sactivÃ© = tout visible, aucun risque d'invisibilitÃ©. */
+/* ─── MOTEUR DE RÉVÉLATION (IntersectionObserver + CSS, robuste) ─────
+   Indépendant de GSAP/CDN : se déclenche de façon fiable à chaque section
+   qui entre à l'écran. Contenu VISIBLE par défaut ; l'état caché n'existe
+   que sous html.js-ready (posé immédiatement par un script inline).
+   → JS désactivé = tout visible, aucun risque d'invisibilité. */
 html.js-ready [data-reveal],
 html.js-ready [data-stagger] > *,
 html.js-ready [data-hero] > * {
@@ -498,7 +585,7 @@ html.js-ready [data-hero].in > * {
   opacity: 1;
   transform: none;
 }
-/* Cascade : dÃ©lai progressif sur les enfants directs */
+/* Cascade : délai progressif sur les enfants directs */
 html.js-ready [data-stagger].in > *:nth-child(1), html.js-ready [data-hero].in > *:nth-child(1) { transition-delay: 0.04s; }
 html.js-ready [data-stagger].in > *:nth-child(2), html.js-ready [data-hero].in > *:nth-child(2) { transition-delay: 0.11s; }
 html.js-ready [data-stagger].in > *:nth-child(3), html.js-ready [data-hero].in > *:nth-child(3) { transition-delay: 0.18s; }
@@ -508,10 +595,10 @@ html.js-ready [data-stagger].in > *:nth-child(6), html.js-ready [data-hero].in >
 html.js-ready [data-stagger].in > *:nth-child(n+7) { transition-delay: 0.46s; }
 html.js-ready [data-parallax] { will-change: transform; }
 
-/* â”€â”€â”€ Cartes : entrÃ©e 3D des couches internes (icÃ´ne/texte/reflet) â”€â”€â”€
-   Le conteneur [data-tilt] ne tourne jamais lui-mÃªme (cf. tilt au survol,
-   Layout.tsx) â€” seules ses couches internes animent, en cascade, quand
-   son [data-stagger]/[data-hero] parent reÃ§oit .in. */
+/* ─── Cartes : entrée 3D des couches internes (icône/texte/reflet) ───
+   Le conteneur [data-tilt] ne tourne jamais lui-même (cf. tilt au survol,
+   Layout.tsx) — seules ses couches internes animent, en cascade, quand
+   son [data-stagger]/[data-hero] parent reçoit .in. */
 html.js-ready [data-stagger] > [data-tilt] .tilt-image,
 html.js-ready [data-hero] > [data-tilt] .tilt-image {
   opacity: 0;
@@ -549,7 +636,7 @@ html.js-ready [data-hero].in > [data-tilt] .tilt-shine {
   transform: none;
 }
 
-/* Header pill : Ã©tat affinÃ© au scroll */
+/* Header pill : état affiné au scroll */
 #header-pill {
   transition: background 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease;
 }
@@ -559,7 +646,7 @@ html.js-ready [data-hero].in > [data-tilt] .tilt-shine {
   border-color: rgba(3,105,161,0.18);
 }
 
-/* â”€â”€â”€ REDUCED MOTION : tout visible, aucune animation â”€â”€â”€ */
+/* ─── REDUCED MOTION : tout visible, aucune animation ─── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
@@ -574,8 +661,8 @@ html.js-ready [data-hero].in > [data-tilt] .tilt-shine {
     opacity: 1 !important;
   }
   /* On neutralise le transform des reveals SAUF sur les cartes [data-tilt] : leur tilt
-     au survol est une interaction directe conservÃ©e mÃªme sous reduced-motion (voir
-     Layout.tsx), et un "transform: none !important" ici Ã©craserait le transform GSAP. */
+     au survol est une interaction directe conservée même sous reduced-motion (voir
+     Layout.tsx), et un "transform: none !important" ici écraserait le transform GSAP. */
   html.js-ready [data-reveal]:not([data-tilt]),
   html.js-ready [data-stagger] > *:not([data-tilt]),
   html.js-ready [data-hero] > *:not([data-tilt]) {
@@ -583,8 +670,8 @@ html.js-ready [data-hero].in > [data-tilt] .tilt-shine {
   }
   .float, .animate-pulse-slow, .shimmer, .animate-bounce { animation: none !important; }
 
-  /* Feedback de survol supplÃ©mentaire (statique) qui complÃ¨te le tilt : bordure
-     accent + anneau + ombre appuyÃ©e + icÃ´ne avivÃ©e. */
+  /* Feedback de survol supplémentaire (statique) qui complète le tilt : bordure
+     accent + anneau + ombre appuyée + icône avivée. */
   .surface-elevated:hover,
   .surface-navy:hover,
   [data-tilt]:hover {
@@ -593,7 +680,7 @@ html.js-ready [data-hero].in > [data-tilt] .tilt-shine {
   }
   [data-tilt]:hover .tilt-image { filter: brightness(1.12) saturate(1.15); }
 
-  /* View Transitions natives : navigation conservÃ©e, animation neutralisÃ©e */
+  /* View Transitions natives : navigation conservée, animation neutralisée */
   ::view-transition-group(*),
   ::view-transition-old(*),
   ::view-transition-new(*) {
@@ -601,24 +688,24 @@ html.js-ready [data-hero].in > [data-tilt] .tilt-shine {
   }
 }
 
-/* â”€â”€â”€ SMOOTH SCROLL â”€â”€â”€ */
+/* ─── SMOOTH SCROLL ─── */
 html { scroll-behavior: smooth; }
 
-/* â”€â”€â”€ FOCUS RING â”€â”€â”€ */
+/* ─── FOCUS RING ─── */
 *:focus-visible { outline: 2px solid #0077b6; outline-offset: 2px; }
 
-/* â”€â”€â”€ LINE CLAMP â”€â”€â”€ */
+/* ─── LINE CLAMP ─── */
 .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
-/* â”€â”€â”€ PRINT â”€â”€â”€ */
+/* ─── PRINT ─── */
 @media print {
   header, footer, nav, aside { display: none !important; }
   .no-print { display: none !important; }
   body { background: white; }
 }
 
-/* â”€â”€â”€ WHATSAPP BUTTON â”€â”€â”€ */
+/* ─── WHATSAPP BUTTON ─── */
 .whatsapp-float {
   position: fixed;
   bottom: 1.5rem;
@@ -642,16 +729,16 @@ html { scroll-behavior: smooth; }
   box-shadow: 0 6px 28px rgba(37,211,102,0.55);
 }
 
-/* â”€â”€â”€ Lenis smooth scroll â”€â”€â”€ */
+/* ─── Lenis smooth scroll ─── */
 html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
 .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
 .lenis.lenis-stopped { overflow: hidden; }
 
-/* â”€â”€â”€ SplitText (slogan hero composÃ© mot par mot) â”€â”€â”€ */
+/* ─── SplitText (slogan hero composé mot par mot) ─── */
 .split-line { overflow: hidden; }
-/* PrÃ©serve le dÃ©gradÃ© du mot "RÃ©inventÃ©" aprÃ¨s dÃ©coupe SplitText :
-   les sous-spans gÃ©nÃ©rÃ©s re-cliquent le dÃ©gradÃ© au lieu d'hÃ©riter un texte transparent. */
+/* Préserve le dégradé du mot "Réinventé" après découpe SplitText :
+   les sous-spans générés re-cliquent le dégradé au lieu d'hériter un texte transparent. */
 .hero-grad, .hero-grad * {
   background: linear-gradient(120deg, #caf0f8, #38bdf8 60%, #0077b6);
   -webkit-background-clip: text;
@@ -660,7 +747,7 @@ html.lenis, html.lenis body { height: auto; }
   color: transparent;
 }
 
-/* â”€â”€â”€ Hero carousel â€” transition balayage (clip-path, Ã©tape 1B) â”€â”€â”€ */
+/* ─── Hero carousel — transition balayage (clip-path, étape 1B) ─── */
 .hero-carousel-slide {
   position: absolute; inset: 0; opacity: 1;
   clip-path: inset(0 0 0 100%);
@@ -672,7 +759,7 @@ html.lenis, html.lenis body { height: auto; }
   will-change: transform;
 }
 
-/* â”€â”€â”€ Testimonials marquee (dÃ©filement continu, pause au survol) â”€â”€â”€ */
+/* ─── Testimonials marquee (défilement continu, pause au survol) ─── */
 @keyframes testimonialMarquee {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
@@ -691,7 +778,7 @@ html.js-ready .testimonial-card-in {
 }
 html.js-ready .testimonial-card-in.in { opacity: 1; transform: none; }
 
-/* â”€â”€â”€ Marquee de marques â”€â”€â”€ */
+/* ─── Marquee de marques ─── */
 @keyframes brandMarquee {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
@@ -713,12 +800,13 @@ html.js-ready .testimonial-card-in.in { opacity: 1; transform: none; }
   font-size: 1.6rem;
   font-weight: 800;
   letter-spacing: 0.02em;
-  color: var(--navy-900);
-  opacity: 0.45;
+  color: #475569; /* slate-600 : 7,6:1 — l'ancienne opacité 0,45 donnait 2,9:1 */
   white-space: nowrap;
   transition: opacity 0.25s ease, color 0.25s ease;
 }
-.brand-item:hover { opacity: 1; color: var(--accent); }
+.brand-item:hover { color: var(--accent); }
+/* Produit en rupture : seule l'image est désaturée, le texte reste lisible */
+.is-out-of-stock .tilt-image, .is-out-of-stock img { filter: grayscale(0.85); opacity: 0.7; }
 @media (prefers-reduced-motion: reduce) {
   .brand-track { animation: none; flex-wrap: wrap; justify-content: center; }
 }
@@ -854,3 +942,45 @@ html.js-ready .testimonial-card-in.in { opacity: 1; transform: none; }
   #btu-form label > div { min-height: 44px; }
 }
 
+
+/* ─── Barre d'actions mobile (Layout.tsx) ─── */
+.mobile-action-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 9990;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(3,4,94,0.08);
+  box-shadow: 0 -6px 24px rgba(3,4,94,0.08);
+}
+.mab-item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  min-height: 52px; border-radius: 14px; border: 0; background: transparent; cursor: pointer;
+  color: #334155; font-size: 0.7rem; font-weight: 600; text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit; line-height: 1.15;
+}
+.mab-item i { font-size: 1.15rem; color: #0369a1; }
+.mab-item .fa-whatsapp { color: #075E54; font-size: 1.3rem; }
+.mab-item:active { background: rgba(3,105,161,0.08); }
+.mab-item.is-active { color: #03045e; background: rgba(3,105,161,0.08); }
+.mab-primary { background: linear-gradient(135deg,#0369a1,#0077b6); color: #fff; box-shadow: 0 6px 16px rgba(3,105,161,0.3); }
+.mab-primary i { color: #fff; }
+.mab-item:focus-visible { outline: 3px solid #0ea5e9; outline-offset: 2px; }
+@media (max-width: 767px) {
+  /* le bouton flottant WhatsApp recouvrait les CTA : remplacé par l'entrée de la barre (le panneau reste) */
+  #wa-btn { display: none !important; }
+  #wa-widget { bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px)) !important; left: 0.75rem !important; }
+  .cart-float { bottom: calc(5rem + env(safe-area-inset-bottom, 0px)) !important; right: 1rem !important; }
+  #back-to-top { bottom: calc(9rem + env(safe-area-inset-bottom, 0px)) !important; }
+  main#main-content { padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px)) !important; }
+}
+
+/* ─── Focus clavier visible partout (WCAG 2.4.7 / 2.4.11) ───
+   Spécificité (0,1,1) : l'emporte sur .outline-none (0,1,0) qui masquait le focus des champs. */
+html :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid #0ea5e9;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+html :is(input, select, textarea):focus-visible { outline-offset: 0; }

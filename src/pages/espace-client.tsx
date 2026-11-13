@@ -127,9 +127,9 @@ const ClientLogin = ({ error, success, defaultTab, redirect }: { error?: string;
   <Layout title="Espace Client MAASGA - Connexion" activePage="client" canonicalPath="/espace-client" description="Espace client MAASGA — Connectez-vous pour suivre vos installations, rendez-vous et factures.">
 
     <section class="gradient-hero py-16 text-white text-center relative overflow-hidden reveal">
-      <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:url('data:image/svg+xml,...') repeat;opacity:0.03;pointer-events:none;"></div>
+      <div class="absolute" style="top:0; left:0; right:0; bottom:0; background:url('data:image/svg+xml,...') repeat; opacity:0.03; pointer-events:none;"></div>
       <div class="relative z-10">
-        <div class="inline-flex items-center space-x-2 rounded-full px-4 py-2 text-sm mb-4 font-medium" style="background-color:rgba(241,245,249,0.1); border-color:rgba(226,232,240,0.1);">
+        <div class="inline-flex items-center space-x-2 rounded-full px-4 py-2 text-sm mb-4 font-medium" style="background-color:rgba(var(--rgb-slate-100),0.1); border-color:rgba(var(--rgb-slate-200),0.1);">
           <i class="fas fa-user-shield"></i><span>Espace sécurisé · MAASGA</span>
         </div>
         <h1 class="text-4xl font-bold mb-4">Espace Client</h1>
@@ -137,29 +137,29 @@ const ClientLogin = ({ error, success, defaultTab, redirect }: { error?: string;
       </div>
     </section>
 
-    <div class="min-h-screen flex items-start justify-center pt-12 pb-20 px-4" style="background:linear-gradient(180deg,#f0f9ff 0%,#e0f2fe 100%);">
+    <div class="min-h-screen flex items-start justify-center pt-12 pb-20 px-4" style="background:linear-gradient(180deg,var(--surface-info) 0%,var(--surface-accent) 100%);">
       <div class="w-full max-w-md">
         <div class="glass-card rounded-3xl p-8 reveal">
 
           {/* Tabs */}
-          <div class="flex rounded-2xl p-1 mb-6" style="background:rgba(0,119,182,0.08); border:1px solid rgba(0,119,182,0.12);">
-            <button id="tab-login" onclick="switchTab('login')" class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all" style={defaultTab === 'signup' ? 'background:transparent; color:#0077b6;' : 'background:linear-gradient(135deg,#0077b6,#00b4d8); color:#ffffff; box-shadow:0 4px 12px rgba(0,119,182,0.3);'}>
+          <div class="flex rounded-2xl p-1 mb-6" style="background:rgba(var(--rgb-brand),0.08); border:1px solid rgba(var(--rgb-brand),0.12);">
+            <button id="tab-login" onclick="switchTab('login')" class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all" style={defaultTab === 'signup' ? 'background:transparent; color:#035a85;' : 'background:linear-gradient(135deg,#0077b6,#00b4d8); color:#ffffff; box-shadow:0 4px 12px rgba(0,119,182,0.3);'}>
               <i class="fas fa-sign-in-alt mr-1.5"></i>Connexion
             </button>
-            <button id="tab-signup" onclick="switchTab('signup')" class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all" style={defaultTab === 'signup' ? 'background:linear-gradient(135deg,#0077b6,#00b4d8); color:#ffffff; box-shadow:0 4px 12px rgba(0,119,182,0.3);' : 'background:transparent; color:#0077b6;'}>
+            <button id="tab-signup" onclick="switchTab('signup')" class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all" style={defaultTab === 'signup' ? 'background:linear-gradient(135deg,#0077b6,#00b4d8); color:#ffffff; box-shadow:0 4px 12px rgba(0,119,182,0.3);' : 'background:transparent; color:#035a85;'}>
               <i class="fas fa-user-plus mr-1.5"></i>S'inscrire
             </button>
           </div>
 
           {error && (
-            <div class="mb-5 rounded-xl p-3 flex items-center space-x-2 text-sm" style="background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.3); color:#ef4444;">
+            <div class="mb-5 rounded-xl p-3 flex items-center space-x-2 text-sm" style="background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.3); color:var(--fg-danger-bright);">
               <i class="fas fa-exclamation-circle"></i>
               <span>{error}</span>
             </div>
           )}
 
           {success && (
-            <div class="mb-5 rounded-xl p-3 flex items-center space-x-2 text-sm" style="background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.3); color:#16a34a;">
+            <div class="mb-5 rounded-xl p-3 flex items-center space-x-2 text-sm" style="background:rgba(var(--rgb-emerald),0.1); border:1px solid rgba(var(--rgb-emerald),0.3); color:var(--fg-success-bright);">
               <i class="fas fa-check-circle"></i>
               <span>{success}</span>
             </div>
@@ -170,16 +170,16 @@ const ClientLogin = ({ error, success, defaultTab, redirect }: { error?: string;
             <form method="post" action="/api/login" class="space-y-4">
               {redirect && <input type="hidden" name="redirect" value={redirect} />}
               <div>
-                <label class="block text-sm font-semibold mb-2" style="color:#03045e;">Email ou téléphone</label>
+                <label class="block text-sm font-semibold mb-2" style="color:var(--fg-heading);">Email ou téléphone</label>
                 <input type="text" name="identifier" required placeholder="email@exemple.com ou 55 99 64 18"
-                  autocomplete="username" class="w-full rounded-xl px-4 py-3 text-sm transition-all outline-none" style="border:1.5px solid rgba(0,119,182,0.2); background:#f8fbff; color:#03045e;" />
+                  autocomplete="username" class="w-full rounded-xl px-4 py-3 text-sm transition-all outline-none bg-surface-base" style="border:1.5px solid rgba(var(--rgb-brand),0.2); color:var(--fg-heading);" />
               </div>
               <div>
-                <label class="block text-sm font-semibold mb-2" style="color:#03045e;">Mot de passe</label>
+                <label class="block text-sm font-semibold mb-2" style="color:var(--fg-heading);">Mot de passe</label>
                 <div class="relative">
                   <input type="password" name="password" required placeholder="••••••••"
-                    autocomplete="current-password" class="w-full rounded-xl px-4 py-3 pr-12 text-sm transition-all outline-none" style="border:1.5px solid rgba(0,119,182,0.2); background:#f8fbff; color:#03045e;" id="pwd-input" />
-                  <button type="button" onclick="togglePwd()" class="absolute right-4 top-1/2 -translate-y-1/2" style="color:#94a3b8;">
+                    autocomplete="current-password" class="w-full rounded-xl px-4 py-3 pr-12 text-sm transition-all outline-none bg-surface-base" style="border:1.5px solid rgba(var(--rgb-brand),0.2); color:var(--fg-heading);" id="pwd-input" />
+                  <button type="button" onclick="togglePwd()" aria-label="Afficher le mot de passe" aria-controls="pwd-input" class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-lg text-fg-subtle">
                     <i class="fas fa-eye text-sm" id="eye-icon"></i>
                   </button>
                 </div>
@@ -189,7 +189,7 @@ const ClientLogin = ({ error, success, defaultTab, redirect }: { error?: string;
                 <span>Se connecter</span>
               </button>
               <div class="text-center mt-3">
-                <a href="/espace-client/reset-password" class="text-xs font-medium hover:underline" style="color:#0077b6;">
+                <a href="/espace-client/reset-password" class="text-xs font-medium hover:underline text-fg-brand">
                   <i class="fas fa-lock mr-1"></i>Mot de passe oublié ?
                 </a>
               </div>
@@ -201,38 +201,38 @@ const ClientLogin = ({ error, success, defaultTab, redirect }: { error?: string;
             <form method="post" action="/api/register" class="space-y-4">
               {redirect && <input type="hidden" name="redirect" value={redirect} />}
               <div>
-                <label class="block text-sm font-semibold mb-2" style="color:#03045e;">Nom complet <span style="color:#e11d48;">*</span></label>
+                <label class="block text-sm font-semibold mb-2" style="color:var(--fg-heading);">Nom complet <span style="color:#e11d48;">*</span></label>
                 <input type="text" name="name" required placeholder="Votre nom et prénom"
-                  autocomplete="name" class="w-full rounded-xl px-4 py-3 text-sm outline-none" style="border:1.5px solid rgba(0,119,182,0.2); background:#f8fbff; color:#03045e;" />
+                  autocomplete="name" class="w-full rounded-xl px-4 py-3 text-sm outline-none bg-surface-base" style="border:1.5px solid rgba(var(--rgb-brand),0.2); color:var(--fg-heading);" />
               </div>
               <div>
-                <label class="block text-sm font-semibold mb-2" style="color:#03045e;">Téléphone (Whatsapp) <span style="color:#e11d48;">*</span></label>
-                <div class="flex rounded-xl overflow-hidden" style="border:1.5px solid rgba(0,119,182,0.2);">
-                  <div class="flex items-center px-3 text-sm font-bold" style="background:rgba(0,119,182,0.06); color:#0077b6; border-right:1px solid rgba(0,119,182,0.15); white-space:nowrap;">
+                <label class="block text-sm font-semibold mb-2" style="color:var(--fg-heading);">Téléphone (Whatsapp) <span style="color:#e11d48;">*</span></label>
+                <div class="flex rounded-xl overflow-hidden" style="border:1.5px solid rgba(var(--rgb-brand),0.2);">
+                  <div class="flex items-center px-3 text-sm font-bold whitespace-nowrap" style="background:rgba(var(--rgb-brand),0.06); color:var(--fg-brand); border-right:1px solid rgba(var(--rgb-brand),0.15);">
                     🇧🇫 +226
                   </div>
                   <input type="tel" name="phone" required placeholder="55 99 64 18"
-                    autocomplete="tel" class="flex-1 px-4 py-3 text-sm outline-none" style="background:#f8fbff; color:#03045e;" />
+                    autocomplete="tel" class="flex-1 px-4 py-3 text-sm outline-none bg-surface-base" style="color:var(--fg-heading);" />
                 </div>
               </div>
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-sm font-semibold mb-2" style="color:#03045e;">Email <span style="color:#94a3b8; font-weight:400;">(optionnel)</span></label>
+                  <label class="block text-sm font-semibold mb-2" style="color:var(--fg-heading);">Email <span style="color:#94a3b8; font-weight:400;">(optionnel)</span></label>
                   <input type="email" name="email" placeholder="votre@email.com"
-                    autocomplete="email" class="w-full rounded-xl px-4 py-3 text-sm outline-none" style="border:1.5px solid rgba(0,119,182,0.2); background:#f8fbff; color:#03045e;" />
+                    autocomplete="email" class="w-full rounded-xl px-4 py-3 text-sm outline-none bg-surface-base" style="border:1.5px solid rgba(var(--rgb-brand),0.2); color:var(--fg-heading);" />
                 </div>
                 <div>
-                  <label class="block text-sm font-semibold mb-2" style="color:#03045e;">Quartier <span style="color:#e11d48;">*</span></label>
+                  <label class="block text-sm font-semibold mb-2" style="color:var(--fg-heading);">Quartier <span style="color:#e11d48;">*</span></label>
                   <input type="text" name="quartier" required placeholder="Ouaga 2000…"
-                    class="w-full rounded-xl px-4 py-3 text-sm outline-none" style="border:1.5px solid rgba(0,119,182,0.2); background:#f8fbff; color:#03045e;" />
+                    class="w-full rounded-xl px-4 py-3 text-sm outline-none bg-surface-base" style="border:1.5px solid rgba(var(--rgb-brand),0.2); color:var(--fg-heading);" />
                 </div>
               </div>
               <div>
-                <label class="block text-sm font-semibold mb-2" style="color:#03045e;">Mot de passe <span style="color:#e11d48;">*</span></label>
+                <label class="block text-sm font-semibold mb-2" style="color:var(--fg-heading);">Mot de passe <span style="color:#e11d48;">*</span></label>
                 <div class="relative">
                   <input type="password" name="password" required placeholder="••••••••" minlength={8}
-                    autocomplete="new-password" class="w-full rounded-xl px-4 py-3 pr-12 text-sm outline-none" style="border:1.5px solid rgba(0,119,182,0.2); background:#f8fbff; color:#03045e;" id="pwd-signup" />
-                  <button type="button" onclick="togglePwdSignup()" class="absolute right-4 top-1/2 -translate-y-1/2" style="color:#94a3b8;">
+                    autocomplete="new-password" class="w-full rounded-xl px-4 py-3 pr-12 text-sm outline-none bg-surface-base" style="border:1.5px solid rgba(var(--rgb-brand),0.2); color:var(--fg-heading);" id="pwd-signup" />
+                  <button type="button" onclick="togglePwdSignup()" aria-label="Afficher le mot de passe" aria-controls="pwd-signup" class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-lg text-fg-subtle">
                     <i class="fas fa-eye text-sm" id="eye-signup"></i>
                   </button>
                 </div>
@@ -250,13 +250,13 @@ const ClientLogin = ({ error, success, defaultTab, redirect }: { error?: string;
 
           {/* Séparateur */}
           <div class="flex items-center my-5">
-            <div class="flex-1 h-px" style="background:rgba(0,119,182,0.15);"></div>
+            <div class="flex-1 h-px" style="background:rgba(var(--rgb-brand),0.15);"></div>
             <span class="px-3 text-xs font-medium" style="color:#94a3b8;">ou</span>
-            <div class="flex-1 h-px" style="background:rgba(0,119,182,0.15);"></div>
+            <div class="flex-1 h-px" style="background:rgba(var(--rgb-brand),0.15);"></div>
           </div>
 
           {/* Google OAuth */}
-          <a href={redirect ? `/api/auth/google?redirect=${encodeURIComponent(redirect)}` : '/api/auth/google'} class="w-full flex items-center justify-center space-x-3 py-3.5 rounded-2xl font-semibold text-sm transition-all hover:-translate-y-0.5" style="background:#ffffff; border:1.5px solid #e2e8f0; color:#334155; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+          <a href={redirect ? `/api/auth/google?redirect=${encodeURIComponent(redirect)}` : '/api/auth/google'} class="w-full flex items-center justify-center space-x-3 py-3.5 rounded-2xl font-semibold text-sm transition-all hover:-translate-y-0.5 bg-surface-card" style="border:1.5px solid var(--line); color:var(--fg-body); box-shadow:0 2px 8px rgba(var(--rgb-black),0.06);">
             <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
             <span>Continuer avec Google</span>
           </a>
@@ -268,10 +268,12 @@ const ClientLogin = ({ error, success, defaultTab, redirect }: { error?: string;
       function togglePwd() {
         var i=document.getElementById('pwd-input'),e=document.getElementById('eye-icon');
         i.type=i.type==='password'?'text':'password'; e.className='fas fa-eye'+(i.type==='text'?'-slash':'');
+        if (e.parentElement) e.parentElement.setAttribute('aria-label', i.type==='text' ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
       }
       function togglePwdSignup() {
         var i=document.getElementById('pwd-signup'),e=document.getElementById('eye-signup');
         i.type=i.type==='password'?'text':'password'; e.className='fas fa-eye'+(i.type==='text'?'-slash':'');
+        if (e.parentElement) e.parentElement.setAttribute('aria-label', i.type==='text' ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
       }
       function switchTab(tab) {
         var isLogin=tab==='login';
@@ -279,7 +281,7 @@ const ClientLogin = ({ error, success, defaultTab, redirect }: { error?: string;
         document.getElementById('form-signup').style.display=isLogin?'none':'block';
         var tl=document.getElementById('tab-login'),ts=document.getElementById('tab-signup');
         var activeStyle='background:linear-gradient(135deg,#0077b6,#00b4d8);color:#ffffff;box-shadow:0 4px 12px rgba(0,119,182,0.3);';
-        var inactiveStyle='background:transparent;color:#0077b6;box-shadow:none;';
+        var inactiveStyle='background:transparent;color:#035a85;box-shadow:none;';
         tl.style.cssText=isLogin?activeStyle:inactiveStyle;
         ts.style.cssText=isLogin?inactiveStyle:activeStyle;
       }
@@ -309,11 +311,11 @@ function orderStatusLabel(status: string): string {
   return map[status] || status
 }
 function orderStatusColor(status: string): string {
-  if (status === 'livre') return 'color:#10b981; background:rgba(16,185,129,0.12);'
-  if (status === 'en_livraison') return 'color:#a78bfa; background:rgba(167,139,250,0.12);'
-  if (status === 'confirme') return 'color:#34d399; background:rgba(52,211,153,0.12);'
-  if (status === 'contacte') return 'color:#38bdf8; background:rgba(56,189,248,0.12);'
-  if (status === 'annule') return 'color:#f87171; background:rgba(248,113,113,0.12);'
+  if (status === 'livre') return 'color:#047857; background:rgba(16,185,129,0.12);'
+  if (status === 'en_livraison') return 'color:#6d28d9; background:rgba(167,139,250,0.12);'
+  if (status === 'confirme') return 'color:#047857; background:rgba(52,211,153,0.12);'
+  if (status === 'contacte') return 'color:#0369a1; background:rgba(56,189,248,0.12);'
+  if (status === 'annule') return 'color:#b91c1c; background:rgba(248,113,113,0.12);'
   return 'color:#fbbf24; background:rgba(251,191,36,0.12);'
 }
 function orderStepIndex(status: string): number {
@@ -339,8 +341,8 @@ function rdvStatusLabel(status: string): string {
   return map[status] || status
 }
 function rdvStatusColor(status: string): string {
-  if (status === 'done') return 'color:#34d399; background:rgba(52,211,153,0.12);'
-  if (status === 'confirmed') return 'color:#38bdf8; background:rgba(56,189,248,0.12);'
+  if (status === 'done') return 'color:#047857; background:rgba(52,211,153,0.12);'
+  if (status === 'confirmed') return 'color:#0369a1; background:rgba(56,189,248,0.12);'
   return 'color:#fbbf24; background:rgba(251,191,36,0.12);'
 }
 function rdvTypeLabel(type: string): string {
@@ -401,17 +403,17 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
   const allMaintenanceItems = [...maintenanceVisits, ...maintenanceRequests].length
 
   return (
-    <Layout title={`Mon profil — ${clientName}`} activePage="client">
+    <Layout title={`Mon profil — ${clientName}`} activePage="client" noindex>
 
       {/* Hero profil */}
       <section class="gradient-hero py-12 text-white relative overflow-hidden">
         <div class="absolute inset-0 pointer-events-none">
-          <div class="absolute -top-20 -right-20 w-80 h-80" style="background-color:rgba(241,245,249,0.05); border-radius:9999px; backdrop-filter:blur(8px);"></div>
+          <div class="absolute -top-20 -right-20 w-80 h-80 rounded-[9999px]" style="background-color:rgba(var(--rgb-slate-100),0.05); backdrop-filter:blur(8px);"></div>
         </div>
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
             {/* Avatar initiales */}
-            <div class="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-xl flex-shrink-0" style="background:rgba(255,255,255,0.2); border:2px solid rgba(255,255,255,0.3);">
+            <div class="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-xl flex-shrink-0" style="background:rgba(var(--rgb-white),0.2); border:2px solid rgba(var(--rgb-white),0.3);">
               {initials}
             </div>
             <div class="text-center sm:text-left flex-1">
@@ -424,7 +426,7 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                 {clientSince && <span><i class="fas fa-star mr-1.5"></i>Membre depuis {formatDate(clientSince)}</span>}
               </div>
             </div>
-            <a href="/api/logout" class="flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-semibold flex-shrink-0 transition-all hover:bg-slate-50/50" style="background-color:rgba(241,245,249,0.15); color:#ffffff; border:1px solid rgba(226,232,240,0.2);">
+            <a href="/api/logout" class="flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-semibold flex-shrink-0 transition-all hover:bg-slate-50/50" style="background-color:rgba(var(--rgb-slate-100),0.15); color:var(--fg-on-dark); border:1px solid rgba(var(--rgb-slate-200),0.2);">
               <i class="fas fa-sign-out-alt"></i>
               <span>Déconnexion</span>
             </a>
@@ -436,10 +438,10 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
 
         {/* Profile completion banner for Google OAuth users missing phone/quartier */}
         {(!clientPhone || !clientQuartier) && (
-          <div id="profile-completion-banner" class="mb-6 rounded-2xl p-5 reveal" style="background:linear-gradient(135deg,rgba(251,191,36,0.08),rgba(245,158,11,0.05)); border:1.5px solid rgba(251,191,36,0.3);">
+          <div id="profile-completion-banner" class="mb-6 rounded-2xl p-5 reveal" style="background:linear-gradient(135deg,rgba(var(--rgb-amber),0.08),rgba(var(--rgb-amber-deep),0.05)); border:1.5px solid rgba(var(--rgb-amber),0.3);">
             <div class="flex items-start space-x-4">
-              <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(251,191,36,0.15);">
-                <i class="fas fa-user-edit text-lg" style="color:#f59e0b;"></i>
+              <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(var(--rgb-amber),0.15);">
+                <i class="fas fa-user-edit text-lg text-fg-amber"></i>
               </div>
               <div class="flex-1">
                 <h3 class="font-bold text-base mb-1" style="color:#92400e;">Complétez votre profil</h3>
@@ -454,8 +456,8 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                   {!clientPhone && (
                     <div>
                       <label class="block text-xs font-semibold mb-1.5" style="color:#78716c;">Téléphone (WhatsApp)</label>
-                      <div class="flex rounded-xl overflow-hidden" style="border:1.5px solid rgba(251,191,36,0.3); background:#fffbeb;">
-                        <div class="flex items-center px-3 text-sm font-bold" style="color:#92400e; border-right:1px solid rgba(251,191,36,0.2); white-space:nowrap;">🇧🇫 +226</div>
+                      <div class="flex rounded-xl overflow-hidden" style="border:1.5px solid rgba(var(--rgb-amber),0.3); background:#fffbeb;">
+                        <div class="flex items-center px-3 text-sm font-bold whitespace-nowrap" style="color:#92400e; border-right:1px solid rgba(var(--rgb-amber),0.2);">🇧🇫 +226</div>
                         <input type="tel" id="profile-phone" placeholder="55 99 64 18" class="flex-1 px-4 py-2.5 text-sm outline-none" style="background:transparent; color:#1c1917;" />
                       </div>
                     </div>
@@ -463,10 +465,10 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                   {!clientQuartier && (
                     <div>
                       <label class="block text-xs font-semibold mb-1.5" style="color:#78716c;">Quartier / Secteur</label>
-                      <input type="text" id="profile-quartier" placeholder="Ex: Ouaga 2000, Pissy, Dassasgho..." class="w-full rounded-xl px-4 py-2.5 text-sm outline-none" style="border:1.5px solid rgba(251,191,36,0.3); background:#fffbeb; color:#1c1917;" />
+                      <input type="text" id="profile-quartier" placeholder="Ex: Ouaga 2000, Pissy, Dassasgho..." class="w-full rounded-xl px-4 py-2.5 text-sm outline-none" style="border:1.5px solid rgba(var(--rgb-amber),0.3); background:#fffbeb; color:#1c1917;" />
                     </div>
                   )}
-                  <button type="button" id="profile-save-btn" onclick="saveProfile()" class="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:-translate-y-0.5" style="background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff; box-shadow:0 4px 12px rgba(245,158,11,0.3);">
+                  <button type="button" id="profile-save-btn" onclick="saveProfile()" class="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:-translate-y-0.5" style="background:linear-gradient(135deg,#f59e0b,#d97706); color:var(--fg-on-dark); box-shadow:0 4px 12px rgba(var(--rgb-amber-deep),0.3);">
                     <i class="fas fa-save"></i>
                     <span>Enregistrer</span>
                   </button>
@@ -491,8 +493,8 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                 <i class={`fas ${s.icon}`} style={`color:${s.color};`}></i>
               </div>
               <div>
-                <div class="text-xs font-medium" style="color:#64748b;">{s.label}</div>
-                <div class="text-xl font-bold" style="color:#03045e;">{s.val}</div>
+                <div class="text-xs font-medium text-fg-subtle">{s.label}</div>
+                <div class="text-xl font-bold text-fg-heading">{s.val}</div>
               </div>
             </div>
           ))}
@@ -502,7 +504,7 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
         {nextRdv && (
           <div class="mb-6 rounded-2xl p-5 reveal flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" style="background:linear-gradient(135deg,#0077b6,#00b4d8); color:#ffffff;">
             <div class="flex items-center space-x-4">
-              <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(255,255,255,0.2);">
+              <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(var(--rgb-white),0.2);">
                 <i class="fas fa-bell text-white text-lg"></i>
               </div>
               <div>
@@ -512,8 +514,8 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
               </div>
             </div>
             <a href={`https://wa.me/22655996418?text=Bonjour MAASGA, je confirme mon RDV du ${nextRdv.date}`} target="_blank" rel="noopener noreferrer"
-              class="flex items-center space-x-2 bg-slate-50 font-bold px-4 py-2.5 rounded-xl text-sm hover:bg-blue-50 transition-colors flex-shrink-0" style="color:#0077b6;">
-              <i class="fab fa-whatsapp" style="color:#25d366;"></i>
+              class="flex items-center space-x-2 bg-slate-50 font-bold px-4 py-2.5 rounded-xl text-sm hover:bg-blue-50 transition-colors flex-shrink-0" style="color:var(--fg-brand);">
+              <i class="fab fa-whatsapp" style="color:var(--fg-whatsapp);"></i>
               <span>Confirmer par WhatsApp</span>
             </a>
           </div>
@@ -523,16 +525,16 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
           {/* Mes commandes */}
           <div class="glass-card rounded-2xl p-6 reveal">
             <div class="flex items-center justify-between mb-5">
-              <h3 class="font-bold flex items-center space-x-2" style="color:#03045e;">
-                <i class="fas fa-shopping-bag" style="color:#0077b6;"></i>
+              <h3 class="font-bold flex items-center space-x-2 text-fg-heading">
+                <i class="fas fa-shopping-bag text-fg-brand"></i>
                 <span>Mes commandes</span>
               </h3>
-              <span class="text-xs px-2.5 py-1 rounded-full font-bold" style="background:rgba(0,119,182,0.1); color:#0077b6;">{totalOrders}</span>
+              <span class="text-xs px-2.5 py-1 rounded-full font-bold text-fg-brand" style="background:rgba(var(--rgb-brand),0.1);">{totalOrders}</span>
             </div>
             {orders.length === 0 ? (
               <div class="text-center py-8">
-                <i class="fas fa-box-open text-4xl mb-3" style="color:#cbd5e1;"></i>
-                <p class="text-sm mb-4" style="color:#64748b;">Aucune commande pour le moment</p>
+                <i class="fas fa-box-open text-4xl mb-3 text-fg-disabled"></i>
+                <p class="text-sm mb-4" style="color:var(--fg-subtle);">Aucune commande pour le moment</p>
                 <a href="/catalogue" class="inline-flex items-center space-x-2 text-sm font-bold px-5 py-2.5 rounded-xl btn-primary text-white">
                   <i class="fas fa-th-large"></i><span>Voir le catalogue</span>
                 </a>
@@ -550,21 +552,21 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                     { label: 'Livrée', icon: 'fa-check-double', done: step >= 4 }
                   ]
                   return (
-                    <div class="p-4 rounded-xl" style="background:#f0f7ff; border:1px solid rgba(0,119,182,0.1);">
+                    <div class="p-4 rounded-xl bg-surface-info-alt" style="border:1px solid rgba(var(--rgb-brand),0.1);">
                       {/* Header */}
                       <div class="flex items-center justify-between mb-3">
                         <div class="flex items-center space-x-3">
                           {o.image && (o.image.startsWith('http') || o.image.startsWith('/') || o.image.includes('.')) ? (
                             <img src={o.image} alt={o.product_name || ''} class="w-12 h-12 object-contain rounded-xl bg-white p-1 shadow-sm flex-shrink-0" />
                           ) : (
-                            <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(0,119,182,0.1);">
-                              <i class="fas fa-snowflake text-lg" style="color:#0077b6;"></i>
+                            <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(var(--rgb-brand),0.1);">
+                              <i class="fas fa-snowflake text-lg text-fg-brand"></i>
                             </div>
                           )}
                           <div>
-                            <div class="text-sm font-semibold" style="color:#03045e;">{o.product_name || `Commande #${o.id}`}</div>
-                            <div class="text-xs" style="color:#64748b;">#{o.id} · {formatDate(o.created_at)}{o.brand ? ` · ${o.brand}` : ''}{o.btu ? ` · ${(o.btu/1000).toFixed(0)}k BTU` : ''}</div>
-                            {o.total_price ? <div class="text-xs font-bold mt-0.5" style="color:#0077b6;">{o.total_price.toLocaleString()} FCFA</div> : null}
+                            <div class="text-sm font-semibold" style="color:var(--fg-heading);">{o.product_name || `Commande #${o.id}`}</div>
+                            <div class="text-xs text-fg-subtle">#{o.id} · {formatDate(o.created_at)}{o.brand ? ` · ${o.brand}` : ''}{o.btu ? ` · ${(o.btu/1000).toFixed(0)}k BTU` : ''}</div>
+                            {o.total_price ? <div class="text-xs font-bold mt-0.5 text-fg-brand">{o.total_price.toLocaleString()} FCFA</div> : null}
                           </div>
                         </div>
                         <span class="text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap" style={orderStatusColor(o.status)}>{orderStatusLabel(o.status)}</span>
@@ -581,8 +583,8 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                                 const isActive = i === step
                                 const isDone = s.done && i < step
                                 return (
-                                  <div class="flex items-center" style="flex:1; min-width:0;">
-                                    <div class="flex flex-col items-center" style="flex-shrink:0;">
+                                  <div class="flex items-center flex-1" style="min-width:0;">
+                                    <div class="flex flex-col items-center shrink-0">
                                       <div
                                         class="flex items-center justify-center rounded-full"
                                         style={`
@@ -629,16 +631,16 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
 
                       {/* Cancelled / refunded banner */}
                       {isCancelled && (
-                        <div class="flex items-center space-x-2 p-2.5 rounded-lg mb-3" style="background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.12);">
-                          <i class="fas fa-times-circle text-sm" style="color:#ef4444;"></i>
-                          <span class="text-xs font-semibold" style="color:#ef4444;">Commande annulée</span>
+                        <div class="flex items-center space-x-2 p-2.5 rounded-lg mb-3" style="background:rgba(var(--rgb-red),0.06); border:1px solid rgba(var(--rgb-red),0.12);">
+                          <i class="fas fa-times-circle text-sm" style="color:var(--fg-danger-bright);"></i>
+                          <span class="text-xs font-semibold text-fg-danger-bright">Commande annulée</span>
                         </div>
                       )}
 
                       {/* Action buttons depending on status */}
                       <div class="flex flex-wrap gap-2">
                         {o.status === 'en_livraison' && (
-                          <button onclick={`confirmDelivery(${o.id})`} class="inline-flex items-center space-x-1.5 text-xs font-bold px-3 py-2 rounded-lg text-white" style="background:linear-gradient(135deg,#059669,#10b981);">
+                          <button onclick={`confirmDelivery(${o.id})`} class="inline-flex items-center space-x-1.5 text-xs font-bold px-3 py-2 rounded-lg text-white" style="background:linear-gradient(135deg,var(--surface-success),var(--surface-success-bright));">
                             <i class="fas fa-check"></i><span>Confirmer la réception</span>
                           </button>
                         )}
@@ -666,16 +668,16 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
           {/* Mes rendez-vous */}
           <div class="glass-card rounded-2xl p-6 reveal">
             <div class="flex items-center justify-between mb-5">
-              <h3 class="font-bold flex items-center space-x-2" style="color:#03045e;">
-                <i class="fas fa-calendar-alt" style="color:#16a34a;"></i>
+              <h3 class="font-bold flex items-center space-x-2 text-fg-heading">
+                <i class="fas fa-calendar-alt text-fg-success-bright"></i>
                 <span>Mes rendez-vous</span>
               </h3>
-              <span class="text-xs px-2.5 py-1 rounded-full font-bold" style="background:rgba(22,163,74,0.1); color:#16a34a;">{rdvs.length}</span>
+              <span class="text-xs px-2.5 py-1 rounded-full font-bold text-fg-success-bright" style="background:rgba(22,163,74,0.1);">{rdvs.length}</span>
             </div>
             {rdvs.length === 0 ? (
               <div class="text-center py-8">
-                <i class="fas fa-calendar text-4xl mb-3" style="color:#cbd5e1;"></i>
-                <p class="text-sm mb-4" style="color:#64748b;">Aucun rendez-vous enregistré</p>
+                <i class="fas fa-calendar text-4xl mb-3 text-fg-disabled"></i>
+                <p class="text-sm mb-4" style="color:var(--fg-subtle);">Aucun rendez-vous enregistré</p>
                 <a href="/rendez-vous" class="inline-flex items-center space-x-2 text-sm font-bold px-5 py-2.5 rounded-xl btn-primary text-white">
                   <i class="fas fa-calendar-plus"></i><span>Prendre rendez-vous</span>
                 </a>
@@ -686,8 +688,8 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                   <div class="p-4 rounded-xl" style="background:rgba(22,163,74,0.04); border:1px solid rgba(22,163,74,0.12);">
                     <div class="flex items-start justify-between gap-3">
                       <div>
-                        <div class="text-sm font-semibold" style="color:#03045e;">{rdvTypeLabel(r.type)}</div>
-                        <div class="text-xs mt-0.5" style="color:#64748b;">{formatDate(r.date)} · {r.heure_debut}–{r.heure_fin}{r.quartier ? ` · ${r.quartier}` : ''}</div>
+                        <div class="text-sm font-semibold" style="color:var(--fg-heading);">{rdvTypeLabel(r.type)}</div>
+                        <div class="text-xs mt-0.5 text-fg-subtle">{formatDate(r.date)} · {r.heure_debut}–{r.heure_fin}{r.quartier ? ` · ${r.quartier}` : ''}</div>
                         {r.notes && <div class="text-xs mt-1" style="color:#94a3b8;">{r.notes}</div>}
                       </div>
                       <span class="text-xs px-3 py-1 rounded-full font-bold whitespace-nowrap" style={rdvStatusColor(r.status)}>{rdvStatusLabel(r.status)}</span>
@@ -703,13 +705,13 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
             <a href="/rendez-vous" class="flex items-center justify-center space-x-2 p-4 rounded-2xl font-bold text-sm btn-primary text-white">
               <i class="fas fa-calendar-plus"></i><span>Nouveau RDV</span>
             </a>
-            <a href="/contrat-maintenance" class="flex items-center justify-center space-x-2 p-4 rounded-2xl font-bold text-sm" style="background:rgba(14,165,233,0.08); color:#0ea5e9; border:1px solid rgba(14,165,233,0.15);">
+            <a href="/contrat-maintenance" class="flex items-center justify-center space-x-2 p-4 rounded-2xl font-bold text-sm" style="background:rgba(var(--rgb-sky-deep),0.08); color:var(--fg-sky); border:1px solid rgba(var(--rgb-sky-deep),0.15);">
               <i class="fas fa-shield-alt"></i><span>Maintenance</span>
             </a>
-            <a href="/catalogue" class="flex items-center justify-center space-x-2 p-4 rounded-2xl font-bold text-sm" style="background:#f0f7ff; color:#0077b6; border:1px solid rgba(0,119,182,0.12);">
+            <a href="/catalogue" class="flex items-center justify-center space-x-2 p-4 rounded-2xl font-bold text-sm bg-surface-info-alt" style="color:var(--fg-brand); border:1px solid rgba(var(--rgb-brand),0.12);">
               <i class="fas fa-th-large"></i><span>Catalogue</span>
             </a>
-            <a href={`https://wa.me/22655996418?text=Bonjour MAASGA, j'ai besoin d'aide.`} target="_blank" rel="noopener noreferrer" class="flex items-center justify-center space-x-2 p-4 rounded-2xl font-bold text-sm" style="background:rgba(37,211,102,0.08); color:#16a34a; border:1px solid rgba(37,211,102,0.15);">
+            <a href={`https://wa.me/22655996418?text=Bonjour MAASGA, j'ai besoin d'aide.`} target="_blank" rel="noopener noreferrer" class="flex items-center justify-center space-x-2 p-4 rounded-2xl font-bold text-sm" style="background:rgba(var(--rgb-whatsapp),0.08); color:var(--fg-success-bright); border:1px solid rgba(var(--rgb-whatsapp),0.15);">
               <i class="fab fa-whatsapp"></i><span>WhatsApp</span>
             </a>
           </div>
@@ -739,7 +741,7 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                     <div class="text-sm font-bold" style={`color:${urgencyColor};`}>
                       {daysLeft === 0 ? "🔔 Maintenance aujourd'hui !" : daysLeft === 1 ? '🔔 Maintenance demain !' : `📅 Prochaine maintenance dans ${daysLeft} jours`}
                     </div>
-                    <div class="text-xs mt-1" style="color:#64748b;">
+                    <div class="text-xs mt-1 text-fg-subtle">
                       <strong>{formatDate(nextVisit.visit_date)}</strong>
                       {contract && <span> · Contrat {
                         contract.plan_type === 'residentiel' ? 'Résidentiel' :
@@ -766,16 +768,16 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
           {/* Contrats de maintenance */}
           <div class="glass-card rounded-2xl p-6 reveal">
             <div class="flex items-center justify-between mb-5">
-              <h3 class="font-bold flex items-center space-x-2" style="color:#03045e;">
-                <i class="fas fa-file-contract" style="color:#0ea5e9;"></i>
+              <h3 class="font-bold flex items-center space-x-2 text-fg-heading">
+                <i class="fas fa-file-contract text-fg-sky"></i>
                 <span>Mes contrats de maintenance</span>
               </h3>
-              <span class="text-xs px-2.5 py-1 rounded-full font-bold" style="background:rgba(14,165,233,0.1); color:#0ea5e9;">{maintenanceContracts.length}</span>
+              <span class="text-xs px-2.5 py-1 rounded-full font-bold text-fg-sky" style="background:rgba(var(--rgb-sky-deep),0.1);">{maintenanceContracts.length}</span>
             </div>
             {maintenanceContracts.length === 0 ? (
               <div class="text-center py-8">
-                <i class="fas fa-shield-alt text-4xl mb-3" style="color:#cbd5e1;"></i>
-                <p class="text-sm mb-2" style="color:#64748b;">Aucun contrat de maintenance actif</p>
+                <i class="fas fa-shield-alt text-4xl mb-3 text-fg-disabled"></i>
+                <p class="text-sm mb-2" style="color:var(--fg-subtle);">Aucun contrat de maintenance actif</p>
                 <p class="text-xs mb-4" style="color:#94a3b8;">Protégez votre climatisation avec un contrat de maintenance préventive</p>
                 <a href="/contrat-maintenance" class="inline-flex items-center space-x-2 text-sm font-bold px-5 py-2.5 rounded-xl btn-primary text-white">
                   <i class="fas fa-plus"></i><span>Souscrire un contrat</span>
@@ -805,23 +807,23 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                   const cancelledVisits = contractVisits.filter(v => v.status === 'annulee')
                   const visitTypeLabels: Record<string, string> = { preventive: 'Préventive', occasionnelle: 'Occasionnelle', urgence: 'Urgence' }
                   return (
-                    <div class="rounded-xl overflow-hidden" style="border:1px solid rgba(14,165,233,0.12);">
-                      <div class="p-5" style="background:linear-gradient(135deg,rgba(14,165,233,0.04),rgba(0,119,182,0.04));">
+                    <div class="rounded-xl overflow-hidden" style="border:1px solid rgba(var(--rgb-sky-deep),0.12);">
+                      <div class="p-5" style="background:linear-gradient(135deg,rgba(var(--rgb-sky-deep),0.04),rgba(var(--rgb-brand),0.04));">
                         <div class="flex items-start justify-between gap-3 mb-3">
                           <div>
-                            <div class="text-sm font-bold" style="color:#03045e;">{planLabels[mc.plan_type] || mc.plan_type}</div>
-                            <div class="text-xs mt-0.5" style="color:#64748b;">📅 {formatDate(mc.start_date)} → {formatDate(mc.end_date)} · <strong>12 mois</strong></div>
-                            <div class="text-xs font-bold mt-1" style="color:#0077b6;">{mc.plan_price.toLocaleString()} FCFA</div>
+                            <div class="text-sm font-bold" style="color:var(--fg-heading);">{planLabels[mc.plan_type] || mc.plan_type}</div>
+                            <div class="text-xs mt-0.5 text-fg-subtle">📅 {formatDate(mc.start_date)} → {formatDate(mc.end_date)} · <strong>12 mois</strong></div>
+                            <div class="text-xs font-bold mt-1 text-fg-brand">{mc.plan_price.toLocaleString()} FCFA</div>
                           </div>
                           <span class="text-xs px-3 py-1 rounded-full font-bold whitespace-nowrap" style={statusColors[mc.status] || ''}>{statusLabels[mc.status] || mc.status}</span>
                         </div>
                         {/* Progress bar */}
                         <div class="mb-3">
                           <div class="flex items-center justify-between text-xs mb-1">
-                            <span style="color:#64748b;">Visites effectuées</span>
-                            <span class="font-bold" style="color:#0077b6;">{mc.completed_visits}/{mc.total_visits}</span>
+                            <span class="text-fg-subtle">Visites effectuées</span>
+                            <span class="font-bold text-fg-brand">{mc.completed_visits}/{mc.total_visits}</span>
                           </div>
-                          <div class="w-full h-2.5 rounded-full" style="background:rgba(14,165,233,0.1);">
+                          <div class="w-full h-2.5 rounded-full" style="background:rgba(var(--rgb-sky-deep),0.1);">
                             <div class="h-2.5 rounded-full transition-all" style={`width:${progress}%; background:linear-gradient(90deg,#0077b6,#00b4d8);`}></div>
                           </div>
                         </div>
@@ -834,8 +836,8 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
 
                       {/* ===== Visites à venir ===== */}
                       {upcomingVisits.length > 0 && (
-                        <div class="px-5 py-4" style="background:rgba(14,165,233,0.03); border-top:1px solid rgba(14,165,233,0.08);">
-                          <div class="text-xs font-bold uppercase tracking-wide mb-3 flex items-center space-x-2" style="color:#0077b6;">
+                        <div class="px-5 py-4" style="background:rgba(var(--rgb-sky-deep),0.03); border-top:1px solid rgba(var(--rgb-sky-deep),0.08);">
+                          <div class="text-xs font-bold uppercase tracking-wide mb-3 flex items-center space-x-2 text-fg-brand">
                             <i class="fas fa-calendar-alt"></i>
                             <span>Visites à venir ({upcomingVisits.length})</span>
                           </div>
@@ -851,8 +853,8 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                                       <span class="text-xs font-black" style={`color:${isToday ? '#ef4444' : isImminent ? '#d97706' : '#0077b6'};`}>#{idx + 1}</span>
                                     </div>
                                     <div>
-                                      <div class="text-sm font-semibold" style="color:#03045e;">{visitTypeLabels[v.visit_type] || v.visit_type}</div>
-                                      <div class="text-xs" style="color:#64748b;">{formatDate(v.visit_date)}</div>
+                                      <div class="text-sm font-semibold" style="color:var(--fg-heading);">{visitTypeLabels[v.visit_type] || v.visit_type}</div>
+                                      <div class="text-xs text-fg-subtle">{formatDate(v.visit_date)}</div>
                                     </div>
                                   </div>
                                   <div class="text-right">
@@ -870,7 +872,7 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                       {/* ===== Visites effectuées ===== */}
                       {completedVisits.length > 0 && (
                         <div class="px-5 py-4" style="background:rgba(22,163,74,0.02); border-top:1px solid rgba(22,163,74,0.08);">
-                          <div class="text-xs font-bold uppercase tracking-wide mb-3 flex items-center space-x-2" style="color:#16a34a;">
+                          <div class="text-xs font-bold uppercase tracking-wide mb-3 flex items-center space-x-2 text-fg-success-bright">
                             <i class="fas fa-check-double"></i>
                             <span>Visites effectuées ({completedVisits.length})</span>
                           </div>
@@ -878,14 +880,14 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                             {completedVisits.map(v => (
                               <div class="flex items-center justify-between py-2.5 px-4 rounded-xl" style="background:rgba(22,163,74,0.04); border:1px solid rgba(22,163,74,0.1);">
                                 <div class="flex items-center space-x-3">
-                                  <i class="fas fa-check-circle" style="color:#16a34a; font-size:0.85rem;"></i>
+                                  <i class="fas fa-check-circle text-fg-success-bright text-[0.85rem]"></i>
                                   <div>
-                                    <div class="text-xs font-semibold" style="color:#03045e;">{visitTypeLabels[v.visit_type] || v.visit_type}</div>
-                                    <div class="text-xs" style="color:#64748b;">{formatDate(v.visit_date)}{v.technician ? ` · Tech: ${v.technician}` : ''}</div>
+                                    <div class="text-xs font-semibold text-fg-heading">{visitTypeLabels[v.visit_type] || v.visit_type}</div>
+                                    <div class="text-xs text-fg-subtle">{formatDate(v.visit_date)}{v.technician ? ` · Tech: ${v.technician}` : ''}</div>
                                     {v.actions_performed && <div class="text-xs mt-0.5" style="color:#94a3b8;">{v.actions_performed}</div>}
                                   </div>
                                 </div>
-                                <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="color:#16a34a;background:rgba(22,163,74,0.1);">✓ Effectuée</span>
+                                <span class="text-xs px-2 py-0.5 rounded-full font-bold text-fg-success-bright" style="background:rgba(22,163,74,0.1);">✓ Effectuée</span>
                               </div>
                             ))}
                           </div>
@@ -894,16 +896,16 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
 
                       {/* ===== Visites annulées ===== */}
                       {cancelledVisits.length > 0 && (
-                        <div class="px-5 py-3" style="background:rgba(239,68,68,0.02); border-top:1px solid rgba(239,68,68,0.06);">
+                        <div class="px-5 py-3" style="background:rgba(var(--rgb-red),0.02); border-top:1px solid rgba(var(--rgb-red),0.06);">
                           <div class="text-xs font-bold uppercase tracking-wide mb-2 flex items-center space-x-2" style="color:#94a3b8;">
                             <i class="fas fa-ban"></i>
                             <span>Annulées ({cancelledVisits.length})</span>
                           </div>
                           <div class="space-y-1">
                             {cancelledVisits.map(v => (
-                              <div class="flex items-center justify-between py-1.5 px-3 rounded-lg" style="background:rgba(239,68,68,0.03);">
+                              <div class="flex items-center justify-between py-1.5 px-3 rounded-lg" style="background:rgba(var(--rgb-red),0.03);">
                                 <span class="text-xs" style="color:#94a3b8;">{formatDate(v.visit_date)} — {visitTypeLabels[v.visit_type] || v.visit_type}</span>
-                                <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="color:#ef4444;background:rgba(239,68,68,0.1);">Annulée</span>
+                                <span class="text-xs px-2 py-0.5 rounded-full font-bold text-fg-danger-bright" style="background:rgba(var(--rgb-red),0.1);">Annulée</span>
                               </div>
                             ))}
                           </div>
@@ -920,17 +922,17 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
           {(maintenanceVisits.length > 0 || maintenanceRequests.length > 0) && (
             <div class="glass-card rounded-2xl p-6 reveal">
               <div class="flex items-center justify-between mb-5">
-                <h3 class="font-bold flex items-center space-x-2" style="color:#03045e;">
-                  <i class="fas fa-history" style="color:#7c3aed;"></i>
+                <h3 class="font-bold flex items-center space-x-2 text-fg-heading">
+                  <i class="fas fa-history text-fg-violet-bright"></i>
                   <span>Historique maintenance</span>
                 </h3>
-                <span class="text-xs px-2.5 py-1 rounded-full font-bold" style="background:rgba(124,58,237,0.1); color:#7c3aed;">{allMaintenanceItems}</span>
+                <span class="text-xs px-2.5 py-1 rounded-full font-bold text-fg-violet-bright" style="background:rgba(124,58,237,0.1);">{allMaintenanceItems}</span>
               </div>
 
               {/* Maintenance visits */}
               {maintenanceVisits.length > 0 && (
                 <div class="mb-4">
-                  <div class="text-xs font-bold uppercase tracking-wide mb-3" style="color:#64748b;">Visites techniques</div>
+                  <div class="text-xs font-bold uppercase tracking-wide mb-3 text-fg-subtle">Visites techniques</div>
                   <div class="space-y-2">
                     {maintenanceVisits.map(v => {
                       const visitTypeLabels: Record<string, string> = { preventive: 'Préventive', occasionnelle: 'Occasionnelle', urgence: 'Urgence' }
@@ -943,8 +945,8 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                             <div class="flex items-start space-x-2">
                               <i class={`fas ${visitTypeIcons[v.visit_type] || 'fa-wrench'} mt-0.5`} style={`color:${visitTypeColors[v.visit_type] || '#64748b'}; font-size:0.75rem;`}></i>
                               <div>
-                                <div class="text-sm font-semibold" style="color:#03045e;">{visitTypeLabels[v.visit_type] || v.visit_type}</div>
-                                <div class="text-xs" style="color:#64748b;">{formatDate(v.visit_date)}{v.technician ? ` · Tech: ${v.technician}` : ''}</div>
+                                <div class="text-sm font-semibold" style="color:var(--fg-heading);">{visitTypeLabels[v.visit_type] || v.visit_type}</div>
+                                <div class="text-xs text-fg-subtle">{formatDate(v.visit_date)}{v.technician ? ` · Tech: ${v.technician}` : ''}</div>
                                 {v.actions_performed && <div class="text-xs mt-1" style="color:#94a3b8;">{v.actions_performed}</div>}
                               </div>
                             </div>
@@ -960,7 +962,7 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
               {/* Maintenance requests */}
               {maintenanceRequests.length > 0 && (
                 <div>
-                  <div class="text-xs font-bold uppercase tracking-wide mb-3" style="color:#64748b;">Mes demandes</div>
+                  <div class="text-xs font-bold uppercase tracking-wide mb-3 text-fg-subtle">Mes demandes</div>
                   <div class="space-y-2">
                     {maintenanceRequests.map(r => {
                       const reqTypeLabels: Record<string, string> = { occasionnelle: 'Maintenance ponctuelle', urgence: 'Urgence', contrat: 'Souscription contrat' }
@@ -970,8 +972,8 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                         <div class="p-3 rounded-xl" style="background:rgba(217,119,6,0.03); border:1px solid rgba(217,119,6,0.08);">
                           <div class="flex items-start justify-between gap-2">
                             <div>
-                              <div class="text-sm font-semibold" style="color:#03045e;">{reqTypeLabels[r.request_type] || r.request_type}</div>
-                              <div class="text-xs" style="color:#64748b;">#{r.id} · {formatDate(r.created_at)}{r.equipment_type ? ` · ${r.equipment_type}` : ''}{r.plan_type ? ` · ${r.plan_type}` : ''}</div>
+                              <div class="text-sm font-semibold" style="color:var(--fg-heading);">{reqTypeLabels[r.request_type] || r.request_type}</div>
+                              <div class="text-xs text-fg-subtle">#{r.id} · {formatDate(r.created_at)}{r.equipment_type ? ` · ${r.equipment_type}` : ''}{r.plan_type ? ` · ${r.plan_type}` : ''}</div>
                               {r.description && <div class="text-xs mt-1" style="color:#94a3b8;">{r.description}</div>}
                             </div>
                             <span class="text-xs px-2 py-0.5 rounded-full font-bold whitespace-nowrap" style={reqStatusColors[r.status] || ''}>{reqStatusLabels[r.status] || r.status}</span>
@@ -988,16 +990,16 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
           {/* Mes paiements */}
           <div class="glass-card rounded-2xl p-6 reveal">
             <div class="flex items-center justify-between mb-5">
-              <h3 class="font-bold flex items-center space-x-2" style="color:#03045e;">
-                <i class="fas fa-credit-card" style="color:#16a34a;"></i>
+              <h3 class="font-bold flex items-center space-x-2 text-fg-heading">
+                <i class="fas fa-credit-card text-fg-success-bright"></i>
                 <span>Mes paiements</span>
               </h3>
-              <span class="text-xs px-2.5 py-1 rounded-full font-bold" style="background:rgba(22,163,74,0.1); color:#16a34a;">{payments.length}</span>
+              <span class="text-xs px-2.5 py-1 rounded-full font-bold text-fg-success-bright" style="background:rgba(22,163,74,0.1);">{payments.length}</span>
             </div>
             {payments.length === 0 ? (
               <div class="text-center py-8">
-                <i class="fas fa-receipt text-4xl mb-3" style="color:#cbd5e1;"></i>
-                <p class="text-sm" style="color:#64748b;">Aucun paiement enregistré</p>
+                <i class="fas fa-receipt text-4xl mb-3 text-fg-disabled"></i>
+                <p class="text-sm" style="color:var(--fg-subtle);">Aucun paiement enregistré</p>
               </div>
             ) : (
               <div class="space-y-3">
@@ -1005,20 +1007,20 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                   <div class="flex items-center justify-between p-4 rounded-xl" style="background:rgba(22,163,74,0.03); border:1px solid rgba(22,163,74,0.1);">
                     <div class="flex items-center space-x-3">
                       <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(22,163,74,0.08);">
-                        <i class="fas fa-money-bill-wave" style="color:#16a34a; font-size:0.85rem;"></i>
+                        <i class="fas fa-money-bill-wave text-fg-success-bright text-[0.85rem]"></i>
                       </div>
                       <div>
-                        <div class="text-sm font-semibold" style="color:#03045e;">
+                        <div class="text-sm font-semibold" style="color:var(--fg-heading);">
                           {p.payment_type === 'order' ? 'Commande' : p.payment_type === 'maintenance' ? 'Contrat maintenance' : p.payment_type}
                         </div>
-                        <div class="text-xs" style="color:#64748b;">
+                        <div class="text-xs text-fg-subtle">
                           {paymentMethodLabel(p.method ?? '')} · {formatDate(p.created_at)}
                           {p.provider_ref && <span> · Réf: {p.provider_ref}</span>}
                         </div>
                       </div>
                     </div>
                     <div class="text-right flex-shrink-0">
-                      <div class="text-sm font-bold" style="color:#03045e;">{p.amount.toLocaleString()} FCFA</div>
+                      <div class="text-sm font-bold" style="color:var(--fg-heading);">{p.amount.toLocaleString()} FCFA</div>
                       <span class="text-xs px-2.5 py-0.5 rounded-full font-bold" style={paymentStatusColor(p.status)}>{paymentStatusLabel(p.status)}</span>
                     </div>
                   </div>
@@ -1030,16 +1032,16 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
           {/* Journal d'activité (immutable) */}
           <div class="glass-card rounded-2xl p-6 reveal">
             <div class="flex items-center justify-between mb-5">
-              <h3 class="font-bold flex items-center space-x-2" style="color:#03045e;">
-                <i class="fas fa-stream" style="color:#7c3aed;"></i>
+              <h3 class="font-bold flex items-center space-x-2 text-fg-heading">
+                <i class="fas fa-stream text-fg-violet-bright"></i>
                 <span>Journal d'activité</span>
               </h3>
-              <span class="text-xs px-2.5 py-1 rounded-full font-bold" style="background:rgba(124,58,237,0.1); color:#7c3aed;">{activityLog.length}</span>
+              <span class="text-xs px-2.5 py-1 rounded-full font-bold text-fg-violet-bright" style="background:rgba(124,58,237,0.1);">{activityLog.length}</span>
             </div>
             {activityLog.length === 0 ? (
               <div class="text-center py-8">
-                <i class="fas fa-list text-4xl mb-3" style="color:#cbd5e1;"></i>
-                <p class="text-sm" style="color:#64748b;">Aucune activité enregistrée</p>
+                <i class="fas fa-list text-4xl mb-3 text-fg-disabled"></i>
+                <p class="text-sm" style="color:var(--fg-subtle);">Aucune activité enregistrée</p>
               </div>
             ) : (
               <div class="relative">
@@ -1055,7 +1057,7 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
                       <div class="flex-1 min-w-0">
                         <div class="text-sm font-medium" style="color:#1e293b;">{entry.action}</div>
                         {entry.details && <div class="text-xs mt-0.5" style="color:#94a3b8;">{entry.details}</div>}
-                        <div class="text-xs mt-0.5" style="color:#cbd5e1;">{formatDateTime(entry.created_at)}</div>
+                        <div class="text-xs mt-0.5 text-fg-disabled">{formatDateTime(entry.created_at)}</div>
                       </div>
                     </div>
                   ))}
@@ -1152,24 +1154,24 @@ const ClientDashboard = ({ clientName, clientPhone, clientEmail, clientQuartier,
               var items = [];
               try { items = JSON.parse(dv.items || '[]'); } catch(e) {}
               var itemsHtml = items.length > 0 ? items.map(function(it) {
-                return '<tr><td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;">' + (it.name||it.label||'-') + '</td><td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;text-align:right;">' + (it.amount||it.price||0).toLocaleString() + ' FCFA</td></tr>';
+                return '<tr><td style="padding:6px 10px;border-bottom:1px solid var(--line);">' + (it.name||it.label||'-') + '</td><td style="padding:6px 10px;border-bottom:1px solid var(--line);text-align:right;">' + (it.amount||it.price||0).toLocaleString() + ' FCFA</td></tr>';
               }).join('') : '<tr><td colspan="2" style="padding:6px 10px;color:#94a3b8;">Détail non disponible</td></tr>';
 
               var modal = document.createElement('div');
               modal.id = 'devis-modal';
               modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;';
-              modal.innerHTML = '<div style="background:white;border-radius:16px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;">'
+              modal.innerHTML = '<div style="background:var(--surface-card);border-radius:16px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;">'
                 + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
-                + '<h3 style="font-size:16px;font-weight:700;color:#03045e;">Devis #' + dv.id + '</h3>'
+                + '<h3 style="font-size:16px;font-weight:700;color:var(--fg-heading);">Devis #' + dv.id + '</h3>'
                 + '<button onclick="document.getElementById(\\'devis-modal\\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8;">&times;</button></div>'
-                + '<p style="font-size:14px;font-weight:600;color:#334155;margin-bottom:4px;">' + (dv.title||'Devis') + '</p>'
-                + (dv.description ? '<p style="font-size:12px;color:#64748b;margin-bottom:12px;">' + dv.description + '</p>' : '')
-                + '<table style="width:100%;font-size:13px;border-collapse:collapse;margin-bottom:12px;"><thead><tr style="background:#f0f7ff;"><th style="padding:6px 10px;text-align:left;">Élément</th><th style="padding:6px 10px;text-align:right;">Montant</th></tr></thead><tbody>' + itemsHtml + '</tbody></table>'
-                + '<div style="text-align:right;font-size:18px;font-weight:800;color:#0077b6;margin-bottom:16px;">' + dv.total_amount.toLocaleString() + ' FCFA</div>'
+                + '<p style="font-size:14px;font-weight:600;color:var(--fg-body);margin-bottom:4px;">' + (dv.title||'Devis') + '</p>'
+                + (dv.description ? '<p style="font-size:12px;color:var(--fg-subtle);margin-bottom:12px;">' + dv.description + '</p>' : '')
+                + '<table style="width:100%;font-size:13px;border-collapse:collapse;margin-bottom:12px;"><thead><tr style="background:var(--surface-info-alt);"><th style="padding:6px 10px;text-align:left;">Élément</th><th style="padding:6px 10px;text-align:right;">Montant</th></tr></thead><tbody>' + itemsHtml + '</tbody></table>'
+                + '<div style="text-align:right;font-size:18px;font-weight:800;color:var(--fg-brand);margin-bottom:16px;">' + dv.total_amount.toLocaleString() + ' FCFA</div>'
                 + (dv.status === 'sent' || dv.status === 'pending' ? '<div style="display:flex;gap:8px;">'
-                  + '<button onclick="validateDevis(' + dv.id + ')" style="flex:1;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#059669,#10b981);color:white;font-weight:700;font-size:13px;cursor:pointer;"><i class="fas fa-check" style="margin-right:4px;"></i>Valider</button>'
-                  + '<button onclick="refuseDevis(' + dv.id + ')" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.06);color:#ef4444;font-weight:700;font-size:13px;cursor:pointer;"><i class="fas fa-times" style="margin-right:4px;"></i>Refuser</button>'
-                  + '</div>' : '<div style="text-align:center;padding:8px;border-radius:8px;font-size:12px;font-weight:700;' + (dv.status === 'validated' ? 'background:rgba(16,185,129,0.08);color:#059669;">Devis validé ✓' : dv.status === 'refused' ? 'background:rgba(239,68,68,0.08);color:#ef4444;">Devis refusé' : 'color:#64748b;">Statut: ' + dv.status) + '</div>')
+                  + '<button onclick="validateDevis(' + dv.id + ')" style="flex:1;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--surface-success),var(--surface-success-bright));color:var(--fg-on-dark);font-weight:700;font-size:13px;cursor:pointer;"><i class="fas fa-check" style="margin-right:4px;"></i>Valider</button>'
+                  + '<button onclick="refuseDevis(' + dv.id + ')" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(var(--rgb-red),0.3);background:rgba(var(--rgb-red),0.06);color:var(--fg-danger-bright);font-weight:700;font-size:13px;cursor:pointer;"><i class="fas fa-times" style="margin-right:4px;"></i>Refuser</button>'
+                  + '</div>' : '<div style="text-align:center;padding:8px;border-radius:8px;font-size:12px;font-weight:700;' + (dv.status === 'validated' ? 'background:rgba(var(--rgb-green),0.08);color:var(--fg-success-alt);">Devis validé ✓' : dv.status === 'refused' ? 'background:rgba(239,68,68,0.08);color:#ef4444;">Devis refusé' : 'color:#64748b;">Statut: ' + dv.status) + '</div>')
                 + '</div>';
               document.body.appendChild(modal);
               modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });

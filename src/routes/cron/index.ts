@@ -42,7 +42,7 @@ function buildMaintenanceReminderHtml(clientName: string, visitDate: string, pla
   <div style="padding:32px;">
     <div style="text-align:center;margin-bottom:24px;">
       <div style="display:inline-block;background:${urgencyColor}15;border:2px solid ${urgencyColor}30;border-radius:16px;padding:16px 32px;">
-        <div style="font-size:32px;font-weight:900;color:${urgencyColor};">ðŸ””</div>
+        <div style="font-size:32px;font-weight:900;color:${urgencyColor};">🔔</div>
         <div style="font-size:18px;font-weight:800;color:${urgencyColor};margin-top:4px;">Maintenance ${urgencyText} !</div>
       </div>
     </div>
@@ -53,16 +53,16 @@ function buildMaintenanceReminderHtml(clientName: string, visitDate: string, pla
     <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:20px;margin-bottom:24px;">
       <table style="width:100%;font-size:14px;color:#334155;">
         <tr><td style="padding:6px 0;font-weight:600;">📅 Date</td><td style="padding:6px 0;">${fmtD}</td></tr>
-        <tr><td style="padding:6px 0;font-weight:600;">ðŸ“‹ Contrat</td><td style="padding:6px 0;">${planLabels[planType] || planType}</td></tr>
+        <tr><td style="padding:6px 0;font-weight:600;">📋 Contrat</td><td style="padding:6px 0;">${planLabels[planType] || planType}</td></tr>
         <tr><td style="padding:6px 0;font-weight:600;">🔧 Type</td><td style="padding:6px 0;">Visite préventive</td></tr>
       </table>
     </div>
     <p style="font-size:13px;color:#64748b;line-height:1.6;margin:0 0 20px;">
-      Merci de vous assurer que l'accès Ã  vos équipements est possible. En cas d'empêchement, contactez-nous au plus vite.
+      Merci de vous assurer que l'accès à vos équipements est possible. En cas d'empêchement, contactez-nous au plus vite.
     </p>
     <div style="text-align:center;">
       <a href="https://wa.me/22655996418?text=Bonjour%20MAASGA%2C%20concernant%20ma%20maintenance%20du%20${encodeURIComponent(fmtD)}" style="display:inline-block;background:#25d366;color:white;font-weight:700;font-size:14px;padding:12px 28px;border-radius:10px;text-decoration:none;">
-        <span style="margin-right:6px;">ðŸ“±</span>Contacter via WhatsApp
+        <span style="margin-right:6px;">📱</span>Contacter via WhatsApp
       </a>
     </div>
     <div style="margin-top:24px;padding-top:20px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center;">
@@ -112,7 +112,7 @@ async function handleScheduled(env: HonoEnv['Bindings']) {
             env.BREVO_API_KEY,
             client.email,
             client.name || clientName,
-            `ðŸ”” Rappel : Maintenance ${label} — MAASGA`,
+            `🔔 Rappel : Maintenance ${label} — MAASGA`,
             buildMaintenanceReminderHtml(client.name || clientName, visit.visit_date, planType, isToday)
           )
         }
@@ -140,7 +140,7 @@ async function handleScheduled(env: HonoEnv['Bindings']) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: env.TELEGRAM_CHAT_ID,
-            text: `ðŸ”” *RAPPEL MAINTENANCE — ${label}*\n\nðŸ‘¤ Client: ${clientName}\nðŸ“± Tél: ${visit.client_phone || '—'}\n📅 Date: ${visit.visit_date}\nðŸ“‹ Contrat: ${planType}\n\n${isToday ? "âš ï¸ La visite est prévue AUJOURD\'HUI !" : 'ðŸ“Œ La visite est prévue DEMAIN.'}`,
+            text: `🔔 *RAPPEL MAINTENANCE — ${label}*\n\n👤 Client: ${clientName}\n📱 Tél: ${visit.client_phone || '—'}\n📅 Date: ${visit.visit_date}\n📋 Contrat: ${planType}\n\n${isToday ? "⚠️ La visite est prévue AUJOURD\'HUI !" : '📌 La visite est prévue DEMAIN.'}`,
             parse_mode: 'Markdown'
           })
         })
@@ -152,7 +152,7 @@ async function handleScheduled(env: HonoEnv['Bindings']) {
       await ensureNotificationsTable(db)
       await db.prepare(
         'INSERT INTO admin_notifications (type, summary) VALUES (?, ?)'
-      ).bind('maintenance', `ðŸ”” Rappel maintenance ${label}: ${clientName} (${visit.visit_date}) — Contrat ${planType}`).run()
+      ).bind('maintenance', `🔔 Rappel maintenance ${label}: ${clientName} (${visit.visit_date}) — Contrat ${planType}`).run()
     } catch(_) {}
   }
 

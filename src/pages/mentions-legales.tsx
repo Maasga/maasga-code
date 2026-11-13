@@ -1,11 +1,11 @@
-﻿import { Layout } from '../components/Layout'
+import { Layout } from '../components/Layout'
 
 export const MentionsLegalesPage = () => {
   const jsonLd = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "WebPage",
     "name": "Mentions légales - MAASGA Climatisation",
-    "description": "Mentions légales du site MAASGA Climatisation - Expert en climatisation Ã  Ouagadougou, Burkina Faso.",
+    "description": "Mentions légales du site MAASGA Climatisation - Expert en climatisation à Ouagadougou, Burkina Faso.",
     "isPartOf": {
       "@type": "WebSite",
       "name": "MAASGA Climatisation",
@@ -22,7 +22,7 @@ export const MentionsLegalesPage = () => {
           <div class="absolute -top-20 -right-20 w-80 h-80 bg-white/5 rounded-full blur-3xl"></div>
         </div>
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div class="inline-flex items-center space-x-2 rounded-full px-4 py-2 text-sm mb-6" style="background-color:rgba(241,245,249,0.15); border-color:rgba(226,232,240,0.2);">
+          <div class="inline-flex items-center space-x-2 rounded-full px-4 py-2 text-sm mb-6" style="background-color:rgba(var(--rgb-slate-100),0.15); border-color:rgba(var(--rgb-slate-200),0.2);">
             <i class="fas fa-gavel text-ice-300"></i>
             <span>Mentions légales</span>
           </div>
@@ -82,10 +82,10 @@ export const MentionsLegalesPage = () => {
           <section class="glass-card rounded-2xl p-4 sm:p-8">
             <h2 class="text-3xl font-bold text-white mb-6">Données personnelles</h2>
             <p class="text-white mb-4">
-              MAASGA Climatisation s'engage Ã  respecter la confidentialité des données personnelles collectées sur le site. Aucune information personnelle n'est collectée Ã  votre insu, ni cédée Ã  des tiers, ni utilisée Ã  des fins non prévues.
+              MAASGA Climatisation s'engage à respecter la confidentialité des données personnelles collectées sur le site. Aucune information personnelle n'est collectée à votre insu, ni cédée à des tiers, ni utilisée à des fins non prévues.
             </p>
             <p class="text-white">
-              Conformément Ã  la loi burkinabé sur la protection des données personnelles, vous disposez d'un droit d'accès, de modification, de rectification et de suppression des données vous concernant. Vous pouvez exercer ce droit en nous contactant par email Ã  maasgabf@gmail.com.
+              Conformément à la loi burkinabé sur la protection des données personnelles, vous disposez d'un droit d'accès, de modification, de rectification et de suppression des données vous concernant. Vous pouvez exercer ce droit en nous contactant par email à maasgabf@gmail.com.
             </p>
           </section>
 
@@ -93,10 +93,10 @@ export const MentionsLegalesPage = () => {
           <section class="glass-card rounded-2xl p-4 sm:p-8">
             <h2 class="text-3xl font-bold text-white mb-6">Cookies</h2>
             <p class="text-white mb-4">
-              Le site maasga-website.pages.dev peut être amené Ã  vous demander l'acceptation des cookies pour des besoins de statistiques et d'affichage. Un cookie est une information déposée sur votre disque dur par le serveur du site que vous visitez. Il contient plusieurs données qui sont stockées sur votre ordinateur dans un simple fichier texte auquel un serveur accède pour lire et enregistrer des informations.
+              Le site maasga-website.pages.dev peut être amené à vous demander l'acceptation des cookies pour des besoins de statistiques et d'affichage. Un cookie est une information déposée sur votre disque dur par le serveur du site que vous visitez. Il contient plusieurs données qui sont stockées sur votre ordinateur dans un simple fichier texte auquel un serveur accède pour lire et enregistrer des informations.
             </p>
             <p class="text-white">
-              Vous avez la possibilité de supprimer les cookies installés lors de votre visite sur le site. Pour cela, vous devez vous référer Ã  l'aide de votre navigateur web pour connaître la procédure Ã  suivre.
+              Vous avez la possibilité de supprimer les cookies installés lors de votre visite sur le site. Pour cela, vous devez vous référer à l'aide de votre navigateur web pour connaître la procédure à suivre.
             </p>
           </section>
 
@@ -107,7 +107,7 @@ export const MentionsLegalesPage = () => {
               MAASGA Climatisation ne pourra être tenue responsable des dommages directs et indirects causés au matériel de l'utilisateur lors de l'accès au site maasga-website.pages.dev, et résultant soit de l'utilisation d'un matériel ne répondant pas aux spécifications indiquées, soit de l'apparition d'un bogue ou d'une incompatibilité.
             </p>
             <p class="text-white">
-              MAASGA Climatisation ne pourra également être tenue responsable des dommages indirects (tels par exemple qu'une perte de marché ou perte d'une chance) consécutifs Ã  l'utilisation du site maasga-website.pages.dev.
+              MAASGA Climatisation ne pourra également être tenue responsable des dommages indirects (tels par exemple qu'une perte de marché ou perte d'une chance) consécutifs à l'utilisation du site maasga-website.pages.dev.
             </p>
           </section>
 

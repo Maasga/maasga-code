@@ -80,12 +80,12 @@ export const AdminPage = () => {
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl p-3" style="background:rgba(220,38,38,0.05); border:1px solid rgba(220,38,38,0.15);">
                 <div>
                   <span class="inline-block text-xs font-bold px-2.5 py-0.5 rounded-full mr-2" style="background:rgba(220,38,38,0.1); color:#dc2626;">NOUVEAU</span>
-                  <span class="font-semibold" style="color:var(--admin-text-primary)">{a.name}</span>
-                  <span class="text-xs ml-2" style="color:var(--admin-text-muted)">
+                  <span class="font-semibold text-admin-fg">{a.name}</span>
+                  <span class="text-xs ml-2 text-admin-muted">
                     ?? {a.quartier} · ?? {a.date} · {{ devis: 'Devis', installation: 'Installation', entretien: 'Entretien', depannage: 'Dépannage' }[a.type] || a.type}
                   </span>
                 </div>
-                <span class="text-xs" style="color:var(--admin-text-muted)">{a.phone}</span>
+                <span class="text-xs text-admin-muted">{a.phone}</span>
               </div>
             ))}
             {pendingRdv > 3 && (
@@ -99,20 +99,20 @@ export const AdminPage = () => {
 
       {/* ALERTE MAINTENANCE NOUVELLE */}
       {(pendingMaintenanceContractsCount + pendingMaintenanceRequestsCount) > 0 && (
-        <div class="mb-6 rounded-2xl p-5 border-2 animate-pulse fade-in-up" style="background:rgba(14,165,233,0.08); border-color:rgba(14,165,233,0.35);">
+        <div class="mb-6 rounded-2xl p-5 border-2 animate-pulse fade-in-up" style="background:rgba(var(--rgb-sky-deep),0.08); border-color:rgba(var(--rgb-sky-deep),0.35);">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-3">
-              <div class="w-12 h-12 rounded-full flex items-center justify-center text-white" style="background:#0284c7;">
+              <div class="w-12 h-12 rounded-full flex items-center justify-center text-white bg-surface-sky-deep">
                 <i class="fas fa-tools text-lg"></i>
               </div>
               <div>
-                <h3 class="font-bold text-lg" style="color:var(--admin-text-primary);">Nouvelles souscriptions & demandes de maintenance</h3>
+                <h3 class="font-bold text-lg text-admin-fg">Nouvelles souscriptions & demandes de maintenance</h3>
                 <p class="text-sm mt-0.5" style="color:#0284c7;">
                   {pendingMaintenanceContractsCount} contrat(s) en attente d'activation · {pendingMaintenanceRequestsCount} demande(s) à traiter
                 </p>
               </div>
             </div>
-            <a href="/admin/maintenance" class="text-white font-semibold px-4 py-2.5 rounded-xl text-sm whitespace-nowrap transition-colors flex items-center space-x-2" style="background:#0284c7;">
+            <a href="/admin/maintenance" class="text-white font-semibold px-4 py-2.5 rounded-xl text-sm whitespace-nowrap transition-colors flex items-center space-x-2 bg-surface-sky-deep">
               <i class="fas fa-arrow-right"></i>
               <span>Gérer la maintenance</span>
             </a>
@@ -120,19 +120,19 @@ export const AdminPage = () => {
 
           {/* Liste des contrats en attente */}
           {pendingMaintenanceContracts.length > 0 && (
-            <div class="mt-4 pt-4 space-y-2" style="border-top:1px solid rgba(14,165,233,0.2);">
+            <div class="mt-4 pt-4 space-y-2" style="border-top:1px solid rgba(var(--rgb-sky-deep),0.2);">
               {pendingMaintenanceContracts.slice(0, 3).map((c: any) => (
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl p-3" style="background:rgba(14,165,233,0.05); border:1px solid rgba(14,165,233,0.15);">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl p-3" style="background:rgba(var(--rgb-sky-deep),0.05); border:1px solid rgba(var(--rgb-sky-deep),0.15);">
                   <div>
-                    <span class="inline-block text-xs font-bold px-2.5 py-0.5 rounded-full mr-2" style="background:rgba(14,165,233,0.15); color:#0284c7;">NOUVEAU CONTRAT</span>
-                    <span class="font-semibold" style="color:var(--admin-text-primary)">{c.client_name}</span>
-                    <span class="text-xs ml-2" style="color:var(--admin-text-muted)">
+                    <span class="inline-block text-xs font-bold px-2.5 py-0.5 rounded-full mr-2" style="background:rgba(var(--rgb-sky-deep),0.15); color:#0284c7;">NOUVEAU CONTRAT</span>
+                    <span class="font-semibold text-admin-fg">{c.client_name}</span>
+                    <span class="text-xs ml-2 text-admin-muted">
                       Formule: {c.plan_type} · {(c.plan_price || 0).toLocaleString()} F CFA · {c.total_visits || 2} visites/an
                     </span>
                   </div>
                   <div class="flex items-center space-x-3">
-                    <span class="text-xs" style="color:var(--admin-text-muted)">{c.client_phone}</span>
-                    <a href="/admin/maintenance" class="text-xs font-bold px-3 py-1 rounded-lg text-white" style="background:#0284c7;">Activer</a>
+                    <span class="text-xs text-admin-muted">{c.client_phone}</span>
+                    <a href="/admin/maintenance" class="text-xs font-bold px-3 py-1 rounded-lg text-white bg-surface-sky-deep">Activer</a>
                   </div>
                 </div>
               ))}
@@ -154,9 +154,9 @@ export const AdminPage = () => {
             <div class={`w-10 h-10 bg-gradient-to-br ${k.color} rounded-xl flex items-center justify-center mb-3`}>
               <i class={`fas ${k.icon} text-white text-sm`}></i>
             </div>
-            <div class="text-2xl font-bold mb-0.5" style="color:var(--admin-text-primary)">{k.val}</div>
+            <div class="text-2xl font-bold mb-0.5 text-admin-fg">{k.val}</div>
             <div class="text-sm font-medium" style="color:var(--admin-text-muted)">{k.label}</div>
-            <div class="text-xs mt-1" style="color:var(--admin-text-muted)">{k.sub}</div>
+            <div class="text-xs mt-1 text-admin-muted">{k.sub}</div>
           </a>
         ))}
       </div>
@@ -164,7 +164,7 @@ export const AdminPage = () => {
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 fade-in-up delay-1">
         {/* Stats cette semaine */}
         <div class="rounded-2xl p-6 card-shadow" style="background: var(--admin-card-bg); border: 1px solid var(--admin-border);">
-          <h3 class="font-bold mb-4 flex items-center space-x-2" style="color: var(--admin-text-primary)">
+          <h3 class="font-bold mb-4 flex items-center space-x-2 text-admin-fg">
             <i class="fas fa-calendar-week text-cyan-400"></i>
             <span>Cette semaine</span>
           </h3>
@@ -175,18 +175,18 @@ export const AdminPage = () => {
               { label: "En attente", val: pendingRdv, icon: "fa-hourglass-half", color: "#fbbf24" },
               { label: "Effectués", val: doneRdv, icon: "fa-flag-checkered", color: "#34d399" },
             ].map(s => (
-              <div class="rounded-xl p-3 flex items-center space-x-3" style="background: var(--admin-card-bg); border: 1px solid var(--admin-border);">
+              <div class="rounded-xl p-3 flex items-center space-x-3 bg-admin-card border border-admin-line">
                 <i class={`fas ${s.icon} text-lg`} style={`color:${s.color};`}></i>
                 <div>
-                  <div class="text-xl font-bold leading-none" style="color: var(--admin-text-primary);">{s.val}</div>
-                  <div class="text-xs mt-0.5" style="color: var(--admin-text-muted);">{s.label}</div>
+                  <div class="text-xl font-bold leading-none text-admin-fg">{s.val}</div>
+                  <div class="text-xs mt-0.5 text-admin-muted">{s.label}</div>
                 </div>
               </div>
             ))}
           </div>
           {/* Mini bar chart - derniers 7 jours RDV */}
           <div>
-            <div class="text-xs mb-2" style="color:var(--admin-text-muted)">RDV par jour (7 derniers jours)</div>
+            <div class="text-xs mb-2 text-admin-muted">RDV par jour (7 derniers jours)</div>
             <canvas id="rdv-chart" height="60"></canvas>
             <script dangerouslySetInnerHTML={{ __html: `
               (function() {
@@ -216,7 +216,7 @@ export const AdminPage = () => {
 
         {/* Actions rapides */}
         <div class="rounded-2xl p-6 card-shadow" style="background: var(--admin-card-bg); border: 1px solid var(--admin-border);">
-          <h3 class="font-bold mb-4 flex items-center space-x-2" style="color: var(--admin-text-primary)">
+          <h3 class="font-bold mb-4 flex items-center space-x-2 text-admin-fg">
             <i class="fas fa-bolt text-yellow-400"></i>
             <span>Actions rapides</span>
           </h3>
@@ -234,16 +234,16 @@ export const AdminPage = () => {
               </a>
             ))}
           </div>
-          <div class="mt-4 pt-4 space-y-2" style="border-top:1px solid rgba(56,189,248,0.08);">
+          <div class="mt-4 pt-4 space-y-2" style="border-top:1px solid rgba(var(--rgb-sky),0.08);">
             <a href="/admin/parametres" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors">
-              <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(56,189,248,0.1);"><i class="fas fa-cog text-cyan-400 text-sm"></i></div>
-              <div><div class="text-sm font-medium" style="color:var(--admin-text-primary)">Paramètres du site</div><div class="text-xs" style="color:var(--admin-text-muted)">Mot de passe, configuration</div></div>
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(var(--rgb-sky),0.1);"><i class="fas fa-cog text-cyan-400 text-sm"></i></div>
+              <div><div class="text-sm font-medium" style="color:var(--admin-text-primary)">Paramètres du site</div><div class="text-xs text-admin-muted">Mot de passe, configuration</div></div>
               <i class="fas fa-chevron-right text-xs text-gray-600 ml-auto"></i>
             </a>
             <form method="post" action="/api/admin/logout">
               <button type="submit" class="w-full text-left flex items-center space-x-3 px-3 py-2.5 rounded-xl hover:bg-red-900/10 transition-colors">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(239,68,68,0.1);"><i class="fas fa-sign-out-alt text-red-400 text-sm"></i></div>
-                <div><div class="text-sm font-medium text-red-400">Déconnexion</div><div class="text-xs" style="color:var(--admin-text-muted)">Fermer la session admin</div></div>
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(var(--rgb-red),0.1);"><i class="fas fa-sign-out-alt text-red-400 text-sm"></i></div>
+                <div><div class="text-sm font-medium text-red-400">Déconnexion</div><div class="text-xs text-admin-muted">Fermer la session admin</div></div>
               </button>
             </form>
           </div>
@@ -254,14 +254,14 @@ export const AdminPage = () => {
         {/* Alertes stock */}
         <div class="rounded-2xl  p-6 card-shadow" style="background: var(--admin-card-bg); border: 1px solid var(--admin-border);">
           <div class="flex items-center justify-between mb-5">
-            <h3 class="font-bold flex items-center space-x-2" style="color: var(--admin-text-primary)">
+            <h3 class="font-bold flex items-center space-x-2 text-admin-fg">
               <i class="fas fa-exclamation-triangle text-orange-500"></i>
               <span>Alertes stock</span>
             </h3>
             <a href="/admin/produits" class="text-xs text-primary-600 font-medium">Gérer</a>
           </div>
           {products.filter(p => p.stock <= 3).length === 0 ? (
-            <div class="text-center py-6" style="color:var(--admin-text-muted)">
+            <div class="text-center py-6 text-admin-muted">
               <i class="fas fa-check-circle text-green-400 text-2xl mb-2"></i>
               <p class="text-sm">Tous les stocks sont OK</p>
             </div>
@@ -288,7 +288,7 @@ export const AdminPage = () => {
         {/* RDV récents */}
         <div class="rounded-2xl  p-6 card-shadow" style="background: var(--admin-card-bg); border: 1px solid var(--admin-border);">
           <div class="flex items-center justify-between mb-5">
-            <h3 class="font-bold flex items-center space-x-2" style="color: var(--admin-text-primary)">
+            <h3 class="font-bold flex items-center space-x-2 text-admin-fg">
               <i class="fas fa-calendar-alt text-primary-500"></i>
               <span>Rendez-vous récents</span>
             </h3>
@@ -299,10 +299,10 @@ export const AdminPage = () => {
           ) : (
             <div class="space-y-3">
               {appointments.slice(-4).reverse().map(a => (
-                <div class="flex items-center justify-between p-3 rounded-xl" style="background: var(--admin-card-bg); border: 1px solid var(--admin-border);">
+                <div class="flex items-center justify-between p-3 rounded-xl bg-admin-card border border-admin-line">
                   <div>
                     <div class="text-sm font-semibold" style="color: var(--admin-text-primary);">{a.name}</div>
-                    <div class="text-xs" style="color: var(--admin-text-muted);">{a.date} · {a.quartier} · {{ devis: 'Devis', installation: 'Installation', entretien: 'Entretien', depannage: 'Dépannage' }[a.type] || a.type}</div>
+                    <div class="text-xs text-admin-muted">{a.date} · {a.quartier} · {{ devis: 'Devis', installation: 'Installation', entretien: 'Entretien', depannage: 'Dépannage' }[a.type] || a.type}</div>
                   </div>
                   <span class={`text-xs font-semibold px-2.5 py-1 rounded-full ${a.status === 'pending' ? 'badge-pending' : a.status === 'confirmed' ? 'badge-confirmed' : 'badge-done'}`}>
                     {a.status === 'pending' ? 'En attente' : a.status === 'confirmed' ? 'Confirmé' : 'Effectué'}
@@ -353,8 +353,8 @@ export const AdminPage = () => {
 
         return (
       <div class="rounded-2xl card-shadow overflow-hidden mb-6 fade-in-up delay-2" style="background: var(--admin-card-bg); border: 1px solid var(--admin-border);">
-        <div class="p-5 flex items-center justify-between" style="border-bottom: 1px solid var(--admin-border);">
-          <h3 class="font-bold flex items-center space-x-2" style="color: var(--admin-text-primary)">
+        <div class="p-5 flex items-center justify-between border-b border-admin-line">
+          <h3 class="font-bold flex items-center space-x-2 text-admin-fg">
             <i class="fas fa-chart-line text-green-400"></i>
             <span>Tableau de bord financier</span>
           </h3>
@@ -363,27 +363,27 @@ export const AdminPage = () => {
         <div class="p-5">
           {/* KPIs financiers */}
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div class="rounded-xl p-4" style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2);">
-              <div class="text-xs font-semibold mb-1" style="color:var(--admin-text-muted)">CA ce mois</div>
+            <div class="rounded-xl p-4" style="background:rgba(var(--rgb-green),0.08); border:1px solid rgba(var(--rgb-green),0.2);">
+              <div class="text-xs font-semibold mb-1 text-admin-muted">CA ce mois</div>
               <div class="text-xl font-bold text-green-400">{(currentMonth?.revenue || 0).toLocaleString()} F</div>
               <div class="text-xs mt-1" style={growth >= 0 ? 'color:#34d399;' : 'color:#f87171;'}>
                 <i class={`fas fa-arrow-${growth >= 0 ? 'up' : 'down'} mr-1`}></i>{growth > 0 ? '+' : ''}{growth}% vs mois precedent
               </div>
             </div>
-            <div class="rounded-xl p-4" style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2);">
-              <div class="text-xs font-semibold mb-1" style="color:var(--admin-text-muted)">CA mois precedent</div>
+            <div class="rounded-xl p-4" style="background:rgba(var(--rgb-blue),0.08); border:1px solid rgba(var(--rgb-blue),0.2);">
+              <div class="text-xs font-semibold mb-1 text-admin-muted">CA mois precedent</div>
               <div class="text-xl font-bold text-blue-400">{(prevMonth?.revenue || 0).toLocaleString()} F</div>
-              <div class="text-xs mt-1" style="color:var(--admin-text-muted)">{prevMonth.count} commandes</div>
+              <div class="text-xs mt-1 text-admin-muted">{prevMonth.count} commandes</div>
             </div>
-            <div class="rounded-xl p-4" style="background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.2);">
-              <div class="text-xs font-semibold mb-1" style="color:var(--admin-text-muted)">CA total (6 mois)</div>
+            <div class="rounded-xl p-4" style="background:rgba(var(--rgb-purple),0.08); border:1px solid rgba(var(--rgb-purple),0.2);">
+              <div class="text-xs font-semibold mb-1 text-admin-muted">CA total (6 mois)</div>
               <div class="text-xl font-bold text-purple-400">{estimatedCA.toLocaleString()} F</div>
-              <div class="text-xs mt-1" style="color:var(--admin-text-muted)">{orders.filter(o => ['confirme','en_livraison','livre'].includes(o.status)).length} commandes</div>
+              <div class="text-xs mt-1 text-admin-muted">{orders.filter(o => ['confirme','en_livraison','livre'].includes(o.status)).length} commandes</div>
             </div>
-            <div class="rounded-xl p-4" style="background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.2);">
-              <div class="text-xs font-semibold mb-1" style="color:var(--admin-text-muted)">Moyenne mensuelle</div>
+            <div class="rounded-xl p-4" style="background:rgba(var(--rgb-amber),0.08); border:1px solid rgba(var(--rgb-amber),0.2);">
+              <div class="text-xs font-semibold mb-1 text-admin-muted">Moyenne mensuelle</div>
               <div class="text-xl font-bold text-yellow-400">{Math.round(avgMonthly || 0).toLocaleString()} F</div>
-              <div class="text-xs mt-1" style="color:var(--admin-text-muted)">sur les mois actifs</div>
+              <div class="text-xs mt-1 text-admin-muted">sur les mois actifs</div>
             </div>
           </div>
 
@@ -430,21 +430,21 @@ export const AdminPage = () => {
             <div>
               <div class="text-sm font-semibold mb-3" style="color:var(--admin-text-primary)"><i class="fas fa-trophy text-yellow-400 mr-2"></i>Top produits par revenus</div>
               {topProducts.length === 0 ? (
-                <p class="text-xs py-4" style="color:var(--admin-text-muted)">Aucune commande validee</p>
+                <p class="text-xs py-4 text-admin-muted">Aucune commande validee</p>
               ) : (
                 <div class="space-y-3">
                   {topProducts.map((tp, i) => (
                     <div class="flex items-center gap-3">
-                      <span class="text-xs font-bold w-5" style="color:var(--admin-text-muted)">#{i + 1}</span>
+                      <span class="text-xs font-bold w-5 text-admin-muted">#{i + 1}</span>
                       <div class="flex-1">
                         <div class="flex items-center justify-between mb-1">
                           <span class="text-xs font-medium text-gray-300 truncate max-w-[180px]">{tp.name}</span>
                           <span class="text-xs font-bold text-green-400">{tp.revenue.toLocaleString()} F</span>
                         </div>
-                        <div class="w-full h-2 rounded-full" style="background:rgba(16,185,129,0.1);">
+                        <div class="w-full h-2 rounded-full" style="background:rgba(var(--rgb-green),0.1);">
                           <div class="h-2 rounded-full" style={`width:${Math.round((tp.revenue / maxRev) * 100)}%; background:linear-gradient(90deg,#10b981,#34d399);`}></div>
                         </div>
-                        <div class="text-[10px] mt-0.5" style="color:var(--admin-text-muted)">{tp.count} vente(s)</div>
+                        <div class="text-[10px] mt-0.5 text-admin-muted">{tp.count} vente(s)</div>
                       </div>
                     </div>
                   ))}
@@ -460,7 +460,7 @@ export const AdminPage = () => {
       {/* Tableau produits */}
       <div class="rounded-2xl  p-6 card-shadow" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
         <div class="flex items-center justify-between mb-5">
-          <h3 class="font-bold flex items-center space-x-2" style="color:var(--admin-text-primary)">
+          <h3 class="font-bold flex items-center space-x-2 text-admin-fg">
             <i class="fas fa-trophy text-yellow-500"></i>
             <span>État du catalogue</span>
           </h3>
@@ -471,7 +471,7 @@ export const AdminPage = () => {
             <thead>
               <tr class="border-b border-gray-800">
                 {["Produit", "Marque", "BTU", "Prix", "Stock", "Statut"].map(h => (
-                  <th class="text-left py-3 px-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--admin-text-muted)">{h}</th>
+                  <th class="text-left py-3 px-3 text-xs font-semibold uppercase tracking-wider text-admin-muted">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -481,12 +481,12 @@ export const AdminPage = () => {
                   <td class="py-3 px-3">
                     <div class="flex items-center space-x-2">
                       <span class="text-xl">{p.image}</span>
-                      <span class="font-medium text-xs leading-tight max-w-32" style="color:var(--admin-text-primary)">{p.name}</span>
+                      <span class="font-medium text-xs leading-tight max-w-32 text-admin-fg">{p.name}</span>
                     </div>
                   </td>
-                  <td class="py-3 px-3 text-xs font-medium" style="color:var(--admin-text-muted)">{p.brand}</td>
-                  <td class="py-3 px-3 text-xs" style="color:var(--admin-text-muted)">{p.btu ? p.btu.toLocaleString() : '-'}</td>
-                  <td class="py-3 px-3 text-xs font-semibold" style="color:var(--admin-text-primary)">{(p.price || 0).toLocaleString()} F</td>
+                  <td class="py-3 px-3 text-xs font-medium text-admin-muted">{p.brand}</td>
+                  <td class="py-3 px-3 text-xs text-admin-muted">{p.btu ? p.btu.toLocaleString() : '-'}</td>
+                  <td class="py-3 px-3 text-xs font-semibold text-admin-fg">{(p.price || 0).toLocaleString()} F</td>
                   <td class="py-3 px-3">
                     <span class={`text-xs font-bold ${p.stock === 0 ? 'text-red-600' : p.stock <= 3 ? 'text-orange-500' : 'text-green-600'}`}>{p.stock}</span>
                   </td>

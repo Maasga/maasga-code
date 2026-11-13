@@ -1,5 +1,8 @@
 // Client Space & Web Authentication Routes (/espace-client, /api/login, /api/register, invoices, devis, SAV)
 import { Hono } from 'hono'
+import { asset } from '../../generated/asset-manifest'
+import { SITE_URL } from '../../types'
+import { createOrder, createClient } from '../../db'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import type { HonoEnv } from '../../types'
 import { EspaceClientPage } from '../../pages/espace-client'
@@ -7,7 +10,7 @@ import { products } from '../../data/products'
 import { orders, appointments } from '../../data/store'
 import type { Order } from '../../data/store'
 import { escapeHtml, sanitizeText, isValidEmail, isValidPhone, normalizePhone } from '../../utils/helpers'
-import { notifyAdmin, logActivity, logSecurityEvent, ensureActivityLog } from '../../utils/notifications'
+import { notifyAdmin, logActivity, logSecurityEvent, ensureActivityLog, sendSmsWithLog } from '../../utils/notifications'
 import {
   hashPassword,
   verifyPassword,
@@ -24,15 +27,7 @@ import {
   CLIENT_RESET_CODE_MAX_AGE,
   EMAIL_VERIFY_TTL
 } from '../../services/session.service'
-import {
-  rateLimit,
-  rateLimitD1,
-  timingSafeEqualStr,
-  getAdminSecret,
-  signToken,
-  verifyToken,
-  DEFAULT_ADMIN_USERNAME
-} from '../../utils/security'
+import { rateLimitD1, timingSafeEqualStr, getAdminSecret, signToken, verifyToken, DEFAULT_ADMIN_USERNAME } from '../../utils/security'
 
 export const clientRouter = new Hono<HonoEnv>()
 
@@ -241,7 +236,7 @@ clientRouter.get('/api/verify-email', async (c) => {
 // Route: Resend verification email
 clientRouter.post('/api/resend-verification', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`resend-email:${ip}`, 3, 15 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `resend-email:${ip}`, 3, 15 * 60 * 1000)
   if (!rl.allowed) {
     return c.json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' }, 429)
   }
@@ -254,7 +249,7 @@ clientRouter.post('/api/resend-verification', async (c) => {
   if (!session) return c.json({ error: 'Non connecté' }, 401)
 
   const client = await db.prepare('SELECT id, name, email FROM clients WHERE id = ?').bind(session.clientId).first() as any
-  if (!client?.email) return c.json({ error: 'Aucun email associé Ã  votre compte' }, 400)
+  if (!client?.email) return c.json({ error: 'Aucun email associé à votre compte' }, 400)
 
   await ensureEmailVerificationTable(db)
   const emailToken = generateEmailToken()
@@ -275,7 +270,7 @@ clientRouter.post('/api/resend-verification', async (c) => {
 clientRouter.post('/api/login', async (c) => {
   // Rate limiting: 10 attempts per IP per 15 minutes + 20 per identifier
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`login:${ip}`, 10, 15 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `login:${ip}`, 10, 15 * 60 * 1000)
   if (!rl.allowed) {
     logSecurityEvent(c.env?.DB, { event: 'login_rate_limit_ip', severity: 'warn', ip, details: `Login rate limited for IP ${ip}` })
     return c.redirect('/espace-client?error=' + encodeURIComponent('Trop de tentatives. Réessayez dans 15 minutes.'))
@@ -286,7 +281,7 @@ clientRouter.post('/api/login', async (c) => {
 
   // Rate limit per identifier (prevents distributed brute force)
   if (identifier) {
-    const idRl = rateLimit(`login-id:${identifier.toLowerCase()}`, 20, 15 * 60 * 1000)
+    const idRl = await rateLimitD1(c.env?.DB, `login-id:${identifier.toLowerCase()}`, 20, 15 * 60 * 1000)
     if (!idRl.allowed) {
       logSecurityEvent(c.env?.DB, { event: 'login_rate_limit_id', severity: 'warn', ip, details: `Login rate limited for identifier ${identifier}` })
       return c.redirect('/espace-client?error=' + encodeURIComponent('Trop de tentatives sur ce compte. Réessayez dans 15 minutes.'))
@@ -294,7 +289,7 @@ clientRouter.post('/api/login', async (c) => {
   }
   const password = (body['password'] as string || '').trim()
   const redirectParam = (body['redirect'] as string || '').trim()
-  // Valider le redirect: doit commencer par / et ne contenir que des caractères sÃ»rs
+  // Valider le redirect: doit commencer par / et ne contenir que des caractères sûrs
   const safeRedirect = (redirectParam && /^\/[a-z0-9\-\/]+$/i.test(redirectParam)) ? '/' + redirectParam.replace(/^\/+/, '') : ''
 
   if (!identifier || !password) {
@@ -303,7 +298,7 @@ clientRouter.post('/api/login', async (c) => {
 
   const db = c.env.DB
 
-  // â”€â”€ Vérification admin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Vérification admin ──────────────────────────────────────────
   {
     let validAdminUsername = DEFAULT_ADMIN_USERNAME
     let validAdminHash = ''
@@ -343,7 +338,7 @@ clientRouter.post('/api/login', async (c) => {
       })
     }
   }
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ───────────────────────────────────────────────────────────────
 
   if (db) {
     try {
@@ -404,17 +399,7 @@ clientRouter.post('/api/login', async (c) => {
 // ============================================================
 // CLIENT PASSWORD RESET — via Email (primary) + WhatsApp/SMS (fallback)
 // ============================================================
-const clientResetCodes = new Map<string, { code: string; phone: string; email: string; createdAt: number; used: boolean }>()
-const CLIENT_RESET_CODE_MAX_AGE = 15 * 60 * 1000 // 15 minutes
 
-// Ensure password_reset_codes table has email column
-async function ensureResetCodesTable(db: any) {
-  try {
-    await db.prepare(`CREATE TABLE IF NOT EXISTS password_reset_codes (token TEXT PRIMARY KEY, code TEXT NOT NULL, phone TEXT NOT NULL DEFAULT '', email TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0)`).run()
-    // Add email column if missing (migration-safe)
-    try { await db.prepare(`ALTER TABLE password_reset_codes ADD COLUMN email TEXT NOT NULL DEFAULT ''`).run() } catch (_) { /* already exists */ }
-  } catch(_) {}
-}
 
 // Valeur de `code` d'un token émis après vérification réussie du code (jamais 8 chiffres)
 const RESET_VERIFIED_MARKER = '__verified__'
@@ -444,42 +429,42 @@ clientRouter.get('/espace-client/reset-password', (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="robots" content="noindex,nofollow" />
         <title>Réinitialisation mot de passe — MAASGA</title>
-        <link rel="stylesheet" href="/static/tailwind.css" />
-        <link rel="stylesheet" href="/static/style.css" />
+        <link rel="stylesheet" href={asset("/static/tailwind.css")} />
+        <link rel="stylesheet" href={asset("/static/style.css")} />
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" />
       </head>
-      <body style="background:#f8fbff; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1rem;">
+      <body class="bg-surface-base flex items-center justify-center p-[1rem]" style="min-height:100vh;">
         <div class="w-full max-w-md">
-          <div class="bg-white rounded-3xl shadow-xl p-8" style="border:1px solid rgba(0,119,182,0.1);">
+          <div class="bg-white rounded-3xl shadow-xl p-8" style="border:1px solid rgba(var(--rgb-brand),0.1);">
             <div class="text-center mb-6">
               <a href="/" class="inline-block mb-3">
                 <img src="/logo-site.png" alt="MAASGA" class="h-12 w-auto rounded-lg mx-auto" />
               </a>
-              <h1 class="text-xl font-bold" style="color:#03045e;">
+              <h1 class="text-xl font-bold text-fg-heading">
                 {step === 'code' ? 'Entrez le code reçu' : step === 'newpwd' ? 'Nouveau mot de passe' : 'Mot de passe oublié'}
               </h1>
-              <p class="text-xs mt-1" style="color:#64748b;">
+              <p class="text-xs mt-1 text-fg-subtle">
                 {step === 'code' && method === 'phone' ? 'Un agent MAASGA vous enverra le code par WhatsApp' :
-                 step === 'code' ? `Un code de vérification a été envoyé Ã  ${decodeURIComponent(sentTo || 'votre email')}` :
+                 step === 'code' ? `Un code de vérification a été envoyé à ${decodeURIComponent(sentTo || 'votre email')}` :
                  step === 'newpwd' ? 'Choisissez votre nouveau mot de passe' :
                  'Recevez un code de réinitialisation'}
               </p>
             </div>
 
-            {error && <div class="mb-4 rounded-xl p-3 text-sm" style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); color:#ef4444;"><i class="fas fa-exclamation-circle mr-1"></i>{decodeURIComponent(error)}</div>}
-            {success && <div class="mb-4 rounded-xl p-3 text-sm" style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2); color:#10b981;"><i class="fas fa-check-circle mr-1"></i>{decodeURIComponent(success)}</div>}
+            {error && <div class="mb-4 rounded-xl p-3 text-sm" style="background:rgba(var(--rgb-red),0.08); border:1px solid rgba(var(--rgb-red),0.2); color:var(--fg-danger-bright);"><i class="fas fa-exclamation-circle mr-1"></i>{decodeURIComponent(error)}</div>}
+            {success && <div class="mb-4 rounded-xl p-3 text-sm" style="background:rgba(var(--rgb-green),0.08); border:1px solid rgba(var(--rgb-green),0.2); color:#10b981;"><i class="fas fa-check-circle mr-1"></i>{decodeURIComponent(success)}</div>}
 
             {/* Step 1: Email */}
             {!step && !method && (
               <form method="post" action="/api/client/request-reset-email" class="space-y-4">
                 <div>
-                  <label class="block text-sm font-semibold mb-2" style="color:#03045e;">
-                    <i class="fas fa-envelope mr-1" style="color:#0077b6;"></i>Adresse email
+                  <label class="block text-sm font-semibold mb-2" style="color:var(--fg-heading);">
+                    <i class="fas fa-envelope mr-1 text-fg-brand"></i>Adresse email
                   </label>
                   <input type="email" name="email" required placeholder="votre@email.com"
-                    class="w-full rounded-xl px-4 py-3 text-sm outline-none" style="border:1.5px solid rgba(0,119,182,0.2); background:#f8fbff; color:#03045e;" />
+                    class="w-full rounded-xl px-4 py-3 text-sm outline-none bg-surface-base" style="border:1.5px solid rgba(var(--rgb-brand),0.2); color:var(--fg-heading);" />
                 </div>
-                <p class="text-xs" style="color:#94a3b8;"><i class="fas fa-info-circle mr-1"></i>Un code Ã  6 chiffres sera envoyé Ã  votre adresse email.</p>
+                <p class="text-xs" style="color:#94a3b8;"><i class="fas fa-info-circle mr-1"></i>Un code à 6 chiffres sera envoyé à votre adresse email.</p>
                 <button type="submit" class="w-full font-bold py-3.5 rounded-2xl transition-all hover:-translate-y-0.5" style="background:linear-gradient(135deg,#03045e,#0077b6); box-shadow:0 8px 24px rgba(0,119,182,0.35); color:#ffffff;">
                   <i class="fas fa-paper-plane mr-2"></i>Recevoir le code par email
                 </button>
@@ -491,9 +476,9 @@ clientRouter.get('/espace-client/reset-password', (c) => {
               <form method="post" action="/api/client/verify-reset-code" class="space-y-4">
                 <input type="hidden" name="token" value={token} />
                 <div>
-                  <label class="block text-sm font-semibold mb-2" style="color:#03045e;">Code de vérification (6 chiffres)</label>
+                  <label class="block text-sm font-semibold mb-2" style="color:var(--fg-heading);">Code de vérification (6 chiffres)</label>
                   <input type="text" name="code" required maxlength={6} pattern="[0-9]{6}" placeholder="000000" inputmode="numeric" autocomplete="one-time-code"
-                    class="w-full rounded-xl px-4 py-3 text-center text-2xl font-bold tracking-widest outline-none" style="border:1.5px solid rgba(0,119,182,0.2); background:#f8fbff; color:#03045e; letter-spacing:0.5em;" />
+                    class="w-full rounded-xl px-4 py-3 text-center text-2xl font-bold tracking-widest outline-none bg-surface-base text-fg-heading" style="border:1.5px solid rgba(var(--rgb-brand),0.2); letter-spacing:0.5em;" />
                 </div>
                 <p class="text-xs text-center" style="color:#94a3b8;">
                   <i class="fas fa-clock mr-1"></i>Ce code expire dans 15 minutes
@@ -510,24 +495,24 @@ clientRouter.get('/espace-client/reset-password', (c) => {
               <form method="post" action="/api/client/reset-password" class="space-y-4">
                 <input type="hidden" name="token" value={token} />
                 <div>
-                  <label class="block text-sm font-semibold mb-2" style="color:#03045e;">Nouveau mot de passe</label>
+                  <label class="block text-sm font-semibold mb-2" style="color:var(--fg-heading);">Nouveau mot de passe</label>
                   <input type="password" name="new_password" required minlength={8} placeholder="Min. 8 caractères (lettres + chiffres)"
-                    class="w-full rounded-xl px-4 py-3 text-sm outline-none" style="border:1.5px solid rgba(0,119,182,0.2); background:#f8fbff; color:#03045e;" />
+                    class="w-full rounded-xl px-4 py-3 text-sm outline-none bg-surface-base" style="border:1.5px solid rgba(var(--rgb-brand),0.2); color:var(--fg-heading);" />
                 </div>
                 <div>
-                  <label class="block text-sm font-semibold mb-2" style="color:#03045e;">Confirmer</label>
+                  <label class="block text-sm font-semibold mb-2" style="color:var(--fg-heading);">Confirmer</label>
                   <input type="password" name="confirm_password" required minlength={8} placeholder="Retapez le mot de passe"
-                    class="w-full rounded-xl px-4 py-3 text-sm outline-none" style="border:1.5px solid rgba(0,119,182,0.2); background:#f8fbff; color:#03045e;" />
+                    class="w-full rounded-xl px-4 py-3 text-sm outline-none bg-surface-base" style="border:1.5px solid rgba(var(--rgb-brand),0.2); color:var(--fg-heading);" />
                 </div>
-                <button type="submit" class="w-full text-white font-bold py-3.5 rounded-2xl transition-all hover:-translate-y-0.5" style="background:linear-gradient(135deg,#059669,#10b981);">
+                <button type="submit" class="w-full text-white font-bold py-3.5 rounded-2xl transition-all hover:-translate-y-0.5" style="background:linear-gradient(135deg,var(--surface-success),var(--surface-success-bright));">
                   <i class="fas fa-key mr-2"></i>Réinitialiser mon mot de passe
                 </button>
               </form>
             )}
 
             <div class="text-center mt-5">
-              <a href="/espace-client" class="text-xs font-medium hover:underline" style="color:#0077b6;">
-                <i class="fas fa-arrow-left mr-1"></i>Retour Ã  la connexion
+              <a href="/espace-client" class="text-xs font-medium hover:underline text-fg-brand">
+                <i class="fas fa-arrow-left mr-1"></i>Retour à la connexion
               </a>
             </div>
           </div>
@@ -540,7 +525,7 @@ clientRouter.get('/espace-client/reset-password', (c) => {
 // Step 1a backend: EMAIL — Generate 6-digit code and send via Brevo email
 clientRouter.post('/api/client/request-reset-email', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`client-reset-email:${ip}`, 3, 15 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `client-reset-email:${ip}`, 3, 15 * 60 * 1000)
   if (!rl.allowed) {
     return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Trop de tentatives. Réessayez dans 15 min.'))
   }
@@ -604,7 +589,7 @@ clientRouter.post('/api/client/request-reset-email', async (c) => {
 // Step 1b backend: PHONE (WhatsApp) — Generate 6-digit code and send via SMS/WhatsApp
 clientRouter.post('/api/client/request-reset', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`client-reset:${ip}`, 3, 15 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `client-reset:${ip}`, 3, 15 * 60 * 1000)
   if (!rl.allowed) {
     return c.redirect('/espace-client/reset-password?error=' + encodeURIComponent('Trop de tentatives. Réessayez dans 15 min.'))
   }
@@ -663,7 +648,7 @@ clientRouter.post('/api/client/request-reset', async (c) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: c.env.TELEGRAM_CHAT_ID,
-          text: `ðŸ” *Demande de réinitialisation*\nTéléphone: ${normalizedPhone}\nCode: \`${code}\`\n\n[Envoyer via WhatsApp](${waLink})`,
+          text: `🔐 *Demande de réinitialisation*\nTéléphone: ${normalizedPhone}\nCode: \`${code}\`\n\n[Envoyer via WhatsApp](${waLink})`,
           parse_mode: 'Markdown'
         })
       })
@@ -798,7 +783,7 @@ clientRouter.post('/api/client/reset-password', async (c) => {
 clientRouter.post('/api/register', async (c) => {
   // Rate limiting: 5 registrations per IP per 30 minutes
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`register:${ip}`, 5, 30 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `register:${ip}`, 5, 30 * 60 * 1000)
   if (!rl.allowed) {
     return c.redirect('/espace-client?tab=signup&error=' + encodeURIComponent('Trop de tentatives. Réessayez dans 30 minutes.'))
   }
@@ -847,7 +832,7 @@ clientRouter.post('/api/register', async (c) => {
     ).bind(phone, fullPhone).first() as any
 
     if (existing && existing.password_hash && existing.password_hash !== 'pending') {
-      return errRedirect('Un compte existe déjÃ  avec ce numéro. Connectez-vous.')
+      return errRedirect('Un compte existe déjà avec ce numéro. Connectez-vous.')
     }
 
     const password_hash = await hashPassword(password)
@@ -1107,7 +1092,7 @@ clientRouter.post('/api/client/update-profile', async (c) => {
   const quartier = ((body as any)?.quartier || '').toString().trim()
   const name = ((body as any)?.name || '').toString().trim()
 
-  if (!phone && !quartier && !name) return c.json({ error: 'Aucune donnée Ã  mettre Ã  jour' }, 400)
+  if (!phone && !quartier && !name) return c.json({ error: 'Aucune donnée à mettre à jour' }, 400)
 
   // Validate phone if provided
   if (phone) {
@@ -1124,19 +1109,19 @@ clientRouter.post('/api/client/update-profile', async (c) => {
     values.push(session.clientId)
 
     await db.prepare(`UPDATE clients SET ${updates.join(', ')} WHERE id = ?`).bind(...values).run()
-    await logActivity(db, { clientId: session.clientId, clientPhone: phone || '', action: 'Profil mis Ã  jour', category: 'profile', ip: c.req.header('cf-connecting-ip') || '' })
+    await logActivity(db, { clientId: session.clientId, clientPhone: phone || '', action: 'Profil mis à jour', category: 'profile', ip: c.req.header('cf-connecting-ip') || '' })
 
     // Return updated client data
     const client = await db.prepare('SELECT id, name, phone, email, quartier FROM clients WHERE id = ?').bind(session.clientId).first() as any
     return c.json({ success: true, name: client?.name || '', phone: client?.phone || '', email: client?.email || '', quartier: client?.quartier || '' })
   } catch (e) {
-    return c.json({ error: 'Erreur lors de la mise Ã  jour' }, 500)
+    return c.json({ error: 'Erreur lors de la mise à jour' }, 500)
   }
 })
 
 // ============================================================
 // CONFIRMATION COMMANDE — Nouveau flux contact commercial
-// Le client confirme sa commande â†’ MAASGA le contacte par email/WhatsApp
+// Le client confirme sa commande → MAASGA le contacte par email/WhatsApp
 // Pas de paiement en ligne : tout se fait directement avec l'équipe
 // ============================================================
 
@@ -1157,14 +1142,14 @@ clientRouter.post('/api/order/confirm', async (c) => {
     : await db.prepare('SELECT * FROM orders WHERE id = ?').bind(orderId).first() as any
 
   if (!order) return c.json({ error: 'Commande introuvable' }, 404)
-  if (order.status !== 'en_attente') return c.json({ error: 'Cette commande a déjÃ  été traitée' }, 400)
+  if (order.status !== 'en_attente') return c.json({ error: 'Cette commande a déjà été traitée' }, 400)
 
   const now = new Date().toISOString()
   await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').bind('en_attente', now, orderId).run()
 
   // Notifier l'admin immédiatement
   await notifyAdmin(c.env, 'order',
-    `ðŸ›’ Nouvelle commande confirmée #${orderId} — ${order.client_name} (${order.client_phone})${order.total_price ? ` — ${Number(order.total_price).toLocaleString()} FCFA` : ''} — À contacter !`
+    `🛒 Nouvelle commande confirmée #${orderId} — ${order.client_name} (${order.client_phone})${order.total_price ? ` — ${Number(order.total_price).toLocaleString()} FCFA` : ''} — À contacter !`
   )
 
   if (session) {
@@ -1185,11 +1170,11 @@ clientRouter.get('/espace-client', async (c) => {
   const redirect = c.req.query('redirect') || ''
   const db = c.env.DB
 
-  // Session sécurisée côté serveur (HttpOnly cookie â†’ lookup dans D1)
+  // Session sécurisée côté serveur (HttpOnly cookie → lookup dans D1)
   const sessionToken = getCookie(c, 'maasga_session') || ''
   let session = sessionToken ? await getSession(db, sessionToken) : null
 
-  // Rétrocompatibilité : ancien format cookie (clientId_timestamp) â†’ migrer vers nouvelle session
+  // Rétrocompatibilité : ancien format cookie (clientId_timestamp) → migrer vers nouvelle session
   if (!session && sessionToken && /^\d+_\d+$/.test(sessionToken) && db) {
     const legacyClientId = parseInt(sessionToken.split('_')[0])
     if (legacyClientId && !isNaN(legacyClientId)) {
@@ -1207,7 +1192,7 @@ clientRouter.get('/espace-client', async (c) => {
   }
 
   if (db && session) {
-    // Si l'utilisateur est déjÃ  connecté et qu'il y a un redirect, aller directement Ã  la page demandée
+    // Si l'utilisateur est déjà connecté et qu'il y a un redirect, aller directement à la page demandée
     if (redirect && /^\/[a-z0-9\-\/]+$/i.test(redirect)) {
       return c.redirect('/' + redirect.replace(/^\/+/, ''))
     }
@@ -1241,7 +1226,7 @@ clientRouter.get('/api/logout', async (c) => {
 
 // ============================================================
 
-// ORDER INVOICE (printable HTML â†’ PDF via browser)
+// ORDER INVOICE (printable HTML → PDF via browser)
 // ============================================================
 
 clientRouter.get('/api/order/invoice/:id', async (c) => {
@@ -1263,7 +1248,7 @@ clientRouter.get('/api/order/invoice/:id', async (c) => {
     } catch {}
   }
   if (!session && !isAdmin) {
-    return c.redirect('/espace-client?error=' + encodeURIComponent('Veuillez vous connecter pour accéder Ã  la facture.'))
+    return c.redirect('/espace-client?error=' + encodeURIComponent('Veuillez vous connecter pour accéder à la facture.'))
   }
 
   try {
@@ -1325,50 +1310,50 @@ clientRouter.get('/api/order/invoice/:id', async (c) => {
     // Build devis section using string concatenation to avoid nested template literal issues
     let devisSection = ''
     if (allDevis.length > 0) {
-      devisSection += '<div style="margin-bottom:30px;">'
-      devisSection += '<div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;font-weight:700;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #e2e8f0;">Devis associés Ã  cette commande</div>'
+      devisSection += '<div class="mb-[30px]">'
+      devisSection += '<div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;font-weight:700;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #e2e8f0;">Devis associés à cette commande</div>'
       for (let di = 0; di < allDevis.length; di++) {
         const d: any = allDevis[di]
         const dStatus = DEVIS_STATUS[d.status] || d.status || ''
         const dColor = DEVIS_COLOR[d.status] || DEVIS_COLOR.pending
         const dDate = d.created_at ? fmtDateLong(d.created_at) : ''
         const dRef = 'DEV-' + String(d.id).padStart(5, '0')
-        devisSection += '<div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:14px;">'
-        devisSection += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">'
+        devisSection += '<div class="border border-line rounded-[12px] p-[16px] mb-[14px]">'
+        devisSection += '<div class="flex justify-between items-start mb-[10px]">'
         devisSection += '<div>'
-        devisSection += '<div style="font-size:14px;font-weight:700;color:#03045e;">Devis #' + (di + 1) + ' — ' + escapeHtml(d.title || 'Devis installation') + '</div>'
-        devisSection += '<div style="font-size:12px;color:#64748b;margin-top:2px;">Créé le ' + dDate + ' · Réf. ' + dRef + '</div>'
-        if (d.description) devisSection += '<div style="font-size:12px;color:#475569;margin-top:4px;">' + escapeHtml(d.description) + '</div>'
+        devisSection += '<div class="text-[14px] font-bold text-fg-heading">Devis #' + (di + 1) + ' — ' + escapeHtml(d.title || 'Devis installation') + '</div>'
+        devisSection += '<div class="text-[12px] text-fg-subtle mt-[2px]">Créé le ' + dDate + ' · Réf. ' + dRef + '</div>'
+        if (d.description) devisSection += '<div class="text-[12px] text-fg-muted mt-[4px]">' + escapeHtml(d.description) + '</div>'
         devisSection += '</div>'
-        devisSection += '<div style="text-align:right;">'
-        devisSection += '<span style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;' + dColor + '">' + dStatus + '</span>'
-        if (d.validated_at) devisSection += '<div style="font-size:11px;color:#16a34a;margin-top:4px;">Accepté le ' + fmtDate(d.validated_at) + '</div>'
-        if (d.refused_at) devisSection += '<div style="font-size:11px;color:#ef4444;margin-top:4px;">Refusé le ' + fmtDate(d.refused_at) + '</div>'
+        devisSection += '<div class="text-right">'
+        devisSection += '<span class="inline-block py-[3px] px-[12px] rounded-[20px] text-[11px] font-bold" style="' + dColor + ';">' + dStatus + '</span>'
+        if (d.validated_at) devisSection += '<div class="text-[11px] text-fg-success-bright mt-[4px]">Accepté le ' + fmtDate(d.validated_at) + '</div>'
+        if (d.refused_at) devisSection += '<div class="text-[11px] text-fg-danger-bright mt-[4px]">Refusé le ' + fmtDate(d.refused_at) + '</div>'
         devisSection += '</div></div>'
         let devisItems: any[] = []
         try { devisItems = JSON.parse(d.items || '[]') } catch (_) {}
         if (devisItems.length > 0) {
-          devisSection += '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;">'
-          devisSection += '<thead><tr style="background:#f8fafc;"><th style="padding:8px 10px;text-align:left;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Prestation / Article</th><th style="padding:8px 10px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Qté</th><th style="padding:8px 10px;text-align:right;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Prix unit.</th><th style="padding:8px 10px;text-align:right;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Total</th></tr></thead>'
+          devisSection += '<table class="w-full text-[12px] mt-[8px]" style="border-collapse:collapse;">'
+          devisSection += '<thead><tr class="bg-surface-subtle"><th class="py-[8px] px-[10px] text-left text-fg-subtle font-semibold border-b border-line">Prestation / Article</th><th class="py-[8px] px-[10px] text-center text-fg-subtle font-semibold border-b border-line">Qté</th><th class="py-[8px] px-[10px] text-right text-fg-subtle font-semibold border-b border-line">Prix unit.</th><th class="py-[8px] px-[10px] text-right text-fg-subtle font-semibold border-b border-line">Total</th></tr></thead>'
           devisSection += '<tbody>'
           for (const it of devisItems) {
             const itQty: number = it.quantity || 1
             const itPrice: number = it.unit_price || it.price || 0
             const itTotal: number = itQty * itPrice
-            devisSection += '<tr style="border-bottom:1px solid #f1f5f9;">'
-            devisSection += '<td style="padding:7px 10px;color:#334155;">' + escapeHtml(it.name || '') + (it.description ? '<br><span style="color:#94a3b8;font-size:11px;">' + escapeHtml(it.description) + '</span>' : '') + '</td>'
-            devisSection += '<td style="padding:7px 10px;text-align:center;color:#334155;">' + itQty + '</td>'
-            devisSection += '<td style="padding:7px 10px;text-align:right;color:#334155;">' + fmtNum(itPrice) + ' FCFA</td>'
-            devisSection += '<td style="padding:7px 10px;text-align:right;font-weight:600;color:#334155;">' + fmtNum(itTotal) + ' FCFA</td>'
+            devisSection += '<tr class="border-b border-line-soft">'
+            devisSection += '<td class="py-[7px] px-[10px] text-fg-body">' + escapeHtml(it.name || '') + (it.description ? '<br><span style="color:#94a3b8;font-size:11px;">' + escapeHtml(it.description) + '</span>' : '') + '</td>'
+            devisSection += '<td class="py-[7px] px-[10px] text-center text-fg-body">' + itQty + '</td>'
+            devisSection += '<td class="py-[7px] px-[10px] text-right text-fg-body">' + fmtNum(itPrice) + ' FCFA</td>'
+            devisSection += '<td class="py-[7px] px-[10px] text-right font-semibold text-fg-body">' + fmtNum(itTotal) + ' FCFA</td>'
             devisSection += '</tr>'
           }
           devisSection += '</tbody></table>'
         }
-        devisSection += '<div style="display:flex;justify-content:flex-end;margin-top:10px;">'
-        devisSection += '<div style="font-size:14px;font-weight:800;color:#03045e;">Total devis : ' + fmtNum(d.total_amount || 0) + ' FCFA</div>'
+        devisSection += '<div class="flex justify-end mt-[10px]">'
+        devisSection += '<div class="text-[14px] font-extrabold text-fg-heading">Total devis : ' + fmtNum(d.total_amount || 0) + ' FCFA</div>'
         devisSection += '</div>'
-        if (d.client_response_notes) devisSection += '<div style="margin-top:8px;font-size:12px;color:#475569;background:#f8fafc;padding:8px 12px;border-radius:8px;"><strong>Réponse client :</strong> ' + escapeHtml(d.client_response_notes) + '</div>'
-        if (d.admin_notes) devisSection += '<div style="margin-top:6px;font-size:12px;color:#64748b;background:#fffbeb;padding:8px 12px;border-radius:8px;"><strong>Notes admin :</strong> ' + escapeHtml(d.admin_notes) + '</div>'
+        if (d.client_response_notes) devisSection += '<div class="mt-[8px] text-[12px] text-fg-muted bg-surface-subtle py-[8px] px-[12px] rounded-[8px]"><strong>Réponse client :</strong> ' + escapeHtml(d.client_response_notes) + '</div>'
+        if (d.admin_notes) devisSection += '<div class="mt-[6px] text-[12px] text-fg-subtle py-[8px] px-[12px] rounded-[8px]" style="background:#fffbeb;"><strong>Notes admin :</strong> ' + escapeHtml(d.admin_notes) + '</div>'
         devisSection += '</div>'
       }
       devisSection += '</div>'
@@ -1377,11 +1362,11 @@ clientRouter.get('/api/order/invoice/:id', async (c) => {
     // Build product rows
     let productRows = '<tr>'
     productRows += '<td><strong>' + (product ? escapeHtml(product.name) : 'Produit / Service') + '</strong>'
-    if (product?.brand) productRows += '<br><span style="color:#64748b;font-size:12px;">' + escapeHtml(product.brand) + '</span>'
+    if (product?.brand) productRows += '<br><span class="text-fg-subtle text-[12px]">' + escapeHtml(product.brand) + '</span>'
     productRows += '</td>'
-    productRows += '<td style="text-align:center;">' + qty + '</td>'
-    productRows += '<td style="text-align:right;">' + fmtNum(unitPrice) + ' FCFA</td>'
-    productRows += '<td style="text-align:right;font-weight:600;">' + fmtNum(subtotal) + ' FCFA</td>'
+    productRows += '<td class="text-center">' + qty + '</td>'
+    productRows += '<td class="text-right">' + fmtNum(unitPrice) + ' FCFA</td>'
+    productRows += '<td class="text-right font-semibold">' + fmtNum(subtotal) + ' FCFA</td>'
     productRows += '</tr>'
 
     // Build summary rows — product only, devis if any, no TVA
@@ -1393,15 +1378,15 @@ clientRouter.get('/api/order/invoice/:id', async (c) => {
     summaryRows += '<div class="row total"><span>Total</span><span>' + fmtNum(totalFinal) + ' FCFA</span></div>'
 
     // Modalité de paiement — flux contact commercial (pas de paiement en ligne)
-    const paymentSection = '<div class="payment-info" style="background:#f0f9ff;border:1px solid rgba(0,119,182,0.2);">' +
-      '<div class="pay-icon" style="background:rgba(0,119,182,0.1);color:#0077b6;">ðŸ“ž</div>' +
-      '<div><div style="font-size:14px;font-weight:700;color:#0077b6;">Paiement Ã  l\'installation</div>' +
-      '<div style="font-size:12px;color:#64748b;">Le paiement et les modalités sont arrangés directement avec l\'équipe MAASGA par email ou WhatsApp.</div></div>' +
+    const paymentSection = '<div class="payment-info bg-surface-info" style="border:1px solid rgba(var(--rgb-brand),0.2);">' +
+      '<div class="pay-icon text-fg-brand" style="background:rgba(var(--rgb-brand),0.1);">📞</div>' +
+      '<div><div class="text-[14px] font-bold text-fg-brand">Paiement à l\'installation</div>' +
+      '<div class="text-[12px] text-fg-subtle">Le paiement et les modalités sont arrangés directement avec l\'équipe MAASGA par email ou WhatsApp.</div></div>' +
       '</div>'
 
     // Build notes section
     const notesSection = order.notes
-      ? '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:20px;"><div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:700;margin-bottom:6px;">Notes</div><div style="font-size:13px;color:#334155;">' + escapeHtml(order.notes) + '</div></div>'
+      ? '<div class="bg-surface-subtle border border-line rounded-[12px] p-[16px] mb-[20px]"><div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:700;margin-bottom:6px;">Notes</div><div class="text-[13px] text-fg-body">' + escapeHtml(order.notes) + '</div></div>'
       : ''
 
     const statusBadge = STATUS_COLOR[order.status] || STATUS_COLOR.pending
@@ -1445,7 +1430,7 @@ clientRouter.get('/api/order/invoice/:id', async (c) => {
       '<div style="display:flex;align-items:center;gap:16px;">\n' +
       '<img src="/logo-site.png" alt="MAASGA" style="height:64px;width:auto;border-radius:10px;object-fit:contain;" onerror="this.style.display=\'none\'" />\n' +
       '<div>\n' +
-      '<div style="font-size:26px;font-weight:800;letter-spacing:-0.5px;color:#fff;">MAASGA<span style="color:#00b4d8;"> â„</span></div>\n' +
+      '<div style="font-size:26px;font-weight:800;letter-spacing:-0.5px;color:#fff;">MAASGA<span style="color:#00b4d8;"> ❄</span></div>\n' +
       '<p style="font-size:13px;margin-top:4px;opacity:0.85;">Solutions Climatisation &amp; Froid</p>\n' +
       '<p style="font-size:12px;margin-top:2px;opacity:0.7;">Ouagadougou, Burkina Faso</p>\n' +
       '</div></div>\n' +
@@ -1491,7 +1476,7 @@ clientRouter.get('/api/order/invoice/:id', async (c) => {
 
 
 // ============================================================
-// MAINTENANCE CONTRACT INVOICE (printable HTML â†’ PDF via browser)
+// MAINTENANCE CONTRACT INVOICE (printable HTML → PDF via browser)
 // ============================================================
 
 clientRouter.get('/api/maintenance/invoice/:id', async (c) => {
@@ -1504,7 +1489,7 @@ clientRouter.get('/api/maintenance/invoice/:id', async (c) => {
   if (!db) return c.text('Service indisponible', 503)
   const session = await getSession(db, sessionToken)
   if (!session) {
-    return c.redirect('/espace-client?error=' + encodeURIComponent('Veuillez vous connecter pour accéder Ã  la facture.'))
+    return c.redirect('/espace-client?error=' + encodeURIComponent('Veuillez vous connecter pour accéder à la facture.'))
   }
 
   // Fetch contract
@@ -1550,12 +1535,12 @@ clientRouter.get('/api/maintenance/invoice/:id', async (c) => {
 
   const visitRowsHtml = visitRows.map((v: any) => `
     <tr>
-      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155;">${fmtDate(v.visit_date)}</td>
-      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155;">${v.visit_type === 'preventive' ? 'Préventive' : v.visit_type}</td>
-      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:13px;text-align:center;">
-        <span style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;${v.status === 'effectuee' ? 'background:rgba(22,163,74,0.1);color:#16a34a;' : v.status === 'annulee' ? 'background:rgba(239,68,68,0.1);color:#ef4444;' : 'background:rgba(217,119,6,0.1);color:#d97706;'}">${visitStatusLabels[v.status] || v.status}</span>
+      <td style="padding:10px 14px;border-bottom:1px solid var(--line-soft);font-size:13px;color:var(--fg-body);">${fmtDate(v.visit_date)}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid var(--line-soft);font-size:13px;color:var(--fg-body);">${v.visit_type === 'preventive' ? 'Préventive' : v.visit_type}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid var(--line-soft);font-size:13px;text-align:center;">
+        <span style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;${v.status === 'effectuee' ? 'background:rgba(22,163,74,0.1);color:var(--fg-success-bright);' : v.status === 'annulee' ? 'background:rgba(var(--rgb-red),0.1);color:var(--fg-danger-bright);' : 'background:rgba(217,119,6,0.1);color:var(--fg-warning-bright);'}">${visitStatusLabels[v.status] || v.status}</span>
       </td>
-      <td style="padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#64748b;">${v.technician || '—'}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid var(--line-soft);font-size:13px;color:var(--fg-subtle);">${v.technician || '—'}</td>
     </tr>
   `).join('')
 
@@ -1618,7 +1603,7 @@ clientRouter.get('/api/maintenance/invoice/:id', async (c) => {
     <div class="header">
       <div>
         <img src="${SITE_URL}/logo-site.png" alt="MAASGA Logo" style="height:60px;width:auto;border-radius:10px;margin-bottom:8px;display:block;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
-        <div class="logo" style="display:none;">MAASGA<span> â„ï¸</span></div>
+        <div class="logo" style="display:none;">MAASGA<span> ❄️</span></div>
         <p style="font-size:13px;margin-top:6px;opacity:0.85;">Solutions Climatisation & Maintenance</p>
       </div>
       <div class="inv-info">
@@ -1658,7 +1643,7 @@ clientRouter.get('/api/maintenance/invoice/:id', async (c) => {
         </div>
         <div class="detail-card">
           <div class="label">Période de couverture</div>
-          <div class="value" style="font-size:14px;">${fmtDate(contract.start_date)} â†’ ${fmtDate(contract.end_date)}</div>
+          <div class="value" style="font-size:14px;">${fmtDate(contract.start_date)} → ${fmtDate(contract.end_date)}</div>
         </div>
         <div class="detail-card">
           <div class="label">Visites incluses</div>
@@ -1694,7 +1679,7 @@ clientRouter.get('/api/maintenance/invoice/:id', async (c) => {
 
       ${payment ? `
       <div class="payment-info">
-        <div class="pay-icon">âœ“</div>
+        <div class="pay-icon">✓</div>
         <div>
           <div style="font-size:14px;font-weight:700;color:#16a34a;">Paiement ${payment.status === 'completed' ? 'confirmé' : payment.status === 'pending' ? 'en attente' : payment.status}</div>
           <div style="font-size:12px;color:#64748b;">${payMethodLabels[payment.method] || payment.method || 'Non spécifié'} · ${fmtDate(payment.created_at)}${payment.provider_ref ? ' · Réf: ' + payment.provider_ref : ''}</div>
@@ -1702,7 +1687,7 @@ clientRouter.get('/api/maintenance/invoice/:id', async (c) => {
       </div>
       ` : `
       <div class="payment-info" style="background:#fffbeb;border-color:rgba(217,119,6,0.15);">
-        <div class="pay-icon" style="background:rgba(217,119,6,0.1);color:#d97706;">â³</div>
+        <div class="pay-icon" style="background:rgba(217,119,6,0.1);color:#d97706;">⏳</div>
         <div>
           <div style="font-size:14px;font-weight:700;color:#d97706;">Paiement en attente de confirmation</div>
           <div style="font-size:12px;color:#64748b;">Le paiement sera confirmé après vérification par notre équipe.</div>
@@ -1729,7 +1714,7 @@ clientRouter.get('/api/maintenance/invoice/:id', async (c) => {
 clientRouter.post('/api/order/create', async (c) => {
   // Rate limiting: 10 orders per IP per hour
   const ipAddr = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`order:${ipAddr}`, 10, 60 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `order:${ipAddr}`, 10, 60 * 60 * 1000)
   if (!rl.allowed) {
     return c.json({ error: 'Trop de commandes. Réessayez plus tard.' }, 429)
   }
@@ -1785,7 +1770,7 @@ clientRouter.post('/api/order/create', async (c) => {
     }
 
     // Écrire d'abord en D1 pour obtenir l'identifiant AUTOINCREMENT réel : le
-    // Math.max sur le cache mémoire produisait des id déjÃ  pris en base (cache
+    // Math.max sur le cache mémoire produisait des id déjà pris en base (cache
     // partiel, un par isolate), donc deux commandes pouvaient partager un numéro.
     let orderId = 0
     if (db) {
@@ -1807,7 +1792,7 @@ clientRouter.post('/api/order/create', async (c) => {
     orders.push(newOrder)
 
     if (db) {
-      // Enregistrer/mettre Ã  jour le client dans D1
+      // Enregistrer/mettre à jour le client dans D1
       try {
         await createClient(db, {
           name: orderData.client_name,
@@ -1879,7 +1864,7 @@ clientRouter.post('/api/order/confirm-delivery', async (c) => {
 
   const now = new Date().toISOString()
   // Pas de colonne delivery_confirmed_by : la table orders reconstruite par la
-  // migration 0036 ne la contient plus. L'information Â« confirmé par le client Â»
+  // migration 0036 ne la contient plus. L'information « confirmé par le client »
   // est tracée dans notes + le journal d'activité.
   await db.prepare("UPDATE orders SET status = ?, delivered_at = ?, notes = COALESCE(notes, '') || ?, updated_at = ? WHERE id = ?")
     .bind('livre', now, ' | Réception confirmée par le client le ' + now, now, orderId).run()
@@ -1947,15 +1932,15 @@ clientRouter.post('/api/order/devis/validate', async (c) => {
           to: [{ email: 'maasgabf@gmail.com', name: 'MAASGA Admin' }],
           subject: `\u2705 Devis accept\u00e9 \u2014 Commande #${devis.order_id} \u2014 ${devis.client_name || ''}`,
           htmlContent: `<html><body style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;">`
-            + `<div style="background:linear-gradient(135deg,#059669,#10b981);padding:24px;border-radius:12px 12px 0 0;">`
-            + `<h2 style="color:white;margin:0;font-size:20px;">\u2705 Devis accept\u00e9</h2></div>`
+            + `<div style="background:linear-gradient(135deg,var(--surface-success),var(--surface-success-bright));padding:24px;border-radius:12px 12px 0 0;">`
+            + `<h2 style="color:var(--fg-on-dark);margin:0;font-size:20px;">\u2705 Devis accept\u00e9</h2></div>`
             + `<div style="background:#f9fafb;padding:24px;border-radius:0 0 12px 12px;border:1px solid #e5e7eb;">`
-            + `<p style="font-size:15px;color:#374151;">Le client <strong>${devis.client_name || 'N/A'}</strong> (${devis.client_phone || 'N/A'}) a <strong style="color:#059669;">accept\u00e9</strong> le devis pour la commande <strong>#${devis.order_id}</strong>.</p>`
-            + `<div style="background:white;border:1px solid #d1fae5;border-radius:8px;padding:16px;margin:16px 0;">`
-            + `<div style="display:flex;justify-content:space-between;"><span style="color:#6b7280;">Montant du devis</span><span style="font-size:18px;font-weight:700;color:#059669;">${Number(devis.total_amount || 0).toLocaleString('fr-FR')} FCFA</span></div>`
+            + `<p style="font-size:15px;color:#374151;">Le client <strong>${devis.client_name || 'N/A'}</strong> (${devis.client_phone || 'N/A'}) a <strong style="color:var(--fg-success-alt);">accept\u00e9</strong> le devis pour la commande <strong>#${devis.order_id}</strong>.</p>`
+            + `<div style="background:var(--surface-card);border:1px solid #d1fae5;border-radius:8px;padding:16px;margin:16px 0;">`
+            + `<div style="display:flex;justify-content:space-between;"><span style="color:var(--fg-gray);">Montant du devis</span><span style="font-size:18px;font-weight:700;color:var(--fg-success-alt);">${Number(devis.total_amount || 0).toLocaleString('fr-FR')} FCFA</span></div>`
             + `</div>`
             + `<p style="font-size:14px;color:#374151;background:#ecfdf5;border-left:4px solid #10b981;padding:12px;border-radius:4px;">\ud83d\udcc5 <strong>Prochaine \u00e9tape&nbsp;: planifier l\u2019installation.</strong></p>`
-            + `<a href="https://maasga.pages.dev/admin" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#059669;color:white;text-decoration:none;border-radius:8px;font-weight:700;">Voir dans l\u2019admin \u2192</a>`
+            + `<a href="https://maasga.pages.dev/admin" style="display:inline-block;margin-top:16px;padding:12px 24px;background:var(--surface-success);color:var(--fg-on-dark);text-decoration:none;border-radius:8px;font-weight:700;">Voir dans l\u2019admin \u2192</a>`
             + `</div></body></html>`
         })
       })
@@ -1989,7 +1974,7 @@ clientRouter.post('/api/order/devis/refuse', async (c) => {
   await db.prepare('UPDATE order_devis SET status = ?, refused_at = ?, client_response_notes = ?, updated_at = ? WHERE id = ?')
     .bind('refused', now, reason, now, devisId).run()
   // Refus de devis : le statut de la commande ne bouge pas — il n'existe plus de
-  // valeur Â« devis_refuse Â» depuis la migration 0036, c'est order_devis.status qui
+  // valeur « devis_refuse » depuis la migration 0036, c'est order_devis.status qui
   // porte l'information. L'admin relance le client depuis la fiche commande.
 
   await logActivity(db, {
@@ -2014,12 +1999,12 @@ clientRouter.post('/api/order/devis/refuse', async (c) => {
           subject: `\u274c Devis refus\u00e9 \u2014 Commande #${devis.order_id} \u2014 ${devis.client_name || ''}`,
           htmlContent: `<html><body style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;">`
             + `<div style="background:linear-gradient(135deg,#dc2626,#ef4444);padding:24px;border-radius:12px 12px 0 0;">`
-            + `<h2 style="color:white;margin:0;font-size:20px;">\u274c Devis refus\u00e9</h2></div>`
+            + `<h2 style="color:var(--fg-on-dark);margin:0;font-size:20px;">\u274c Devis refus\u00e9</h2></div>`
             + `<div style="background:#f9fafb;padding:24px;border-radius:0 0 12px 12px;border:1px solid #e5e7eb;">`
             + `<p style="font-size:15px;color:#374151;">Le client <strong>${devis.client_name || 'N/A'}</strong> (${devis.client_phone || 'N/A'}) a <strong style="color:#dc2626;">refus\u00e9</strong> le devis pour la commande <strong>#${devis.order_id}</strong>.</p>`
-            + (reason ? `<div style="background:white;border:1px solid #fecaca;border-radius:8px;padding:12px;margin:12px 0;"><span style="color:#6b7280;font-size:12px;">MOTIF DU REFUS</span><p style="margin:6px 0 0;color:#374151;">${reason}</p></div>` : '')
+            + (reason ? `<div style="background:var(--surface-card);border:1px solid #fecaca;border-radius:8px;padding:12px;margin:12px 0;"><span style="color:var(--fg-gray);font-size:12px;">MOTIF DU REFUS</span><p style="margin:6px 0 0;color:#374151;">${reason}</p></div>` : '')
             + `<p style="font-size:14px;color:#374151;background:#fef2f2;border-left:4px solid #ef4444;padding:12px;border-radius:4px;">\u26a0\ufe0f <strong>Le processus d\u2019achat-installation est d\u00e9finitivement arr\u00eat\u00e9.</strong></p>`
-            + `<a href="https://maasga.pages.dev/admin" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#374151;color:white;text-decoration:none;border-radius:8px;font-weight:700;">Voir dans l\u2019admin \u2192</a>`
+            + `<a href="https://maasga.pages.dev/admin" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#374151;color:var(--fg-on-dark);text-decoration:none;border-radius:8px;font-weight:700;">Voir dans l\u2019admin \u2192</a>`
             + `</div></body></html>`
         })
       })
@@ -2035,8 +2020,8 @@ clientRouter.post('/api/order/devis/refuse', async (c) => {
 // Son garde-fou n'acceptait que validation_terrain / devis_en_attente /
 // devis_valide / devis_refuse, statuts supprimés par la migration 0036 : aucune
 // commande ne pouvait plus le franchir. Le flux simplifié ne distingue plus la
-// livraison de l'installation (statut unique 'livre'), donc Â« annuler seulement
-// l'installation Â» n'a plus de sens ; l'annulation complète passe par
+// livraison de l'installation (statut unique 'livre'), donc « annuler seulement
+// l'installation » n'a plus de sens ; l'annulation complète passe par
 // /api/order/cancel-order.
 
 // Client cancels the entire order (refund request)
@@ -2067,7 +2052,7 @@ clientRouter.post('/api/order/cancel-order', async (c) => {
   const memOrder = orders.find(o => o.id === orderId)
   if (memOrder) memOrder.status = 'annule' as any
 
-  // Pas de paiement en ligne — rien Ã  rembourser automatiquement
+  // Pas de paiement en ligne — rien à rembourser automatiquement
 
   await logActivity(db, {
     clientId: session.clientId,
@@ -2076,7 +2061,7 @@ clientRouter.post('/api/order/cancel-order', async (c) => {
     category: 'order',
     ip: c.req.header('cf-connecting-ip') || ''
   })
-  await notifyAdmin(c.env, 'order', `âš ï¸ Commande #${orderId} annulée par client — ${order.client_name} — Remboursement Ã  traiter${reason ? ' — Raison: ' + reason : ''}`)
+  await notifyAdmin(c.env, 'order', `⚠️ Commande #${orderId} annulée par client — ${order.client_name} — Remboursement à traiter${reason ? ' — Raison: ' + reason : ''}`)
 
   return c.json({ success: true, message: 'Commande annulée. Le remboursement sera traité sous 48h.' })
 })

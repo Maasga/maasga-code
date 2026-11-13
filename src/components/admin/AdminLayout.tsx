@@ -1,4 +1,5 @@
 // Admin Layout & Security Attributes Escapers
+import { asset } from '../../generated/asset-manifest'
 import {
   appointments,
   reviews,
@@ -63,9 +64,9 @@ export const AdminLayout = ({ children, activePage = "" }: { children: any; acti
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>Admin MAASGA - Back-office</title>
-      <link rel="stylesheet" href="/static/tailwind.css" />
-      <link rel="stylesheet" href="/static/admin-tokens.css" />
-      <link rel="stylesheet" href="/static/style.css" />
+      <link rel="stylesheet" href={asset("/static/tailwind.css")} />
+      <link rel="stylesheet" href={asset("/static/admin-tokens.css")} />
+      <link rel="stylesheet" href={asset("/static/style.css")} />
       <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" />
       <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
       <style dangerouslySetInnerHTML={{ __html: `
@@ -142,11 +143,11 @@ export const AdminLayout = ({ children, activePage = "" }: { children: any; acti
       <aside id="admin-sidebar" class="admin-sidebar w-64 fixed left-0 top-0 bottom-0 text-white flex flex-col z-50">
         <div class="p-5 border-b border-white/10">
           <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background-color:rgba(255,255,255,0.05);">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background-color:rgba(var(--rgb-white),0.05);">
               <i class="fas fa-snowflake text-white text-lg"></i>
             </div>
             <div>
-              <div class="font-bold text-base" style="color:var(--admin-text-primary)">MAASGA</div>
+              <div class="font-bold text-base text-admin-fg">MAASGA</div>
               <div class="text-xs text-blue-300">Back-office Admin</div>
             </div>
           </div>
@@ -185,7 +186,7 @@ export const AdminLayout = ({ children, activePage = "" }: { children: any; acti
                 </span>
               )}
               {n.key === 'maintenance' && (maintenanceDueCount + pendingMaintenanceContractsCount + pendingMaintenanceRequestsCount) > 0 && (
-                <span class="ml-auto text-white text-xs rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center font-bold" style="background:#0284c7;">
+                <span class="ml-auto text-white text-xs rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center font-bold bg-surface-sky-deep">
                   {maintenanceDueCount + pendingMaintenanceContractsCount + pendingMaintenanceRequestsCount}
                 </span>
               )}
@@ -204,7 +205,7 @@ export const AdminLayout = ({ children, activePage = "" }: { children: any; acti
         </nav>
 
         <div class="p-4 border-t border-white/10 space-y-2">
-          <div class="flex items-center space-x-2 px-3 py-2 rounded-xl" style="background:rgba(255,255,255,0.06);">
+          <div class="flex items-center space-x-2 px-3 py-2 rounded-xl" style="background:rgba(var(--rgb-white),0.06);">
             <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center flex-shrink-0">
               <i class="fas fa-user-shield text-white text-xs"></i>
             </div>
@@ -229,7 +230,7 @@ export const AdminLayout = ({ children, activePage = "" }: { children: any; acti
       {/* Main content */}
       <main class="md:ml-64 flex-1 min-h-screen overflow-x-hidden">
         {/* Top bar */}
-        <header class="px-2 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center justify-between sticky top-0 z-30" style="background:rgba(255,255,255,0.92); backdrop-filter:blur(12px); border-bottom:1px solid var(--admin-border);">
+        <header class="px-2 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center justify-between sticky top-0 z-30 border-b border-admin-line" style="background:rgba(var(--rgb-white),0.92); backdrop-filter:blur(12px);">
           <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
             <button onclick="toggleSidebar()" class="md:hidden text-gray-500 hover:text-gray-300 p-1.5">
               <i class="fas fa-bars"></i>
@@ -244,17 +245,17 @@ export const AdminLayout = ({ children, activePage = "" }: { children: any; acti
                  activePage === 'avis' ? 'Avis Clients' :
                  activePage === 'banners' ? 'Bannières & Marques' : 'MAASGA Admin'}
               </h1>
-              <div class="text-xs mt-0.5" style="color: var(--admin-text-muted)">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+              <div class="text-xs mt-0.5 text-admin-muted">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
             </div>
           </div>
           <div class="flex items-center space-x-2">
             {/* Global search */}
             <div class="hidden md:block relative" id="global-search-container">
               <input id="global-search-input" type="text" placeholder="Rechercher partout..." autocomplete="off"
-                class="w-64 rounded-xl px-3 py-1.5 pl-8 text-xs" style="background:rgba(241,245,249,0.8); border:1px solid var(--admin-border); color: var(--admin-text-primary);"
+                class="w-64 rounded-xl px-3 py-1.5 pl-8 text-xs border border-admin-line text-admin-fg" style="background:rgba(var(--rgb-slate-100),0.8);"
                 oninput="globalSearch(this.value)" onfocus="document.getElementById('global-search-results').classList.remove('hidden')" />
               <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
-              <div id="global-search-results" class="hidden absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden z-50 max-h-96 overflow-y-auto shadow-2xl" style="background: var(--admin-card-bg); border:1px solid var(--admin-border);"></div>
+              <div id="global-search-results" class="hidden absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden z-50 max-h-96 overflow-y-auto shadow-2xl bg-admin-card border border-admin-line"></div>
             </div>
             <div class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium" style="background: var(--admin-success-light); color: var(--admin-success);">
               <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -262,12 +263,12 @@ export const AdminLayout = ({ children, activePage = "" }: { children: any; acti
             </div>
             {/* Notification bell */}
             <div class="relative" id="notif-bell-container">
-              <button onclick="toggleNotifPanel()" class="p-2 rounded-lg hover:bg-white/5 transition-colors relative" style="color:#64748b;" title="Notifications">
+              <button onclick="toggleNotifPanel()" class="p-2 rounded-lg hover:bg-white/5 transition-colors relative text-fg-subtle" title="Notifications">
                 <i class="fas fa-bell text-sm"></i>
                 <span id="notif-badge" class="hidden absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold" style="font-size:9px;"></span>
               </button>
-              <div id="notif-panel" class="hidden absolute top-full right-0 mt-1 w-80 rounded-xl overflow-hidden z-50 shadow-2xl" style="background: var(--admin-card-bg); border:1px solid var(--admin-border);">
-                <div class="flex items-center justify-between px-4 py-3" style="border-bottom:1px solid var(--admin-border)">
+              <div id="notif-panel" class="hidden absolute top-full right-0 mt-1 w-80 rounded-xl overflow-hidden z-50 shadow-2xl bg-admin-card border border-admin-line">
+                <div class="flex items-center justify-between px-4 py-3 border-b border-admin-line">
                   <span class="text-xs font-bold text-white">Notifications</span>
                   <div class="flex gap-2">
                     <button onclick="markAllNotifRead()" class="text-xs text-cyan-400 hover:underline">Tout lire</button>
@@ -279,7 +280,7 @@ export const AdminLayout = ({ children, activePage = "" }: { children: any; acti
                 </div>
               </div>
             </div>
-            <a href="/admin/parametres" title="Paramètres" class="p-2 rounded-lg hover:bg-white/5 transition-colors" style="color:#64748b;">
+            <a href="/admin/parametres" title="Paramètres" class="p-2 rounded-lg hover:bg-white/5 transition-colors text-fg-subtle">
               <i class="fas fa-cog text-sm"></i>
             </a>
             <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-sky-500 rounded-full flex items-center justify-center">
@@ -443,7 +444,7 @@ export const AdminLayout = ({ children, activePage = "" }: { children: any; acti
       `}} />
 
       {/* Admin Toast System */}
-      <div id="toast-container" class="fixed top-4 right-4 z-[99999] flex flex-col gap-3 pointer-events-none" style="max-width:380px;"></div>
+      <div id="toast-container" class="fixed top-4 right-4 z-[99999] flex flex-col gap-3 pointer-events-none max-w-[380px]"></div>
       <script dangerouslySetInnerHTML={{ __html: `
         window.showToast = function(msg, type) {
           type = type || 'info';
@@ -473,7 +474,7 @@ export const AdminLayout = ({ children, activePage = "" }: { children: any; acti
           }, 4000);
         };
       `}} />
-      <script src="/static/js/admin/admin-pagination.js"></script>
+      <script src={asset("/static/js/admin/admin-pagination.js")}></script>
     </body>
   </html>
 )

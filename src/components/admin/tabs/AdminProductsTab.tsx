@@ -55,21 +55,35 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
     </div>
 
     {/* ===== MÉDIATHÈQUE CENTRALISÉE PAR MARQUE ===== */}
-    <div class="mb-6 rounded-2xl card-shadow overflow-hidden" style="background:var(--admin-card-bg); border:1px solid rgba(168,85,247,0.2);">
-      <button type="button" onclick="toggleMediatheque()"
+    <div class="mb-6 rounded-2xl card-shadow" style="background:var(--admin-card-bg); border:1px solid rgba(109,40,217,0.25);">
+      <button type="button" onclick="toggleMediatheque()" id="mediatheque-toggle" aria-expanded="false" aria-controls="mediatheque-panel"
         class="w-full flex items-center justify-between px-5 py-4 text-left">
         <div class="flex items-center gap-3">
-          <i class="fas fa-photo-video text-purple-400"></i>
+          <i class="fas fa-photo-video" style="color:#6d28d9;"></i>
           <span class="font-semibold text-sm" style="color:var(--admin-text-primary)">Médiathèque par marque</span>
-          <span class="text-xs text-purple-300/70 hidden sm:inline">Uploadez des images une fois, affectez-les à n'importe quel produit</span>
+          <span class="text-xs hidden sm:inline" style="color:#475569;">Envoyez vos images une fois, puis affectez-les aux produits (vignette + images annexes)</span>
         </div>
-        <i id="mediatheque-chevron" class="fas fa-chevron-down text-xs" style="color:var(--admin-text-muted);transition:transform 0.2s;"></i>
+        <i id="mediatheque-chevron" class="fas fa-chevron-down text-xs" style="color:#475569;transition:transform 0.2s;"></i>
       </button>
-      <div id="mediatheque-panel" class="hidden p-5" style="border-top:1px solid rgba(168,85,247,0.1);">
+      <div id="mediatheque-panel" class="hidden p-5" style="border-top:1px solid rgba(109,40,217,0.12);">
+        {/* Mode d'emploi en 3 étapes */}
+        <ol class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-5 text-xs" style="color:#334155; list-style:none; padding:0;">
+          {[
+            ['1', 'Cochez les images du produit', 'Cliquez sur chaque image voulue.'],
+            ['2', 'Cliquez « Affecter à un produit »', 'Le bouton est en bas de la médiathèque.'],
+            ['3', 'Choisissez le produit et la vignette', 'Les autres images deviennent des images annexes.'],
+          ].map(([n, titre, detail]) => (
+            <li class="flex items-start gap-2 rounded-xl p-3" style="background:#faf5ff; border:1px solid rgba(109,40,217,0.15);">
+              <span class="flex-shrink-0 flex items-center justify-center rounded-full font-bold" style="width:22px;height:22px;background:#6d28d9;color:#fff;">{n}</span>
+              <span><strong class="block" style="color:#0f172a;">{titre}</strong>{detail}</span>
+            </li>
+          ))}
+        </ol>
+
         {/* Upload form */}
         <div class="flex flex-wrap gap-3 mb-5 items-end">
           <div>
-            <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Marque</label>
+            <label for="mediatheque-brand" class="block text-xs mb-1" style="color:#475569;">Marque</label>
             <input id="mediatheque-brand" type="text" placeholder="LG, Samsung…" list="mediatheque-brands-list"
               class="input-field text-xs w-32" />
             <datalist id="mediatheque-brands-list">
@@ -77,114 +91,137 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
             </datalist>
           </div>
           <div>
-            <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Libellé (optionnel)</label>
-            <input id="mediatheque-label" type="text" placeholder="Logo officiel 2024"
+            <label for="mediatheque-label" class="block text-xs mb-1" style="color:#475569;">Libellé (optionnel)</label>
+            <input id="mediatheque-label" type="text" placeholder="Vue de face"
               class="input-field text-xs w-44" />
           </div>
           <div>
-            <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Image(s)</label>
-            <label class="cursor-pointer flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold" style="background:rgba(168,85,247,0.12); color:#d8b4fe; border:1px solid rgba(168,85,247,0.3);">
+            <span class="block text-xs mb-1" style="color:#475569;">Nouvelles images</span>
+            <label class="cursor-pointer flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold" style="background:rgba(109,40,217,0.08); color:#6d28d9; border:1px solid rgba(109,40,217,0.3);">
               <i class="fas fa-cloud-upload-alt"></i>
-              <span>Choisir les fichiers</span>
+              <span>Envoyer des images</span>
               <input id="mediatheque-files" type="file" accept="image/*" multiple class="hidden" onchange="uploadMediatheque()" />
             </label>
           </div>
-          <div id="mediatheque-uploading" class="hidden text-xs text-purple-300 flex items-center gap-1">
-            <i class="fas fa-spinner fa-spin"></i>Upload…
+          <div id="mediatheque-uploading" class="hidden text-xs flex items-center gap-1" style="color:#6d28d9;">
+            <i class="fas fa-spinner fa-spin"></i>Envoi en cours…
           </div>
         </div>
         {/* Filtres par marque */}
         <div class="flex items-center gap-2 mb-4 flex-wrap">
-          <span class="text-xs" style="color:var(--admin-text-muted)">Filtrer :</span>
-          <button onclick="filterMediatheque('')" data-brand-filter="" class="brand-filter-btn text-xs px-2.5 py-1 rounded-lg font-semibold" style="background:rgba(168,85,247,0.2); color:#d8b4fe;">Toutes</button>
+          <span class="text-xs" style="color:#475569;">Filtrer :</span>
+          <button type="button" onclick="filterMediatheque('')" data-brand-filter="" class="brand-filter-btn text-xs px-2.5 py-1 rounded-lg font-semibold" style="background:#6d28d9; color:#fff;">Toutes</button>
           {['LG', 'Samsung', 'Daikin', 'Midea', 'Panasonic', 'Gree', 'Hisense', 'TCL', 'Airwell', 'Carrier'].map(b => (
-            <button onclick={`filterMediatheque('${b}')`} data-brand-filter={b} class="brand-filter-btn text-xs px-2.5 py-1 rounded-lg font-semibold" style="background:rgba(148,163,184,0.08); color:#94a3b8;">{b}</button>
+            <button type="button" onclick={`filterMediatheque('${b}')`} data-brand-filter={b} class="brand-filter-btn text-xs px-2.5 py-1 rounded-lg font-semibold" style="background:#f1f5f9; color:#475569;">{b}</button>
           ))}
         </div>
-        {/* Barre de sélection multiple */}
-        <div id="mediatheque-selection-bar" class="hidden flex items-center gap-3 mb-3 px-1">
-          <span id="mediatheque-selection-count" class="text-xs font-semibold" style="color:#d8b4fe;"></span>
-          <button type="button" id="btn-affecter-selection"
-            onclick="openAssignMedia(null)"
-            class="text-xs px-3 py-1.5 rounded-lg font-semibold"
-            style="background:rgba(168,85,247,0.25); color:#d8b4fe; border:1px solid rgba(168,85,247,0.4);">
-            <i class="fas fa-link mr-1"></i>Affecter la sélection
-          </button>
-          <button type="button" onclick="clearMediathequeSelection()"
-            class="text-xs text-gray-400 hover:text-gray-200 underline">Effacer</button>
-        </div>
         {/* Grille d'images */}
-        <div id="mediatheque-grid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 max-h-64 overflow-y-auto"></div>
-        <p id="mediatheque-empty" class="hidden text-center text-xs text-gray-500 py-6">Aucune image dans la médiathèque. Uploadez des images ci-dessus.</p>
+        <div id="mediatheque-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 overflow-y-auto p-1" style="max-height:26rem;"></div>
+        <p id="mediatheque-empty" class="hidden text-center text-xs py-6" style="color:#475569;">Aucune image ici pour le moment. Envoyez des images avec le bouton ci-dessus.</p>
+
+        {/* Barre d'action : toujours visible, collée en bas */}
+        <div id="mediatheque-selection-bar" class="flex flex-wrap items-center gap-3 mt-4 p-3 rounded-xl"
+          style="position:sticky; bottom:8px; z-index:5; background:#faf5ff; border:1px solid rgba(109,40,217,0.25); box-shadow:0 4px 14px rgba(15,23,42,0.08);">
+          <span id="mediatheque-selection-count" class="text-xs font-semibold flex-1" style="color:#334155; min-width:12rem;" aria-live="polite">
+            Cochez une ou plusieurs images pour les affecter à un produit.
+          </span>
+          <button type="button" id="btn-clear-selection" onclick="clearMediathequeSelection()"
+            class="hidden text-xs underline" style="color:#475569;">Tout décocher</button>
+          <button type="button" id="btn-affecter-selection" onclick="openAssignMedia(null)" disabled
+            class="text-sm px-4 py-2 rounded-xl font-semibold"
+            style="background:#6d28d9; color:#fff; opacity:0.45; cursor:not-allowed;">
+            <i class="fas fa-link mr-1"></i>Affecter à un produit
+          </button>
+        </div>
       </div>
     </div>
 
-    {/* Modal affectation d'une image médiathèque à un produit ou à la marque entière */}
-    <div id="assign-media-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.75); backdrop-filter:blur(4px);">
-      <div class="rounded-2xl p-6 w-full max-w-sm shadow-2xl" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);">
-        <h3 class="font-bold mb-4 flex items-center gap-2" style="color:var(--admin-text-primary);">
-          <i class="fas fa-link text-purple-400"></i>
-          Affecter l'image médiathèque
-        </h3>
-        {/* Aperçu : image unique ou compteur multi */}
-        <div class="mb-4 flex justify-center">
-          <img id="assign-media-preview" src="" class="w-28 h-28 object-contain rounded-xl" style="background:var(--admin-card-bg); border:1px solid var(--admin-border);" />
-        </div>
-        <div id="assign-media-multi-preview" class="hidden mb-4">
-          <div id="assign-media-multi-grid" class="flex flex-wrap gap-1 justify-center max-h-24 overflow-y-auto"></div>
-        </div>
-        <input type="hidden" id="assign-media-id" />
-        <input type="hidden" id="assign-media-ids" />
-        <input type="hidden" id="assign-media-brand-name" />
+    {/* Données produits pour la fenêtre d'affectation */}
+    <script id="assign-products-data" type="application/json" dangerouslySetInnerHTML={{ __html: jsonForScript(products.map(p => {
+      const url = String((p as any).imageUrl || '')
+      return {
+        id: p.id, name: p.name, brand: p.brand || '', model: p.model || '',
+        img: url.startsWith('data:') ? '' : url,
+        hasImg: !!url,
+        n: Array.isArray(p.media) ? p.media.length : 0,
+      }
+    })) }} />
 
-        {/* Portée d'affectation */}
-        <div class="mb-4">
-          <label class="block text-xs font-semibold mb-2" style="color:var(--admin-text-muted);">Portée d'affectation</label>
-          <div class="space-y-2">
-            <label class="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border" style="border-color:var(--admin-border); background:var(--admin-bg);">
-              <input type="radio" name="assign-scope" value="brand" checked onchange="toggleAssignScopeUI()" class="accent-purple-500" />
-              <span class="text-xs font-semibold" style="color:var(--admin-text-primary);">
-                Tous les climatiseurs <span id="assign-brand-badge" class="text-purple-400 font-bold"></span> (Global)
-              </span>
+    {/* Fenêtre d'affectation : produit + rôle de chaque image (vignette / annexes), en une seule fois */}
+    <div id="assign-media-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" style="background:rgba(15,23,42,0.6); backdrop-filter:blur(3px);"
+      role="dialog" aria-modal="true" aria-labelledby="assign-media-title">
+      <div class="rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col" style="background:var(--admin-card-bg); border:1px solid var(--admin-border); max-height:92vh;">
+        <div class="flex items-center justify-between px-5 py-4" style="border-bottom:1px solid var(--admin-border);">
+          <h3 id="assign-media-title" class="font-bold flex items-center gap-2" style="color:var(--admin-text-primary);">
+            <i class="fas fa-link" style="color:#6d28d9;"></i>
+            Affecter des images à un produit
+          </h3>
+          <button type="button" onclick="closeAssignMedia()" aria-label="Fermer" class="text-2xl leading-none px-2" style="color:#475569;">&times;</button>
+        </div>
+
+        <div class="px-5 py-4 overflow-y-auto" style="flex:1 1 auto;">
+          {/* Étape 1 : produit */}
+          <section class="mb-6">
+            <h4 class="text-sm font-bold mb-2 flex items-center gap-2" style="color:#0f172a;">
+              <span class="flex items-center justify-center rounded-full text-xs" style="width:22px;height:22px;background:#6d28d9;color:#fff;">1</span>
+              Pour quel produit ?
+            </h4>
+            <div class="flex flex-wrap gap-2 mb-2">
+              <input id="assign-product-search" type="search" placeholder="Rechercher un produit (nom, modèle)…" aria-label="Rechercher un produit"
+                oninput="_asgRenderProducts()" class="input-field text-xs" style="flex:1 1 14rem;" />
+              <select id="assign-product-brand" aria-label="Filtrer les produits par marque" onchange="_asgRenderProducts()"
+                class="rounded-xl px-3 py-2 text-xs" style="background:var(--admin-card-bg); border:1px solid var(--admin-border); color:var(--admin-text-primary);">
+                <option value="">Toutes les marques</option>
+                {Array.from(new Set(products.map(p => p.brand).filter(Boolean))).sort().map(b => <option value={b}>{b}</option>)}
+              </select>
+            </div>
+            <div id="assign-product-list" class="rounded-xl overflow-y-auto" style="max-height:13.5rem; border:1px solid var(--admin-border);"></div>
+            <label id="assign-brand-scope-label" class="flex items-center gap-2 mt-2 text-xs cursor-pointer" style="color:#475569;">
+              <input type="checkbox" id="assign-brand-scope" onchange="_asgToggleBrandScope(this.checked)" class="accent-purple-600" />
+              <span id="assign-brand-scope-text">Appliquer plutôt à tous les produits de la marque</span>
             </label>
-            <label class="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border" style="border-color:var(--admin-border); background:var(--admin-bg);">
-              <input type="radio" name="assign-scope" value="single" onchange="toggleAssignScopeUI()" class="accent-purple-500" />
-              <span class="text-xs font-semibold" style="color:var(--admin-text-primary);">Un seul produit spécifique</span>
-            </label>
+          </section>
+
+          {/* Étape 2 : rôle des images */}
+          <section>
+            <h4 class="text-sm font-bold mb-1 flex items-center gap-2" style="color:#0f172a;">
+              <span class="flex items-center justify-center rounded-full text-xs" style="width:22px;height:22px;background:#6d28d9;color:#fff;">2</span>
+              Quelle image sert de vignette ?
+            </h4>
+            <p class="text-xs mb-3" style="color:#475569;">
+              La <strong style="color:#b45309;">vignette</strong> est l'image principale du produit (catalogue, fiche). Toutes les autres images deviennent des <strong>images annexes</strong> (galerie de la fiche produit).
+            </p>
+            <div id="assign-images" class="flex flex-wrap gap-3"></div>
+            <div class="flex flex-wrap items-center gap-3 mt-3">
+              <button type="button" id="assign-picker-toggle" onclick="_asgTogglePicker()"
+                class="text-xs px-3 py-1.5 rounded-lg font-semibold" style="background:rgba(109,40,217,0.08); color:#6d28d9; border:1px solid rgba(109,40,217,0.3);">
+                <i class="fas fa-plus mr-1"></i>Ajouter des images de la médiathèque
+              </button>
+            </div>
+            <div id="assign-picker" class="hidden mt-3 rounded-xl p-3" style="background:var(--admin-bg); border:1px solid var(--admin-border);">
+              <div class="flex flex-wrap items-center gap-2 mb-2">
+                <span class="text-xs font-semibold" style="color:#334155;">Cliquez sur une image pour l'ajouter ou la retirer</span>
+                <select id="assign-picker-brand" aria-label="Filtrer les images par marque" onchange="_asgRenderPicker()"
+                  class="rounded-lg px-2 py-1 text-xs ml-auto" style="background:var(--admin-card-bg); border:1px solid var(--admin-border); color:var(--admin-text-primary);">
+                  <option value="">Toutes les marques</option>
+                </select>
+              </div>
+              <div id="assign-picker-grid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 overflow-y-auto" style="max-height:12rem;"></div>
+              <p id="assign-picker-empty" class="hidden text-xs text-center py-4" style="color:#475569;">Aucune image dans la médiathèque pour cette marque.</p>
+            </div>
+          </section>
+        </div>
+
+        <div class="px-5 py-4" style="border-top:1px solid var(--admin-border); background:var(--admin-bg); border-radius:0 0 1rem 1rem;">
+          <p id="assign-summary" class="text-xs mb-3" style="color:#334155;" aria-live="polite"></p>
+          <div class="flex gap-3 justify-end">
+            <button type="button" onclick="closeAssignMedia()"
+              class="px-4 py-2.5 rounded-xl text-sm font-semibold" style="background:#e2e8f0; color:#334155;">Annuler</button>
+            <button type="button" id="assign-confirm-btn" onclick="confirmAssignMedia()"
+              class="px-5 py-2.5 rounded-xl text-sm font-semibold" style="background:#6d28d9; color:#fff;">
+              <i class="fas fa-check mr-1"></i>Affecter
+            </button>
           </div>
-        </div>
-
-        {/* Choix du produit si scope == single */}
-        <div id="assign-product-wrapper" class="hidden mb-4">
-          <label class="block text-xs mb-1" style="color:var(--admin-text-muted);">Produit(s) cible(s) <span class="text-gray-500">(Ctrl+clic pour sélection multiple)</span></label>
-          <select id="assign-product-select" multiple size={5} class="w-full rounded-xl px-3 py-2 text-xs" style="background:var(--admin-card-bg); border:1px solid var(--admin-border); color:var(--admin-text-primary);">
-            {products.map(p => <option value={String(p.id)}>{p.name} — {p.brand}</option>)}
-          </select>
-        </div>
-
-        {/* Emplacement d'utilisation */}
-        <div class="mb-5">
-          <label class="block text-xs font-semibold mb-2" style="color:var(--admin-text-muted);">Utiliser comme</label>
-          <div class="flex gap-4">
-            <label class="flex items-center gap-2 cursor-pointer" id="assign-target-main-label">
-              <input type="radio" name="assign-target" value="main" checked class="accent-purple-500" />
-              <span class="text-xs" style="color:var(--admin-text-primary);">Image principale</span>
-            </label>
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="assign-target" value="gallery" class="accent-purple-500" />
-              <span class="text-xs" style="color:var(--admin-text-primary);">Galerie photos</span>
-            </label>
-          </div>
-          <p id="assign-target-main-note" class="hidden text-xs mt-1" style="color:#f87171;">Image principale non disponible avec plusieurs images — galerie forcée.</p>
-        </div>
-
-        <div class="flex gap-3">
-          <button type="button" onclick="document.getElementById('assign-media-modal').classList.add('hidden')"
-            class="flex-1 py-2.5 rounded-xl text-xs font-semibold" style="background:rgba(148,163,184,0.1); color:#94a3b8;">Annuler</button>
-          <button type="button" onclick="confirmAssignMedia()"
-            class="flex-1 py-2.5 rounded-xl text-xs font-semibold" style="background:rgba(168,85,247,0.2); color:#d8b4fe; border:1px solid rgba(168,85,247,0.3);">
-            <i class="fas fa-check mr-1"></i>Affecter
-          </button>
         </div>
       </div>
     </div>
@@ -193,15 +230,31 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
       ${CLIENT_ESC_HELPER}
       // ===== MÉDIATHÈQUE CENTRALISÉE =====
       var _mediathequeFilter = '';
-      var _mediathequeSelection = {}; // map id (string) -> img object
+      var _mediathequeSelection = []; // images cochées, dans l’ordre du clic
 
-      function toggleMediatheque() {
+      function _mEl(tag, cls, css, text) {
+        var el = document.createElement(tag);
+        if (cls) el.className = cls;
+        if (css) el.style.cssText = css;
+        if (text !== undefined && text !== null) el.textContent = text;
+        return el;
+      }
+
+      function _mIndexOf(list, id) {
+        for (var i = 0; i < list.length; i++) { if (String(list[i].id) === String(id)) return i; }
+        return -1;
+      }
+
+      function toggleMediatheque(forceOpen) {
         var panel = document.getElementById('mediatheque-panel');
         var chevron = document.getElementById('mediatheque-chevron');
-        var wasHidden = panel.classList.contains('hidden');
-        panel.classList.toggle('hidden', !wasHidden);
-        chevron.style.transform = wasHidden ? 'rotate(180deg)' : '';
-        if (wasHidden) loadMediatheque();
+        var toggle = document.getElementById('mediatheque-toggle');
+        var open = forceOpen === true ? true : panel.classList.contains('hidden');
+        panel.classList.toggle('hidden', !open);
+        chevron.style.transform = open ? 'rotate(180deg)' : '';
+        if (toggle) toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        try { sessionStorage.setItem('maasga_mediatheque_open', open ? '1' : '0'); } catch (e) {}
+        if (open) loadMediatheque();
       }
 
       function loadMediatheque() {
@@ -215,109 +268,102 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
         var grid = document.getElementById('mediatheque-grid');
         var empty = document.getElementById('mediatheque-empty');
         grid.innerHTML = '';
-        if (!images.length) { empty.classList.remove('hidden'); updateSelectionBar(); return; }
-        empty.classList.add('hidden');
+        empty.classList.toggle('hidden', images.length > 0);
         images.forEach(function(img) {
-          var isSelected = !!_mediathequeSelection[String(img.id)];
-          var div = document.createElement('div');
-          div.className = 'relative group rounded-xl overflow-hidden cursor-pointer';
-          div.style.cssText = 'aspect-ratio:1/1; background:#0a1628;';
-          if (isSelected) {
-            div.style.outline = '2.5px solid #a855f7';
-            div.style.outlineOffset = '2px';
-          }
-          div.setAttribute('data-media-id', String(img.id));
+          var tile = _mEl('div', 'relative cursor-pointer', '');
+          tile.setAttribute('data-media-id', String(img.id));
+          tile.setAttribute('role', 'checkbox');
+          tile.setAttribute('tabindex', '0');
+          var name = (img.label ? img.label + ' — ' : '') + (img.brand || 'Image');
+          tile.setAttribute('aria-label', name);
+          tile.title = name;
 
-          var image = document.createElement('img');
+          var frame = _mEl('div', 'media-frame rounded-xl overflow-hidden', 'aspect-ratio:1/1; background:#f1f5f9; border:2px solid #e2e8f0; transition:border-color 0.15s, box-shadow 0.15s;');
+          var image = _mEl('img', 'w-full h-full object-contain', '');
           image.src = img.url;
-          image.className = 'w-full h-full object-cover';
-          image.title = (img.label || '') + (img.label && img.brand ? ' — ' : '') + (img.brand || '');
+          image.alt = '';
+          image.loading = 'lazy';
+          frame.appendChild(image);
 
-          // Coche de sélection
-          var checkEl = document.createElement('div');
-          checkEl.className = 'absolute top-1 left-1 rounded-full flex items-center justify-center';
-          checkEl.style.cssText = 'width:18px;height:18px;background:' + (isSelected ? '#a855f7' : 'rgba(0,0,0,0.45)') + ';border:2px solid ' + (isSelected ? '#a855f7' : 'rgba(255,255,255,0.4)') + ';transition:background 0.15s;';
-          if (isSelected) {
-            checkEl.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polyline points="2,5 4.5,7.5 8,3" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-          }
+          var check = _mEl('div', 'media-check absolute flex items-center justify-center rounded-full text-xs font-bold', 'top:6px; left:6px; width:24px; height:24px;');
 
-          var overlay = document.createElement('div');
-          overlay.className = 'absolute inset-0 flex flex-col items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity';
-          overlay.style.cssText = 'background:rgba(0,0,0,0.65);';
+          var del = _mEl('button', 'absolute flex items-center justify-center rounded-full', 'top:6px; right:6px; width:24px; height:24px; background:rgba(255,255,255,0.92); color:#b91c1c; border:1px solid #fecaca;');
+          del.type = 'button';
+          del.title = 'Supprimer de la médiathèque';
+          del.setAttribute('aria-label', 'Supprimer de la médiathèque');
+          del.innerHTML = '<i class="fas fa-trash" style="font-size:0.65rem;"></i>';
+          del.addEventListener('click', function(e) { e.stopPropagation(); deleteFromMediatheque(img.id); });
+          del.addEventListener('keydown', function(e) { e.stopPropagation(); });
 
-          var badge = document.createElement('span');
-          badge.className = 'text-xs font-bold px-2 py-0.5 rounded-full';
-          badge.style.cssText = 'background:rgba(168,85,247,0.4); color:#d8b4fe;';
-          badge.textContent = img.brand;
+          var caption = _mEl('div', 'text-xs mt-1 truncate text-center', 'color:#475569;', name);
 
-          var btnAssign = document.createElement('button');
-          btnAssign.type = 'button';
-          btnAssign.className = 'text-xs px-2.5 py-1 rounded-lg font-semibold';
-          btnAssign.style.cssText = 'background:rgba(16,185,129,0.35); color:#34d399;';
-          btnAssign.textContent = 'Affecter';
-          btnAssign.addEventListener('click', (function(i) { return function(e) { e.stopPropagation(); openAssignMedia([i]); }; })(img));
+          tile.appendChild(frame);
+          tile.appendChild(check);
+          tile.appendChild(del);
+          tile.appendChild(caption);
 
-          var btnDel = document.createElement('button');
-          btnDel.type = 'button';
-          btnDel.className = 'text-xs px-2.5 py-1 rounded-lg font-semibold';
-          btnDel.style.cssText = 'background:rgba(239,68,68,0.35); color:#f87171;';
-          btnDel.textContent = 'Supprimer';
-          btnDel.addEventListener('click', (function(i) { return function(e) { e.stopPropagation(); deleteFromMediatheque(i.id); }; })(img));
-
-          overlay.appendChild(badge);
-          overlay.appendChild(btnAssign);
-          overlay.appendChild(btnDel);
-          div.appendChild(image);
-          div.appendChild(checkEl);
-          div.appendChild(overlay);
-
-          // Clic sur la vignette (hors boutons) = basculer sélection
-          div.addEventListener('click', (function(i) { return function() { toggleMediathequeSelect(i); }; })(img));
-
-          grid.appendChild(div);
+          tile.addEventListener('click', function() { toggleMediathequeSelect(img); });
+          tile.addEventListener('keydown', function(e) {
+            if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleMediathequeSelect(img); }
+          });
+          grid.appendChild(tile);
         });
+        paintMediathequeSelection();
+      }
+
+      // Met à jour l’apparence des cases sans recharger la grille
+      function paintMediathequeSelection() {
+        var tiles = document.querySelectorAll('#mediatheque-grid [data-media-id]');
+        for (var i = 0; i < tiles.length; i++) {
+          var tile = tiles[i];
+          var pos = _mIndexOf(_mediathequeSelection, tile.getAttribute('data-media-id'));
+          var on = pos >= 0;
+          var frame = tile.querySelector('.media-frame');
+          var check = tile.querySelector('.media-check');
+          tile.setAttribute('aria-checked', on ? 'true' : 'false');
+          frame.style.borderColor = on ? '#6d28d9' : '#e2e8f0';
+          frame.style.boxShadow = on ? '0 0 0 3px rgba(109,40,217,0.25)' : 'none';
+          check.style.background = on ? '#6d28d9' : 'rgba(255,255,255,0.92)';
+          check.style.border = on ? '2px solid #6d28d9' : '2px solid #94a3b8';
+          check.style.color = '#fff';
+          check.textContent = on ? String(pos + 1) : '';
+        }
         updateSelectionBar();
       }
 
       function toggleMediathequeSelect(img) {
-        var key = String(img.id);
-        if (_mediathequeSelection[key]) {
-          delete _mediathequeSelection[key];
-        } else {
-          _mediathequeSelection[key] = img;
-        }
-        // Re-rendre pour mettre à jour les coches
-        loadMediatheque();
+        var pos = _mIndexOf(_mediathequeSelection, img.id);
+        if (pos >= 0) _mediathequeSelection.splice(pos, 1);
+        else _mediathequeSelection.push(img);
+        paintMediathequeSelection();
       }
 
       function clearMediathequeSelection() {
-        _mediathequeSelection = {};
-        updateSelectionBar();
-        loadMediatheque();
+        _mediathequeSelection = [];
+        paintMediathequeSelection();
       }
 
       function updateSelectionBar() {
-        var bar = document.getElementById('mediatheque-selection-bar');
         var countEl = document.getElementById('mediatheque-selection-count');
-        var n = Object.keys(_mediathequeSelection).length;
-        if (!bar) return;
-        if (n > 0) {
-          bar.classList.remove('hidden');
-          if (countEl) countEl.textContent = n + ' image' + (n > 1 ? 's' : '') + ' sélectionnée' + (n > 1 ? 's' : '');
-          var btn = document.getElementById('btn-affecter-selection');
-          if (btn) btn.textContent = '';
-          if (btn) btn.innerHTML = '<i class="fas fa-link" style="margin-right:4px"></i>Affecter la sélection (' + n + ')';
-        } else {
-          bar.classList.add('hidden');
-        }
+        var btn = document.getElementById('btn-affecter-selection');
+        var clearBtn = document.getElementById('btn-clear-selection');
+        var n = _mediathequeSelection.length;
+        if (!countEl || !btn) return;
+        if (n === 0) countEl.textContent = 'Cochez une ou plusieurs images pour les affecter à un produit.';
+        else if (n === 1) countEl.textContent = '1 image cochée.';
+        else countEl.textContent = n + ' images cochées — la n° 1 sera proposée comme vignette, les autres comme images annexes (modifiable à l’étape suivante).';
+        btn.disabled = n === 0;
+        btn.style.opacity = n === 0 ? '0.45' : '1';
+        btn.style.cursor = n === 0 ? 'not-allowed' : 'pointer';
+        if (clearBtn) clearBtn.classList.toggle('hidden', n === 0);
       }
 
       function filterMediatheque(brand) {
         _mediathequeFilter = brand;
         document.querySelectorAll('.brand-filter-btn').forEach(function(btn) {
           var active = btn.getAttribute('data-brand-filter') === brand;
-          btn.style.background = active ? 'rgba(168,85,247,0.2)' : 'rgba(148,163,184,0.08)';
-          btn.style.color = active ? '#d8b4fe' : '#94a3b8';
+          btn.style.background = active ? '#6d28d9' : '#f1f5f9';
+          btn.style.color = active ? '#fff' : '#475569';
         });
         loadMediatheque();
       }
@@ -327,7 +373,12 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
         var brand = (brandInput ? brandInput.value : '').trim() || (_mediathequeFilter || '');
         var label = document.getElementById('mediatheque-label').value.trim();
         var input = document.getElementById('mediatheque-files');
-        if (!brand) { showToast("Veuillez renseigner ou filtrer par marque avant l'upload.", "warning"); input.value = ''; return; }
+        if (!brand) {
+          showToast("Indiquez d’abord la marque des images (champ « Marque »).", "warning");
+          input.value = '';
+          if (brandInput) brandInput.focus();
+          return;
+        }
         if (!input.files || !input.files.length) return;
         var upl = document.getElementById('mediatheque-uploading');
         upl.classList.remove('hidden');
@@ -335,6 +386,14 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
         var done = 0;
         var errors = 0;
         var lastErr = '';
+        function finish() {
+          if (done !== files.length) return;
+          upl.classList.add('hidden');
+          input.value = '';
+          if (errors > 0) showToast(lastErr || (errors + " erreur(s) d’envoi."), "error");
+          else showToast(files.length + " image(s) ajoutée(s) à la médiathèque.", "success");
+          loadMediatheque();
+        }
         files.forEach(function(file) {
           var fd = new FormData();
           fd.append('brand', brand);
@@ -342,33 +401,21 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
           fd.append('image', file);
           fetch('/api/admin/media/brand/upload', { method: 'POST', body: fd })
             .then(function(r){ return r.json(); })
-            .then(function(d) {
-              if (d.error) { errors++; lastErr = d.error; }
-              done++;
-              if (done === files.length) {
-                upl.classList.add('hidden');
-                input.value = '';
-                if (errors > 0) showToast(lastErr || (errors + " erreur(s) d'upload."), "error");
-                else showToast(files.length + " image(s) envoyée(s) dans la médiathèque.", "success");
-                loadMediatheque();
-              }
-            })
-            .catch(function() {
-              errors++; done++;
-              if (done === files.length) { upl.classList.add('hidden'); input.value = ''; showToast("Erreur réseau lors de l'upload.", "error"); loadMediatheque(); }
-            });
+            .then(function(d) { if (d.error) { errors++; lastErr = d.error; } done++; finish(); })
+            .catch(function() { errors++; lastErr = "Erreur réseau lors de l’envoi."; done++; finish(); });
         });
       }
 
       function deleteFromMediatheque(id) {
-        if (!confirm('Supprimer cette image de la médiathèque ?')) return;
+        if (!confirm('Supprimer cette image de la médiathèque ? Elle sera aussi retirée des produits qui l’utilisent.')) return;
         var fd = new FormData();
         fd.append('id', String(id));
         fetch('/api/admin/media/brand/delete', { method: 'POST', body: fd })
           .then(function(r){ return r.json(); })
           .then(function(d) {
             if (d.success) {
-              delete _mediathequeSelection[String(id)];
+              var pos = _mIndexOf(_mediathequeSelection, id);
+              if (pos >= 0) _mediathequeSelection.splice(pos, 1);
               showToast('Image supprimée.', 'success');
               loadMediatheque();
             }
@@ -376,137 +423,378 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
           }).catch(function() { showToast('Erreur réseau.', 'error'); });
       }
 
-      function toggleAssignScopeUI() {
-        var scopeEl = document.querySelector('input[name="assign-scope"]:checked');
-        var scope = scopeEl ? scopeEl.value : 'brand';
-        var wrapper = document.getElementById('assign-product-wrapper');
-        if (wrapper) wrapper.classList.toggle('hidden', scope !== 'single');
+      // ===== FENÊTRE D’AFFECTATION (produit + vignette + images annexes) =====
+      var _asgProducts = [];
+      try { _asgProducts = JSON.parse(document.getElementById('assign-products-data').textContent || '[]'); } catch (e) { _asgProducts = []; }
+      var _asg = null;          // état de la fenêtre ouverte
+      var _asgLibrary = null;   // cache de toutes les images de la médiathèque (sélecteur intégré)
+
+      function _asgProduct(id) {
+        for (var i = 0; i < _asgProducts.length; i++) { if (String(_asgProducts[i].id) === String(id)) return _asgProducts[i]; }
+        return null;
       }
 
-      // openAssignMedia(imgs) : imgs = tableau d'images, ou null => utilise la sélection courante
-      // Rétrocompat : openAssignMedia([singleImg]) depuis bouton Affecter par vignette
-      function openAssignMedia(imgs) {
-        var images = imgs;
-        if (!images) {
-          images = Object.values(_mediathequeSelection);
-        }
-        if (!images || !images.length) return;
+      function _asgChosenProducts() {
+        return _asgProducts.filter(function(p) { return !!_asg.products[String(p.id)]; });
+      }
 
-        var isSingle = images.length === 1;
+      function _asgImageBrands() {
+        var seen = {}; var out = [];
+        _asg.images.forEach(function(i) {
+          var b = String(i.brand || '').trim();
+          if (b && !seen[b.toLowerCase()]) { seen[b.toLowerCase()] = true; out.push(b); }
+        });
+        return out;
+      }
 
-        // Aperçu
-        var preview = document.getElementById('assign-media-preview');
-        var multiPreview = document.getElementById('assign-media-multi-preview');
-        var multiGrid = document.getElementById('assign-media-multi-grid');
-        if (isSingle) {
-          preview.src = images[0].url;
-          preview.classList.remove('hidden');
-          if (multiPreview) multiPreview.classList.add('hidden');
+      // Vignette proposée par défaut tant que l’utilisateur n’a pas choisi lui-même
+      function _asgApplyDefaultMain() {
+        if (_asg.mainTouched) return;
+        if (!_asg.images.length) { _asg.mainId = null; return; }
+        if (_asg.fromProduct) {
+          // Depuis un produit : ne remplacer la vignette d’office que s’il n’en a pas
+          var chosen = _asgChosenProducts();
+          var needs = chosen.length > 0 && chosen.every(function(p) { return !p.hasImg; });
+          _asg.mainId = needs ? _asg.images[0].id : null;
         } else {
-          preview.src = '';
-          preview.classList.add('hidden');
-          if (multiPreview) multiPreview.classList.remove('hidden');
-          if (multiGrid) {
-            multiGrid.innerHTML = '';
-            images.forEach(function(img) {
-              var el = document.createElement('img');
-              el.src = img.url;
-              el.className = 'rounded-lg object-cover';
-              el.style.cssText = 'width:40px;height:40px;border:1px solid rgba(168,85,247,0.3);';
-              multiGrid.appendChild(el);
-            });
-            var lbl = document.createElement('span');
-            lbl.className = 'text-xs w-full text-center mt-1';
-            lbl.style.color = '#d8b4fe';
-            lbl.textContent = images.length + ' images sélectionnées';
-            multiGrid.appendChild(lbl);
+          _asg.mainId = _asg.images[0].id;
+        }
+      }
+
+      function _asgOpen(images, productId) {
+        _asg = {
+          images: images.slice(), mainId: null, mainTouched: false,
+          products: {}, brandScope: false, fromProduct: !!productId, busy: false
+        };
+        if (productId) _asg.products[String(productId)] = true;
+
+        var search = document.getElementById('assign-product-search');
+        var brandSel = document.getElementById('assign-product-brand');
+        search.value = '';
+        // Pré-filtrer la liste des produits sur la marque des images, si elle existe au catalogue
+        var brands = _asgImageBrands();
+        brandSel.value = '';
+        if (!productId && brands.length === 1) {
+          for (var i = 0; i < brandSel.options.length; i++) {
+            if (brandSel.options[i].value.toLowerCase() === brands[0].toLowerCase()) { brandSel.value = brandSel.options[i].value; break; }
           }
         }
+        document.getElementById('assign-brand-scope').checked = false;
+        document.getElementById('assign-picker').classList.add('hidden');
 
-        // Champs cachés
-        document.getElementById('assign-media-id').value = isSingle ? String(images[0].id) : '';
-        document.getElementById('assign-media-ids').value = images.map(function(i){ return i.id; }).join(',');
-
-        // Marque (depuis la première image ; pour scope brand)
-        var brand = images[0].brand || '';
-        document.getElementById('assign-media-brand-name').value = brand;
-        document.getElementById('assign-brand-badge').textContent = brand ? (brand + ' ') : '';
-
-        // Radios target : désactiver "Image principale" si plusieurs images
-        var mainRadio = document.querySelector('input[name="assign-target"][value="main"]');
-        var galleryRadio = document.querySelector('input[name="assign-target"][value="gallery"]');
-        var mainLabel = document.getElementById('assign-target-main-label');
-        var mainNote = document.getElementById('assign-target-main-note');
-        if (!isSingle) {
-          if (mainRadio) mainRadio.disabled = true;
-          if (galleryRadio) galleryRadio.checked = true;
-          if (mainLabel) mainLabel.style.opacity = '0.4';
-          if (mainNote) mainNote.classList.remove('hidden');
-        } else {
-          if (mainRadio) { mainRadio.disabled = false; mainRadio.checked = true; }
-          if (mainLabel) mainLabel.style.opacity = '';
-          if (mainNote) mainNote.classList.add('hidden');
-        }
-
-        var radBrand = document.querySelector('input[name="assign-scope"][value="brand"]');
-        if (radBrand) radBrand.checked = true;
-        toggleAssignScopeUI();
-
+        _asgApplyDefaultMain();
+        _asgRenderAll();
         document.getElementById('assign-media-modal').classList.remove('hidden');
+        if (productId) _asgTogglePicker(true);
+        else if (search) search.focus();
       }
 
-      // Alias rétrocompat : openAssignModal(img) appelle openAssignMedia([img])
-      function openAssignModal(img) {
-        openAssignMedia([img]);
+      // Depuis la médiathèque : imgs = tableau d’images, ou null => images cochées
+      function openAssignMedia(imgs) {
+        var images = imgs || _mediathequeSelection;
+        if (!images || !images.length) { showToast("Cochez d’abord au moins une image.", "warning"); return; }
+        _asgOpen(images, null);
+      }
+
+      // Depuis une ligne produit : le produit est déjà choisi, on pioche les images
+      function openAssignForProduct(productId) {
+        _asgOpen([], productId);
+      }
+
+      function closeAssignMedia() {
+        document.getElementById('assign-media-modal').classList.add('hidden');
+      }
+
+      function _asgRenderAll() {
+        _asgRenderProducts();
+        _asgRenderImages();
+        _asgRenderSummary();
+      }
+
+      function _asgRenderProducts() {
+        if (!_asg) return;
+        var list = document.getElementById('assign-product-list');
+        var q = (document.getElementById('assign-product-search').value || '').trim().toLowerCase();
+        var brand = (document.getElementById('assign-product-brand').value || '').toLowerCase();
+        list.innerHTML = '';
+        list.style.opacity = _asg.brandScope ? '0.45' : '1';
+        list.style.pointerEvents = _asg.brandScope ? 'none' : '';
+
+        var shown = _asgProducts.filter(function(p) {
+          if (_asg.products[String(p.id)]) return true; // un produit choisi reste toujours visible
+          if (brand && String(p.brand).toLowerCase() !== brand) return false;
+          if (q && (p.name + ' ' + p.brand + ' ' + p.model).toLowerCase().indexOf(q) < 0) return false;
+          return true;
+        });
+        // Produits choisis en tête de liste
+        shown.sort(function(a, b) { return (_asg.products[String(b.id)] ? 1 : 0) - (_asg.products[String(a.id)] ? 1 : 0); });
+
+        if (!shown.length) {
+          list.appendChild(_mEl('p', 'text-xs text-center py-5', 'color:#475569;', 'Aucun produit ne correspond à cette recherche.'));
+          return;
+        }
+        shown.forEach(function(p) {
+          var on = !!_asg.products[String(p.id)];
+          var row = _mEl('label', 'flex items-center gap-3 px-3 py-2 cursor-pointer', 'border-bottom:1px solid #f1f5f9;' + (on ? 'background:#faf5ff;' : ''));
+          var cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.checked = on;
+          cb.className = 'accent-purple-600 flex-shrink-0';
+          cb.disabled = _asg.brandScope;
+          cb.addEventListener('change', function() {
+            if (cb.checked) _asg.products[String(p.id)] = true; else delete _asg.products[String(p.id)];
+            _asgApplyDefaultMain();
+            _asgRenderAll();
+          });
+          row.appendChild(cb);
+
+          var thumb;
+          if (p.img) {
+            thumb = _mEl('img', 'rounded-lg object-contain flex-shrink-0', 'width:36px; height:36px; background:#f1f5f9; border:1px solid #e2e8f0;');
+            thumb.src = p.img; thumb.alt = ''; thumb.loading = 'lazy';
+          } else {
+            thumb = _mEl('span', 'rounded-lg flex items-center justify-center flex-shrink-0', 'width:36px; height:36px; background:#f1f5f9; border:1px dashed #cbd5e1; color:#94a3b8;');
+            thumb.innerHTML = '<i class="fas fa-image text-xs"></i>';
+          }
+          row.appendChild(thumb);
+
+          var txt = _mEl('span', 'min-w-0 flex-1', '');
+          txt.appendChild(_mEl('span', 'block text-xs font-semibold truncate', 'color:#0f172a;', p.name));
+          txt.appendChild(_mEl('span', 'block text-xs truncate', 'color:#475569;', [p.brand, p.model].filter(Boolean).join(' · ')));
+          row.appendChild(txt);
+
+          var state = p.hasImg ? 'Vignette : oui' : 'Sans vignette';
+          state += ' · ' + p.n + ' annexe' + (p.n > 1 ? 's' : '');
+          row.appendChild(_mEl('span', 'text-xs flex-shrink-0 hidden sm:inline', 'color:' + (p.hasImg ? '#475569' : '#b45309') + ';', state));
+          list.appendChild(row);
+        });
+      }
+
+      function _asgToggleBrandScope(checked) {
+        if (!_asg) return;
+        _asg.brandScope = !!checked;
+        _asgRenderAll();
+      }
+
+      function _asgSetMain(id) {
+        _asg.mainTouched = true;
+        _asg.mainId = (String(_asg.mainId) === String(id)) ? null : id;
+        _asgRenderImages();
+        _asgRenderSummary();
+      }
+
+      function _asgRemoveImage(id) {
+        var pos = _mIndexOf(_asg.images, id);
+        if (pos < 0) return;
+        _asg.images.splice(pos, 1);
+        if (String(_asg.mainId) === String(id)) { _asg.mainId = null; _asg.mainTouched = false; }
+        _asgApplyDefaultMain();
+        _asgRenderImages();
+        _asgRenderPicker();
+        _asgRenderSummary();
+      }
+
+      function _asgRenderImages() {
+        var box = document.getElementById('assign-images');
+        box.innerHTML = '';
+        if (!_asg.images.length) {
+          box.appendChild(_mEl('p', 'text-xs py-3', 'color:#475569;', 'Aucune image choisie pour l’instant. Ajoutez-en depuis la médiathèque ci-dessous.'));
+          return;
+        }
+        _asg.images.forEach(function(img) {
+          var isMain = String(_asg.mainId) === String(img.id);
+          var card = _mEl('div', 'relative', 'width:124px;');
+
+          var frame = _mEl('div', 'rounded-xl overflow-hidden', 'width:124px; height:124px; background:#f1f5f9; border:3px solid ' + (isMain ? '#b45309' : '#e2e8f0') + ';' + (isMain ? 'box-shadow:0 0 0 3px rgba(180,83,9,0.2);' : ''));
+          var image = _mEl('img', 'w-full h-full object-contain', '');
+          image.src = img.url; image.alt = img.label || img.brand || '';
+          frame.appendChild(image);
+          card.appendChild(frame);
+
+          var badge = _mEl('span', 'absolute text-xs font-bold px-2 py-0.5 rounded-full', 'top:8px; left:8px; ' + (isMain ? 'background:#b45309; color:#fff;' : 'background:rgba(255,255,255,0.94); color:#334155; border:1px solid #cbd5e1;'));
+          badge.innerHTML = isMain ? '<i class="fas fa-star" style="font-size:0.6rem; margin-right:3px;"></i>' : '';
+          badge.appendChild(document.createTextNode(isMain ? 'Vignette' : 'Annexe'));
+          card.appendChild(badge);
+
+          var rm = _mEl('button', 'absolute flex items-center justify-center rounded-full', 'top:8px; right:8px; width:22px; height:22px; background:rgba(255,255,255,0.94); color:#334155; border:1px solid #cbd5e1; font-size:14px; line-height:1;', '×');
+          rm.type = 'button';
+          rm.title = 'Ne pas affecter cette image';
+          rm.setAttribute('aria-label', 'Ne pas affecter cette image');
+          rm.addEventListener('click', function() { _asgRemoveImage(img.id); });
+          card.appendChild(rm);
+
+          var btn = _mEl('button', 'w-full mt-1.5 text-xs font-semibold rounded-lg', 'padding:5px 4px; ' + (isMain ? 'background:#fff7ed; color:#b45309; border:1px solid #fdba74;' : 'background:#fff; color:#6d28d9; border:1px solid rgba(109,40,217,0.35);'), isMain ? 'Passer en annexe' : 'Choisir comme vignette');
+          btn.type = 'button';
+          btn.setAttribute('aria-pressed', isMain ? 'true' : 'false');
+          btn.addEventListener('click', function() { _asgSetMain(img.id); });
+          card.appendChild(btn);
+
+          box.appendChild(card);
+        });
+      }
+
+      // --- Sélecteur d’images intégré (pour ajouter des images sans quitter la fenêtre) ---
+      function _asgTogglePicker(forceOpen) {
+        var picker = document.getElementById('assign-picker');
+        var open = forceOpen === true ? true : picker.classList.contains('hidden');
+        picker.classList.toggle('hidden', !open);
+        if (!open) return;
+        if (_asgLibrary) { _asgFillPickerBrands(); _asgRenderPicker(); return; }
+        fetch('/api/admin/media/brand').then(function(r){ return r.json(); }).then(function(d) {
+          _asgLibrary = d.images || [];
+          _asgFillPickerBrands();
+          _asgRenderPicker();
+        }).catch(function() { _asgLibrary = []; _asgRenderPicker(); });
+      }
+
+      function _asgFillPickerBrands() {
+        var sel = document.getElementById('assign-picker-brand');
+        var seen = {}; var brands = [];
+        (_asgLibrary || []).forEach(function(i) {
+          var b = String(i.brand || '').trim();
+          if (b && !seen[b.toLowerCase()]) { seen[b.toLowerCase()] = true; brands.push(b); }
+        });
+        brands.sort();
+        sel.innerHTML = '';
+        var all = document.createElement('option'); all.value = ''; all.textContent = 'Toutes les marques';
+        sel.appendChild(all);
+        brands.forEach(function(b) { var o = document.createElement('option'); o.value = b; o.textContent = b; sel.appendChild(o); });
+        // Par défaut : la marque du produit choisi (ou des images déjà choisies), si la médiathèque en contient
+        var wanted = '';
+        var chosen = _asgChosenProducts();
+        if (chosen.length === 1) wanted = chosen[0].brand;
+        else { var ib = _asgImageBrands(); if (ib.length === 1) wanted = ib[0]; }
+        sel.value = '';
+        brands.forEach(function(b) { if (wanted && b.toLowerCase() === String(wanted).toLowerCase()) sel.value = b; });
+      }
+
+      function _asgRenderPicker() {
+        var picker = document.getElementById('assign-picker');
+        if (!_asg || picker.classList.contains('hidden')) return;
+        var grid = document.getElementById('assign-picker-grid');
+        var empty = document.getElementById('assign-picker-empty');
+        var brand = (document.getElementById('assign-picker-brand').value || '').toLowerCase();
+        var imgs = (_asgLibrary || []).filter(function(i) { return !brand || String(i.brand || '').toLowerCase() === brand; });
+        grid.innerHTML = '';
+        empty.classList.toggle('hidden', imgs.length > 0);
+        imgs.forEach(function(img) {
+          var on = _mIndexOf(_asg.images, img.id) >= 0;
+          var b = _mEl('button', 'relative rounded-lg overflow-hidden', 'aspect-ratio:1/1; background:#fff; border:2px solid ' + (on ? '#6d28d9' : '#e2e8f0') + '; padding:0;');
+          b.type = 'button';
+          var name = (img.label ? img.label + ' — ' : '') + (img.brand || 'Image');
+          b.title = name;
+          b.setAttribute('aria-label', (on ? 'Retirer : ' : 'Ajouter : ') + name);
+          b.setAttribute('aria-pressed', on ? 'true' : 'false');
+          var image = _mEl('img', 'w-full h-full object-contain', on ? 'opacity:0.55;' : '');
+          image.src = img.url; image.alt = ''; image.loading = 'lazy';
+          b.appendChild(image);
+          if (on) {
+            var ok = _mEl('span', 'absolute flex items-center justify-center rounded-full', 'top:3px; left:3px; width:18px; height:18px; background:#6d28d9; color:#fff;');
+            ok.innerHTML = '<i class="fas fa-check" style="font-size:0.55rem;"></i>';
+            b.appendChild(ok);
+          }
+          b.addEventListener('click', function() {
+            if (on) { _asgRemoveImage(img.id); return; }
+            _asg.images.push(img);
+            _asgApplyDefaultMain();
+            _asgRenderImages();
+            _asgRenderPicker();
+            _asgRenderSummary();
+          });
+          grid.appendChild(b);
+        });
+      }
+
+      // Phrase récapitulative + activation du bouton
+      function _asgRenderSummary() {
+        var el = document.getElementById('assign-summary');
+        var btn = document.getElementById('assign-confirm-btn');
+        var brands = _asgImageBrands();
+        var chosen = _asgChosenProducts();
+
+        var scopeText = document.getElementById('assign-brand-scope-text');
+        var scopeCb = document.getElementById('assign-brand-scope');
+        scopeText.textContent = brands.length
+          ? 'Appliquer plutôt à tous les produits ' + brands.join(', ') + ' (toute la marque)'
+          : 'Appliquer plutôt à tous les produits de la marque des images';
+        scopeCb.disabled = brands.length === 0;
+        if (!brands.length && _asg.brandScope) { _asg.brandScope = false; scopeCb.checked = false; }
+
+        var problem = '';
+        if (!_asg.images.length) problem = 'Il reste à choisir au moins une image (étape 2).';
+        else if (!_asg.brandScope && !chosen.length) problem = 'Il reste à cocher le produit concerné (étape 1).';
+
+        var ok = !problem;
+        btn.disabled = !ok || _asg.busy;
+        btn.style.opacity = btn.disabled ? '0.45' : '1';
+        btn.style.cursor = btn.disabled ? 'not-allowed' : 'pointer';
+        if (!ok) { el.textContent = problem; el.style.color = '#b45309'; return; }
+
+        var who;
+        if (_asg.brandScope) who = 'Tous les produits ' + brands.join(', ');
+        else if (chosen.length === 1) who = '« ' + chosen[0].name + ' »';
+        else who = chosen.length + ' produits';
+
+        var nbAnnex = _asg.images.length - (_asg.mainId !== null ? 1 : 0);
+        var parts = [];
+        if (_asg.mainId !== null) {
+          var replaces = _asg.brandScope || chosen.some(function(p) { return p.hasImg; });
+          parts.push('1 vignette' + (replaces ? ' (remplace la vignette actuelle)' : ''));
+        }
+        if (nbAnnex > 0) parts.push(nbAnnex + ' image' + (nbAnnex > 1 ? 's' : '') + ' annexe' + (nbAnnex > 1 ? 's' : ''));
+        var verb = (_asg.brandScope || chosen.length > 1) ? ' recevront : ' : ' recevra : ';
+        var text = who + verb + parts.join(' + ') + '.';
+        if (_asg.mainId === null) text += ' La vignette actuelle n’est pas modifiée.';
+        el.textContent = text;
+        el.style.color = '#334155';
       }
 
       function confirmAssignMedia() {
-        var mediaIds = document.getElementById('assign-media-ids').value;
-        var mediaId = document.getElementById('assign-media-id').value;
-        var scopeEl = document.querySelector('input[name="assign-scope"]:checked');
-        var scope = scopeEl ? scopeEl.value : 'brand';
-        var targetEl = document.querySelector('input[name="assign-target"]:checked');
-        var target = targetEl ? targetEl.value : 'gallery';
+        if (!_asg || _asg.busy) return;
+        var chosen = _asgChosenProducts();
+        if (!_asg.images.length) { showToast("Choisissez au moins une image.", "warning"); return; }
+        if (!_asg.brandScope && !chosen.length) { showToast("Cochez le produit concerné.", "warning"); return; }
+        if (_asg.brandScope && !confirm('Appliquer ces images à TOUS les produits ' + _asgImageBrands().join(', ') + ' ?')) return;
 
         var fd = new FormData();
-        // Envoyer media_ids (CSV) et media_id (rétrocompat) si une seule
-        if (mediaIds) fd.append('media_ids', mediaIds);
-        if (mediaId) fd.append('media_id', mediaId);
-        fd.append('scope', scope);
-        fd.append('target', target);
+        fd.append('media_ids', _asg.images.map(function(i) { return i.id; }).join(','));
+        fd.append('scope', _asg.brandScope ? 'brand' : 'single');
+        fd.append('target', 'gallery');
+        if (_asg.mainId !== null) fd.append('main_media_id', String(_asg.mainId));
+        if (!_asg.brandScope) fd.append('product_ids', chosen.map(function(p) { return p.id; }).join(','));
 
-        if (scope === 'single') {
-          // Récupérer toutes les options sélectionnées du select multiple
-          var sel = document.getElementById('assign-product-select');
-          var selectedIds = [];
-          if (sel) {
-            for (var i = 0; i < sel.options.length; i++) {
-              if (sel.options[i].selected) selectedIds.push(sel.options[i].value);
-            }
-          }
-          if (!selectedIds.length) { showToast("Veuillez sélectionner au moins un produit.", "warning"); return; }
-          fd.append('product_ids', selectedIds.join(','));
-          fd.append('product_id', selectedIds[0]); // rétrocompat
-        }
-
+        var btn = document.getElementById('assign-confirm-btn');
+        _asg.busy = true;
+        btn.disabled = true;
+        btn.style.opacity = '0.45';
         fetch('/api/admin/media/brand/assign', { method: 'POST', body: fd })
           .then(function(r){ return r.json(); })
           .then(function(d) {
-            document.getElementById('assign-media-modal').classList.add('hidden');
+            _asg.busy = false;
             if (d.success) {
-              _mediathequeSelection = {};
-              showToast(d.message || "Image(s) affectée(s) avec succès.", "success");
+              closeAssignMedia();
+              _mediathequeSelection = [];
+              paintMediathequeSelection();
+              showToast(d.message || "Images affectées.", "success");
+              // Recharger pour mettre à jour le tableau des produits (la médiathèque reste ouverte)
               setTimeout(function(){ location.reload(); }, 1200);
             } else {
-              showToast("Erreur : " + (d.error || "Échec de l'affectation"), "error");
+              _asgRenderSummary();
+              showToast("Erreur : " + (d.error || "l’affectation a échoué"), "error");
             }
-          }).catch(function() { showToast("Erreur réseau.", "error"); });
+          }).catch(function() { _asg.busy = false; _asgRenderSummary(); showToast("Erreur réseau.", "error"); });
       }
 
-      // Fermer modal affectation sur clic extérieur
+      // Fermer la fenêtre : clic à l’extérieur ou touche Échap
       document.getElementById('assign-media-modal').addEventListener('click', function(e) {
-        if (e.target === this) this.classList.add('hidden');
+        if (e.target === this) closeAssignMedia();
       });
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !document.getElementById('assign-media-modal').classList.contains('hidden')) closeAssignMedia();
+      });
+
+      // Rouvrir la médiathèque si elle était ouverte avant le rechargement de la page
+      try { if (sessionStorage.getItem('maasga_mediatheque_open') === '1') toggleMediatheque(true); } catch (e) {}
     `}} />
 
     {/* Résumé stock */}
@@ -674,6 +962,12 @@ export const AdminProduitsPage = ({ success, deleted }: { success?: string; dele
                     class="flex items-center space-x-1 text-xs text-cyan-400 hover:text-cyan-300 px-2 py-1.5 rounded-lg font-semibold transition-colors mt-1" style="background:rgba(14,165,233,0.1); border:1px solid rgba(14,165,233,0.2);">
                     <i class="fas fa-images text-xs"></i>
                     <span>Galerie</span>
+                  </button>
+                  <button type="button" onclick={`openAssignForProduct(${p.id})`}
+                    title="Choisir la vignette et les images annexes dans la médiathèque"
+                    class="flex items-center space-x-1 text-xs px-2 py-1.5 rounded-lg font-semibold transition-colors mt-1" style="background:rgba(109,40,217,0.08); color:#6d28d9; border:1px solid rgba(109,40,217,0.25);">
+                    <i class="fas fa-photo-video text-xs"></i>
+                    <span>Médiathèque</span>
                   </button>
                 </td>
                 <td class="py-4 px-4">

@@ -4,8 +4,9 @@ import { getCookie } from 'hono/cookie'
 import type { HonoEnv } from '../../types'
 import { appointments, reviews } from '../../data/store'
 import { createAppointment, createClient } from '../../db'
-import { rateLimit } from '../../utils/security'
-import { isValidPhone, isValidEmail, sanitizeText } from '../../utils/helpers'
+import { rateLimitD1 } from '../../utils/security'
+import { sanitizeText } from '../../utils/helpers'
+import { validate, rdvSchema, avisSchema, contactSchema, stockAlertSchema, maintenanceRequestSchema } from '../../validation/schemas'
 import { notifyAdmin } from '../../utils/notifications'
 import { calculatePlanPricing } from '../../services/pricing.service'
 import { getSession } from '../../services/session.service'
@@ -17,47 +18,23 @@ export const webFormsRouter = new Hono<HonoEnv>()
 // ============================================================
 webFormsRouter.post('/api/rdv', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`rdv:${ip}`, 10, 60 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `rdv:${ip}`, 10, 60 * 60 * 1000)
   if (!rl.allowed) {
     return c.redirect('/rendez-vous?error=' + encodeURIComponent('Trop de demandes. Réessayez plus tard.'))
   }
 
   const body = await c.req.parseBody()
   if (body['website']) return c.redirect('/rendez-vous?success=1')
-  const name = (body['name'] as string || '').trim()
-  const phone = (body['phone'] as string || '').trim()
-  const quartier = (body['quartier'] as string || '').trim()
-  const date = (body['date'] as string || '').trim()
-  const heure_debut = (body['heure_debut'] as string || '08:00').trim()
-  const heure_fin = (body['heure_fin'] as string || '18:00').trim()
-  const email = (body['email'] as string || '').trim()
-  const typeRaw = (body['type'] as string || 'devis').toLowerCase()
-  const validRdvTypes = ['devis', 'installation', 'entretien', 'depannage'] as const
-  const type = (validRdvTypes.includes(typeRaw as any) ? typeRaw : 'devis') as 'devis' | 'installation' | 'entretien' | 'depannage'
-  const notes = (body['notes'] as string || '').trim()
-  const latitude = parseFloat(body['latitude'] as string) || null
-  const longitude = parseFloat(body['longitude'] as string) || null
-  const adresse_precise = (body['adresse_precise'] as string || '').trim()
-  const productId = body['product_id'] as string
-
-  const surfaceHint = (body['surface_hint'] as string || '').trim()
-  const btuHint = (body['btu_hint'] as string || '').trim()
+  const v = validate(rdvSchema, body)
+  if (!v.ok) return c.redirect('/rendez-vous?error=' + encodeURIComponent(v.error))
+  const { name, phone, quartier, date, heure_debut, heure_fin, email, type, notes, latitude, longitude, adresse_precise } = v.data
+  const productId = v.data.product_id ? String(v.data.product_id) : ''
+  const surfaceHint = v.data.surface_hint
+  const btuHint = v.data.btu_hint
   let notesWithHints = notes
   if (surfaceHint || btuHint) {
     const hints = [surfaceHint ? `Surface: ${surfaceHint} m2` : '', btuHint ? `BTU: ${btuHint}` : ''].filter(Boolean).join(' | ')
     notesWithHints = notesWithHints ? `${notesWithHints} [${hints}]` : `[${hints}]`
-  }
-
-  if (!name || !phone || !quartier || !date) {
-    return c.redirect('/rendez-vous?error=' + encodeURIComponent('Tous les champs obligatoires doivent être remplis.'))
-  }
-
-  if (!isValidPhone(phone)) {
-    return c.redirect('/rendez-vous?error=' + encodeURIComponent('Numéro de téléphone invalide (8 chiffres requis).'))
-  }
-
-  if (email && !isValidEmail(email)) {
-    return c.redirect('/rendez-vous?error=' + encodeURIComponent('Adresse email invalide.'))
   }
 
   const newRdv = {
@@ -128,22 +105,17 @@ webFormsRouter.post('/api/rdv', async (c) => {
 // ============================================================
 webFormsRouter.post('/api/avis', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`avis:${ip}`, 5, 60 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `avis:${ip}`, 5, 60 * 60 * 1000)
   if (!rl.allowed) {
     return c.redirect('/avis?error=' + encodeURIComponent('Trop de soumissions. Réessayez plus tard.'))
   }
 
   const body = await c.req.parseBody()
-  const name = (body['name'] as string || '').trim()
-  const note = parseInt(body['note'] as string || '5')
-  const comment = (body['comment'] as string || '').trim()
-  const service = (body['service'] as string || '').trim()
-
-  if (!name || !comment || comment.length < 10) {
-    return c.redirect('/avis?error=' + encodeURIComponent('Veuillez remplir tous les champs correctement.'))
-  }
-
-  const safeNote = Math.min(5, Math.max(1, isNaN(note) ? 5 : note))
+  if (body['website']) return c.redirect('/avis?success=1')
+  const v = validate(avisSchema, body)
+  if (!v.ok) return c.redirect('/avis?error=' + encodeURIComponent(v.error))
+  const { name, comment, service } = v.data
+  const safeNote = v.data.note
   const reviewDate = new Date().toISOString().split('T')[0]
   const reviewService = service || 'Service MAASGA'
 
@@ -169,29 +141,16 @@ webFormsRouter.post('/api/avis', async (c) => {
 // ============================================================
 webFormsRouter.post('/api/contact', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`contact:${ip}`, 5, 60 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `contact:${ip}`, 5, 60 * 60 * 1000)
   if (!rl.allowed) {
     return c.redirect('/contact?error=' + encodeURIComponent('Trop de messages envoyés. Réessayez plus tard.'))
   }
 
   const body = await c.req.parseBody()
   if (body['website']) return c.redirect('/contact?success=1')
-  const name = (body['name'] as string || '').trim()
-  const email = (body['email'] as string || '').trim()
-  const phone = (body['phone'] as string || '').trim()
-  const message = (body['message'] as string || '').trim()
-
-  if (!name || !message) {
-    return c.redirect('/contact?error=' + encodeURIComponent('Nom et message sont obligatoires.'))
-  }
-
-  if (email && !isValidEmail(email)) {
-    return c.redirect('/contact?error=' + encodeURIComponent('Adresse email invalide.'))
-  }
-
-  if (phone && !isValidPhone(phone)) {
-    return c.redirect('/contact?error=' + encodeURIComponent('Numéro de téléphone invalide (8 chiffres requis).'))
-  }
+  const v = validate(contactSchema, body)
+  if (!v.ok) return c.redirect('/contact?error=' + encodeURIComponent(v.error))
+  const { name, email, phone, message } = v.data
 
   const db = c.env.DB
   if (db && (phone || email)) {
@@ -220,18 +179,16 @@ webFormsRouter.post('/api/contact', async (c) => {
 // ============================================================
 webFormsRouter.post('/api/stock-alert', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`stockalert:${ip}`, 10, 60 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `stockalert:${ip}`, 10, 60 * 60 * 1000)
   if (!rl.allowed) {
     return c.json({ ok: false, error: 'Trop de demandes. Réessayez plus tard.' }, 429)
   }
 
   const body = await c.req.parseBody()
-  const productId = parseInt(body['product_id'] as string || '0')
-  const phone = (body['phone'] as string || '').trim()
-
-  if (!productId || !phone || !isValidPhone(phone)) {
-    return c.json({ ok: false, error: 'Numéro de téléphone invalide (8 chiffres requis).' }, 400)
-  }
+  const v = validate(stockAlertSchema, body)
+  if (!v.ok) return c.json({ ok: false, error: v.error }, 400)
+  const productId = v.data.product_id
+  const phone = v.data.phone
 
   const db = c.env.DB
   if (!db) {
@@ -269,7 +226,7 @@ webFormsRouter.post('/api/stock-alert', async (c) => {
 // ============================================================
 webFormsRouter.post('/api/maintenance/request', async (c) => {
   const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-  const rl = rateLimit(`maintenance:${ip}`, 5, 60 * 60 * 1000)
+  const rl = await rateLimitD1(c.env?.DB, `maintenance:${ip}`, 5, 60 * 60 * 1000)
 
   const isJsonReq = (c.req.header('content-type') || '').includes('application/json')
   const sendErr = (msg: string, status = 400) => {
@@ -293,35 +250,14 @@ webFormsRouter.post('/api/maintenance/request', async (c) => {
     return c.redirect('/contrat-maintenance?success=1')
   }
 
-  const name = (body['name'] as string || '').trim()
-  const phone = (body['phone'] as string || '').trim()
-  const email = (body['email'] as string || '').trim()
-  const quartier = (body['quartier'] as string || '').trim()
-  const planType = (body['plan_type'] as string || '').trim().toLowerCase()
-  let requestType = (body['request_type'] as string || '').trim().toLowerCase()
-  if (!requestType) {
-    requestType = planType ? 'contrat' : 'occasionnelle'
-  }
-  const description = (body['description'] as string || '').trim()
-  const preferredDate = (body['preferred_date'] as string || '').trim()
-  const equipmentType = (body['equipment_type'] as string || '').trim()
-  const nbClimatiseurs = Math.max(1, parseInt(body['nb_climatiseurs'] as string || '1', 10))
-  const frequenceVisites = (body['frequence_visites'] as string || 'Confort').trim()
-  const typeEtablissement = (body['type_etablissement'] as string || '').trim()
-  const exigences = (body['exigences'] as string || '').trim()
-
-  if (!name || !phone) {
-    return sendErr('Nom et téléphone sont obligatoires.')
-  }
-  if (!isValidPhone(phone)) {
-    return sendErr('Numéro de téléphone invalide (8 chiffres requis).')
-  }
-  if (email && !isValidEmail(email)) {
-    return sendErr('Adresse email invalide.')
-  }
-  if (!['occasionnelle', 'urgence', 'contrat'].includes(requestType)) {
-    return sendErr('Type de demande invalide.')
-  }
+  const v = validate(maintenanceRequestSchema, body)
+  if (!v.ok) return sendErr(v.error)
+  const {
+    name, phone, email, quartier, description, exigences,
+    plan_type: planType, request_type: requestType, preferred_date: preferredDate,
+    equipment_type: equipmentType, nb_climatiseurs: nbClimatiseurs,
+    frequence_visites: frequenceVisites, type_etablissement: typeEtablissement,
+  } = v.data
 
   const db = c.env.DB
   if (db) {

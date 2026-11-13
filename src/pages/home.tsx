@@ -15,7 +15,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
   // Split-écran épinglé « Notre Expertise » — 3 expertises révélées au scroll
   const EXPERTISES = [
     {
-      icon: 'ph-duotone ph-shopping-cart-simple',
+      icon: 'fas fa-cart-shopping',
       iconBg: 'linear-gradient(135deg,var(--accent),var(--accent-cyan))',
       iconColor: '#ffffff',
       title: 'Vente Premium',
@@ -25,7 +25,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       href: '/catalogue',
     },
     {
-      icon: 'ph-duotone ph-wrench',
+      icon: 'fas fa-wrench',
       iconBg: 'rgba(202,240,248,0.14)',
       iconColor: 'var(--ice)',
       title: 'Maintenance',
@@ -35,7 +35,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       href: '/rendez-vous',
     },
     {
-      icon: 'ph-duotone ph-chart-line-up',
+      icon: 'fas fa-chart-line',
       iconBg: 'linear-gradient(135deg,var(--accent),var(--accent-cyan))',
       iconColor: '#ffffff',
       title: 'Suivi de Performance',
@@ -53,13 +53,13 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       <section class="gradient-hero min-h-screen flex items-center relative overflow-hidden pt-20">
         {/* Carrousel photo plein écran — 7 photos, balayage clip-path (GSAP, étape 1B) */}
         <div id="hero-carousel" class="absolute inset-0 pointer-events-none">
-          {["/hero/hero-1.jpg","/hero/hero-2.jpg","/hero/hero-3.jpg","/hero/hero-4.jpg","/hero/hero-5.jpg","/hero/hero-6.jpg","/hero/hero-7.jpg"].map((src, i) => (
+          {[1, 2, 3, 4, 5, 6, 7].map((n, i) => (
             <div class={`hero-carousel-slide${i === 0 ? ' active' : ''}`}>
-              <img src={src} alt="MAASGA — installation climatisation" loading="eager" decoding="async" fetchpriority={i === 0 ? 'high' : 'low'} />
+              <img src={`/hero/hero-${n}.webp`} srcset={`/hero/hero-${n}-800.webp 800w, /hero/hero-${n}.webp 1600w`} sizes="100vw" alt={i === 0 ? "MAASGA — installation climatisation" : ""} loading={i === 0 ? 'eager' : 'lazy'} decoding="async" fetchpriority={i === 0 ? 'high' : 'low'} />
             </div>
           ))}
           {/* Overlay sombre : z-index:5 pour rester au-dessus des slides (qui montent à z-index 3 pendant la transition) */}
-          <div class="absolute inset-0" style="z-index:5; background:linear-gradient(100deg,rgba(0,0,0,0.82) 0%,rgba(0,0,0,0.55) 42%,rgba(0,0,0,0.28) 75%,rgba(0,0,0,0.5) 100%),linear-gradient(180deg,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.55) 100%);"></div>
+          <div class="absolute inset-0" style="z-index:5; background:linear-gradient(100deg,rgba(var(--rgb-black),0.82) 0%,rgba(var(--rgb-black),0.55) 42%,rgba(var(--rgb-black),0.28) 75%,rgba(var(--rgb-black),0.5) 100%),linear-gradient(180deg,rgba(var(--rgb-black),0.05) 0%,rgba(var(--rgb-black),0.55) 100%);"></div>
         </div>
 
         {/* Particules de neige — conservées par-dessus le carrousel */}
@@ -75,7 +75,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             <div class="hero-content text-white" data-hero>
               {/* Badge confiance */}
               <div class="eyebrow eyebrow-ice inline-flex items-center gap-2 mb-6">
-                <i class="ph-duotone ph-lock-key text-xs" style="color:var(--ice);"></i>
+                <i class="fas fa-lock text-xs" style="color:var(--ice);"></i>
                 <span>Techniciens certifiés · Burkina Faso</span>
               </div>
 
@@ -83,53 +83,53 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                 Le Frais <br /><span class="hero-grad">Réinventé</span> au Burkina.
               </h1>
 
-              <p class="text-lg mb-8 leading-relaxed max-w-lg" style="color:#cbd5e1;">
+              <p class="text-lg mb-8 leading-relaxed max-w-lg text-fg-disabled">
                 Spécialiste en <strong class="text-white">vente, installation et maintenance</strong> de climatiseurs à Ouagadougou. Visite technique gratuite sur site · Devis PDF gratuit · Contrats de maintenance personnalisés.
               </p>
 
               <div class="flex flex-col sm:flex-row gap-4 mb-8">
                 <a href="/catalogue" class="magnetic btn-light font-bold px-8 py-4 rounded-2xl flex items-center justify-center gap-3 group">
-                  <i class="ph-duotone ph-snowflake" style="color:var(--accent);"></i>
+                  <i class="fas fa-snowflake" style="color:var(--accent);"></i>
                   <span>Commander une climatisation</span>
-                  <i class="ph-duotone ph-arrow-right group-hover:translate-x-1 transition-transform text-sm" style="color:var(--accent);"></i>
+                  <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform text-sm" style="color:var(--accent);"></i>
                 </a>
-                <a href="/rendez-vous" class="font-bold px-8 py-4 rounded-2xl flex items-center justify-center gap-3 transition-all" style="border:1.5px solid rgba(202,240,248,0.35); color:white; background:rgba(255,255,255,0.06);">
-                  <i class="ph-duotone ph-calendar-plus" style="color:var(--ice);"></i>
+                <a href="/rendez-vous" class="font-bold px-8 py-4 rounded-2xl flex items-center justify-center gap-3 transition-all text-fg-on-dark" style="border:1.5px solid rgba(202,240,248,0.35); background:rgba(var(--rgb-white),0.06);">
+                  <i class="fas fa-calendar-plus" style="color:var(--ice);"></i>
                   <span>Demander un devis</span>
                 </a>
               </div>
 
-              {/* Social proof */}
-              <div class="flex items-center gap-4 mb-10">
+              {/* Social proof — masqué tant qu'il n'y a pas de vraies données */}
+              {(hasClients || displayNote !== '—') && <div class="flex items-center gap-4 mb-10">
                 <div class="flex -space-x-2">
                   {['M','A','S','K'].map((l, i) => (
-                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white border-2" style={`background:${['#0369a1','#0077b6','#00b4d8','#48cae4'][i]}; border-color:#0F172A; z-index:${4-i};`}>{l}</div>
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white border-2" style={`background:${['#0369a1','#0077b6','#0e7490','#155e75'][i]}; border-color:#0F172A; z-index:${4-i};`}>{l}</div>
                   ))}
                 </div>
                 <div>
                   <div class="flex items-center gap-1">
-                    {[1,2,3,4,5].map(_ => <i class="ph-fill ph-star text-yellow-400" style="font-size:0.65rem;"></i>)}
+                    {[1,2,3,4,5].map(_ => <i class="fas fa-star text-yellow-400 text-[0.65rem]"></i>)}
                     <span class="font-bold text-white text-sm ml-1">{displayNote}</span>
                   </div>
                   <div class="text-xs" style="color:#94a3b8;"><strong class="text-white">{displayClients}</strong> clients satisfaits</div>
                 </div>
-              </div>
+              </div>}
 
               {/* Stats — compteurs animés */}
               <div class="grid grid-cols-3 gap-4">
-                <div class="text-center p-4 rounded-2xl" style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.16);">
+                <div class="text-center p-4 rounded-2xl" style="background:rgba(var(--rgb-slate),0.08); border:1px solid rgba(var(--rgb-slate),0.16);">
                   <div class="text-2xl font-extrabold text-white font-display">
                     {hasClients
-                      ? <span data-count={String(stats!.clientCount)} data-suffix="+">0+</span>
+                      ? <span data-count={String(stats!.clientCount)} data-suffix="+">{stats!.clientCount}+</span>
                       : displayClients}
                   </div>
                   <div class="text-xs mt-1" style="color:#94a3b8;">Clients satisfaits</div>
                 </div>
-                <div class="text-center p-4 rounded-2xl" style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.16);">
-                  <div class="text-2xl font-extrabold text-white font-display"><span data-count="5" data-suffix=" ans">0 ans</span></div>
+                <div class="text-center p-4 rounded-2xl" style="background:rgba(var(--rgb-slate),0.08); border:1px solid rgba(var(--rgb-slate),0.16);">
+                  <div class="text-2xl font-extrabold text-white font-display"><span data-count="5" data-suffix=" ans">5 ans</span></div>
                   <div class="text-xs mt-1" style="color:#94a3b8;">D'expérience</div>
                 </div>
-                <div class="text-center p-4 rounded-2xl" style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.16);">
+                <div class="text-center p-4 rounded-2xl" style="background:rgba(var(--rgb-slate),0.08); border:1px solid rgba(var(--rgb-slate),0.16);">
                   <div class="text-2xl font-extrabold text-white font-display">{displayNote}</div>
                   <div class="text-xs mt-1" style="color:#94a3b8;">Note moyenne{stats?.reviewCount ? ` (${displayReviews} avis)` : ''}</div>
                 </div>
@@ -145,7 +145,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                   { icon: "fa-screwdriver-wrench", color: "#caf0f8", text: "SAV réactif" },
                   { icon: "fa-shield-halved", color: "#fbbf24", text: "Techniciens certifiés" }
                 ].map(b => (
-                  <div class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm" style="background:rgba(148,163,184,0.08); border:1px solid rgba(148,163,184,0.2);">
+                  <div class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm" style="background:rgba(var(--rgb-slate),0.08); border:1px solid rgba(var(--rgb-slate),0.2);">
                     <i class={`fas ${b.icon}`} style={`color:${b.color};`}></i>
                     <span class="font-semibold text-white text-xs">{b.text}</span>
                   </div>
@@ -159,7 +159,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
         {/* Indice de scroll */}
         <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center animate-bounce" style="opacity:0.5;">
           <span class="text-xs uppercase tracking-widest text-white mb-2">Découvrir</span>
-          <i class="ph-duotone ph-caret-down text-white"></i>
+          <i class="fas fa-chevron-down text-white"></i>
         </div>
 
         {/* Carte flottante — bas droite */}
@@ -173,7 +173,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             </div>
             <div class="text-xs font-bold flex items-center justify-between" style="color:var(--accent);">
               <span>Simulateur BTU Gratuit</span>
-              <i class="ph-duotone ph-arrow-right"></i>
+              <i class="fas fa-arrow-right"></i>
             </div>
           </a>
         </div>
@@ -233,7 +233,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                     <div class="exp-step-icon w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-5" style={`background:${s.iconBg}; color:${s.iconColor};`}>
                       <i class={`${s.icon} icon-pulse`}></i>
                     </div>
-                    <div class="exp-num">Expertise 0{i + 1} <span style="opacity:0.4;">/ 0{EXPERTISES.length}</span></div>
+                    <div class="exp-num">Expertise 0{i + 1} <span class="text-fg-muted" aria-hidden="true">/ 0{EXPERTISES.length}</span></div>
                     <h3 class="exp-title font-display font-extrabold mb-4" style="color:var(--navy-900);">{s.title}</h3>
                     <p class="exp-desc mb-6" style="color:var(--slate-700);">{s.desc}</p>
                     <ul class="text-sm space-y-2 mb-8" style="color:var(--slate-500);">
@@ -242,7 +242,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                       ))}
                     </ul>
                     <a href={s.href} class="inline-flex items-center font-semibold group" style="color:var(--accent);">
-                      {s.cta} <i class="ph-duotone ph-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                      {s.cta} <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
                     </a>
                   </div>
                 ))}
@@ -251,7 +251,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
               {/* DROITE — panneau navy épinglé, visuels empilés qui se révèlent */}
               <div class="exp-right order-1 lg:order-2">
                 <div class="exp-panel surface-navy">
-                  <div class="exp-panel-wm" aria-hidden="true"><i class="ph-duotone ph-wrench"></i></div>
+                  <div class="exp-panel-wm" aria-hidden="true"><i class="fas fa-wrench"></i></div>
                   {EXPERTISES.map((s, i) => (
                     <div class={`exp-visual${i === 0 ? ' is-active' : ''}`} data-step={String(i)}>
                       <i class={`${s.icon} icon-pulse`}></i>
@@ -360,7 +360,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             </div>
             <a href="/catalogue" class="inline-flex items-center gap-2 font-semibold group transition-colors" style="color:var(--accent);">
               <span>Voir tout le catalogue</span>
-              <i class="ph-duotone ph-arrow-right group-hover:translate-x-1 transition-transform text-sm"></i>
+              <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform text-sm"></i>
             </a>
           </div>
 
@@ -373,18 +373,18 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             ) : featuredProducts.map(p => (
               <div data-tilt class="surface-elevated overflow-hidden group flex flex-col">
                 {/* Image */}
-                <div class="tilt-image relative" style="background:linear-gradient(145deg,#f0f7ff,#dbeafe); padding:28px 24px 20px;">
+                <div class="tilt-image relative" style="background:linear-gradient(145deg,var(--surface-info-alt),#dbeafe); padding:28px 24px 20px;">
                   <div class="flex items-center justify-center" style="min-height:180px;">
                     {(p as any).imageUrl
                       ? <img src={(p as any).imageUrl} alt={p.name}
                           loading="lazy" width={250} height={180}
-                          class="object-contain mx-auto group-hover:scale-105 transition-transform duration-500"
-                          style="max-height:180px; max-width:100%; width:auto;" />
-                      : <div class="group-hover:scale-105 transition-transform duration-500" style="font-size:6rem; line-height:1;">{p.image}</div>
+                          class="object-contain mx-auto group-hover:scale-105 transition-transform duration-500 max-w-[100%]"
+                          style="max-height:180px; width:auto;" />
+                      : <div class="group-hover:scale-105 transition-transform duration-500 text-[6rem]" style="line-height:1;">{p.image}</div>
                     }
                   </div>
                   {p.inverter && (
-                    <span class="absolute top-3 right-3 text-xs px-3 py-1 rounded-full font-bold" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan)); color:#ffffff;">INVERTER</span>
+                    <span class="absolute top-3 right-3 text-xs px-3 py-1 rounded-full font-bold text-fg-on-dark" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan));">INVERTER</span>
                   )}
                   <span class={`absolute top-3 left-3 text-xs px-3 py-1 rounded-full font-semibold inline-flex items-center gap-1.5 ${p.stock > 3 ? 'badge-stock-ok' : p.stock > 0 ? 'badge-stock-low' : 'badge-stock-out'}`}>
                     <i class={`fas ${p.stock > 3 ? 'fa-circle-check' : p.stock > 0 ? 'fa-triangle-exclamation' : 'fa-circle-xmark'}`}></i>
@@ -401,7 +401,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                   <div class="flex items-end justify-between mb-5 mt-auto">
                     <div>
                       <div class="text-2xl font-extrabold font-display" style="color:var(--accent);">{p.price.toLocaleString()} <span class="text-sm font-normal" style="color:var(--slate-500);">FCFA</span></div>
-                      <div class="text-xs font-semibold mt-0.5" style="color:#10b981;"><i class="fas fa-circle-check mr-1"></i>Installation et livraison offerte</div>
+                      <div class="text-xs font-semibold mt-0.5 text-fg-success"><i class="fas fa-circle-check mr-1"></i>Installation et livraison offerte</div>
                     </div>
                     <div class="text-right">
                       <div class="text-base font-bold" style="color:var(--navy-900);">{p.btu.toLocaleString()} BTU</div>
@@ -419,10 +419,10 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
           </div>
 
           {/* Notice */}
-          <div class="mt-8 rounded-2xl p-4 flex items-start gap-3" style="background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2);">
-            <i class="fas fa-triangle-exclamation mt-0.5 flex-shrink-0" style="color:#f59e0b;"></i>
+          <div class="mt-8 rounded-2xl p-4 flex items-start gap-3" style="background:rgba(var(--rgb-amber-deep),0.06); border:1px solid rgba(var(--rgb-amber-deep),0.2);">
+            <i class="fas fa-triangle-exclamation mt-0.5 flex-shrink-0 text-fg-amber"></i>
             <p class="text-sm" style="color:var(--slate-700);">
-              <strong style="color:#b45309;">Important :</strong> Toute commande est soumise à une Visite technique gratuite préalable sur site. Le paiement est effectué uniquement après cette visite et confirmation du devis.
+              <strong class="text-fg-warning">Important :</strong> Toute commande est soumise à une Visite technique gratuite préalable sur site. Le paiement est effectué uniquement après cette visite et confirmation du devis.
             </p>
           </div>
         </div>
@@ -463,7 +463,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center" data-reveal>
             <div>
-              <span class="eyebrow mb-5" style="color:#7c3aed; background:rgba(139,92,246,0.1); border-color:rgba(139,92,246,0.25);">
+              <span class="eyebrow mb-5" style="color:var(--fg-violet-bright); background:rgba(139,92,246,0.1); border-color:rgba(139,92,246,0.25);">
                 <i class="fas fa-calculator mr-1"></i> Outil gratuit
               </span>
               <h2 data-split class="display-2 mt-5 mb-4" style="color:var(--navy-900);">Quel climatiseur pour votre pièce ?</h2>
@@ -473,7 +473,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
               <div class="space-y-3 mb-8">
                 {["Surface de la pièce en m²","Hauteur du plafond","Exposition solaire","Nombre de fenêtres"].map(item => (
                   <div class="flex items-center gap-3">
-                    <i class="fas fa-circle-check text-sm" style="color:#10b981;"></i>
+                    <i class="fas fa-circle-check text-sm" style="color:var(--fg-success);"></i>
                     <span class="text-sm" style="color:var(--slate-700);">{item}</span>
                   </div>
                 ))}
@@ -481,7 +481,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
               <a href="/simulateur" class="btn-primary font-bold px-8 py-4 rounded-2xl inline-flex items-center gap-3">
                 <i class="fas fa-calculator"></i>
                 <span>Lancer le simulateur BTU</span>
-                <i class="ph-duotone ph-arrow-right text-sm"></i>
+                <i class="fas fa-arrow-right text-sm"></i>
               </a>
             </div>
 
@@ -509,8 +509,8 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                   </div>
                 ))}
                 <div class="rounded-2xl px-4 py-5 text-center mt-4" style="background:linear-gradient(135deg,var(--accent),var(--accent-cyan)); box-shadow:0 8px 30px rgba(3,105,161,0.25);">
-                  <div class="text-xs mb-1" style="color:#ffffff; opacity:0.85;">Puissance recommandée</div>
-                  <div class="text-3xl font-extrabold font-display" style="color:#ffffff;">12 000 BTU / 1,5 CV</div>
+                  <div class="text-xs mb-1 text-fg-on-dark" style="opacity:0.85;">Puissance recommandée</div>
+                  <div class="text-3xl font-extrabold font-display text-fg-on-dark">12 000 BTU / 1,5 CV</div>
                   <div class="text-xs mt-1" style="color:var(--ice);">→ 2 modèles compatibles</div>
                 </div>
               </div>
@@ -529,26 +529,26 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
           </div>
           <a href="/avis" class="mt-4 sm:mt-0 inline-flex items-center gap-2 font-semibold" style="color:var(--accent);">
             <span>Voir tous les avis</span>
-            <i class="ph-duotone ph-arrow-right text-sm"></i>
+            <i class="fas fa-arrow-right text-sm"></i>
           </a>
         </div>
 
         {topReviews.length === 0 ? (
           <div class="surface text-center py-12">
-            <i class="ph-fill ph-star text-4xl mb-3" style="color:#94a3b8;"></i>
+            <i class="fas fa-star text-4xl mb-3" style="color:#94a3b8;"></i>
             <p style="color:var(--slate-500);">Aucun avis pour le moment. Soyez le premier !</p>
             <a href="/avis" class="btn-primary inline-block mt-4 text-sm font-bold px-6 py-2.5 rounded-xl">Laisser un avis</a>
           </div>
         ) : (
           <>
-          <div class="relative" style="overflow:hidden;" data-reveal>
+          <div class="relative overflow-hidden" data-reveal>
             <div class="testimonial-track">
               {[...topReviews, ...topReviews, ...topReviews].map((r, idx) => (
                 <div class="surface-elevated p-6 flex-shrink-0 testimonial-card-in rounded-lg" style={`min-width:320px; max-width:360px; transition-delay:${0.08 * (idx % topReviews.length)}s;`} data-testimonial-card>
                   <div class="flex items-center justify-between mb-4">
                     <div class="flex space-x-0.5">
                       {[1,2,3,4,5].map(s => (
-                        <i class={`ph-fill ph-star text-sm ${s <= r.note ? 'star-filled' : 'star-empty'}`}></i>
+                        <i class={`fas fa-star text-sm ${s <= r.note ? 'star-filled' : 'star-empty'}`}></i>
                       ))}
                     </div>
                     <span class="text-xs" style="color:#94a3b8;">{r.date}</span>
@@ -556,7 +556,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
                   <p class="text-sm leading-relaxed mb-4 italic" style="color:var(--slate-700);">"{r.comment}"</p>
                   <div class="flex items-center gap-3">
                     <div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:rgba(3,105,161,0.08); border:1px solid rgba(3,105,161,0.15);">
-                      <i class="ph-duotone ph-user text-sm" style="color:var(--accent);"></i>
+                      <i class="fas fa-user text-sm" style="color:var(--accent);"></i>
                     </div>
                     <div>
                       <div class="text-sm font-bold" style="color:var(--navy-900);">{r.name}</div>
@@ -584,7 +584,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
           <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <div class="flex items-center gap-2">
               <div class="flex space-x-0.5">
-                {[1,2,3,4,5].map(_ => <i class="ph-fill ph-star text-yellow-400 text-sm"></i>)}
+                {[1,2,3,4,5].map(_ => <i class="fas fa-star text-yellow-400 text-sm"></i>)}
               </div>
               <span class="text-xl font-extrabold font-display" style="color:var(--navy-900);">{displayNote}</span>
             </div>
@@ -614,7 +614,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             <details class="group surface overflow-hidden">
               <summary class="flex items-center justify-between p-5 cursor-pointer list-none">
                 <span class="font-bold text-sm pr-4" style="color:var(--navy-900);">{faq.q}</span>
-                <i class="ph-duotone ph-caret-down text-xs transition-transform group-open:rotate-180 flex-shrink-0" style="color:var(--accent);"></i>
+                <i class="fas fa-chevron-down text-xs transition-transform group-open:rotate-180 flex-shrink-0" style="color:var(--accent);"></i>
               </summary>
               <div class="px-5 pb-5 text-sm leading-relaxed" style="color:var(--slate-700);">
                 {faq.a}
@@ -643,29 +643,29 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       <section class="py-20 relative overflow-hidden bg-navy" data-reveal>
         <div class="glow-dot w-80 h-80 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style="background:rgba(3,105,161,0.15);" data-parallax="-30"></div>
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <i class="ph-duotone ph-rocket-launch text-5xl mb-4" style="color:var(--ice);"></i>
-          <h2 data-split class="display-2 mb-4" style="color:#ffffff;">Prêt à profiter du confort climatisé ?</h2>
-          <p class="mb-4 text-lg max-w-2xl mx-auto" style="color:#cbd5e1;">
+          <i class="fas fa-rocket text-5xl mb-4" style="color:var(--ice);"></i>
+          <h2 data-split class="display-2 mb-4" style="color:var(--fg-on-dark);">Prêt à profiter du confort climatisé ?</h2>
+          <p class="mb-4 text-lg max-w-2xl mx-auto text-fg-disabled">
             Contactez-nous dès aujourd'hui. Visite technique gratuite, devis PDF sous 24h, installation par nos experts certifiés.
           </p>
 
           <div class="inline-flex items-center gap-2 mb-8 px-5 py-2.5 rounded-full" style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3);">
-            <i class="fas fa-phone text-sm" style="color:#38bdf8;"></i>
+            <i class="fas fa-phone text-sm" style="color:var(--fg-on-dark-accent);"></i>
             <span class="text-sm font-bold" style="color:var(--ice);">Devis gratuit sous 24h — Appelez le 55 99 64 18</span>
           </div>
 
           <div class="flex flex-col sm:flex-row gap-4 justify-center">
             <a href="/rendez-vous" class="magnetic btn-light font-extrabold px-10 py-4 rounded-2xl text-lg flex items-center justify-center gap-3">
-              <i class="ph-duotone ph-calendar-plus" style="color:var(--accent);"></i>
+              <i class="fas fa-calendar-plus" style="color:var(--accent);"></i>
               <span>Demander un devis gratuit</span>
             </a>
-            <a href="/catalogue" class="font-extrabold px-10 py-4 rounded-2xl text-lg flex items-center justify-center gap-3 transition-all" style="border:1.5px solid rgba(202,240,248,0.35); color:white; background:rgba(255,255,255,0.06);">
+            <a href="/catalogue" class="font-extrabold px-10 py-4 rounded-2xl text-lg flex items-center justify-center gap-3 transition-all text-fg-on-dark" style="border:1.5px solid rgba(202,240,248,0.35); background:rgba(var(--rgb-white),0.06);">
               <i class="fas fa-table-cells-large"></i>
               <span>Voir le catalogue</span>
             </a>
           </div>
           <p class="text-sm mt-6" style="color:#94a3b8;">
-            <i class="ph-duotone ph-shield-check mr-2"></i>
+            <i class="fas fa-shield-halved mr-2"></i>
             Visite technique gratuite obligatoire · Paiement après visite · Satisfaction garantie
           </p>
           <div class="flex items-center justify-center gap-4 mt-4">
@@ -758,6 +758,8 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       <script dangerouslySetInnerHTML={{ __html: `
         (function(){
           if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+          // SplitText n'est utilisé que sur l'accueil : chargé à la demande (y compris après navigation PJAX)
+          if (!window.SplitText && !document.getElementById('gsap-splittext')) { var st = document.createElement('script'); st.id = 'gsap-splittext'; st.src = 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/SplitText.min.js'; st.crossOrigin = 'anonymous'; document.head.appendChild(st); }
           function run(){
             if (!window.gsap || !window.SplitText || !window.ScrollTrigger) return false;
             gsap.registerPlugin(SplitText, ScrollTrigger);
@@ -774,7 +776,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             if (document.fonts && document.fonts.ready) { document.fonts.ready.then(go); } else { go(); }
             return true;
           }
-          if (!run()) { var n = 0, iv = setInterval(function(){ n++; if (run() || n > 60) clearInterval(iv); }, 50); }
+          if (!run()) { var n = 0, iv = setInterval(function(){ n++; if (run() || n > 200) clearInterval(iv); }, 50); }
         })();
       ` }} />
 
@@ -782,6 +784,8 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
       <script dangerouslySetInnerHTML={{ __html: `
         (function(){
           if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+          // SplitText n'est utilisé que sur l'accueil : chargé à la demande (y compris après navigation PJAX)
+          if (!window.SplitText && !document.getElementById('gsap-splittext')) { var st = document.createElement('script'); st.id = 'gsap-splittext'; st.src = 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/SplitText.min.js'; st.crossOrigin = 'anonymous'; document.head.appendChild(st); }
           function run(){
             if (!window.gsap || !window.SplitText) return false;
             var target = document.querySelector('[data-split-hero]');
@@ -797,7 +801,7 @@ export const HomePage = ({ stats, topReviews: propReviews }: { stats?: { clientC
             if (document.fonts && document.fonts.ready) { document.fonts.ready.then(go); } else { go(); }
             return true;
           }
-          if (!run()) { var n = 0, iv = setInterval(function(){ n++; if (run() || n > 60) clearInterval(iv); }, 50); }
+          if (!run()) { var n = 0, iv = setInterval(function(){ n++; if (run() || n > 200) clearInterval(iv); }, 50); }
         })();
       ` }} />
 
